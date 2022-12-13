@@ -1,9 +1,11 @@
-package BallCore
+package BallCore.Acclimation
+
+import BallCore.Storage.*
 
 import java.util.UUID
 import scala.language.implicitConversions
 
-class PlayerAcclimation()(using kvs: KeyValStorage):
+class Storage()(using kvs: KeyVal):
     private def get(player: UUID, key: String, default: Float): Float =
         kvs.get[KVFloat](player, key) match
             case Some(value) => value.value

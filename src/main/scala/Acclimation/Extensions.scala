@@ -1,9 +1,9 @@
-package BallCore
+package BallCore.Acclimation
 
 import org.bukkit.entity.Player
 
-object PlayerExtensions:
-    extension (p: Player)(using accl: PlayerAcclimation)
+object Extensions:
+    extension (p: Player)(using accl: Storage)
         def temperatureAcclimation =
             accl.getTemperature(p.getUniqueId())
         def setTemperatureAcclimation(to: Float) =
