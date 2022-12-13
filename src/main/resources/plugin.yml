@@ -1,0 +1,7 @@
+name: BallCore
+version: 0.1
+main: BallCore.BallCore
+description: Core plugin of CivBalls
+authors: [Janet Blackquill]
+website: https://github.com/BlueMoonVineyard/BallCore
+api-version: 1.13
