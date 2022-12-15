@@ -7,11 +7,11 @@ import scala.language.implicitConversions
 
 class Storage()(using kvs: KeyVal):
     private def get(player: UUID, key: String, default: Float): Float =
-        kvs.get[KVFloat](player, key) match
-            case Some(value) => value.value
+        kvs.get[Float](player, key) match
+            case Some(value) => value
             case None => default
     private def set(player: UUID, key: String, value: Float) =
-        kvs.set(player, key, KVFloat(value))
+        kvs.set(player, key, value)
 
     /** temperature ranges from 0.0 (coldest climate) to 1.0 (hottest climate) */
     def getTemperature(player: UUID): Float =
