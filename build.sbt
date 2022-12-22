@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2022 Janet Blackquill <uhhadd@gmail.com>
+//
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 val scala3Version = "3.2.2-RC1"
 val circeVersion = "0.14.1"
 
