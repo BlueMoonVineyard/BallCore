@@ -22,6 +22,9 @@ case class BlockState(
     owner: Groups.UserID,
     dirty: Boolean,
     deleted: Boolean,
+    health: Int,
+    maxHealth: Int,
+    placedAt: ju.Date,
 )
 
 /** This keys ChunkStates in the cache */

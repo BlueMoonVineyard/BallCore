@@ -24,14 +24,14 @@ class ReinforcementManager()(using csm: ChunkStateManager, gsm: Groups.GroupMana
     private def hoist[B](either: Either[Groups.GroupError, B]): Either[ReinforcementError, B] =
         either.left.map(ReinforcementGroupError(_))
 
-    def reinforce(as: Groups.UserID, group: Groups.UserID, x: Int, y: Int, z: Int, world: WorldID): Either[ReinforcementError, Unit] =
+    def reinforce(as: Groups.UserID, group: Groups.UserID, x: Int, y: Int, z: Int, world: WorldID, health: Int): Either[ReinforcementError, Unit] =
         val (chunkX, chunkZ, offsetX, offsetZ) = toOffsets(x, z)
         val state = csm.get(ChunkKey(chunkX, chunkZ, world.toString()))
         val bkey = BlockKey(offsetX, offsetZ, y)
         state.blocks.get(bkey).filterNot(_.deleted) match
             case None =>
                 hoist(gsm.checkE(as, group, Groups.Permissions.AddReinforcements)).map { _ =>
-                    state.blocks(bkey) = BlockState(group, as, true, false)
+                    state.blocks(bkey) = BlockState(group, as, true, false, health, health, ju.Date())
                 }
             case Some(value) =>
                 Left(AlreadyExists())
