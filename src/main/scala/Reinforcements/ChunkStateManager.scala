@@ -7,6 +7,7 @@ package BallCore.Reinforcements
 import BallCore.Storage
 import BallCore.DataStructures.LRUCache
 
+import java.{util => ju}
 import scala.collection.mutable.Map
 
 import scalikejdbc._
@@ -28,6 +29,7 @@ class ChunkStateManager()(using sql: Storage.SQLManager):
                     OffsetZ INTEGER NOT NULL,
                     Y INTEGER NOT NULL,
                     Group TEXT NOT NULL,
+                    Owner TEXT NOT NULL,
                 );
                 """
             ),
@@ -49,17 +51,19 @@ class ChunkStateManager()(using sql: Storage.SQLManager):
         val cs = ChunkState(Map())
         val items =
             sql"""
-            SELECT (OffsetX, OffsetZ, Y, Group) FROM ChunkStateManager
+            SELECT (OffsetX, OffsetZ, Y, Group, Owner) FROM ChunkStateManager
                 WHERE ChunkX = ${key.chunkX}
                   AND ChunkZ = ${key.chunkZ}
                   AND World = ${key.world};
             """
-                .map(rs => (rs.int("OffsetX"), rs.int("OffsetZ"), rs.int("Y"), rs.string("Group")))
+                .map(rs => (rs.int("OffsetX"), rs.int("OffsetZ"), rs.int("Y"), rs.string("Group"), rs.string("Owner")))
                 .list
                 .apply()
                 .foreach { tuple =>
-                    val (offsetX, offsetZ, y, group) = tuple
-                    cs.blocks(BlockKey(offsetX, offsetZ, y)) = BlockState(???, false, false)
+                    val (offsetX, offsetZ, y, group, owner) = tuple
+                    val gid = ju.UUID.fromString(group)
+                    val uid = ju.UUID.fromString(owner)
+                    cs.blocks(BlockKey(offsetX, offsetZ, y)) = BlockState(gid, uid, false, false)
                 }
         cache(key) = cs
 
@@ -93,9 +97,9 @@ class ChunkStateManager()(using sql: Storage.SQLManager):
                 val (key, value) = item
                 sql"""
                 INSERT OR REPLACE INTO Reinforcements
-                    (ChunkX, ChunkZ, World, OffsetX, OffsetZ, Y, Group)
+                    (ChunkX, ChunkZ, World, OffsetX, OffsetZ, Y, Group, Owner)
                     VALUES
-                    (${cx},  ${cz},  ${cw}, ${key.offsetX}, ${key.offsetZ}, ${key.y}, ${value.group})
+                    (${cx},  ${cz},  ${cw}, ${key.offsetX}, ${key.offsetZ}, ${key.y}, ${value.group}, ${value.owner})
                 """
             }
         }

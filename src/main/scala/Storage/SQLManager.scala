@@ -15,12 +15,15 @@ import org.sqlite.SQLiteDataSource
 
 case class Migration(name: String, apply: List[scalikejdbc.SQL[Any, NoExtractor]], reverse: List[scalikejdbc.SQL[Any, NoExtractor]])
 
-class SQLManager:
+class SQLManager(test: Boolean = false):
     File("data-storage").mkdirs()
 
     Class.forName("org.sqlite.JDBC")
     DriverManager.registerDriver(SQLiteNoReadOnlyDriver)
-    ConnectionPool.singleton("no-read-only:jdbc:sqlite:data-storage/BallCore.db", null, null)
+    if test then
+        ConnectionPool.singleton("no-read-only:jdbc:sqlite::memory:", null, null)
+    else
+        ConnectionPool.singleton("no-read-only:jdbc:sqlite:data-storage/BallCore.db", null, null)
     {
         sql"CREATE TABLE IF NOT EXISTS _Migrations (Name string)".update.apply()(AutoSession)
     }

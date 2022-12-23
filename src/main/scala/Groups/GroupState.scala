@@ -28,6 +28,8 @@ enum Permissions(val name: String):
     case InviteUser extends Permissions("users.invite")
     case RemoveUser extends Permissions("users.manage.remove")
     case UpdateGroupInformation extends Permissions("group.manage")
+    case AddReinforcements extends Permissions("reinforcements.add")
+    case RemoveReinforcements extends Permissions("reinforcements.remove")
 
 implicit val pKeyEncoder: KeyEncoder[Permissions] = new KeyEncoder[Permissions]:
     override def apply(perm: Permissions): String =
