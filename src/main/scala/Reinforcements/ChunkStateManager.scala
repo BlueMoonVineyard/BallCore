@@ -28,8 +28,8 @@ class ChunkStateManager()(using sql: Storage.SQLManager):
                     OffsetX INTEGER NOT NULL,
                     OffsetZ INTEGER NOT NULL,
                     Y INTEGER NOT NULL,
-                    Group TEXT NOT NULL,
-                    Owner TEXT NOT NULL,
+                    GroupID TEXT NOT NULL,
+                    Owner TEXT NOT NULL
                 );
                 """
             ),
@@ -51,12 +51,12 @@ class ChunkStateManager()(using sql: Storage.SQLManager):
         val cs = ChunkState(Map())
         val items =
             sql"""
-            SELECT (OffsetX, OffsetZ, Y, Group, Owner) FROM ChunkStateManager
+            SELECT OffsetX, OffsetZ, Y, GroupID, Owner FROM Reinforcements
                 WHERE ChunkX = ${key.chunkX}
                   AND ChunkZ = ${key.chunkZ}
                   AND World = ${key.world};
             """
-                .map(rs => (rs.int("OffsetX"), rs.int("OffsetZ"), rs.int("Y"), rs.string("Group"), rs.string("Owner")))
+                .map(rs => (rs.int("OffsetX"), rs.int("OffsetZ"), rs.int("Y"), rs.string("GroupID"), rs.string("Owner")))
                 .list
                 .apply()
                 .foreach { tuple =>
@@ -97,7 +97,7 @@ class ChunkStateManager()(using sql: Storage.SQLManager):
                 val (key, value) = item
                 sql"""
                 INSERT OR REPLACE INTO Reinforcements
-                    (ChunkX, ChunkZ, World, OffsetX, OffsetZ, Y, Group, Owner)
+                    (ChunkX, ChunkZ, World, OffsetX, OffsetZ, Y, GroupID, Owner)
                     VALUES
                     (${cx},  ${cz},  ${cw}, ${key.offsetX}, ${key.offsetZ}, ${key.y}, ${value.group}, ${value.owner})
                 """

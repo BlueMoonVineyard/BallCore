@@ -43,6 +43,8 @@ class GroupManager()(using kvs: Storage.KeyVal, gsm: GroupStateManager):
                     (Permissions.InviteUser, RuleMode.Allow),
                     (Permissions.RemoveUser, RuleMode.Allow),
                     (Permissions.UpdateGroupInformation, RuleMode.Allow),
+                    (Permissions.AddReinforcements, RuleMode.Allow),
+                    (Permissions.RemoveReinforcements, RuleMode.Allow),
                 ),
             ),
             RoleState(
@@ -138,3 +140,6 @@ class GroupManager()(using kvs: Storage.KeyVal, gsm: GroupStateManager):
 
     def check(user: UserID, group: GroupID, permission: Permissions): Either[GroupError, Boolean] =
         get(group).map(_.check(permission, user))
+
+    def checkE(user: UserID, group: GroupID, permission: Permissions): Either[GroupError, Unit] =
+        get(group).guard(GroupError.NoPermissions) { _.check(permission, user) }.map { _ => () }

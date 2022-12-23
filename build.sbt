@@ -17,7 +17,7 @@ lazy val root = project
     resolvers += "jitpack.io" at "https://jitpack.io/",
 
     libraryDependencies += "org.scalameta" %% "munit" % "0.7.29" % Test,
-    libraryDependencies += "org.spigotmc" % "spigot-api" % "1.19-R0.1-SNAPSHOT" % "provided" intransitive(),
+    libraryDependencies += "org.spigotmc" % "spigot-api" % "1.19-R0.1-SNAPSHOT" % "provided", // intransitive()
     libraryDependencies += "org.scalikejdbc" %% "scalikejdbc" % "4.0.0",
     libraryDependencies += "org.xerial" % "sqlite-jdbc" % "3.40.0.0",
     libraryDependencies ++= Seq(
