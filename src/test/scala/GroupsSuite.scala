@@ -22,6 +22,45 @@ class GroupsSuite extends munit.FunSuite {
         val res2 = gm.deleteGroup(ownerID, gid)
         assert(res2 == Right(()), res2)
     }
+    test("basic permissions and role management") {
+        given kvs: Storage.MemKeyVal = Storage.MemKeyVal()
+        given gsm: Groups.GroupStateManager = Groups.GroupStateManager()
+        val gm = Groups.GroupManager()
+        val ownerID = ju.UUID.randomUUID()
+        val notMemberID = ju.UUID.randomUUID()
+
+        val gid = gm.createGroup(ownerID, "woot!")
+
+        val res1 = gm.check(ownerID, gid, Groups.Permissions.GetRolePermissions)
+        assert(res1 == Right(true), res1)
+
+        val res2 = gm.check(notMemberID, gid, Groups.Permissions.GetRolePermissions)
+        assert(res2 == Right(false), res2)
+
+        val res3 = gm.addToGroup(notMemberID, gid)
+        assert(res3 == Right(()), res3)
+
+        val roles = gm.roles(gid)
+        assert(roles.isRight, roles)
+        val actualRoles = roles.getOrElse(List())
+        val adminRoleID = actualRoles.find { x => x.name == "Admin" }.get.id
+        val modRoleID = actualRoles.find { x => x.name == "Moderator" }.get.id
+
+        val res4 = gm.check(notMemberID, gid, Groups.Permissions.GetRolePermissions)
+        assert(res4 == Right(false), res4)
+
+        val res5 = gm.assignRole(ownerID, notMemberID, gid, modRoleID, true)
+        assert(res5 == Right(()), res5)
+
+        val res6 = gm.check(notMemberID, gid, Groups.Permissions.GetRolePermissions)
+        assert(res6 == Right(true), res6)
+
+        val res7 = gm.assignRole(notMemberID, notMemberID, gid, adminRoleID, true)
+        assert(res7 == Left(Groups.GroupError.RoleAboveYours), res7)
+
+        val res8 = gm.assignRole(notMemberID, notMemberID, gid, modRoleID, false)
+        assert(res8 == Left(Groups.GroupError.RoleAboveYours), res8)
+    }
     test("multi-owner groups") {
         given kvs: Storage.MemKeyVal = Storage.MemKeyVal()
         given gsm: Groups.GroupStateManager = Groups.GroupStateManager()

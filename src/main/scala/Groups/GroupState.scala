@@ -11,7 +11,7 @@ type UserID = ju.UUID
 type RoleID = ju.UUID
 type GroupID = ju.UUID
 
-/** the null UUID is used for the role that everyone in a group has, no exceptions */
+/** the null UUID is used for the role that everyone in the world has, no exceptions */
 lazy val nullUUID = ju.UUID(0, 0)
 
 enum RuleMode:
@@ -51,7 +51,7 @@ case class GroupState(
     name: String,
     owners: List[UserID],
     roles: List[RoleState],
-    users: Map[UserID, List[RoleID]],
+    users: Map[UserID, Set[RoleID]],
 ):
     private def permissionsFor(role: RoleID): Map[Permissions, RuleMode] =
         roles.find { x => x.id == role }.get.permissions
@@ -60,11 +60,17 @@ case class GroupState(
         if owners.contains(user) then
             true
         else
-            users(user).view.map { role => permissionsFor(role).get(perm) }
-                .find { x => x.isDefined }.flatten match
-                    case Some(RuleMode.Allow) => true
-                    case Some(RuleMode.Deny) => false
-                    case _ => false
+            val userRoles = (if users.contains(user) then
+                users(user)
+            else
+                List(nullUUID)).toList
+            val userRolesSorted = userRoles.sortBy(roles.indexOf(_))
+            val perms = userRolesSorted.view.map { role => permissionsFor(role).get(perm) }
+
+            perms.find { x => x.isDefined }.flatten match
+                case Some(RuleMode.Allow) => true
+                case Some(RuleMode.Deny) => false
+                case _ => false
 
 implicit val gsDecoder: Decoder[GroupState] = deriveDecoder[GroupState]
 implicit val gsEncoder: Encoder[GroupState] = deriveEncoder[GroupState]
