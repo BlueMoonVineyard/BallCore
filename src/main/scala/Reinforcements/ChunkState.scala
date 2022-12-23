@@ -4,7 +4,7 @@
 
 package BallCore.Reinforcements
 
-import java.{util => ju}
+import java.time.Instant
 import BallCore.Groups
 import scala.collection.mutable.Map
 import io.circe._, io.circe.generic.semiauto._
@@ -24,7 +24,7 @@ case class BlockState(
     deleted: Boolean,
     health: Int,
     maxHealth: Int,
-    placedAt: ju.Date,
+    placedAt: Instant,
 )
 
 /** This keys ChunkStates in the cache */

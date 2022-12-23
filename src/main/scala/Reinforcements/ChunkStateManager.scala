@@ -66,7 +66,7 @@ class ChunkStateManager()(using sql: Storage.SQLManager):
                     val (offsetX, offsetZ, y, group, owner, health, maxHealth, date) = tuple
                     val gid = ju.UUID.fromString(group)
                     val uid = ju.UUID.fromString(owner)
-                    cs.blocks(BlockKey(offsetX, offsetZ, y)) = BlockState(gid, uid, false, false, health, maxHealth, date)
+                    cs.blocks(BlockKey(offsetX, offsetZ, y)) = BlockState(gid, uid, false, false, health, maxHealth, date.toInstant())
                 }
         cache(key) = cs
 

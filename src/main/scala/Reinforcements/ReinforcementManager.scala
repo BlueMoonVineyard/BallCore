@@ -7,6 +7,8 @@ package BallCore.Reinforcements
 import BallCore.Groups
 import java.{util => ju}
 import org.bukkit.NamespacedKey
+import java.time.temporal.ChronoUnit
+import scala.math._
 
 type WorldID = NamespacedKey
 
@@ -31,7 +33,7 @@ class ReinforcementManager()(using csm: ChunkStateManager, gsm: Groups.GroupMana
         state.blocks.get(bkey).filterNot(_.deleted) match
             case None =>
                 hoist(gsm.checkE(as, group, Groups.Permissions.AddReinforcements)).map { _ =>
-                    state.blocks(bkey) = BlockState(group, as, true, false, health, health, ju.Date())
+                    state.blocks(bkey) = BlockState(group, as, true, false, health, health, java.time.Instant.now())
                 }
             case Some(value) =>
                 Left(AlreadyExists())
@@ -48,6 +50,20 @@ class ReinforcementManager()(using csm: ChunkStateManager, gsm: Groups.GroupMana
                     hoist(gsm.checkE(as, group, Groups.Permissions.RemoveReinforcements)).map { _ =>
                         state.blocks(bkey) = value.copy(deleted = true)
                     }
+    def break(as: Groups.UserID, x: Int, y: Int, z: Int, world: WorldID): Either[ReinforcementError, Unit] =
+        val (chunkX, chunkZ, offsetX, offsetZ) = toOffsets(x, z)
+        val state = csm.get(ChunkKey(chunkX, chunkZ, world.toString()))
+        val bkey = BlockKey(offsetX, offsetZ, y)
+        state.blocks.get(bkey).filterNot(_.deleted) match
+            case None => Left(DoesntExist())
+            case Some(value) =>
+                // TODO: factor in hearts + acclimation
+                val hoursPassed = ChronoUnit.HOURS.between(value.placedAt, java.time.Instant.now())
+                val timeDamageMultiplier = max(20.0 * exp(-0.17 * hoursPassed), 1.0)
+                val base = 1.0
+                val newHealth = (value.health.doubleValue() - (base * timeDamageMultiplier)).intValue()
+                state.blocks(bkey) = value.copy(health = newHealth)
+                Right(())
     def getReinforcement(x: Int, y: Int, z: Int, world: WorldID): Option[BlockState] =
         val (chunkX, chunkZ, offsetX, offsetZ) = toOffsets(x, z)
         val state = csm.get(ChunkKey(chunkX, chunkZ, world.toString()))
