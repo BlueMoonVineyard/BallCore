@@ -8,6 +8,16 @@ import BallCore.Hearts.Hearts
 
 import org.bukkit.plugin.java.JavaPlugin
 import io.github.thebusybiscuit.slimefun4.api.SlimefunAddon
+import org.bukkit.command.CommandExecutor
+import org.bukkit.command.CommandSender
+import org.bukkit.command.Command
+import org.bukkit.entity.Player
+
+class TestUI extends CommandExecutor:
+    override def onCommand(sender: CommandSender, command: Command, label: String, args: Array[String]) =
+        val it = Groups.GroupUI(sender.asInstanceOf[Player])
+        it.update()
+        return true
 
 final class Main extends JavaPlugin:
     given sql: Storage.SQLManager = new Storage.SQLManager
@@ -18,5 +28,6 @@ final class Main extends JavaPlugin:
     
     override def onEnable() =
         Hearts.registerItems()
+        getCommand("testui").setExecutor(TestUI())
     override def onDisable() =
         ()
