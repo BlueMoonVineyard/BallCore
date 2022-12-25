@@ -12,8 +12,11 @@ import org.bukkit.entity.HumanEntity
 import com.github.stefvanschie.inventoryframework.pane.Pane.Priority
 import org.bukkit.Material
 import org.bukkit.event.inventory.InventoryClickEvent
+import BallCore.UI.Prompts
+import org.bukkit.entity.Player
+import scala.concurrent.ExecutionContext
 
-class GroupUI(target: HumanEntity) extends UI:
+class GroupUI(target: HumanEntity)(using prompts: Prompts) extends UI:
     showingTo = target
     override def view(): Elem =
         Root("Groups", 6) {
@@ -25,5 +28,8 @@ class GroupUI(target: HumanEntity) extends UI:
             }
         }
     def createGroup(event: InventoryClickEvent): Unit =
-        event.getWhoClicked().sendMessage(":)")
         event.setCancelled(true)
+        prompts.prompt(event.getWhoClicked().asInstanceOf[Player], "What do you want to call the group?")
+            .map { result =>
+                event.getWhoClicked().sendMessage(s"you said ${result}")
+            }
