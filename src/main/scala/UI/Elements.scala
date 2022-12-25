@@ -52,8 +52,8 @@ object Elements:
             { Accumulator.run(inner) }
         </staticpane>
 
-    def Item(id: String, onClick: String = "block", amount: Int = 1, displayName: Option[String] = None, lore: Option[List[String]] = None)(inner: (Accumulator) ?=> Unit = nil)(using an: Accumulator): Unit =
-        an add <item id={id} amount={amount.toString} onClick={onClick}>
+    def Item(id: String, onClick: ClickCallback = ClickCallback("block"), amount: Int = 1, displayName: Option[String] = None, lore: Option[List[String]] = None)(inner: (Accumulator) ?=> Unit = nil)(using an: Accumulator): Unit =
+        an add <item id={id} amount={amount.toString} onClick={onClick.name}>
             { displayName.map(name => <displayname>{name}</displayname>) }
             { lore.map(lores => <lore>{lores.map (line => <line>{line}</line>)}</lore>) }
         </item>
