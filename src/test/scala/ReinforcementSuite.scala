@@ -13,7 +13,6 @@ class ReinforcementSuite extends munit.FunSuite {
     test("basic stuff") {
         given sql: Storage.SQLManager = new Storage.SQLManager(test = true)
         given keyVal: Storage.SQLKeyVal = new Storage.SQLKeyVal
-        given gsm: Groups.GroupStateManager = new Groups.GroupStateManager
         given gm: Groups.GroupManager = new Groups.GroupManager
         given csm: Reinforcements.ChunkStateManager = new Reinforcements.ChunkStateManager
         given rm: Reinforcements.ReinforcementManager = new Reinforcements.ReinforcementManager

@@ -6,10 +6,9 @@ import BallCore.Storage
 import BallCore.Groups
 import java.{util => ju}
 
-class GroupsSuite extends munit.FunSuite {
+class GroupsSuite extends munit.FunSuite:
     test("creating and deleting one-person group") {
-        given kvs: Storage.MemKeyVal = Storage.MemKeyVal()
-        given gsm: Groups.GroupStateManager = Groups.GroupStateManager()
+        given sql: Storage.SQLManager = Storage.SQLManager(test = true)
         val gm = Groups.GroupManager()
         val ownerID = ju.UUID.randomUUID()
         val notOwnerID = ju.UUID.randomUUID()
@@ -23,8 +22,7 @@ class GroupsSuite extends munit.FunSuite {
         assert(res2 == Right(()), res2)
     }
     test("basic permissions and role management") {
-        given kvs: Storage.MemKeyVal = Storage.MemKeyVal()
-        given gsm: Groups.GroupStateManager = Groups.GroupStateManager()
+        given sql: Storage.SQLManager = Storage.SQLManager(test = true)
         val gm = Groups.GroupManager()
         val ownerID = ju.UUID.randomUUID()
         val notMemberID = ju.UUID.randomUUID()
@@ -62,8 +60,7 @@ class GroupsSuite extends munit.FunSuite {
         assert(res8 == Left(Groups.GroupError.RoleAboveYours), res8)
     }
     test("multi-owner groups") {
-        given kvs: Storage.MemKeyVal = Storage.MemKeyVal()
-        given gsm: Groups.GroupStateManager = Groups.GroupStateManager()
+        given sql: Storage.SQLManager = Storage.SQLManager(test = true)
         val gm = Groups.GroupManager()
 
         val owner1Id = ju.UUID.randomUUID()
@@ -88,4 +85,3 @@ class GroupsSuite extends munit.FunSuite {
         val res6 = gm.giveUpOwnership(owner2Id, gid)
         assert(res6 == Left(Groups.GroupError.GroupWouldHaveNoOwners), res6)
     }
-}

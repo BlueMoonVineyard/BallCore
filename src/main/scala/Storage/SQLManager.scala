@@ -12,8 +12,10 @@ import scalikejdbc.SQL
 import scalikejdbc.NoExtractor
 import org.sqlite.SQLiteConfig
 import org.sqlite.SQLiteDataSource
+import org.sqlite.SQLiteException
 
 case class Migration(name: String, apply: List[scalikejdbc.SQL[Any, NoExtractor]], reverse: List[scalikejdbc.SQL[Any, NoExtractor]])
+case class MigrationFailure(which: String, num: Int, why: SQLiteException) extends Exception(s"$which failed at the ${num+1}-th fragment", why)
 
 class SQLManager(test: Boolean = false):
     File("data-storage").mkdirs()
@@ -25,6 +27,7 @@ class SQLManager(test: Boolean = false):
     else
         ConnectionPool.singleton("no-read-only:jdbc:sqlite:data-storage/BallCore.db", null, null)
     {
+        sql"PRAGMA foreign_keys=ON".update.apply()(AutoSession)
         sql"CREATE TABLE IF NOT EXISTS _Migrations (Name string)".update.apply()(AutoSession)
     }
 
@@ -37,6 +40,11 @@ class SQLManager(test: Boolean = false):
                 .single
                 .apply()
             if count.get == 0 then
-                migration.apply.foreach { s => s.update.apply() }
+                migration.apply.zipWithIndex.foreach { (s, idx) =>
+                    try
+                        s.update.apply()
+                    catch
+                        case e: SQLiteException => throw MigrationFailure(migration.name, idx, e)
+                }
                 sql"INSERT INTO _Migrations (Name) VALUES (${migration.name});".update.apply()
         }
