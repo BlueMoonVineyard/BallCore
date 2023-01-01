@@ -29,10 +29,10 @@ class GroupsSuite extends munit.FunSuite:
 
         val gid = gm.createGroup(ownerID, "woot!")
 
-        val res1 = gm.check(ownerID, gid, Groups.Permissions.GetRolePermissions)
+        val res1 = gm.check(ownerID, gid, Groups.Permissions.ManageUserRoles)
         assert(res1 == Right(true), res1)
 
-        val res2 = gm.check(notMemberID, gid, Groups.Permissions.GetRolePermissions)
+        val res2 = gm.check(notMemberID, gid, Groups.Permissions.ManageUserRoles)
         assert(res2 == Right(false), res2)
 
         val res3 = gm.addToGroup(notMemberID, gid)
@@ -44,13 +44,13 @@ class GroupsSuite extends munit.FunSuite:
         val adminRoleID = actualRoles.find { x => x.name == "Admin" }.get.id
         val modRoleID = actualRoles.find { x => x.name == "Moderator" }.get.id
 
-        val res4 = gm.check(notMemberID, gid, Groups.Permissions.GetRolePermissions)
+        val res4 = gm.check(notMemberID, gid, Groups.Permissions.ManageUserRoles)
         assert(res4 == Right(false), res4)
 
         val res5 = gm.assignRole(ownerID, notMemberID, gid, modRoleID, true)
         assert(res5 == Right(()), res5)
 
-        val res6 = gm.check(notMemberID, gid, Groups.Permissions.GetRolePermissions)
+        val res6 = gm.check(notMemberID, gid, Groups.Permissions.ManageUserRoles)
         assert(res6 == Right(true), res6)
 
         val res7 = gm.assignRole(notMemberID, notMemberID, gid, adminRoleID, true)

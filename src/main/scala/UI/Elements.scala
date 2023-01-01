@@ -7,6 +7,9 @@ package BallCore.UI
 import scala.xml.Elem
 import scala.xml.Node
 import com.github.stefvanschie.inventoryframework.pane.Pane.Priority
+import io.circe._, io.circe.parser._, io.circe.syntax._
+import com.github.stefvanschie.inventoryframework.gui.`type`.util.Gui
+import scala.reflect.ClassTag
 
 // trait AccumulatorFn:
 
@@ -22,6 +25,7 @@ class Accumulator:
         items.append(item)
 
 object Elements:
+    private val registeredProperties = scala.collection.mutable.Set[String]()
     val nil: (Accumulator) ?=> Unit = {
 
     }
@@ -52,11 +56,34 @@ object Elements:
             { Accumulator.run(inner) }
         </staticpane>
 
-    def Item(id: String, onClick: ClickCallback = ClickCallback("block"), amount: Int = 1, displayName: Option[String] = None, lore: Option[List[String]] = None)(inner: (Accumulator) ?=> Unit = nil)(using an: Accumulator): Unit =
+    def Item(id: String, onClick: ClickCallback = ClickCallback("block"), amount: Int = 1, displayName: Option[String] = None)(inner: (Accumulator) ?=> Unit = nil)(using an: Accumulator): Unit =
+        val nodes = Accumulator.run(inner)
+        val props = nodes.filter(_.label == "property")
+        val lores = nodes.filter(_.label == "line")
+        val other = nodes.filterNot(_.label == "property").filterNot(_.label == "line")
         an add <item id={id} amount={amount.toString} onClick={onClick.name}>
             { displayName.map(name => <displayname>{name}</displayname>) }
-            { lore.map(lores => <lore>{lores.map (line => <line>{line}</line>)}</lore>) }
+            { other }
+            <lore>
+                { lores }
+            </lore>
+            <properties>
+                { props }
+            </properties>
         </item>
+
+    def Metadata[A](obj: A)(using an: Accumulator, enc: Encoder[A], dec: Decoder[A]): Unit =
+        val name = obj.getClass.getCanonicalName
+        if !registeredProperties.contains(name) then
+            Gui.registerProperty(name, str => decode[A](str).toOption.get)
+            registeredProperties.add(name)
+        an add <property type={name}>{obj.asJson.noSpaces}</property>
+
+    def Lore(line: String)(using an: Accumulator): Unit =
+        an add <line>{line}</line>
+
+    def SkullUsername(username: String)(using an: Accumulator): Unit =
+        an add <skull owner={username} />
 
     // def paginatedPane =
     //     <chestgui title="Shop" rows="6">

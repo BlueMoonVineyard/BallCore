@@ -14,7 +14,7 @@ given ToExpr[ClickCallback] with
     def apply(x: ClickCallback)(using Quotes) =
         '{ClickCallback( ${Expr(x.name)} )}
 
-def inspectCode(x: Expr[InventoryClickEvent => Unit])(using Quotes): Expr[ClickCallback] =
+private def inspectCode(x: Expr[Any])(using Quotes): Expr[ClickCallback] =
     import quotes.reflect.*
 
     @tailrec
@@ -31,3 +31,4 @@ def inspectCode(x: Expr[InventoryClickEvent => Unit])(using Quotes): Expr[ClickC
     Expr(cb)
 
 inline def callback(inline x: InventoryClickEvent => Unit): ClickCallback = ${ inspectCode('x) }
+inline def callback[A](inline x: (InventoryClickEvent, A) => Unit): ClickCallback = ${ inspectCode('x) }

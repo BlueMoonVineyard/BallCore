@@ -21,13 +21,12 @@ implicit val rmDecoder: Decoder[RuleMode] = deriveDecoder[RuleMode]
 implicit val rmEncoder: Encoder[RuleMode] = deriveEncoder[RuleMode]
 
 enum Permissions(val name: String):
-    case SetRolePermissions extends Permissions("permissions.manage.set")
-    case GetRolePermissions extends Permissions("permissions.manage.get")
     case ManageRoles extends Permissions("roles.manage")
     case ManageUserRoles extends Permissions("roles.user.manage")
     case InviteUser extends Permissions("users.invite")
     case RemoveUser extends Permissions("users.manage.remove")
     case UpdateGroupInformation extends Permissions("group.manage")
+
     case AddReinforcements extends Permissions("reinforcements.add")
     case RemoveReinforcements extends Permissions("reinforcements.remove")
 
@@ -50,7 +49,7 @@ implicit val rsEncoder: Encoder[RoleState] = deriveEncoder[RoleState]
 
 /** This holds all the information about a group */
 case class GroupState(
-    name: String,
+    metadata: GroupStates,
     owners: List[UserID],
     roles: List[RoleState],
     users: Map[UserID, Set[RoleID]],

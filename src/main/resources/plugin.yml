@@ -11,5 +11,5 @@ api-version: 1.13
 depend:
   - Slimefun
 commands:
-  testui:
-    description: Your description
+  groups:
+    description: Entrypoint for group commands

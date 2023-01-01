@@ -10,11 +10,14 @@ import scala.xml.Node
 import scala.xml.Text
 import javax.xml.parsers.DocumentBuilder
 import javax.xml.parsers.DocumentBuilderFactory
+import com.github.stefvanschie.inventoryframework.gui.`type`.util.Gui
 import com.github.stefvanschie.inventoryframework.pane.OutlinePane
 import com.github.stefvanschie.inventoryframework.pane.PaginatedPane
 import org.bukkit.event.inventory.InventoryClickEvent
 import org.bukkit.entity.HumanEntity
 import scala.xml.Atom
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext
 
 object UIHelpers:
     def toNode(n: Node, in: org.w3c.dom.Document): org.w3c.dom.Node =
@@ -59,8 +62,12 @@ trait UI:
     var showingTo: HumanEntity = _
 
     def view(): Elem
-    def update(): Unit =
-        val newUI = ChestGui.load(this, UIHelpers.toW3C(view()))
-        newUI.show(showingTo)
+    def queueUpdate()(using ExecutionContext): Unit =
+        Future {
+            val res = view()
+            println(res)
+            val newUI = ChestGui.load(this, UIHelpers.toW3C(res))
+            newUI.show(showingTo)
+        }
     def block(event: InventoryClickEvent): Unit =
         event.setCancelled(true)

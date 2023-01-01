@@ -9,7 +9,7 @@ import BallCore.DataStructures.Lexorank
 import BallCore.Groups.Extensions._
 import scalikejdbc._
 import java.{util => ju}
-import io.circe._, io.circe.generic.auto._, io.circe.parser._, io.circe.syntax._
+import io.circe._, io.circe.generic.semiauto._, io.circe.parser._, io.circe.syntax._
 
 inline def uuid(from: String) = ju.UUID.fromString(from)
 
@@ -19,6 +19,9 @@ case class GroupStates(id: ju.UUID, name: String):
 object GroupStates:
     def apply(ws: WrappedResultSet): GroupStates =
         GroupStates(uuid(ws.string("ID")), ws.string("Name"))
+
+given Decoder[GroupStates] = deriveDecoder[GroupStates]
+given Encoder[GroupStates] = deriveEncoder[GroupStates]
 
 case class GroupMemberships(groupID: ju.UUID, userID: ju.UUID):
     def save()(implicit session: DBSession): Unit =
@@ -163,8 +166,6 @@ class GroupManager()(using sql: Storage.SQLManager):
                 ju.UUID.randomUUID(),
                 "Admin", true,
                 Map(
-                    (Permissions.SetRolePermissions, RuleMode.Allow),
-                    (Permissions.GetRolePermissions, RuleMode.Allow),
                     (Permissions.ManageRoles, RuleMode.Allow),
                     (Permissions.ManageUserRoles, RuleMode.Allow),
                     (Permissions.InviteUser, RuleMode.Allow),
@@ -178,7 +179,6 @@ class GroupManager()(using sql: Storage.SQLManager):
                 ju.UUID.randomUUID(),
                 "Moderator", true,
                 Map(
-                    (Permissions.GetRolePermissions, RuleMode.Allow),
                     (Permissions.ManageUserRoles, RuleMode.Allow),
                     (Permissions.InviteUser, RuleMode.Allow),
                     (Permissions.RemoveUser, RuleMode.Allow),
@@ -232,7 +232,7 @@ class GroupManager()(using sql: Storage.SQLManager):
         val gro = sql"SELECT * FROM GroupOwnerships WHERE GroupID = ${group}".map(GroupOwnerships.apply).list.apply()
 
         Right(GroupState(
-            name = gs.name,
+            metadata = gs,
             owners = gro.map(_.userID),
             roles = gr.map { role =>
                 RoleState(
@@ -311,6 +311,21 @@ class GroupManager()(using sql: Storage.SQLManager):
             .map { data =>
                 sql"INSERT INTO GroupMemberships (GroupID, UserID) VALUES ($group, $user);".update.apply()
             }
+
+    def userGroups(userID: UserID): Either[GroupError, List[GroupStates]] =
+        Right(sql"""
+        SELECT
+            GroupStates.*
+        FROM
+            GroupStates, GroupMemberships
+        WHERE
+            GroupMemberships.UserID = $userID
+            AND GroupStates.ID = GroupMemberships.GroupID;
+        """.map(GroupStates.apply).list.apply())
+
+    /// relatively heavy function, call once and cache only if you need to frequently consult permissions
+    def getGroup(groupID: GroupID): Either[GroupError, GroupState] =
+        getAll(groupID)
 
     def check(user: UserID, group: GroupID, permission: Permissions): Either[GroupError, Boolean] =
         getAll(group).map(_.check(permission, user))

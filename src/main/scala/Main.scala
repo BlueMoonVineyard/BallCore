@@ -16,12 +16,7 @@ import org.bukkit.entity.Player
 import scala.concurrent.ExecutionContext
 import org.bukkit.Bukkit
 import java.util.logging.Level
-
-class TestUI(using prompts: UI.Prompts) extends CommandExecutor:
-    override def onCommand(sender: CommandSender, command: Command, label: String, args: Array[String]) =
-        val it = Groups.GroupUI(sender.asInstanceOf[Player])
-        it.update()
-        return true
+import BallCore.Groups.GroupManager
 
 final class Main extends JavaPlugin:
     given sql: Storage.SQLManager = new Storage.SQLManager
@@ -35,9 +30,10 @@ final class Main extends JavaPlugin:
         override def reportFailure(cause: Throwable): Unit =
             getLogger().log(Level.WARNING, "Error in ExecutionContext:", cause)
     given prompts: UI.Prompts = new UI.Prompts(ec)
+    given gm: GroupManager = new GroupManager
     
     override def onEnable() =
         Hearts.registerItems()
-        getCommand("testui").setExecutor(TestUI())
+        getCommand("groups").setExecutor(GroupsCommand())
     override def onDisable() =
         ()
