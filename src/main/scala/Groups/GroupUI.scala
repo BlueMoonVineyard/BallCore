@@ -18,6 +18,37 @@ import scala.concurrent.ExecutionContext
 import BallCore.UI.Accumulator
 import org.bukkit.Bukkit
 
+class RoleManagementUI(groupID: GroupID, roleID: RoleID, target: HumanEntity)(using prompts: Prompts, gm: GroupManager) extends UI:
+    showingTo = target
+
+    var group = loadGroup().toOption.get
+    var role = group.roles.find(_.id == roleID).get
+    def loadGroup() =
+        gm.getGroup(groupID)
+
+    override def view(): Elem =
+        Root(s"Viewing Role ${role.name} in ${group.metadata.name}", 6) {
+            OutlinePane(1, 0, 1, 6, priority = Priority.LOWEST, repeat = true) {
+                OutlinePane(0, 0, 1, 6) {
+                    if roleID != nullUUID then
+                        Item("lava_bucket", displayName = Some("§aDelete Role"), onClick = callback(deleteRole))()
+                }
+            }
+            OutlinePane(1, 0, 1, 6, priority = Priority.LOWEST, repeat = true) {
+                Item("black_stained_glass_pane", displayName = Some(" "))()
+            }
+            OutlinePane(2, 0, 7, 6) {
+                
+            }
+        }
+    def deleteRole(event: InventoryClickEvent): Unit =
+        event.setCancelled(true)
+        gm.deleteRole(target.getUniqueId(), roleID, groupID)
+            .map { x =>
+                val newUI = GroupManagementUI(groupID, target)
+                newUI.queueUpdate()
+            }
+
 class GroupManagementUI(groupID: GroupID, target: HumanEntity)(using prompts: Prompts, gm: GroupManager) extends UI:
     import io.circe.generic.auto._
 
@@ -59,6 +90,10 @@ class GroupManagementUI(groupID: GroupID, target: HumanEntity)(using prompts: Pr
             return
         viewing = ViewingWhat.Roles
         queueUpdate()
+    def clickRole(event: InventoryClickEvent, role: RoleID): Unit =
+        event.setCancelled(true)
+        val newUI = RoleManagementUI(groupID, role, target)
+        newUI.queueUpdate()
     def Players(using Accumulator): Unit =
         OutlinePane(2, 0, 7, 6) {
             group.users.keys.toList.map(x => Bukkit.getOfflinePlayer(x)).sortBy(_.getName()).foreach { x =>
@@ -81,7 +116,9 @@ class GroupManagementUI(groupID: GroupID, target: HumanEntity)(using prompts: Pr
     def Roles(using Accumulator): Unit =
         OutlinePane(2, 0, 7, 6) {
             group.roles.foreach { x =>
-                Item("leather_chestplate", displayName = Some(s"§r§f${x.name}"))
+                Item("leather_chestplate", displayName = Some(s"§r§f${x.name}"), onClick = callback(clickRole)) {
+                    Metadata(x.id)
+                }
             }
         }
 

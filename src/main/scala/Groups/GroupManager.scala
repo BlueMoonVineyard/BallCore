@@ -279,24 +279,24 @@ class GroupManager()(using sql: Storage.SQLManager):
             )
         })
 
+    def deleteRole(as: UserID, role: RoleID, group: GroupID): Either[GroupError, Unit] =
+        getAll(group)
+            .guard(GroupError.NoPermissions) { _.check(Permissions.ManageRoles, as) }
+            .guard(GroupError.RoleNotFound) { _.roles.exists(_.id == role) }
+            .guard(GroupError.CantAssignEveryone) { _ => nullUUID != role }
+            .guardRoleAboveYours(as, role)
+            .map { data =>
+                sql"DELETE FROM GroupRoles WHERE GroupID = $group AND RoleID = $role".update.apply()
+            }
+
     def assignRole(as: UserID, target: UserID, group: GroupID, role: RoleID, has: Boolean): Either[GroupError, Unit] =
         getAll(group)
             .guard(GroupError.NoPermissions) { _.check(Permissions.ManageUserRoles, as) }
             .guard(GroupError.RoleNotFound) { _.roles.exists(_.id == role) }
             .guard(GroupError.TargetNotInGroup) { _.users.contains(target) }
             .guard(GroupError.CantAssignEveryone) { _ => nullUUID != role }
-            .flatMap { data =>
-                if data.owners.contains(as) then
-                    Right(data)
-                else
-                    val myRoles = data.users(as)
-                    val highestRoleIdx = data.roles.indexOf(data.roles.filter(r => myRoles.contains(r.id))(0))
-                    val targetRoleIdx = data.roles.indexWhere(_.id == role)
-                    if targetRoleIdx <= highestRoleIdx then
-                        Left(GroupError.RoleAboveYours)
-                    else
-                        Right(data)
-            }.map { data =>
+            .guardRoleAboveYours(as, role)
+            .map { data =>
                 if has then
                     sql"REPLACE INTO GroupRoleMemberships (GroupID, RoleID, UserID) VALUES ($group, $role, $target);".update.apply()
                 else
