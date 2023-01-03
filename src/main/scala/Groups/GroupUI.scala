@@ -20,6 +20,13 @@ import org.bukkit.Bukkit
 import BallCore.UI.UIProgram
 import BallCore.UI.UIServices
 
+class GroupManagementProgram(using gm: GroupManager) extends UIProgram:
+    import io.circe.generic.auto._
+
+    override def init(flags: Flags): Model = ???
+    override def view(model: Model): Elem = ???
+    override def update(msg: Message, model: Model, services: UIServices): Model = ???
+
 class RoleManagementProgram(using gm: GroupManager) extends UIProgram:
     import io.circe.generic.auto._
 
@@ -32,7 +39,11 @@ class RoleManagementProgram(using gm: GroupManager) extends UIProgram:
         val group = gm.getGroup(flags.groupID).toOption.get
         val role = group.roles.find(_.id == flags.roleID).get
         Model(group, role)
-    override def update(msg: Message, model: Model, services: UIServices): Model = ???
+    override def update(msg: Message, model: Model, services: UIServices): Model =
+        msg match
+            case Message.DeleteRole => 
+                services.transferTo(???, ???)
+                model
     override def view(model: Model): Elem =
         val role = model.role
         val group = model.group

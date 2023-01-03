@@ -76,16 +76,6 @@ trait UIProgram:
     def view(model: Model): Elem
     def update(msg: Message, model: Model, services: UIServices): Model
 
-class TestUIServices(promptAnswerer: String => String, transferNotifier: (UIProgram, Any) => Unit) extends UIServices:
-    override def transferTo(p: UIProgram, f: p.Flags): Unit =
-        transferNotifier(p, f)
-    override def prompt(prompt: String): Future[String] =
-        Future.successful(promptAnswerer(prompt))
-    override def execute(runnable: Runnable): Unit =
-        ExecutionContext.global.execute(runnable)
-    override def reportFailure(cause: Throwable): Unit =
-        ExecutionContext.global.reportFailure(cause)
-
 class UIProgramRunner(program: UIProgram, flags: program.Flags, showingTo: Player)(using prompts: Prompts) extends UIServices:
     private var model = program.init(flags)
 
