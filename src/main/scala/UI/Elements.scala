@@ -56,28 +56,38 @@ object Elements:
             { Accumulator.run(inner) }
         </staticpane>
 
-    def Item(id: String, onClick: ClickCallback = ClickCallback("block"), amount: Int = 1, displayName: Option[String] = None)(inner: (Accumulator) ?=> Unit = nil)(using an: Accumulator): Unit =
+    def Item(id: String, amount: Int = 1, displayName: Option[String] = None)(inner: (Accumulator) ?=> Unit = nil)(using an: Accumulator): Unit =
         val nodes = Accumulator.run(inner)
-        val props = nodes.filter(_.label == "property")
         val lores = nodes.filter(_.label == "line")
         val other = nodes.filterNot(_.label == "property").filterNot(_.label == "line")
-        an add <item id={id} amount={amount.toString} onClick={onClick.name}>
+
+        an add <item id={id} amount={amount.toString} onClick="block">
             { displayName.map(name => <displayname>{name}</displayname>) }
             { other }
             <lore>
                 { lores }
             </lore>
-            <properties>
-                { props }
-            </properties>
         </item>
 
-    def Metadata[A](obj: A)(using an: Accumulator, enc: Encoder[A], dec: Decoder[A]): Unit =
-        val name = obj.getClass.getCanonicalName
+    def Button[Msg](id: String, displayName: String, onClick: Msg, amount: Int = 1)(inner: (Accumulator) ?=> Unit = nil)(using an: Accumulator, enc: Encoder[Msg], dec: Decoder[Msg]): Unit =
+        val nodes = Accumulator.run(inner)
+        val lores = nodes.filter(_.label == "line")
+        val other = nodes.filterNot(_.label == "property").filterNot(_.label == "line")
+        val name = onClick.getClass.getCanonicalName
+
         if !registeredProperties.contains(name) then
-            Gui.registerProperty(name, str => decode[A](str).toOption.get)
+            Gui.registerProperty(name, str => decode[Msg](str).toOption.get)
             registeredProperties.add(name)
-        an add <property type={name}>{obj.asJson.noSpaces}</property>
+        an add <item id={id} amount={amount.toString} onClick="dispatch">
+            <displayname>{displayName}</displayname>
+            { other }
+            <lore>
+                { lores }
+            </lore>
+            <properties>
+                <property type={name}>{onClick.asJson.noSpaces}</property>
+            </properties>
+        </item>
 
     def Lore(line: String)(using an: Accumulator): Unit =
         an add <line>{line}</line>

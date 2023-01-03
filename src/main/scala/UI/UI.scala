@@ -18,6 +18,7 @@ import org.bukkit.entity.HumanEntity
 import scala.xml.Atom
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext
+import org.bukkit.entity.Player
 
 object UIHelpers:
     def toNode(n: Node, in: org.w3c.dom.Document): org.w3c.dom.Node =
@@ -58,6 +59,56 @@ object UIHelpers:
         val doc = newDocument()
         toNode(e, doc).asInstanceOf[org.w3c.dom.Element]
 
+trait UITransferrer:
+    def transferTo(p: UIProgram, f: p.Flags): Unit
+
+trait UIPrompts:
+    def prompt(prompt: String): Future[String]
+
+trait UIServices extends UITransferrer, UIPrompts, ExecutionContext
+
+trait UIProgram:
+    type Flags
+    type Model
+    type Message
+
+    def init(flags: Flags): Model
+    def view(model: Model): Elem
+    def update(msg: Message, model: Model, services: UIServices): Model
+
+class TestUIServices(promptAnswerer: String => String, transferNotifier: (UIProgram, Any) => Unit) extends UIServices:
+    override def transferTo(p: UIProgram, f: p.Flags): Unit =
+        transferNotifier(p, f)
+    override def prompt(prompt: String): Future[String] =
+        Future.successful(promptAnswerer(prompt))
+    override def execute(runnable: Runnable): Unit =
+        ExecutionContext.global.execute(runnable)
+    override def reportFailure(cause: Throwable): Unit =
+        ExecutionContext.global.reportFailure(cause)
+
+class UIProgramRunner(program: UIProgram, flags: program.Flags, showingTo: Player)(using prompts: Prompts) extends UIServices:
+    private var model = program.init(flags)
+
+    def render(): Unit =
+        val mod = model
+        Future {
+            val res = program.view(mod)
+            val newUI = ChestGui.load(res, UIHelpers.toW3C(res))
+            newUI.show(showingTo)
+        }
+    def block(event: InventoryClickEvent): Unit =
+        event.setCancelled(true)
+    def dispatch(event: InventoryClickEvent, obj: Object): Unit =
+        model = program.update(obj.asInstanceOf[program.Message], model, this)
+        render()
+    def transferTo(newProgram: UIProgram, newFlags: newProgram.Flags): Unit =
+        val newUI = UIProgramRunner(newProgram, newFlags, showingTo)
+    def prompt(prompt: String): Future[String] =
+        prompts.prompt(showingTo, prompt)
+    def execute(runnable: Runnable): Unit =
+        prompts.execute(runnable)
+    def reportFailure(cause: Throwable): Unit =
+        prompts.reportFailure(cause)
 trait UI:
     var showingTo: HumanEntity = _
 

@@ -17,6 +17,39 @@ import org.bukkit.entity.Player
 import scala.concurrent.ExecutionContext
 import BallCore.UI.Accumulator
 import org.bukkit.Bukkit
+import BallCore.UI.UIProgram
+import BallCore.UI.UIServices
+
+class RoleManagementProgram(using gm: GroupManager) extends UIProgram:
+    import io.circe.generic.auto._
+
+    case class Flags(groupID: GroupID, roleID: RoleID, userID: UserID)
+    case class Model(group: GroupState, role: RoleState)
+    enum Message:
+        case DeleteRole
+
+    override def init(flags: Flags): Model =
+        val group = gm.getGroup(flags.groupID).toOption.get
+        val role = group.roles.find(_.id == flags.roleID).get
+        Model(group, role)
+    override def update(msg: Message, model: Model, services: UIServices): Model = ???
+    override def view(model: Model): Elem =
+        val role = model.role
+        val group = model.group
+        Root(s"Viewing Role ${role.name} in ${group.metadata.name}", 6) {
+            OutlinePane(1, 0, 1, 6, priority = Priority.LOWEST, repeat = true) {
+                OutlinePane(0, 0, 1, 6) {
+                    if role.id != nullUUID then
+                        Button("lava_bucket", "§aDelete Role", Message.DeleteRole)()
+                }
+            }
+            OutlinePane(1, 0, 1, 6, priority = Priority.LOWEST, repeat = true) {
+                Item("black_stained_glass_pane", displayName = Some(" "))()
+            }
+            OutlinePane(2, 0, 7, 6) {
+                
+            }
+        }
 
 class RoleManagementUI(groupID: GroupID, roleID: RoleID, target: HumanEntity)(using prompts: Prompts, gm: GroupManager) extends UI:
     showingTo = target
@@ -30,8 +63,8 @@ class RoleManagementUI(groupID: GroupID, roleID: RoleID, target: HumanEntity)(us
         Root(s"Viewing Role ${role.name} in ${group.metadata.name}", 6) {
             OutlinePane(1, 0, 1, 6, priority = Priority.LOWEST, repeat = true) {
                 OutlinePane(0, 0, 1, 6) {
-                    if roleID != nullUUID then
-                        Item("lava_bucket", displayName = Some("§aDelete Role"), onClick = callback(deleteRole))()
+                    // if roleID != nullUUID then
+                    //     Item("lava_bucket", displayName = Some("§aDelete Role"), onClick = callback(deleteRole))()
                 }
             }
             OutlinePane(1, 0, 1, 6, priority = Priority.LOWEST, repeat = true) {
@@ -65,11 +98,11 @@ class GroupManagementUI(groupID: GroupID, target: HumanEntity)(using prompts: Pr
     override def view(): Elem =
         Root(s"Viewing ${group.metadata.name}", 6) {
             OutlinePane(0, 0, 1, 6) {
-                Item("player_head", displayName = Some("§aMembers"), onClick = callback(members))()
-                if group.check(Permissions.ManageRoles, target.getUniqueId()) then
-                    Item("writable_book", displayName = Some("§aManage Roles"), onClick = callback(manageRoles))()
-                if group.check(Permissions.InviteUser, target.getUniqueId()) then
-                    Item("compass", displayName = Some("§aInvite A Member"))()
+                // Item("player_head", displayName = Some("§aMembers"), onClick = callback(members))()
+                // if group.check(Permissions.ManageRoles, target.getUniqueId()) then
+                //     Item("writable_book", displayName = Some("§aManage Roles"), onClick = callback(manageRoles))()
+                // if group.check(Permissions.InviteUser, target.getUniqueId()) then
+                //     Item("compass", displayName = Some("§aInvite A Member"))()
             }
             OutlinePane(1, 0, 1, 6, priority = Priority.LOWEST, repeat = true) {
                 Item("black_stained_glass_pane", displayName = Some(" "))()
@@ -116,9 +149,9 @@ class GroupManagementUI(groupID: GroupID, target: HumanEntity)(using prompts: Pr
     def Roles(using Accumulator): Unit =
         OutlinePane(2, 0, 7, 6) {
             group.roles.foreach { x =>
-                Item("leather_chestplate", displayName = Some(s"§r§f${x.name}"), onClick = callback(clickRole)) {
-                    Metadata(x.id)
-                }
+                // Item("leather_chestplate", displayName = Some(s"§r§f${x.name}"), onClick = callback(clickRole)) {
+                //     Metadata(x.id)
+                // }
             }
         }
 
@@ -131,16 +164,16 @@ class GroupListUI(target: HumanEntity)(using prompts: Prompts, gm: GroupManager)
     override def view(): Elem =
         Root("Groups", 6) {
             OutlinePane(0, 0, 1, 6) {
-                Item("name_tag", displayName = Some("§aCreate Group"), onClick = callback(createGroup))()
+                // Item("name_tag", displayName = Some("§aCreate Group"), onClick = callback(createGroup))()
             }
             OutlinePane(1, 0, 1, 6, priority = Priority.LOWEST, repeat = true) {
                 Item("black_stained_glass_pane", displayName = Some(" "))()
             }
             OutlinePane(2, 0, 7, 6) {
                 groups.foreach { x =>
-                    Item("leather_chestplate", displayName = Some(s"§a${x.name}"), onClick = callback(clickGroup)) {
-                        Metadata(x)
-                    }
+                    // Item("leather_chestplate", displayName = Some(s"§a${x.name}"), onClick = callback(clickGroup)) {
+                    //     Metadata(x)
+                    // }
                 }
             }
         }
