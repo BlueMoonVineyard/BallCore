@@ -9,9 +9,12 @@ import org.bukkit.command.CommandSender
 import org.bukkit.command.Command
 import org.bukkit.entity.Player
 import BallCore.Groups.GroupManager
+import BallCore.UI.UIProgramRunner
 
 class GroupsCommand(using prompts: UI.Prompts, gm: GroupManager) extends CommandExecutor:
     override def onCommand(sender: CommandSender, command: Command, label: String, args: Array[String]) =
-        val it = Groups.GroupListUI(sender.asInstanceOf[Player])
-        it.queueUpdate()
+        val p = Groups.GroupListProgram()
+        val plr = sender.asInstanceOf[Player]
+        val runner = UIProgramRunner(p, p.Flags(plr.getUniqueId()), plr)
+        runner.render()
         return true

@@ -68,13 +68,14 @@ trait UIPrompts:
 trait UIServices extends UITransferrer, UIPrompts, ExecutionContext
 
 trait UIProgram:
+    given Conversion[Model, Future[Model]] = Future.successful(_)
     type Flags
     type Model
     type Message
 
     def init(flags: Flags): Model
     def view(model: Model): Elem
-    def update(msg: Message, model: Model, services: UIServices): Model
+    def update(msg: Message, model: Model)(using services: UIServices): Future[Model]
 
 class UIProgramRunner(program: UIProgram, flags: program.Flags, showingTo: Player)(using prompts: Prompts) extends UIServices:
     private var model = program.init(flags)
@@ -89,8 +90,11 @@ class UIProgramRunner(program: UIProgram, flags: program.Flags, showingTo: Playe
     def block(event: InventoryClickEvent): Unit =
         event.setCancelled(true)
     def dispatch(event: InventoryClickEvent, obj: Object): Unit =
-        model = program.update(obj.asInstanceOf[program.Message], model, this)
-        render()
+        implicit val s: UIServices = this
+        program.update(obj.asInstanceOf[program.Message], model).map { x =>
+            model = x
+            render()
+        }
     def transferTo(newProgram: UIProgram, newFlags: newProgram.Flags): Unit =
         val newUI = UIProgramRunner(newProgram, newFlags, showingTo)
     def prompt(prompt: String): Future[String] =
