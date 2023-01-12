@@ -17,6 +17,8 @@ import scala.concurrent.ExecutionContext
 import org.bukkit.Bukkit
 import java.util.logging.Level
 import BallCore.Groups.GroupManager
+import BallCore.Ores.QuadrantOres
+import BallCore.Ores.CardinalOres
 
 final class Main extends JavaPlugin:
     given sql: Storage.SQLManager = new Storage.SQLManager
@@ -34,6 +36,8 @@ final class Main extends JavaPlugin:
     
     override def onEnable() =
         Hearts.registerItems()
+        QuadrantOres.registerItems()
+        CardinalOres.registerItems()
         getCommand("groups").setExecutor(GroupsCommand())
     override def onDisable() =
         ()
