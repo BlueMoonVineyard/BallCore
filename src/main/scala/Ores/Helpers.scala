@@ -7,6 +7,14 @@ import io.github.thebusybiscuit.slimefun4.api.SlimefunAddon
 import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItem
 import io.github.thebusybiscuit.slimefun4.api.recipes.RecipeType
 
+enum OreTier:
+    case Dust
+    case Scraps
+    case Depleted
+    case Raw
+    case Ingot
+    case Block
+
 case class OreVariants(
     dust: SlimefunItemStack,
     scraps: SlimefunItemStack,
@@ -14,7 +22,15 @@ case class OreVariants(
     raw: SlimefunItemStack,
     ingot: SlimefunItemStack,
     block: SlimefunItemStack,
-)
+):
+    def ore(tier: OreTier): SlimefunItemStack =
+        tier match
+            case OreTier.Dust => dust
+            case OreTier.Scraps => scraps
+            case OreTier.Depleted => depleted
+            case OreTier.Raw => raw
+            case OreTier.Ingot => ingot
+            case OreTier.Block => block
 
 object Helpers:
     def factory(id: String, name: String, m0: Material, m1: Material, m2: Material, m3: Material): OreVariants =
