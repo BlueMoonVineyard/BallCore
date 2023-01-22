@@ -16,6 +16,7 @@ import me.mrCookieSlime.Slimefun.api.BlockStorage
 import org.bukkit.block.Block
 import org.bukkit.block.{Furnace => BFurnace}
 import org.bukkit.event.inventory.FurnaceBurnEvent
+import org.bukkit.event.block.BlockPlaceEvent
 
 enum FurnaceTier:
     // tier 0 (vanilla furnace)
@@ -82,39 +83,15 @@ object FurnaceListener extends Listener:
             furnaceItem.asInstanceOf[Furnace].tier
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
-    def onFuelBurn(event: FurnaceBurnEvent): Unit =
-        if !event.getBlock().getState().isInstanceOf[BFurnace] then
-            print("thing burning fuel is not a furnace")
-            return
-
-        val furnaceState = event.getBlock().getState().asInstanceOf[BFurnace]
-        val innerItem = SlimefunItem.getByItem(furnaceState.getInventory().getSmelting())
-        if !innerItem.isInstanceOf[Ore] then
-            print("thing burning fuel is not ore")
-            return
-        val ore = innerItem.asInstanceOf[Ore]
-
-        check(tier(event.getBlock()), ore.tier) match
-            case None =>
-                print("cancelling bad recipe")
-                event.setCancelled(true)
-            case Some(_) =>
-                print("cancelling tick")
-                ()
-
-    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     def onItemSmelt(event: FurnaceSmeltEvent): Unit =
         val smeltingItem = SlimefunItem.getByItem(event.getSource())
         if !smeltingItem.isInstanceOf[Ore] then
-            print("thing that smelted is not ore")
             return
         val ore = smeltingItem.asInstanceOf[Ore]
         check(tier(event.getBlock()), ore.tier) match
             case None =>
-                print("cancelling bad finished recipe")
                 event.setCancelled(true)
             case Some(num, aux) =>
-                print("adjusting recipe")
                 event.getResult().setAmount(num)
                 aux.map { spawn(ore.variants, _, event.getBlock()) }        
 

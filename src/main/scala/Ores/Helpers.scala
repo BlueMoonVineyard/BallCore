@@ -36,9 +36,8 @@ case class OreVariants(
             case OreTier.Ingot => ingot
             case OreTier.Block => block
     def register(group: ItemGroup, plugin: SlimefunAddon): Unit =
-        List(dust, scraps, depleted, raw, ingot, block)
-        .foreach { item =>
-            new SlimefunItem(group, item, RecipeType.NULL, null).register(plugin)
+        OreTier.values.foreach { tier =>
+            new Ore(group, tier, this).register(plugin)
         }
         def recipeKey(in: SlimefunItemStack) =
             NamespacedKey(group.getKey().getNamespace(), group.getKey().getKey() + "_" + in.getItemId().toLowerCase())
