@@ -4,7 +4,6 @@
 
 package BallCore.Groups
 
-import BallCore.UI.UI
 import BallCore.UI.callback
 import BallCore.UI.Elements._
 import scala.xml.Elem
@@ -170,7 +169,7 @@ class GroupListProgram(using gm: GroupManager) extends UIProgram:
             }
             OutlinePane(2, 0, 7, 6) {
                 groups.foreach { x =>
-                    Button("leather_chestplate", s"§a${x.name}", Message.ClickGroup(x.id))
+                    Button("leather_chestplate", s"§a${x.name}", Message.ClickGroup(x.id))()
                 }
             }
         }

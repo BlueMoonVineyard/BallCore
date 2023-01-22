@@ -19,6 +19,10 @@ import scala.xml.Atom
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext
 import org.bukkit.entity.Player
+import javax.xml.transform.TransformerFactory
+import javax.xml.transform.dom.DOMSource
+import javax.xml.transform.stream.StreamResult
+import java.io.StringWriter
 
 object UIHelpers:
     def toNode(n: Node, in: org.w3c.dom.Document): org.w3c.dom.Node =
@@ -84,13 +88,15 @@ class UIProgramRunner(program: UIProgram, flags: program.Flags, showingTo: Playe
         val mod = model
         Future {
             val res = program.view(mod)
-            val newUI = ChestGui.load(res, UIHelpers.toW3C(res))
+            val dom = UIHelpers.toW3C(res)
+            val newUI = ChestGui.load(this, dom)
             newUI.show(showingTo)
         }
     def block(event: InventoryClickEvent): Unit =
         event.setCancelled(true)
     def dispatch(event: InventoryClickEvent, obj: Object): Unit =
         implicit val s: UIServices = this
+        event.setCancelled(true)
         program.update(obj.asInstanceOf[program.Message], model).map { x =>
             model = x
             render()
@@ -103,16 +109,3 @@ class UIProgramRunner(program: UIProgram, flags: program.Flags, showingTo: Playe
         prompts.execute(runnable)
     def reportFailure(cause: Throwable): Unit =
         prompts.reportFailure(cause)
-trait UI:
-    var showingTo: HumanEntity = _
-
-    def view(): Elem
-    def queueUpdate()(using ExecutionContext): Unit =
-        Future {
-            val res = view()
-            println(res)
-            val newUI = ChestGui.load(this, UIHelpers.toW3C(res))
-            newUI.show(showingTo)
-        }
-    def block(event: InventoryClickEvent): Unit =
-        event.setCancelled(true)

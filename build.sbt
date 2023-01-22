@@ -21,7 +21,8 @@ lazy val root = project
     libraryDependencies += "org.scalikejdbc" %% "scalikejdbc" % "4.0.0",
     libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "2.1.0",
     libraryDependencies += "org.xerial" % "sqlite-jdbc" % "3.40.0.0",
-    libraryDependencies += "com.github.stefvanschie.inventoryframework" % "IF" % "0.10.8",
+    // currently vendored in lib for a bugfix
+    // libraryDependencies += "com.github.stefvanschie.inventoryframework" % "IF" % "0.10.8",
     libraryDependencies ++= Seq(
       "io.circe" %% "circe-core",
       "io.circe" %% "circe-generic",

@@ -73,7 +73,7 @@ object Elements:
         val nodes = Accumulator.run(inner)
         val lores = nodes.filter(_.label == "line")
         val other = nodes.filterNot(_.label == "property").filterNot(_.label == "line")
-        val name = onClick.getClass.getCanonicalName
+        val name = onClick.getClass.getTypeName
 
         if !registeredProperties.contains(name) then
             Gui.registerProperty(name, str => decode[Msg](str).toOption.get)
