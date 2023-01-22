@@ -21,7 +21,7 @@ object CardinalOres:
 
         // east
         val cobalt = ironLike("COBALT", "Cobalt")
-        val plutonium = SlimefunItemStack("BC_PLUTONIUM", Material.EMERALD, "&rPlutonium")
+        val plutonium = SlimefunItemStack("BC_PLUTONIUM", Material.AMETHYST_SHARD, "&rPlutonium")
 
         // west
         val lead = ironLike("LEAD", "Lead")

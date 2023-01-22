@@ -28,6 +28,8 @@ case class OreVariants(
     raw: SlimefunItemStack,
     ingot: SlimefunItemStack,
     block: SlimefunItemStack,
+    name: String,
+    id: String,
 ):
     def ore(tier: OreTier): SlimefunItemStack =
         tier match
@@ -94,6 +96,8 @@ object Helpers:
             SlimefunItemStack(s"BC_RAW_${id}", m1, s"&rRaw $name"),
             SlimefunItemStack(s"BC_${id}_INGOT", m2, s"&r$name Ingot"),
             SlimefunItemStack(s"BC_${id}_BLOCK", m3, s"&r$name Block"),
+            name,
+            id,
         )
 
     def ironLike(id: String, name: String): OreVariants =

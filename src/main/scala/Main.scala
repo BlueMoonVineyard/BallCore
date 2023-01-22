@@ -20,6 +20,7 @@ import BallCore.Groups.GroupManager
 import BallCore.Ores.QuadrantOres
 import BallCore.Ores.CardinalOres
 import BallCore.Ores.Furnace
+import BallCore.Gear.QuadrantGear
 
 final class Main extends JavaPlugin:
     given sql: Storage.SQLManager = new Storage.SQLManager
@@ -38,6 +39,7 @@ final class Main extends JavaPlugin:
     override def onEnable() =
         Hearts.registerItems()
         QuadrantOres.registerItems()
+        QuadrantGear.registerItems()
         CardinalOres.registerItems()
         Furnace.registerItems()
         getCommand("groups").setExecutor(GroupsCommand())
