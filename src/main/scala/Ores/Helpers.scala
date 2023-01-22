@@ -10,6 +10,8 @@ import org.bukkit.NamespacedKey
 import org.bukkit.inventory.FurnaceRecipe
 import org.bukkit.inventory.RecipeChoice.ExactChoice
 import org.bukkit.inventory.BlastingRecipe
+import org.bukkit.inventory.ShapedRecipe
+import org.bukkit.inventory.ShapelessRecipe
 
 enum OreTier:
     case Dust
@@ -43,6 +45,10 @@ case class OreVariants(
             NamespacedKey(group.getKey().getNamespace(), group.getKey().getKey() + "_" + in.getItemId().toLowerCase())
         def blastKey(in: SlimefunItemStack) =
             NamespacedKey(group.getKey().getNamespace(), group.getKey().getKey() + "_blast_" + in.getItemId().toLowerCase())
+        def blockKey(in: SlimefunItemStack) =
+            NamespacedKey(group.getKey().getNamespace(), group.getKey().getKey() + "_block_" + in.getItemId().toLowerCase())
+        def ingotKey(in: SlimefunItemStack) =
+            NamespacedKey(group.getKey().getNamespace(), group.getKey().getKey() + "_ingot_" + in.getItemId().toLowerCase())
 
         val serv = plugin.getJavaPlugin().getServer()
         val recipeTicks = 100
@@ -63,6 +69,21 @@ case class OreVariants(
         serv.addRecipe(depletedRecipeB)
         serv.addRecipe(scrapsRecipeB)
         serv.addRecipe(dustRecipeB)
+
+        val blockRecipe = ShapedRecipe(blockKey(block), block)
+        blockRecipe.shape(
+            "III",
+            "III",
+            "III",
+        )
+        blockRecipe.setIngredient('I', ExactChoice(ingot))
+        serv.addRecipe(blockRecipe)
+
+        val outStack = ingot.clone()
+        outStack.setAmount(9)
+        val ingotRecipe = ShapelessRecipe(ingotKey(ingot), outStack)
+        ingotRecipe.addIngredient(ExactChoice(block))
+        serv.addRecipe(ingotRecipe)
 
 object Helpers:
     def factory(id: String, name: String, m0: Material, m1: Material, m2: Material, m3: Material): OreVariants =
