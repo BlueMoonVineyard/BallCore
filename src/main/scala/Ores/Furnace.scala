@@ -20,6 +20,7 @@ import org.bukkit.event.inventory.FurnaceBurnEvent
 enum FurnaceTier:
     // tier 0 (vanilla furnace)
     // raw => 1 ingot + 1 depleted
+    case Zero
 
     // raw => 2 ingot + 1 scraps
     // depleted => 1 ingot + 1 scraps
@@ -38,10 +39,16 @@ enum FurnaceTier:
 
 object FurnaceListener extends Listener:
     def spawn(from: OreVariants, tier: OreTier, by: Block): Unit =
-        ???
+        val loc = by.getLocation().clone().add(0, 1, 0)
+        by.getWorld().dropItem(loc, from.ore(tier))
+        // TODO: deposit into chest
 
     def check(furnaceTier: FurnaceTier, oreTier: OreTier): Option[(Int, Option[OreTier])] =
         (furnaceTier, oreTier) match
+            case (FurnaceTier.Zero, OreTier.Raw) =>
+                Some(1, Some(OreTier.Depleted))
+            case (FurnaceTier.Zero, _) =>
+                None
             case (FurnaceTier.One, OreTier.Raw) =>
                 Some(2, Some(OreTier.Scraps))
             case (FurnaceTier.One, OreTier.Depleted) =>
@@ -67,42 +74,49 @@ object FurnaceListener extends Listener:
             case (FurnaceTier.Three, _) =>
                 None
 
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    def onFuelBurn(e: FurnaceBurnEvent): Unit =
-        if !e.getBlock().getState().isInstanceOf[BFurnace] then
+    def tier(of: Block): FurnaceTier =
+        val furnaceItem = BlockStorage.check(of)
+        if !furnaceItem.isInstanceOf[Furnace] then
+            FurnaceTier.Zero
+        else
+            furnaceItem.asInstanceOf[Furnace].tier
+
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    def onFuelBurn(event: FurnaceBurnEvent): Unit =
+        if !event.getBlock().getState().isInstanceOf[BFurnace] then
+            print("thing burning fuel is not a furnace")
             return
-        val furnaceState = e.getBlock().getState().asInstanceOf[BFurnace]
+
+        val furnaceState = event.getBlock().getState().asInstanceOf[BFurnace]
         val innerItem = SlimefunItem.getByItem(furnaceState.getInventory().getSmelting())
         if !innerItem.isInstanceOf[Ore] then
+            print("thing burning fuel is not ore")
             return
         val ore = innerItem.asInstanceOf[Ore]
 
-        val furnaceItem = BlockStorage.check(e.getBlock())
-        if !furnaceItem.isInstanceOf[Furnace] then
-            if ore.tier != OreTier.Raw then
-                e.setCancelled(true)
-            return
-        check(furnaceItem.asInstanceOf[Furnace].tier, ore.tier) match
+        check(tier(event.getBlock()), ore.tier) match
             case None =>
-                e.setCancelled(true)
+                print("cancelling bad recipe")
+                event.setCancelled(true)
             case Some(_) =>
+                print("cancelling tick")
                 ()
 
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    def onItemSmelt(e: FurnaceSmeltEvent): Unit =
-        val furnaceItem = BlockStorage.check(e.getBlock())
-        if !furnaceItem.isInstanceOf[Furnace] then
-            return
-        val smeltingItem = SlimefunItem.getByItem(e.getSource())
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    def onItemSmelt(event: FurnaceSmeltEvent): Unit =
+        val smeltingItem = SlimefunItem.getByItem(event.getSource())
         if !smeltingItem.isInstanceOf[Ore] then
+            print("thing that smelted is not ore")
             return
         val ore = smeltingItem.asInstanceOf[Ore]
-        check(furnaceItem.asInstanceOf[Furnace].tier, ore.tier) match
+        check(tier(event.getBlock()), ore.tier) match
             case None =>
-                e.setCancelled(true)
+                print("cancelling bad finished recipe")
+                event.setCancelled(true)
             case Some(num, aux) =>
-                e.getResult().setAmount(2)
-                aux.map { spawn(ore.variants, _, e.getBlock()) }        
+                print("adjusting recipe")
+                event.getResult().setAmount(num)
+                aux.map { spawn(ore.variants, _, event.getBlock()) }        
 
 object Furnaces:
     val group = ItemGroup(NamespacedKey("ballcore", "furnaces"), ItemStack(Material.WHITE_CONCRETE))

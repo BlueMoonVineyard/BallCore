@@ -6,6 +6,10 @@ import io.github.thebusybiscuit.slimefun4.api.items.ItemGroup
 import io.github.thebusybiscuit.slimefun4.api.SlimefunAddon
 import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItem
 import io.github.thebusybiscuit.slimefun4.api.recipes.RecipeType
+import org.bukkit.NamespacedKey
+import org.bukkit.inventory.FurnaceRecipe
+import org.bukkit.inventory.RecipeChoice.ExactChoice
+import org.bukkit.inventory.BlastingRecipe
 
 enum OreTier:
     case Dust
@@ -31,6 +35,35 @@ case class OreVariants(
             case OreTier.Raw => raw
             case OreTier.Ingot => ingot
             case OreTier.Block => block
+    def register(group: ItemGroup, plugin: SlimefunAddon): Unit =
+        List(dust, scraps, depleted, raw, ingot, block)
+        .foreach { item =>
+            new SlimefunItem(group, item, RecipeType.NULL, null).register(plugin)
+        }
+        def recipeKey(in: SlimefunItemStack) =
+            NamespacedKey(group.getKey().getNamespace(), group.getKey().getKey() + "_" + in.getItemId().toLowerCase())
+        def blastKey(in: SlimefunItemStack) =
+            NamespacedKey(group.getKey().getNamespace(), group.getKey().getKey() + "_blast_" + in.getItemId().toLowerCase())
+
+        val serv = plugin.getJavaPlugin().getServer()
+        val recipeTicks = 100
+        val rawRecipe = FurnaceRecipe(recipeKey(raw), ingot, ExactChoice(raw), 0.0f, recipeTicks)
+        val depletedRecipe = FurnaceRecipe(recipeKey(depleted), ingot, ExactChoice(depleted), 0.0f, recipeTicks)
+        val scrapsRecipe = FurnaceRecipe(recipeKey(scraps), ingot, ExactChoice(scraps), 0.0f, recipeTicks)
+        val dustRecipe = FurnaceRecipe(recipeKey(dust), ingot, ExactChoice(dust), 0.0f, recipeTicks)
+        serv.addRecipe(rawRecipe)
+        serv.addRecipe(depletedRecipe)
+        serv.addRecipe(scrapsRecipe)
+        serv.addRecipe(dustRecipe)
+
+        val rawRecipeB = BlastingRecipe(blastKey(raw), ingot, ExactChoice(raw), 0.0f, recipeTicks)
+        val depletedRecipeB = BlastingRecipe(blastKey(depleted), ingot, ExactChoice(depleted), 0.0f, recipeTicks)
+        val scrapsRecipeB = BlastingRecipe(blastKey(scraps), ingot, ExactChoice(scraps), 0.0f, recipeTicks)
+        val dustRecipeB = BlastingRecipe(blastKey(dust), ingot, ExactChoice(dust), 0.0f, recipeTicks)
+        serv.addRecipe(rawRecipeB)
+        serv.addRecipe(depletedRecipeB)
+        serv.addRecipe(scrapsRecipeB)
+        serv.addRecipe(dustRecipeB)
 
 object Helpers:
     def factory(id: String, name: String, m0: Material, m1: Material, m2: Material, m3: Material): OreVariants =
@@ -50,8 +83,7 @@ object Helpers:
     def copperLike(id: String, name: String): OreVariants =
         factory(id, name, Material.GUNPOWDER, Material.RAW_COPPER, Material.COPPER_INGOT, Material.COPPER_BLOCK)
     def register(group: ItemGroup, variants: OreVariants)(using plugin: SlimefunAddon) =
-        List(variants.dust, variants.scraps, variants.depleted, variants.raw, variants.ingot, variants.block)
-        .foreach{ new SlimefunItem(group, _, RecipeType.NULL, null).register(plugin) }
+        variants.register(group, plugin)
     def register(group: ItemGroup, ms: SlimefunItemStack*)(using plugin: SlimefunAddon) =
         ms.foreach{ new SlimefunItem(group, _, RecipeType.NULL, null).register(plugin) }
 

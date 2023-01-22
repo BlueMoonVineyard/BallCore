@@ -39,6 +39,8 @@ object HeartBlockListener extends Listener:
                 if h.playerHasHeart(event.getPlayer()) then
                     event.getPlayer().sendMessage(s"${ChatColor.LIGHT_PURPLE}Your heart is already placed...")
                     event.setCancelled(true)
+            case _ =>
+                ()
 
 class HeartBlock()(using kvs: Storage.KeyVal, sf: SlimefunAddon, jp: JavaPlugin)
     extends SlimefunItem(Hearts.group, HeartBlock.itemStack, RecipeType.NULL, null):
