@@ -40,7 +40,7 @@ class GroupsUISuite extends munit.FunSuite:
         // ensure that it actually deletes the role and goes back to the group management UI
 
         val expect = ts.expectTransfer()
-        val model3 = ui.update(ui.Message.DeleteRole, model2)
+        val model3 = ui.update(Groups.RoleManagementMessage.DeleteRole, model2)
         assert(expect.isCompleted)
 
         val (prog, flags) = expect.value.get.get

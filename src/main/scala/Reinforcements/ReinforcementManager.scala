@@ -50,7 +50,7 @@ class ReinforcementManager()(using csm: ChunkStateManager, gsm: Groups.GroupMana
                     hoist(gsm.checkE(as, group, Groups.Permissions.RemoveReinforcements)).map { _ =>
                         state.blocks(bkey) = value.copy(deleted = true)
                     }
-    def break(as: Groups.UserID, x: Int, y: Int, z: Int, world: WorldID): Either[ReinforcementError, Unit] =
+    def break(x: Int, y: Int, z: Int, world: WorldID): Either[ReinforcementError, Unit] =
         val (chunkX, chunkZ, offsetX, offsetZ) = toOffsets(x, z)
         val state = csm.get(ChunkKey(chunkX, chunkZ, world.toString()))
         val bkey = BlockKey(offsetX, offsetZ, y)

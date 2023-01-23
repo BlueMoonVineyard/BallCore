@@ -21,6 +21,9 @@ import BallCore.Ores.QuadrantOres
 import BallCore.Ores.CardinalOres
 import BallCore.Ores.Furnace
 import BallCore.Gear.QuadrantGear
+import BallCore.Reinforcements
+import BallCore.Reinforcements.ReinforcementManager
+import BallCore.Reinforcements.ChunkStateManager
 
 final class Main extends JavaPlugin:
     given sql: Storage.SQLManager = new Storage.SQLManager
@@ -35,6 +38,8 @@ final class Main extends JavaPlugin:
             getLogger().log(Level.WARNING, "Error in ExecutionContext:", cause)
     given prompts: UI.Prompts = new UI.Prompts(ec)
     given gm: GroupManager = new GroupManager
+    given csm: ChunkStateManager = new ChunkStateManager
+    given rm: ReinforcementManager = new ReinforcementManager
     
     override def onEnable() =
         Hearts.registerItems()
@@ -42,6 +47,8 @@ final class Main extends JavaPlugin:
         QuadrantGear.registerItems()
         CardinalOres.registerItems()
         Furnace.registerItems()
+        Reinforcements.Reinforcements.register()
         getCommand("groups").setExecutor(GroupsCommand())
+        getCommand("reinforcements").setExecutor(Reinforcements.Commands())
     override def onDisable() =
         ()

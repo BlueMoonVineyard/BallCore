@@ -26,4 +26,16 @@ class Commands() extends CommandExecutor:
                 plr.map { x =>
                     RuntimeStateManager.states(x.getUniqueId()) = Neutral()
                 }
+            case Array("fortified", _*) =>
+                plr.map { x =>
+                    RuntimeStateManager.states(x.getUniqueId()) = Neutral()
+                }
+            case _ =>
+                sender.sendMessage(
+                    "Available commands:",
+                    s"  /$label reinforce - Begin reinforcing blocks",
+                    s"  /$label unreinforce - Begin removing reforcements (that you have permissions to)",
+                    s"  /$label neutral - Stop doing anything to reinforcements",
+                    s"  /$label fortified - Reinforce blocks as you place them",
+                )
         true
