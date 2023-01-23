@@ -83,6 +83,7 @@ trait UIProgram:
 
 class UIProgramRunner(program: UIProgram, flags: program.Flags, showingTo: Player)(using prompts: Prompts) extends UIServices:
     private var model = program.init(flags)
+    private var transferred = false
 
     def render(): Unit =
         val mod = model
@@ -99,10 +100,13 @@ class UIProgramRunner(program: UIProgram, flags: program.Flags, showingTo: Playe
         event.setCancelled(true)
         program.update(obj.asInstanceOf[program.Message], model).map { x =>
             model = x
-            render()
+            if !transferred then
+                render()
         }
     def transferTo(newProgram: UIProgram, newFlags: newProgram.Flags): Unit =
+        transferred = true
         val newUI = UIProgramRunner(newProgram, newFlags, showingTo)
+        newUI.render()
     def prompt(prompt: String): Future[String] =
         prompts.prompt(showingTo, prompt)
     def execute(runnable: Runnable): Unit =

@@ -20,6 +20,12 @@ import BallCore.UI.UIProgram
 import BallCore.UI.UIServices
 import scala.concurrent.Future
 
+enum GroupManagementMessage:
+    case ViewMembers
+    case ViewRoles
+    case InviteMember
+    case ClickRole(role: RoleID)
+
 class GroupManagementProgram(using gm: GroupManager) extends UIProgram:
     import io.circe.generic.auto._
 
@@ -28,11 +34,7 @@ class GroupManagementProgram(using gm: GroupManager) extends UIProgram:
     enum ViewingWhat:
         case Players
         case Roles
-    enum Message:
-        case ViewMembers
-        case ViewRoles
-        case InviteMember
-        case ClickRole(role: RoleID)
+    type Message = GroupManagementMessage
 
     override def init(flags: Flags): Model =
         val group = gm.getGroup(flags.groupID).toOption.get
@@ -41,11 +43,11 @@ class GroupManagementProgram(using gm: GroupManager) extends UIProgram:
         val group = model.group
         Root(s"Viewing ${group.metadata.name}", 6) {
             OutlinePane(0, 0, 1, 6) {
-                Button("player_head", "§aMembers", Message.ViewMembers)()
+                Button("player_head", "§aMembers", GroupManagementMessage.ViewMembers)()
                 if group.check(Permissions.ManageRoles, model.userID) then
-                    Button("writable_book", "§aManage Roles", Message.ViewRoles)()
+                    Button("writable_book", "§aManage Roles", GroupManagementMessage.ViewRoles)()
                 if group.check(Permissions.InviteUser, model.userID) then
-                    Button("compass", "§aInvite A Member", Message.InviteMember)()
+                    Button("compass", "§aInvite A Member", GroupManagementMessage.InviteMember)()
             }
             OutlinePane(1, 0, 1, 6, priority = Priority.LOWEST, repeat = true) {
                 Item("black_stained_glass_pane", displayName = Some(" "))()
@@ -85,23 +87,24 @@ class GroupManagementProgram(using gm: GroupManager) extends UIProgram:
         }
     override def update(msg: Message, model: Model)(using services: UIServices): Future[Model] =
         msg match
-            case Message.ViewMembers =>
+            case GroupManagementMessage.ViewMembers =>
                 model.copy(viewing = ViewingWhat.Players)
-            case Message.ViewRoles =>
+            case GroupManagementMessage.ViewRoles =>
                 model.copy(viewing = ViewingWhat.Roles)
-            case Message.InviteMember =>
+            case GroupManagementMessage.InviteMember =>
                 ???
-            case Message.ClickRole(role) =>
+            case GroupManagementMessage.ClickRole(role) =>
                 ???
         
+enum RoleManagementMessage:
+    case DeleteRole
 
 class RoleManagementProgram(using gm: GroupManager) extends UIProgram:
     import io.circe.generic.auto._
 
     case class Flags(groupID: GroupID, roleID: RoleID, userID: UserID)
     case class Model(group: GroupState, groupID: GroupID, userID: UserID, role: RoleState)
-    enum Message:
-        case DeleteRole
+    type Message = RoleManagementMessage
 
     override def init(flags: Flags): Model =
         val group = gm.getGroup(flags.groupID).toOption.get
@@ -109,7 +112,7 @@ class RoleManagementProgram(using gm: GroupManager) extends UIProgram:
         Model(group, flags.groupID, flags.userID, role)
     override def update(msg: Message, model: Model)(using services: UIServices): Future[Model] =
         msg match
-            case Message.DeleteRole =>
+            case RoleManagementMessage.DeleteRole =>
                 // TODO: error reporting
                 gm.deleteRole(model.userID, model.role.id, model.groupID).toOption.get
                 val p = GroupManagementProgram()
@@ -122,7 +125,7 @@ class RoleManagementProgram(using gm: GroupManager) extends UIProgram:
             OutlinePane(1, 0, 1, 6, priority = Priority.LOWEST, repeat = true) {
                 OutlinePane(0, 0, 1, 6) {
                     if role.id != nullUUID then
-                        Button("lava_bucket", "§aDelete Role", Message.DeleteRole)()
+                        Button("lava_bucket", "§aDelete Role", RoleManagementMessage.DeleteRole)()
                 }
             }
             OutlinePane(1, 0, 1, 6, priority = Priority.LOWEST, repeat = true) {
@@ -133,25 +136,27 @@ class RoleManagementProgram(using gm: GroupManager) extends UIProgram:
             }
         }
 
+enum GroupListMessage:
+    case ClickGroup(groupID: GroupID)
+    case CreateGroup
+
 class GroupListProgram(using gm: GroupManager) extends UIProgram:
     import io.circe.generic.auto._
 
     case class Flags(userID: UserID)
     case class Model(userID: UserID, groups: List[GroupStates])
-    enum Message:
-        case ClickGroup(groupID: GroupID)
-        case CreateGroup
+    type Message = GroupListMessage
 
     override def init(flags: Flags): Model =
         Model(flags.userID, gm.userGroups(flags.userID).toOption.get)
 
     override def update(msg: Message, model: Model)(using services: UIServices): Future[Model] =
         msg match
-            case Message.ClickGroup(groupID) =>
+            case GroupListMessage.ClickGroup(groupID) =>
                 val p = GroupManagementProgram()
                 services.transferTo(p, p.Flags(groupID, model.userID))
                 model
-            case Message.CreateGroup =>
+            case GroupListMessage.CreateGroup =>
                 val answer = services.prompt("What do you want to call the group?")
                 answer.map { result =>
                     gm.createGroup(model.userID, result)
@@ -162,14 +167,14 @@ class GroupListProgram(using gm: GroupManager) extends UIProgram:
         val groups = model.groups
         Root("Groups", 6) {
             OutlinePane(0, 0, 1, 6) {
-                Button("name_tag", "§aCreate Group", Message.CreateGroup)()
+                Button("name_tag", "§aCreate Group", GroupListMessage.CreateGroup)()
             }
             OutlinePane(1, 0, 1, 6, priority = Priority.LOWEST, repeat = true) {
                 Item("black_stained_glass_pane", displayName = Some(" "))()
             }
             OutlinePane(2, 0, 7, 6) {
                 groups.foreach { x =>
-                    Button("leather_chestplate", s"§a${x.name}", Message.ClickGroup(x.id))()
+                    Button("leather_chestplate", s"§a${x.name}", GroupListMessage.ClickGroup(x.id))()
                 }
             }
         }
