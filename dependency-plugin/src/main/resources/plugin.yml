@@ -1,0 +1,10 @@
+# SPDX-FileCopyrightText: 2023 Janet Blackquill <uhhadd@gmail.com>
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+name: BallCoreDependencyPlugin
+version: 0.1
+main: BallCoreDependencyPlugin.Main
+description: Dependency plugin of CivBalls
+authors: [Janet Blackquill]
+website: https://github.com/BlueMoonVineyard/BallCore
+api-version: 1.13

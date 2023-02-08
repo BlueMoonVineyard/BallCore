@@ -10,6 +10,7 @@ website: https://github.com/BlueMoonVineyard/BallCore
 api-version: 1.13
 depend:
   - Slimefun
+  - BallCoreDependencyPlugin
 commands:
   groups:
     description: Entrypoint for group commands
