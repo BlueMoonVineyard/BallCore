@@ -9,6 +9,7 @@ import java.{util => ju}
 import org.bukkit.NamespacedKey
 import java.time.temporal.ChronoUnit
 import scala.math._
+import BallCore.DataStructures.Clock
 
 type WorldID = NamespacedKey
 
@@ -18,7 +19,7 @@ case class AlreadyExists() extends ReinforcementError
 case class DoesntExist() extends ReinforcementError
 
 /** The ReinforcementManager implements all of the logic of reinforcement data */
-class ReinforcementManager()(using csm: ChunkStateManager, gsm: Groups.GroupManager):
+class ReinforcementManager()(using csm: ChunkStateManager, gsm: Groups.GroupManager, c: Clock):
     private def toOffsets(x: Int, z: Int): (Int, Int, Int, Int) =
         (x / 16, z / 16, x % 16, z % 16)
     private def fromOffsets(chunkX: Int, chunkZ: Int, offsetX: Int, offsetZ: Int): (Int, Int) =
@@ -33,7 +34,7 @@ class ReinforcementManager()(using csm: ChunkStateManager, gsm: Groups.GroupMana
         state.blocks.get(bkey).filterNot(_.deleted) match
             case None =>
                 hoist(gsm.checkE(as, group, Groups.Permissions.AddReinforcements)).map { _ =>
-                    state.blocks(bkey) = BlockState(group, as, true, false, health, health, java.time.Instant.now())
+                    state.blocks(bkey) = BlockState(group, as, true, false, health, health, c.now())
                 }
             case Some(value) =>
                 Left(AlreadyExists())
@@ -50,7 +51,7 @@ class ReinforcementManager()(using csm: ChunkStateManager, gsm: Groups.GroupMana
                     hoist(gsm.checkE(as, group, Groups.Permissions.RemoveReinforcements)).map { _ =>
                         state.blocks(bkey) = value.copy(deleted = true)
                     }
-    def break(x: Int, y: Int, z: Int, world: WorldID): Either[ReinforcementError, Unit] =
+    def break(x: Int, y: Int, z: Int, world: WorldID): Either[ReinforcementError, BlockState] =
         val (chunkX, chunkZ, offsetX, offsetZ) = toOffsets(x, z)
         val state = csm.get(ChunkKey(chunkX, chunkZ, world.toString()))
         val bkey = BlockKey(offsetX, offsetZ, y)
@@ -58,12 +59,13 @@ class ReinforcementManager()(using csm: ChunkStateManager, gsm: Groups.GroupMana
             case None => Left(DoesntExist())
             case Some(value) =>
                 // TODO: factor in hearts + acclimation
-                val hoursPassed = ChronoUnit.HOURS.between(value.placedAt, java.time.Instant.now())
+                val hoursPassed = ChronoUnit.HOURS.between(value.placedAt, c.now())
                 val timeDamageMultiplier = max(20.0 * exp(-0.17 * hoursPassed), 1.0)
                 val base = 1.0
                 val newHealth = (value.health.doubleValue() - (base * timeDamageMultiplier)).intValue()
-                state.blocks(bkey) = value.copy(health = newHealth)
-                Right(())
+                val newValue = value.copy(health = newHealth)
+                state.blocks(bkey) = newValue
+                Right(newValue)
     def getReinforcement(x: Int, y: Int, z: Int, world: WorldID): Option[BlockState] =
         val (chunkX, chunkZ, offsetX, offsetZ) = toOffsets(x, z)
         val state = csm.get(ChunkKey(chunkX, chunkZ, world.toString()))

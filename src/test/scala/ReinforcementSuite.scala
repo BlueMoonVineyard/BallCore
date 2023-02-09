@@ -8,6 +8,11 @@ import BallCore.Reinforcements
 import java.{util => ju}
 import org.bukkit.NamespacedKey
 import java.util.jar.Attributes.Name
+import BallCore.DataStructures.Clock
+import BallCore.DataStructures.TestClock
+import java.time.Instant
+import java.time.temporal.TemporalAmount
+import java.time.temporal.ChronoUnit
 
 class ReinforcementSuite extends munit.FunSuite {
     test("basic stuff") {
@@ -15,6 +20,7 @@ class ReinforcementSuite extends munit.FunSuite {
         given keyVal: Storage.SQLKeyVal = new Storage.SQLKeyVal
         given gm: Groups.GroupManager = new Groups.GroupManager
         given csm: Reinforcements.ChunkStateManager = new Reinforcements.ChunkStateManager
+        given clock: Clock = new TestClock(Instant.MIN)
         given rm: Reinforcements.ReinforcementManager = new Reinforcements.ReinforcementManager
 
         val u1 = ju.UUID.randomUUID()
@@ -41,5 +47,40 @@ class ReinforcementSuite extends munit.FunSuite {
 
         val res5 = rm.unreinforce(u2, gid, 0, 0, 0, world)
         assert(res5 == Left(Reinforcements.DoesntExist()))
+    }
+    test("breaking shenanigans") {
+        given sql: Storage.SQLManager = new Storage.SQLManager(test = true)
+        given keyVal: Storage.SQLKeyVal = new Storage.SQLKeyVal
+        given gm: Groups.GroupManager = new Groups.GroupManager
+        given csm: Reinforcements.ChunkStateManager = new Reinforcements.ChunkStateManager
+        given clock: TestClock = new TestClock(Instant.MIN)
+        given rm: Reinforcements.ReinforcementManager = new Reinforcements.ReinforcementManager
+
+        val u1 = ju.UUID.randomUUID()
+        val u2 = ju.UUID.randomUUID()
+        val world = NamespacedKey("manka", "aknam")
+
+        val gid = gm.createGroup(u1, "test")
+        gm.addToGroup(u2, gid)
+
+        val res1 = rm.reinforce(u1, gid, 0, 0, 0, world, 500)
+        assert(res1 == Right(()), res1)
+
+        val res2 = rm.break(0, 0, 0, world)
+        assert(res2.isRight, res2)
+
+        val res3 = rm.break(0, 0, 0, world)
+        assert(res3.isRight, res3)
+
+        val d1 = res2.right.get.health - res3.right.get.health
+
+        clock.changeTimeBy(ChronoUnit.HOURS.getDuration())
+
+        val res4 = rm.break(0, 0, 0, world)
+        assert(res4.isRight, res4)
+
+        val d2 = res3.right.get.health - res4.right.get.health
+
+        assert(d2 < d1, (d2, d1))
     }
 }
