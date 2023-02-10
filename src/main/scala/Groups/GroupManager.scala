@@ -93,6 +93,20 @@ enum GroupError:
     case RoleAboveYours
     case CantAssignEveryone
 
+    def explain(): String =
+        this match
+            case MustBeOwner => "you must be owner"
+            case MustBeOnlyOwner => "you must be the only owner"
+            case GroupNotFound => "the group was not found"
+            case TargetNotInGroup => "the target is not in the group"
+            case GroupWouldHaveNoOwners => "the group would have no owners"
+            case TargetIsAlreadyOwner => "the target is already an owner"
+            case AlreadyInGroup => "the target is already in the group"
+            case NoPermissions => "you do not have permission"
+            case RoleNotFound => "the role was not found"
+            case RoleAboveYours => "the role was above your topmost role"
+            case CantAssignEveryone => "you cannot assign the everyone role"
+
 /** The GroupManager implements all of the logic relating to group management and permission */
 class GroupManager()(using sql: Storage.SQLManager):
     sql.applyMigration(

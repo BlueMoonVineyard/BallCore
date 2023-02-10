@@ -10,8 +10,9 @@ import org.bukkit.NamespacedKey
 import java.time.temporal.ChronoUnit
 import scala.math._
 import BallCore.DataStructures.Clock
+import java.util.UUID
 
-type WorldID = NamespacedKey
+type WorldID = UUID
 
 sealed trait ReinforcementError
 case class ReinforcementGroupError(error: Groups.GroupError) extends ReinforcementError

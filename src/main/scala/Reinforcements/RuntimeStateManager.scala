@@ -6,12 +6,13 @@ package BallCore.Reinforcements
 
 import java.{util => ju}
 import scala.collection.mutable.Map
+import java.util.UUID
 
 sealed trait PlayerState
 case class Neutral() extends PlayerState
-case class Reinforcing() extends PlayerState
+case class Reinforcing(val group: UUID) extends PlayerState
 case class Unreinforcing() extends PlayerState
-case class ReinforceAsYouGo() extends PlayerState
+case class ReinforceAsYouGo(val group: UUID) extends PlayerState
 
 object RuntimeStateManager:
     val states = Map[ju.UUID, PlayerState]().withDefault(x => Neutral())
