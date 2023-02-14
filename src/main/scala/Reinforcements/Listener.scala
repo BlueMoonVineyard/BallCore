@@ -13,7 +13,7 @@ import org.bukkit.inventory.ItemStack
 import org.bukkit.Material
 import org.bukkit.event.block.BlockBreakEvent
 
-class Listener(using rm: ReinforcementManager) extends org.bukkit.event.Listener:
+class Listener(using rm: ReinforcementManager, holos: HologramManager) extends org.bukkit.event.Listener:
     def reinforcementFromItem(is: ItemStack): Option[ReinforcementTypes] =
         is.getType() match
             case Material.STONE => Some(ReinforcementTypes.Stone)
@@ -35,7 +35,7 @@ class Listener(using rm: ReinforcementManager) extends org.bukkit.event.Listener
         rm.break(block.getX(), block.getY(), block.getZ(), block.getWorld().getUID()) match
             case Left(value) => ()
             case Right(value) =>
-                // TODO: render hologram
+                holos.display(block, event.getPlayer(), List(s"${value.health} / ${value.maxHealth}"))
                 event.setCancelled(true)
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
