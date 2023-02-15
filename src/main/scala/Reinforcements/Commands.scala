@@ -28,7 +28,7 @@ class Commands() extends CommandExecutor:
                 }
             case Array("fortified", _*) =>
                 plr.map { x =>
-                    RuntimeStateManager.states(x.getUniqueId()) = ReinforceAsYouGo(???)
+                    RuntimeStateManager.states(x.getUniqueId()) = ReinforceAsYouGo(???, ???)
                 }
             case _ =>
                 sender.sendMessage(

@@ -12,6 +12,7 @@ import org.bukkit.event.block.Action
 import org.bukkit.inventory.ItemStack
 import org.bukkit.Material
 import org.bukkit.event.block.BlockBreakEvent
+import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItem
 
 class Listener(using rm: ReinforcementManager, holos: HologramManager) extends org.bukkit.event.Listener:
     def reinforcementFromItem(is: ItemStack): Option[ReinforcementTypes] =
@@ -21,13 +22,39 @@ class Listener(using rm: ReinforcementManager, holos: HologramManager) extends o
             case Material.IRON_INGOT => Some(ReinforcementTypes.IronLike)
             case Material.COPPER_INGOT => Some(ReinforcementTypes.CopperLike)
             case _ => None
+
+    //
+    //// Stuff that interacts with the RSM; i.e. that mutates block states
+    //
+
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     def onBlockPlace(event: BlockPlaceEvent): Unit =
         RuntimeStateManager.states(event.getPlayer().getUniqueId()) match
             case Neutral() => ()
             case Reinforcing(_) => ()
             case Unreinforcing() => ()
-            case ReinforceAsYouGo(_) => ()
+            case ReinforceAsYouGo(gid, item) =>
+                val p = event.getPlayer()
+                val i = p.getInventory()
+                val loc = event.getBlockPlaced()
+                val slot = i.getStorageContents.find(item == SlimefunItem.getByItem(_))
+                slot match
+                    case None =>
+                        // TODO: you ran out of items :/
+                        event.setCancelled(true)
+                    case Some(value) =>
+                        val reinforcement = reinforcementFromItem(value)
+                        if reinforcement.isEmpty then
+                            event.setCancelled(true)
+                            return
+                        rm.reinforce(p.getUniqueId(), gid, loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID(), reinforcement.get.hp) match
+                            case Left(err) =>
+                                err match
+                                    case ReinforcementGroupError(error) => ()
+                                    case AlreadyExists() => ()
+                                    case DoesntExist() => ()
+                            case Right(_) =>
+                                value.setAmount(value.getAmount()-1)
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     def onBreak(event: BlockBreakEvent): Unit =
@@ -76,5 +103,5 @@ class Listener(using rm: ReinforcementManager, holos: HologramManager) extends o
                     case Right(ok) =>
                         event.setCancelled(true)
                         // TODO: return the materials to the player
-            case ReinforceAsYouGo(_) => ()
+            case ReinforceAsYouGo(_, _) => ()
         
