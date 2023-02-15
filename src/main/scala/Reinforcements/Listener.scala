@@ -61,6 +61,20 @@ class Listener(using rm: ReinforcementManager, holos: HologramManager) extends o
                         // TODO: feedback
                         event.getItem().setAmount(event.getItem().getAmount()-1)
                         event.setCancelled(true)
-            case Unreinforcing() => ()
+            case Unreinforcing() =>
+                if event.getAction() != Action.RIGHT_CLICK_BLOCK then
+                    return
+
+                val loc = event.getClickedBlock()
+                val wid = loc.getWorld().getUID()
+                rm.unreinforce(event.getPlayer().getUniqueId(), loc.getX(), loc.getY(), loc.getZ(), wid) match
+                    case Left(err) =>
+                        err match
+                            case ReinforcementGroupError(error) => ()
+                            case AlreadyExists() => ()
+                            case DoesntExist() => ()
+                    case Right(ok) =>
+                        event.setCancelled(true)
+                        // TODO: return the materials to the player
             case ReinforceAsYouGo(_) => ()
         

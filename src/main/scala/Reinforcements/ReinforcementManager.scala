@@ -39,7 +39,7 @@ class ReinforcementManager()(using csm: ChunkStateManager, gsm: Groups.GroupMana
                 }
             case Some(value) =>
                 Left(AlreadyExists())
-    def unreinforce(as: Groups.UserID, group: Groups.UserID, x: Int, y: Int, z: Int, world: WorldID): Either[ReinforcementError, Unit] =
+    def unreinforce(as: Groups.UserID, x: Int, y: Int, z: Int, world: WorldID): Either[ReinforcementError, Unit] =
         val (chunkX, chunkZ, offsetX, offsetZ) = toOffsets(x, z)
         val state = csm.get(ChunkKey(chunkX, chunkZ, world.toString()))
         val bkey = BlockKey(offsetX, offsetZ, y)
@@ -49,7 +49,7 @@ class ReinforcementManager()(using csm: ChunkStateManager, gsm: Groups.GroupMana
                 if as == value.owner then
                     Right(())
                 else
-                    hoist(gsm.checkE(as, group, Groups.Permissions.RemoveReinforcements)).map { _ =>
+                    hoist(gsm.checkE(as, value.group, Groups.Permissions.RemoveReinforcements)).map { _ =>
                         state.blocks(bkey) = value.copy(deleted = true)
                     }
     def break(x: Int, y: Int, z: Int, world: WorldID): Either[ReinforcementError, BlockState] =
