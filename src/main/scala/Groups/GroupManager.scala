@@ -202,6 +202,9 @@ class GroupManager()(using sql: Storage.SQLManager):
                 nullUUID,
                 "Everyone", true,
                 Map(
+                    (Permissions.Chests, RuleMode.Allow),
+                    (Permissions.Doors, RuleMode.Allow),
+                    (Permissions.Crops, RuleMode.Allow),
                 ),
             ),
         )

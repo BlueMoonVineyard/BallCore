@@ -5,8 +5,9 @@
 package BallCore.Reinforcements
 
 import io.github.thebusybiscuit.slimefun4.api.SlimefunAddon
+import BallCore.Groups.GroupManager
 
 object Reinforcements:
-    def register()(using sf: SlimefunAddon, rm: ReinforcementManager, holos: HologramManager): Unit =
+    def register()(using sf: SlimefunAddon, rm: ReinforcementManager, gm: GroupManager, holos: HologramManager): Unit =
         val plugin = sf.getJavaPlugin()
         plugin.getServer().getPluginManager().registerEvents(Listener(), plugin)

@@ -16,8 +16,26 @@ import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItem
 import org.bukkit.Location
 import org.bukkit.Particle
 import scala.util.chaining._
+import org.bukkit.event.block.BlockBurnEvent
+import org.bukkit.event.entity.EntityChangeBlockEvent
+import org.bukkit.event.player.PlayerBucketEmptyEvent
+import org.bukkit.event.block.BlockFromToEvent
+import org.bukkit.event.world.StructureGrowEvent
+import org.bukkit.block.Container
+import org.bukkit.block.data.Openable
+import BallCore.Groups.GroupManager
+import BallCore.Groups.Permissions
+import org.bukkit.event.player.PlayerHarvestBlockEvent
+import org.bukkit.event.block.BlockDispenseEvent
+import org.bukkit.inventory.EquipmentSlot
+import org.bukkit.event.entity.EntitySpawnEvent
+import org.bukkit.entity.EntityType
+import org.bukkit.event.entity.EntityExplodeEvent
+import org.bukkit.event.player.PlayerBucketFillEvent
+import org.bukkit.event.block.BlockPistonExtendEvent
+import org.bukkit.event.block.BlockPistonRetractEvent
 
-class Listener(using rm: ReinforcementManager, holos: HologramManager) extends org.bukkit.event.Listener:
+class Listener(using rm: ReinforcementManager, gm: GroupManager, holos: HologramManager) extends org.bukkit.event.Listener:
     def reinforcementFromItem(is: ItemStack): Option[ReinforcementTypes] =
         if is == null then return None
         is.getType() match
@@ -58,7 +76,7 @@ class Listener(using rm: ReinforcementManager, holos: HologramManager) extends o
     //// Stuff that interacts with the RSM; i.e. that mutates block states
     //
 
-    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     def onBlockPlace(event: BlockPlaceEvent): Unit =
         RuntimeStateManager.states(event.getPlayer().getUniqueId()) match
             case Neutral() => ()
@@ -89,7 +107,7 @@ class Listener(using rm: ReinforcementManager, holos: HologramManager) extends o
                                 playCreationEffect(loc.getLocation(), reinforcement.get)
                                 value.setAmount(value.getAmount()-1)
 
-    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     def onBreak(event: BlockBreakEvent): Unit =
         val block = BlockAdjustment.adjustBlock(event.getBlock())
         rm.break(block.getX(), block.getY(), block.getZ(), block.getWorld().getUID()) match
@@ -105,7 +123,7 @@ class Listener(using rm: ReinforcementManager, holos: HologramManager) extends o
                 holos.display(block, event.getPlayer(), List(s"${value.health} / ${value.kind.hp}"))
                 event.setCancelled(true)
 
-    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     def onInteract(event: PlayerInteractEvent): Unit =
         RuntimeStateManager.states(event.getPlayer().getUniqueId()) match
             case Neutral() => ()
@@ -138,4 +156,178 @@ class Listener(using rm: ReinforcementManager, holos: HologramManager) extends o
                         event.setCancelled(true)
                         // TODO: return the materials to the player
             case ReinforceAsYouGo(_, _) => ()
-        
+
+    //
+    //// Stuff that enforces reinforcements in the face of permissions; i.e. chest opening prevention
+    //
+
+    // prevent opening reinforced items
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    def preventOpens(event: PlayerInteractEvent): Unit =
+        if !event.hasBlock() || event.getAction() != Action.RIGHT_CLICK_BLOCK then
+            return
+        val loc = BlockAdjustment.adjustBlock(event.getClickedBlock())
+        val rein = rm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID())
+        if rein.isEmpty then
+            return
+        val reinf = rein.get
+        event.getClickedBlock().getState() match
+            case _: Container =>
+                gm.check(event.getPlayer().getUniqueId(), reinf.group, Permissions.Chests) match
+                    case Right(ok) if ok =>
+                        ()
+                    case _ =>
+                        // TODO: notify of permission denied
+                        event.setCancelled(true)
+            case _: Openable =>
+                gm.check(event.getPlayer().getUniqueId(), reinf.group, Permissions.Doors) match
+                    case Right(ok) if ok =>
+                        ()
+                    case _ =>
+                        // TODO: notify of permission denied
+                        event.setCancelled(true)
+
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    def preventStrippingLogs(event: PlayerInteractEvent): Unit =
+        ???
+
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    def preventHarvestingCaveVines(event: PlayerHarvestBlockEvent): Unit =
+        val loc = BlockAdjustment.adjustBlock(event.getHarvestedBlock())
+        val rein = rm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID())
+        if rein.isEmpty then
+            return
+        gm.check(event.getPlayer().getUniqueId(), rein.get.group, Permissions.Crops) match
+            case Right(ok) if ok =>
+                ()
+            case _ =>
+                // TODO: notify of permission denied
+                event.setCancelled(true)
+
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    def preventWaxingCopper(event: BlockPlaceEvent): Unit =
+        ???
+
+    // prevents grass -> path and grass/dirt -> farmland
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    def preventTilling(event: PlayerInteractEvent): Unit =
+        ???
+
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    def preventHarvestingBeehive(event: PlayerInteractEvent): Unit =
+        ???
+
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    def preventLightingCandles(event: PlayerInteractEvent): Unit =
+        ???
+
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    def preventModifiyingBeacon(event: PlayerInteractEvent): Unit =
+        ???
+
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    def preventPuttingBookInLectern(event: PlayerInteractEvent): Unit =
+        ???
+
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    def preventTakingBookFromLectern(event: PlayerInteractEvent): Unit =
+        ???
+
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    def preventSpreadingMoss(event: PlayerInteractEvent): Unit =
+        ???
+
+    // prevent harvesting powdered snow w/out perms
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    def preventLiquidPickup(event: PlayerBucketFillEvent): Unit =
+        ???
+
+    // prevent placing liquids in blocks
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    def preventLiquidPlace(event: PlayerBucketEmptyEvent): Unit =
+        val block = event.getBlockClicked().getRelative(event.getBlockFace())
+        // air isn't reinforceable, and solid blocks can't become waterlogged
+        if block.getType() == Material.AIR || block.getType().isSolid() then
+            return
+        val rein = rm.getReinforcement(block.getX(), block.getY(), block.getZ(), block.getWorld().getUID())
+
+
+    //
+    //// Stuff that enforces reinforcements in the face of non-permissions; i.e. stuff like preventing water from killing reinforced blocks
+    //
+
+    // prevent pistons from pushing blocks
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    def preventPistonPush(event: BlockPistonExtendEvent): Unit =
+        event.getBlocks().forEach { x =>
+            val loc = BlockAdjustment.adjustBlock(event.getBlock())
+            val rein = rm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID())
+            if rein.isDefined then
+                event.setCancelled(true)
+        }
+
+    // prevent pistons from pulling blocks
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    def preventPistonPull(event: BlockPistonRetractEvent): Unit =
+        event.getBlocks().forEach { x =>
+            val loc = BlockAdjustment.adjustBlock(event.getBlock())
+            val rein = rm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID())
+            if rein.isDefined then
+                event.setCancelled(true)
+        }
+    
+    // prevent fire from burning blocks
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    def preventFire(event: BlockBurnEvent): Unit =
+        val loc = BlockAdjustment.adjustBlock(event.getBlock())
+        val rein = rm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID())
+        if rein.isDefined then
+            event.setCancelled(true)
+
+    // prevent zombies from killing doors
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    def preventZombies(event: EntityChangeBlockEvent): Unit =
+        val loc = BlockAdjustment.adjustBlock(event.getBlock())
+        val rein = rm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID())
+        if rein.isDefined then
+            event.setCancelled(true)
+
+    // prevent reinforced blocks from falling
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    def preventFallingReinforcement(event: EntitySpawnEvent): Unit =
+        if event.getEntityType() != EntityType.FALLING_BLOCK then
+            return
+        val block = event.getLocation().getBlock()
+        val rein = rm.getReinforcement(block.getX(), block.getY(), block.getZ(), block.getWorld().getUID())
+        if rein.isEmpty then
+            return
+        event.getEntity().setGravity(false)
+        event.setCancelled(true)
+
+    // prevent liquids from washing blocks away
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    def preventLiquidWashAway(event: BlockFromToEvent): Unit =
+        if event.getToBlock().getY() < event.getToBlock().getWorld().getMinHeight() then
+            return
+        val loc = BlockAdjustment.adjustBlock(event.getBlock())
+        val rein = rm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID())
+        if rein.isDefined then
+            event.setCancelled(true)
+
+    // prevent plants from breaking reinforced blocks
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    def preventPlantGrowth(event: StructureGrowEvent): Unit =
+        event.getBlocks().forEach { x =>
+            val loc = x.getBlock()
+            if rm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID()).isDefined then
+                event.setCancelled(true)
+        }
+
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    def preventSpreadingMossWithDispenser(event: BlockDispenseEvent): Unit =
+        ???
+
+    // have explosions damage blocks
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    def onExplosion(event: EntityExplodeEvent): Unit =
+        ???

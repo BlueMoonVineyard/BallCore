@@ -30,6 +30,10 @@ enum Permissions(val name: String):
     case AddReinforcements extends Permissions("reinforcements.add")
     case RemoveReinforcements extends Permissions("reinforcements.remove")
 
+    case Chests extends Permissions("chests")
+    case Doors extends Permissions("doors")
+    case Crops extends Permissions("crops")
+
 implicit val pKeyEncoder: KeyEncoder[Permissions] = new KeyEncoder[Permissions]:
     override def apply(perm: Permissions): String =
         perm.name
