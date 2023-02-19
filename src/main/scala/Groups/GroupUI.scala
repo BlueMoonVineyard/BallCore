@@ -80,9 +80,18 @@ class GroupManagementProgram(using gm: GroupManager) extends UIProgram:
         val group = model.group
         OutlinePane(2, 0, 7, 6) {
             group.roles.foreach { x =>
-                // Item("leather_chestplate", displayName = Some(s"§r§f${x.name}"), onClick = callback(clickRole)) {
-                //     Metadata(x.id)
-                // }
+                Button("leather_chestplate", s"§r§f${x.name}", GroupManagementMessage.ClickRole(x.id)) {
+                    if x.permissions.size > 0 then
+                        Lore("")
+                        Lore("§r§f§nPermissions")
+                        x.permissions.toList.sortBy(_._1.ordinal).foreach { x =>
+                            val (p, r) = x
+                            if r == RuleMode.Allow then
+                                Lore(s"§r§a- ✔ ${p.displayName()}")
+                            else
+                                Lore(s"§r§c- ✖ ${p.displayName()}")
+                        }
+                }
             }
         }
     override def update(msg: Message, model: Model)(using services: UIServices): Future[Model] =
@@ -94,10 +103,13 @@ class GroupManagementProgram(using gm: GroupManager) extends UIProgram:
             case GroupManagementMessage.InviteMember =>
                 ???
             case GroupManagementMessage.ClickRole(role) =>
-                ???
+                val p = RoleManagementProgram()
+                services.transferTo(p, p.Flags(model.group.metadata.id, role, model.userID))
+                model
         
 enum RoleManagementMessage:
     case DeleteRole
+    case TogglePermission
 
 class RoleManagementProgram(using gm: GroupManager) extends UIProgram:
     import io.circe.generic.auto._
@@ -118,6 +130,8 @@ class RoleManagementProgram(using gm: GroupManager) extends UIProgram:
                 val p = GroupManagementProgram()
                 services.transferTo(p, p.Flags(model.groupID, model.userID))
                 model
+            case RoleManagementMessage.TogglePermission =>
+                ???
     override def view(model: Model): Elem =
         val role = model.role
         val group = model.group
@@ -132,7 +146,17 @@ class RoleManagementProgram(using gm: GroupManager) extends UIProgram:
                 Item("black_stained_glass_pane", displayName = Some(" "))()
             }
             OutlinePane(2, 0, 7, 6) {
-                
+                Permissions.values.foreach { x =>
+                    val name =
+                        role.permissions.get(x) match
+                            case None => s"§7* ${x.displayName()}"
+                            case Some(RuleMode.Allow) => s"§a✔ ${x.displayName()}"
+                            case Some(RuleMode.Deny) => s"§c✖ ${x.displayName()}"
+                        
+                    Item(x.displayItem().toString().toLowerCase(), displayName = Some(name)) {
+                        Lore(s"§r§f${x.displayExplanation()}")
+                    }
+                }
             }
         }
 

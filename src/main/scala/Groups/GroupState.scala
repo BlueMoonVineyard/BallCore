@@ -6,6 +6,7 @@ package BallCore.Groups
 
 import java.{util => ju}
 import io.circe._, io.circe.generic.semiauto._
+import org.bukkit.Material
 
 type UserID = ju.UUID
 type RoleID = ju.UUID
@@ -34,6 +35,49 @@ enum Permissions(val name: String):
     case Chests extends Permissions("chests")
     case Doors extends Permissions("doors")
     case Crops extends Permissions("crops")
+
+    def displayName(): String =
+        this match
+            case ManageRoles => "Manage Roles"
+            case ManageUserRoles => "Assign Roles"
+            case InviteUser => "Invite Users"
+            case RemoveUser => "Remove Users"
+            case UpdateGroupInformation => "Modify Group Information"
+            case AddReinforcements => "Reinforce Blocks"
+            case RemoveReinforcements => "Unreinforce Blocks"
+            case Build => "Build"
+            case Chests => "Use Chests"
+            case Doors => "Use Doors"
+            case Crops => "Use Crops"
+
+    def displayExplanation(): String =
+        this match
+            case ManageRoles => "Allows users to modify roles"
+            case ManageUserRoles => "Allows users to assign and revoke roles below their highest role to other users"
+            case InviteUser => "Allows user to invite others"
+            case RemoveUser => "Allows user to remove others"
+            case UpdateGroupInformation => "Allows user to update group information"
+            case AddReinforcements => "Allows the user to reinforce blocks"
+            case RemoveReinforcements => "Allows the user to unreinforce blocks"
+            case Build => "Allows the user to modify reinforced blocks"
+            case Chests => "Allows the user to open reinforced chests"
+            case Doors => "Allows the user to open reinforced doors"
+            case Crops => "Allows the user to plant and harvest crops on reinforced farmland"
+
+    def displayItem(): Material =
+        this match
+            case ManageRoles => Material.LEATHER_CHESTPLATE
+            case ManageUserRoles => Material.IRON_CHESTPLATE
+            case InviteUser => Material.PLAYER_HEAD
+            case RemoveUser => Material.BARRIER
+            case UpdateGroupInformation => Material.NAME_TAG
+            case AddReinforcements => Material.STONE
+            case RemoveReinforcements => Material.IRON_PICKAXE
+            case Build => Material.BRICKS
+            case Chests => Material.CHEST
+            case Doors => Material.OAK_DOOR
+            case Crops => Material.WHEAT
+        
 
 implicit val pKeyEncoder: KeyEncoder[Permissions] = new KeyEncoder[Permissions]:
     override def apply(perm: Permissions): String =
