@@ -109,7 +109,8 @@ class GroupManagementProgram(using gm: GroupManager) extends UIProgram:
         
 enum RoleManagementMessage:
     case DeleteRole
-    case TogglePermission
+    case TogglePermission(val perm: Permissions)
+    case GoBack
 
 class RoleManagementProgram(using gm: GroupManager) extends UIProgram:
     import io.circe.generic.auto._
@@ -130,17 +131,20 @@ class RoleManagementProgram(using gm: GroupManager) extends UIProgram:
                 val p = GroupManagementProgram()
                 services.transferTo(p, p.Flags(model.groupID, model.userID))
                 model
-            case RoleManagementMessage.TogglePermission =>
+            case RoleManagementMessage.TogglePermission(perm) =>
                 ???
+            case RoleManagementMessage.GoBack =>
+                val p = GroupManagementProgram()
+                services.transferTo(p, p.Flags(model.groupID, model.userID))
+                model
     override def view(model: Model): Elem =
         val role = model.role
         val group = model.group
         Root(s"Viewing Role ${role.name} in ${group.metadata.name}", 6) {
-            OutlinePane(1, 0, 1, 6, priority = Priority.LOWEST, repeat = true) {
-                OutlinePane(0, 0, 1, 6) {
-                    if role.id != nullUUID then
-                        Button("lava_bucket", "§aDelete Role", RoleManagementMessage.DeleteRole)()
-                }
+            OutlinePane(0, 0, 1, 6) {
+                Button("oak_door", "§fGo Back", RoleManagementMessage.GoBack)()
+                if role.id != nullUUID then
+                    Button("lava_bucket", "§aDelete Role", RoleManagementMessage.DeleteRole)()
             }
             OutlinePane(1, 0, 1, 6, priority = Priority.LOWEST, repeat = true) {
                 Item("black_stained_glass_pane", displayName = Some(" "))()
@@ -152,9 +156,21 @@ class RoleManagementProgram(using gm: GroupManager) extends UIProgram:
                             case None => s"§7* ${x.displayName()}"
                             case Some(RuleMode.Allow) => s"§a✔ ${x.displayName()}"
                             case Some(RuleMode.Deny) => s"§c✖ ${x.displayName()}"
-                        
+
                     Item(x.displayItem().toString().toLowerCase(), displayName = Some(name)) {
                         Lore(s"§r§f${x.displayExplanation()}")
+                        Lore("")
+
+                        role.permissions.get(x) match
+                            case None => Lore(s"§7This role does not affect this permission")
+                            case Some(RuleMode.Allow) => Lore(s"§7This role allows this permission unless overridden by a higher role")
+                            case Some(RuleMode.Deny) => Lore(s"§7This role denies this permission unless overridden by a higher role")
+
+                        Lore("")
+                        role.permissions.get(x) match
+                            case None => Lore(s"§7Click to toggle §fignore§7/allow/deny")
+                            case Some(RuleMode.Allow) => Lore(s"§7Click to toggle ignore/§fallow§7/deny")
+                            case Some(RuleMode.Deny) => Lore(s"§7Click to toggle ignore/allow/§fdeny§7")
                     }
                 }
             }
