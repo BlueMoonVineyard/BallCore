@@ -34,6 +34,9 @@ import org.bukkit.event.entity.EntityExplodeEvent
 import org.bukkit.event.player.PlayerBucketFillEvent
 import org.bukkit.event.block.BlockPistonExtendEvent
 import org.bukkit.event.block.BlockPistonRetractEvent
+import org.bukkit.event.block.BlockFertilizeEvent
+import com.destroystokyo.paper.MaterialTags
+import org.bukkit.block.data.Lightable
 
 class Listener(using rm: ReinforcementManager, gm: GroupManager, holos: HologramManager) extends org.bukkit.event.Listener:
     def reinforcementFromItem(is: ItemStack): Option[ReinforcementTypes] =
@@ -188,10 +191,6 @@ class Listener(using rm: ReinforcementManager, gm: GroupManager, holos: Hologram
                         event.setCancelled(true)
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
-    def preventStrippingLogs(event: PlayerInteractEvent): Unit =
-        ???
-
-    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     def preventHarvestingCaveVines(event: PlayerHarvestBlockEvent): Unit =
         val loc = BlockAdjustment.adjustBlock(event.getHarvestedBlock())
         val rein = rm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID())
@@ -206,24 +205,104 @@ class Listener(using rm: ReinforcementManager, gm: GroupManager, holos: Hologram
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     def preventWaxingCopper(event: BlockPlaceEvent): Unit =
-        ???
+        if !BlockSets.copperBlocks.contains(event.getBlockPlaced().getType()) then
+            return
 
-    // prevents grass -> path and grass/dirt -> farmland
-    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
-    def preventTilling(event: PlayerInteractEvent): Unit =
-        ???
+        val player = event.getPlayer()
+        val loc = event.getBlockPlaced()
+        val rein = rm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID())
+        if rein.isDefined then
+            gm.check(player.getUniqueId(), rein.get.group, Permissions.Build) match
+                case Right(ok) if ok =>
+                    ()
+                case _ =>
+                    // TODO: notify of permission denied
+                    event.setCancelled(true)
 
+    // prevents grass -> path, grass/dirt -> farmland, logs -> stripped logs, harvesting beehives
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
-    def preventHarvestingBeehive(event: PlayerInteractEvent): Unit =
-        ???
+    def preventBlockRightClickChanges(event: PlayerInteractEvent): Unit =
+        if !event.hasBlock() || event.getAction() != Action.RIGHT_CLICK_BLOCK then
+            return
+        val player = event.getPlayer()
+        val hand = event.getHand()
+        if hand != EquipmentSlot.HAND && hand != EquipmentSlot.OFF_HAND then
+            return
+        val slot =
+            if hand == EquipmentSlot.HAND then
+                player.getInventory().getItemInMainHand()
+            else
+                player.getInventory().getItemInOffHand()
 
-    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
-    def preventLightingCandles(event: PlayerInteractEvent): Unit =
-        ???
+        val loc = event.getClickedBlock()
+        val rein = rm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID())
+        if rein.isEmpty then
+            return
+        gm.check(player.getUniqueId(), rein.get.group, Permissions.Build) match
+            case Right(ok) if ok =>
+                return
+            case _ =>
+                ()
+
+        // TODO: notify of permission denied
+        val btype = loc.getType()
+
+        if MaterialTags.SHOVELS.isTagged(slot.getType()) then
+            // prevent grass -> path
+            if btype == Material.GRASS_BLOCK then
+                event.setCancelled(true)
+            // prevent extinguishing campfires with shovels
+            else if BlockSets.campfires.contains(btype) then
+                val lightable = loc.getBlockData().asInstanceOf[Lightable]
+                if lightable.isLit() then
+                    event.setCancelled(true)
+        // prevent making farmland
+        else if MaterialTags.HOES.isTagged(slot.getType()) then
+            if BlockSets.farmlandableBlocks.contains(btype) then
+                event.setCancelled(true)
+        // prevent stripping logs
+        else if MaterialTags.AXES.isTagged(slot.getType()) then
+            if BlockSets.logs.contains(btype) then
+                event.setCancelled(true)
+        // prevent harvesting beehives
+        else if BlockSets.beehiveHarvestingTools.contains(slot.getType()) then
+            if BlockSets.beehives.contains(btype) then
+                event.setCancelled(true)
+        // prevent modifiying candles
+        else if BlockSets.candles.contains(btype) then
+            // prevent extinguishing candles
+            if !event.hasItem() then
+                val lightable = loc.getBlockData().asInstanceOf[Lightable]
+                if lightable.isLit() then
+                    event.setCancelled(true)
+            // prevent lighting candles
+            else if BlockSets.igniters.contains(slot.getType()) then
+                event.setCancelled(true)
+        // prevent lighting campfires
+        else if BlockSets.campfires.contains(btype) then
+            val lightable = loc.getBlockData().asInstanceOf[Lightable]
+            if !lightable.isLit() && BlockSets.igniters.contains(slot.getType()) then
+                event.setCancelled(true)
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     def preventModifiyingBeacon(event: PlayerInteractEvent): Unit =
-        ???
+        if !event.hasBlock() || event.getAction() != Action.RIGHT_CLICK_BLOCK then
+            return
+        if event.getClickedBlock().getType() != Material.BEACON then
+            return
+
+        val player = event.getPlayer()
+        val loc = event.getClickedBlock()
+        val rein = rm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID())
+        if rein.isEmpty then
+            return
+
+        // TODO: notify of permission denied
+        gm.check(player.getUniqueId(), rein.get.group, Permissions.Build) match
+            case Right(ok) if ok =>
+                return
+            case _ =>
+                event.setCancelled(true)
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     def preventPuttingBookInLectern(event: PlayerInteractEvent): Unit =
@@ -231,10 +310,6 @@ class Listener(using rm: ReinforcementManager, gm: GroupManager, holos: Hologram
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     def preventTakingBookFromLectern(event: PlayerInteractEvent): Unit =
-        ???
-
-    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
-    def preventSpreadingMoss(event: PlayerInteractEvent): Unit =
         ???
 
     // prevent harvesting powdered snow w/out perms
@@ -251,6 +326,24 @@ class Listener(using rm: ReinforcementManager, gm: GroupManager, holos: Hologram
             return
         val rein = rm.getReinforcement(block.getX(), block.getY(), block.getZ(), block.getWorld().getUID())
 
+    // prevent bonemealing blocks
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    def preventBonemealing(event: BlockFertilizeEvent): Unit =
+        val player = event.getPlayer()
+        if player == null then
+            return
+
+        event.getBlocks().forEach { x =>
+            val loc = BlockAdjustment.adjustBlock(x.getBlock())
+            val rein = rm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID())
+            if rein.isDefined then
+                gm.check(player.getUniqueId(), rein.get.group, Permissions.Crops) match
+                    case Right(ok) if ok =>
+                        ()
+                    case _ =>
+                        // TODO: notify of permission denied
+                        event.setCancelled(true)
+        }
 
     //
     //// Stuff that enforces reinforcements in the face of non-permissions; i.e. stuff like preventing water from killing reinforced blocks
@@ -323,11 +416,18 @@ class Listener(using rm: ReinforcementManager, gm: GroupManager, holos: Hologram
                 event.setCancelled(true)
         }
 
-    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
-    def preventSpreadingMossWithDispenser(event: BlockDispenseEvent): Unit =
-        ???
-
     // have explosions damage blocks
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     def onExplosion(event: EntityExplodeEvent): Unit =
-        ???
+        // the blockList is mutable and editing it will edit what blocks are destroyed
+        val it = event.blockList().iterator()
+        while it.hasNext() do
+            val block = it.next()
+            val loc = BlockAdjustment.adjustBlock(block)
+            val rein = rm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID())
+            if rein.isDefined then
+                rm.break(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID()) match
+                    case Right(_) => it.remove()
+                    case Left(_) => ()
+
+                

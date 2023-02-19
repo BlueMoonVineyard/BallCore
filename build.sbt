@@ -15,10 +15,12 @@ lazy val dependencyPlugin = project
     scalaVersion := scala3Version,
 
     resolvers += "spigot-repo" at "https://hub.spigotmc.org/nexus/content/repositories/snapshots/",
+    resolvers += "paper-repo" at "https://repo.papermc.io/repository/maven-public/",
     resolvers += "codemc-repo" at "https://repo.codemc.io/repository/maven-public/",
     resolvers += "jitpack.io" at "https://jitpack.io/",
 
     libraryDependencies += "org.spigotmc" % "spigot-api" % "1.19-R0.1-SNAPSHOT" % "provided", // intransitive()
+    libraryDependencies += "io.papermc.paper" % "paper-api" % "1.19-R0.1-SNAPSHOT" % "provided", // intransitive()
     libraryDependencies += "org.scalikejdbc" %% "scalikejdbc" % "4.0.0",
     libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "2.1.0",
     libraryDependencies += "org.xerial" % "sqlite-jdbc" % "3.40.0.0",
@@ -43,6 +45,7 @@ lazy val actualPlugin = project
     libraryDependencies += "org.scalameta" %% "munit" % "0.7.29" % Test,
 
     libraryDependencies += "org.spigotmc" % "spigot-api" % "1.19-R0.1-SNAPSHOT" % "provided", // intransitive()
+    libraryDependencies += "io.papermc.paper" % "paper-api" % "1.19-R0.1-SNAPSHOT" % "provided", // intransitive()
     libraryDependencies += "me.filoghost.holographicdisplays" % "holographicdisplays-api" % "3.0.0" % "provided",
     libraryDependencies += "com.github.Slimefun" % "Slimefun4" % "RC-28" % "provided" intransitive(),
   )

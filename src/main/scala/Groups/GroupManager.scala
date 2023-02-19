@@ -205,6 +205,7 @@ class GroupManager()(using sql: Storage.SQLManager):
                     (Permissions.Chests, RuleMode.Allow),
                     (Permissions.Doors, RuleMode.Allow),
                     (Permissions.Crops, RuleMode.Allow),
+                    (Permissions.Build, RuleMode.Allow),
                 ),
             ),
         )

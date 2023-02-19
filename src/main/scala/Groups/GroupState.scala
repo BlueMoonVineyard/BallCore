@@ -30,6 +30,7 @@ enum Permissions(val name: String):
     case AddReinforcements extends Permissions("reinforcements.add")
     case RemoveReinforcements extends Permissions("reinforcements.remove")
 
+    case Build extends Permissions("build")
     case Chests extends Permissions("chests")
     case Doors extends Permissions("doors")
     case Crops extends Permissions("crops")
