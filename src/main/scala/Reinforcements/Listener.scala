@@ -67,7 +67,7 @@ class Listener(using rm: ReinforcementManager, holos: HologramManager) extends o
             case ReinforceAsYouGo(gid, item) =>
                 val p = event.getPlayer()
                 val i = p.getInventory()
-                val loc = event.getBlockPlaced()
+                val loc = BlockAdjustment.adjustBlock(event.getBlockPlaced())
                 val slot = i.getStorageContents.find { x =>
                     item.getType() == x.getType() && item.getItemMeta().getDisplayName() == x.getItemMeta().getDisplayName()
                 }
@@ -86,11 +86,12 @@ class Listener(using rm: ReinforcementManager, holos: HologramManager) extends o
                             case Left(err) =>
                                 event.getPlayer().sendMessage(explain(err))
                             case Right(_) =>
+                                playCreationEffect(loc.getLocation(), reinforcement.get)
                                 value.setAmount(value.getAmount()-1)
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     def onBreak(event: BlockBreakEvent): Unit =
-        val block = event.getBlock()
+        val block = BlockAdjustment.adjustBlock(event.getBlock())
         rm.break(block.getX(), block.getY(), block.getZ(), block.getWorld().getUID()) match
             case Left(err) =>
                 holos.clear(block)
@@ -115,7 +116,7 @@ class Listener(using rm: ReinforcementManager, holos: HologramManager) extends o
                 if reinforcement.isEmpty then
                     // TODO: reject item use
                     return
-                val loc = event.getClickedBlock()
+                val loc = BlockAdjustment.adjustBlock(event.getClickedBlock())
                 val wid = loc.getWorld().getUID()
                 rm.reinforce(event.getPlayer().getUniqueId(), gid, loc.getX(), loc.getY(), loc.getZ(), wid, reinforcement.get) match
                     case Left(err) =>
@@ -128,7 +129,7 @@ class Listener(using rm: ReinforcementManager, holos: HologramManager) extends o
                 if event.getAction() != Action.RIGHT_CLICK_BLOCK then
                     return
 
-                val loc = event.getClickedBlock()
+                val loc = BlockAdjustment.adjustBlock(event.getClickedBlock())
                 val wid = loc.getWorld().getUID()
                 rm.unreinforce(event.getPlayer().getUniqueId(), loc.getX(), loc.getY(), loc.getZ(), wid) match
                     case Left(err) =>
