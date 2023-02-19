@@ -31,7 +31,7 @@ class ChunkStateManager()(using sql: Storage.SQLManager):
                     GroupID TEXT NOT NULL,
                     Owner TEXT NOT NULL,
                     Health INTEGER NOT NULL,
-                    MaxHealth INTEGER NOT NULL,
+                    ReinforcementKind TEXT NOT NULL,
                     PlacedAt TEXT NOT NULL
                 );
                 """
@@ -54,19 +54,19 @@ class ChunkStateManager()(using sql: Storage.SQLManager):
         val cs = ChunkState(Map())
         val items =
             sql"""
-            SELECT OffsetX, OffsetZ, Y, GroupID, Owner, Health, MaxHealth, PlacedAt FROM Reinforcements
+            SELECT OffsetX, OffsetZ, Y, GroupID, Owner, Health, ReinforcementKind, PlacedAt FROM Reinforcements
                 WHERE ChunkX = ${key.chunkX}
                   AND ChunkZ = ${key.chunkZ}
                   AND World = ${key.world};
             """
-                .map(rs => (rs.int("OffsetX"), rs.int("OffsetZ"), rs.int("Y"), rs.string("GroupID"), rs.string("Owner"), rs.int("Health"), rs.int("MaxHealth"), rs.date("PlacedAt")))
+                .map(rs => (rs.int("OffsetX"), rs.int("OffsetZ"), rs.int("Y"), rs.string("GroupID"), rs.string("Owner"), rs.int("Health"), rs.string("ReinforcementKind"), rs.date("PlacedAt")))
                 .list
                 .apply()
                 .foreach { tuple =>
-                    val (offsetX, offsetZ, y, group, owner, health, maxHealth, date) = tuple
+                    val (offsetX, offsetZ, y, group, owner, health, reinforcementKind, date) = tuple
                     val gid = ju.UUID.fromString(group)
                     val uid = ju.UUID.fromString(owner)
-                    cs.blocks(BlockKey(offsetX, offsetZ, y)) = BlockState(gid, uid, false, false, health, maxHealth, date.toInstant())
+                    cs.blocks(BlockKey(offsetX, offsetZ, y)) = BlockState(gid, uid, false, false, health, ReinforcementTypes.from(reinforcementKind).get, date.toInstant())
                 }
         cache(key) = cs
 
@@ -100,9 +100,9 @@ class ChunkStateManager()(using sql: Storage.SQLManager):
                 val (key, value) = item
                 sql"""
                 INSERT OR REPLACE INTO Reinforcements
-                    (ChunkX, ChunkZ, World, OffsetX, OffsetZ, Y, GroupID, Owner, Health, MaxHealth, PlacedAt)
+                    (ChunkX, ChunkZ, World, OffsetX, OffsetZ, Y, GroupID, Owner, Health, ReinforcementKind, PlacedAt)
                     VALUES
-                    (${cx},  ${cz},  ${cw}, ${key.offsetX}, ${key.offsetZ}, ${key.y}, ${value.group}, ${value.owner}, ${value.health}, ${value.maxHealth}, ${value.placedAt})
+                    (${cx},  ${cz},  ${cw}, ${key.offsetX}, ${key.offsetZ}, ${key.y}, ${value.group}, ${value.owner}, ${value.health}, ${value.kind.into()}, ${value.placedAt})
                 """
             }
         }

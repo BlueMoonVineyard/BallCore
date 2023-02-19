@@ -16,8 +16,20 @@ type WorldID = UUID
 
 sealed trait ReinforcementError
 case class ReinforcementGroupError(error: Groups.GroupError) extends ReinforcementError
+case class JustBroken(bs: BlockState) extends ReinforcementError
 case class AlreadyExists() extends ReinforcementError
 case class DoesntExist() extends ReinforcementError
+
+def explain(err: ReinforcementError): String =
+    err match
+        case ReinforcementGroupError(error) =>
+            error.explain()
+        case AlreadyExists() =>
+            "A reinforcement already exists there"
+        case DoesntExist() =>
+            "A reinforcement doesn't exist there"
+        case JustBroken(_) =>
+            "A reinforcement was just broken"
 
 /** The ReinforcementManager implements all of the logic of reinforcement data */
 class ReinforcementManager()(using csm: ChunkStateManager, gsm: Groups.GroupManager, c: Clock):
@@ -28,14 +40,14 @@ class ReinforcementManager()(using csm: ChunkStateManager, gsm: Groups.GroupMana
     private def hoist[B](either: Either[Groups.GroupError, B]): Either[ReinforcementError, B] =
         either.left.map(ReinforcementGroupError(_))
 
-    def reinforce(as: Groups.UserID, group: Groups.UserID, x: Int, y: Int, z: Int, world: WorldID, health: Int): Either[ReinforcementError, Unit] =
+    def reinforce(as: Groups.UserID, group: Groups.UserID, x: Int, y: Int, z: Int, world: WorldID, kind: ReinforcementTypes): Either[ReinforcementError, Unit] =
         val (chunkX, chunkZ, offsetX, offsetZ) = toOffsets(x, z)
         val state = csm.get(ChunkKey(chunkX, chunkZ, world.toString()))
         val bkey = BlockKey(offsetX, offsetZ, y)
         state.blocks.get(bkey).filterNot(_.deleted) match
             case None =>
                 hoist(gsm.checkE(as, group, Groups.Permissions.AddReinforcements)).map { _ =>
-                    state.blocks(bkey) = BlockState(group, as, true, false, health, health, c.now())
+                    state.blocks(bkey) = BlockState(group, as, true, false, kind.hp, kind, c.now())
                 }
             case Some(value) =>
                 Left(AlreadyExists())
@@ -64,9 +76,12 @@ class ReinforcementManager()(using csm: ChunkStateManager, gsm: Groups.GroupMana
                 val timeDamageMultiplier = max(20.0 * exp(-0.17 * hoursPassed), 1.0)
                 val base = 1.0
                 val newHealth = (value.health.doubleValue() - (base * timeDamageMultiplier)).intValue()
-                val newValue = value.copy(health = newHealth)
+                val newValue = value.copy(health = newHealth, deleted = newHealth <= 0)
                 state.blocks(bkey) = newValue
-                Right(newValue)
+                if newValue.deleted then
+                    Left(JustBroken(newValue))
+                else
+                    Right(newValue)
     def getReinforcement(x: Int, y: Int, z: Int, world: WorldID): Option[BlockState] =
         val (chunkX, chunkZ, offsetX, offsetZ) = toOffsets(x, z)
         val state = csm.get(ChunkKey(chunkX, chunkZ, world.toString()))

@@ -13,6 +13,9 @@ import BallCore.DataStructures.TestClock
 import java.time.Instant
 import java.time.temporal.TemporalAmount
 import java.time.temporal.ChronoUnit
+import BallCore.Reinforcements.ReinforcementError
+import BallCore.Reinforcements.BlockState
+import BallCore.Reinforcements.ReinforcementTypes
 
 class ReinforcementSuite extends munit.FunSuite {
     test("basic stuff") {
@@ -25,27 +28,27 @@ class ReinforcementSuite extends munit.FunSuite {
 
         val u1 = ju.UUID.randomUUID()
         val u2 = ju.UUID.randomUUID()
-        val world = NamespacedKey("manka", "aknam")
+        val world = ju.UUID.randomUUID()
 
         val gid = gm.createGroup(u1, "test")
         gm.addToGroup(u2, gid)
 
-        val res1 = rm.reinforce(u2, gid, 0, 0, 0, world, 500)
+        val res1 = rm.reinforce(u2, gid, 0, 0, 0, world, ReinforcementTypes.IronLike)
         assert(res1 == Left(Reinforcements.ReinforcementGroupError(Groups.GroupError.NoPermissions)), res1)
 
-        val res2 = rm.reinforce(u1, gid, 0, 0, 0, world, 500)
+        val res2 = rm.reinforce(u1, gid, 0, 0, 0, world, ReinforcementTypes.IronLike)
         assert(res2 == Right(()), res2)
 
         val rid = gm.roles(gid).getOrElse(List()).find { x => x.name == "Admin" }.get.id
         assert(gm.assignRole(u1, u2, gid, rid, true).isRight)
 
-        val res3 = rm.reinforce(u2, gid, 0, 0, 0, world, 500)
+        val res3 = rm.reinforce(u2, gid, 0, 0, 0, world, ReinforcementTypes.IronLike)
         assert(res3 == Left(Reinforcements.AlreadyExists()), res3)
 
-        val res4 = rm.unreinforce(u2, gid, 0, 0, 0, world)
+        val res4 = rm.unreinforce(u2, 0, 0, 0, world)
         assert(res4 == Right(()), res4)
 
-        val res5 = rm.unreinforce(u2, gid, 0, 0, 0, world)
+        val res5 = rm.unreinforce(u2, 0, 0, 0, world)
         assert(res5 == Left(Reinforcements.DoesntExist()))
     }
     test("breaking shenanigans") {
@@ -58,12 +61,12 @@ class ReinforcementSuite extends munit.FunSuite {
 
         val u1 = ju.UUID.randomUUID()
         val u2 = ju.UUID.randomUUID()
-        val world = NamespacedKey("manka", "aknam")
+        val world = ju.UUID.randomUUID()
 
         val gid = gm.createGroup(u1, "test")
         gm.addToGroup(u2, gid)
 
-        val res1 = rm.reinforce(u1, gid, 0, 0, 0, world, 500)
+        val res1 = rm.reinforce(u1, gid, 0, 0, 0, world, ReinforcementTypes.IronLike)
         assert(res1 == Right(()), res1)
 
         val res2 = rm.break(0, 0, 0, world)
@@ -82,5 +85,41 @@ class ReinforcementSuite extends munit.FunSuite {
         val d2 = res3.right.get.health - res4.right.get.health
 
         assert(d2 < d1, (d2, d1))
+    }
+    test("break and replace") {
+        given sql: Storage.SQLManager = new Storage.SQLManager(test = true)
+        given keyVal: Storage.SQLKeyVal = new Storage.SQLKeyVal
+        given gm: Groups.GroupManager = new Groups.GroupManager
+        given csm: Reinforcements.ChunkStateManager = new Reinforcements.ChunkStateManager
+        given clock: TestClock = new TestClock(Instant.MIN)
+        given rm: Reinforcements.ReinforcementManager = new Reinforcements.ReinforcementManager
+
+        val u1 = ju.UUID.randomUUID()
+        val u2 = ju.UUID.randomUUID()
+        val world = ju.UUID.randomUUID()
+
+        val gid = gm.createGroup(u1, "test")
+        gm.addToGroup(u2, gid)
+
+        val res1 = rm.reinforce(u1, gid, 0, 0, 0, world, ReinforcementTypes.Stone)
+        assert(res1 == Right(()), res1)
+
+        def break(cond: Either[ReinforcementError, BlockState] => Boolean): Unit =
+            val res = rm.break(0, 0, 0, world)
+            assert(cond(res), res)
+
+        // if reinforcement damage logic changes, make sure to change this so that
+        // it breaks the block successfully
+        break(_.isRight)
+        break(_.isRight)
+        break(_.isLeft)
+
+        val res2 = rm.reinforce(u1, gid, 0, 0, 0, world, ReinforcementTypes.Stone)
+        assert(res2 == Right(()), res2)
+
+        // ditto
+        break(_.isRight)
+        break(_.isRight)
+        break(_.isLeft)
     }
 }

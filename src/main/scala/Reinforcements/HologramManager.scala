@@ -15,8 +15,10 @@ import scala.collection.mutable
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.concurrent.Future
+import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext
 import org.bukkit.block.Block
+import BallCore.DataStructures.Delay
 
 class HologramManager(using p: JavaPlugin, ec: ExecutionContext):
     private val api = HolographicDisplaysAPI.get(p)
@@ -29,7 +31,7 @@ class HologramManager(using p: JavaPlugin, ec: ExecutionContext):
                 val isCancelled = AtomicBoolean(false)
                 val neu = api.createHologram(at)
                 holos(key) = (neu, () => isCancelled.set(true))
-                Future {
+                Delay.by(5.seconds).andThen { _ =>
                     if !isCancelled.get() then
                         holos.remove(key)
                         neu.delete()
@@ -39,7 +41,7 @@ class HologramManager(using p: JavaPlugin, ec: ExecutionContext):
                 canc()
                 val isCancelled = AtomicBoolean(false)
                 holos(key) = (holo, () => isCancelled.set(true))
-                Future {
+                Delay.by(5.seconds).andThen { _ =>
                     if !isCancelled.get() then
                         holos.remove(key)
                         holo.delete()
@@ -61,3 +63,12 @@ class HologramManager(using p: JavaPlugin, ec: ExecutionContext):
         holo.setPosition(loc)
         holo.getLines().clear()
         text.map(holo.getLines().appendText)
+
+    def clear(at: Block): Unit =
+        val loc = at.getLocation()
+        val key = (loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(), loc.getWorld().getUID())
+        holos.get(key).map { (holo, cb) =>
+            cb()
+            holos.remove(key)
+            holo.delete()
+        }

@@ -26,6 +26,7 @@ import BallCore.Reinforcements.ReinforcementManager
 import BallCore.Reinforcements.ChunkStateManager
 import BallCore.DataStructures.Clock
 import BallCore.DataStructures.WallClock
+import BallCore.Reinforcements.HologramManager
 
 final class Main extends JavaPlugin:
     given sql: Storage.SQLManager = new Storage.SQLManager
@@ -42,6 +43,7 @@ final class Main extends JavaPlugin:
     given gm: GroupManager = new GroupManager
     given csm: ChunkStateManager = new ChunkStateManager
     given clock: Clock = new WallClock
+    given hm: HologramManager = new HologramManager
     given rm: ReinforcementManager = new ReinforcementManager
     
     override def onEnable() =

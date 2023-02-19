@@ -23,7 +23,7 @@ case class BlockState(
     dirty: Boolean,
     deleted: Boolean,
     health: Int,
-    maxHealth: Int,
+    kind: ReinforcementTypes,
     placedAt: Instant,
 )
 
