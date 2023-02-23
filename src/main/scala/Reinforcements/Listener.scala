@@ -37,8 +37,15 @@ import org.bukkit.event.block.BlockPistonRetractEvent
 import org.bukkit.event.block.BlockFertilizeEvent
 import com.destroystokyo.paper.MaterialTags
 import org.bukkit.block.data.Lightable
+import org.bukkit.event.inventory.InventoryInteractEvent
+import org.bukkit.event.inventory.InventoryClickEvent
+import org.bukkit.event.inventory.ClickType
+import BallCore.UI.Prompts
+import org.bukkit.entity.Player
+import org.bukkit.event.inventory.PrepareItemCraftEvent
+import org.bukkit.event.inventory.CraftItemEvent
 
-class Listener(using rm: ReinforcementManager, gm: GroupManager, holos: HologramManager) extends org.bukkit.event.Listener:
+class Listener(using rm: ReinforcementManager, gm: GroupManager, holos: HologramManager, prompts: Prompts) extends org.bukkit.event.Listener:
     def reinforcementFromItem(is: ItemStack): Option[ReinforcementTypes] =
         if is == null then return None
         is.getType() match
@@ -76,39 +83,116 @@ class Listener(using rm: ReinforcementManager, gm: GroupManager, holos: Hologram
         at.getWorld().spawnParticle(pType, centered(at), pCount, pOffset, pOffset, pOffset, pSpeed, null)
 
     //
+    //// Plumb-and-square crafting and group switching
+    //
+
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    def onShiftLeftClick(event: InventoryClickEvent): Unit =
+        if event.getClick() != ClickType.SHIFT_LEFT then
+            return
+        val h = event.getWhoClicked()
+        if !h.isInstanceOf[Player] then
+            return
+        val p = h.asInstanceOf[Player]
+        val istack = event.getCurrentItem()
+        val item = SlimefunItem.getByItem(istack)
+        if !item.isInstanceOf[PlumbAndSquare] then
+            return
+
+        event.setCancelled(true)
+        p.closeInventory()
+        prompts.prompt(p, "What group do you want to reinforce on?").map { group =>
+            gm.userGroups(p.getUniqueId()).map(_.find(_.name.contains(group.toLowerCase()))) match
+                case Left(err) =>
+                    p.sendMessage(err.explain())
+                case Right(Some(group)) =>
+                    RuntimeStateManager.states(p.getUniqueId()) = group.id
+                case Right(None) =>
+                    p.sendMessage(s"I couldn't find a group matching '${group}'")
+        }
+
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    def onPrepareCraft(event: PrepareItemCraftEvent): Unit =
+        val inv = event.getInventory()
+        val recp = inv.getRecipe()
+        if recp == null then
+            return
+
+        val res = recp.getResult().clone()
+        val item = SlimefunItem.getByItem(res)
+        if !item.isInstanceOf[PlumbAndSquare] then
+            return
+
+        val h = event.getView().getPlayer()
+        if !h.isInstanceOf[Player] then
+            return
+
+        val p = h.asInstanceOf[Player]
+        val pas = item.asInstanceOf[PlumbAndSquare]
+        val pasStack = inv.getItem(inv.first(PlumbAndSquare.itemStack.getType()))
+        val existingMats = pas.getMaterials(pasStack)
+        val craftingWith = inv.getMatrix().filterNot(_ == null).filterNot(_.getType() == PlumbAndSquare.itemStack.getType())(0)
+
+        if !existingMats.isEmpty then
+            val (kind, count) = existingMats.get
+            if Some(kind) != reinforcementFromItem(craftingWith) then
+                inv.setResult(ItemStack(Material.AIR))
+                return
+
+        val kind = reinforcementFromItem(craftingWith).get
+        val newStack = pasStack.clone()
+        newStack.setAmount(1)
+        pas.loadReinforcementMaterials(p, newStack, craftingWith.getAmount(), kind)
+
+        inv.setResult(newStack)
+
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    def onDoCraft(event: CraftItemEvent): Unit =
+        val inv = event.getInventory()
+        val res = inv.getResult()
+
+        if res == null then
+            return
+
+        val item = SlimefunItem.getByItem(res)
+        if !item.isInstanceOf[PlumbAndSquare] then
+            return
+
+        val craftingWith = inv.getMatrix().filterNot(_ == null).filterNot(_.getType() == PlumbAndSquare.itemStack.getType())(0)
+        craftingWith.setAmount(0)
+
+    //
     //// Stuff that interacts with the RSM; i.e. that mutates block states
     //
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     def onBlockPlace(event: BlockPlaceEvent): Unit =
-        RuntimeStateManager.states(event.getPlayer().getUniqueId()) match
-            case Neutral() => ()
-            case Reinforcing(_) => ()
-            case Unreinforcing() => ()
-            case ReinforceAsYouGo(gid, item) =>
-                val p = event.getPlayer()
-                val i = p.getInventory()
-                val loc = BlockAdjustment.adjustBlock(event.getBlockPlaced())
-                val slot = i.getStorageContents.find { x =>
-                    item.getType() == x.getType() && item.getItemMeta().getDisplayName() == x.getItemMeta().getDisplayName()
-                }
-                slot match
-                    case None =>
-                        event.getPlayer().sendMessage(s"no items")
-                        // TODO: you ran out of items :/
-                        event.setCancelled(true)
-                    case Some(value) =>
-                        val reinforcement = reinforcementFromItem(value)
-                        if reinforcement.isEmpty then
-                            event.getPlayer().sendMessage(s"${value}")
-                            event.setCancelled(true)
-                            return
-                        rm.reinforce(p.getUniqueId(), gid, loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID(), reinforcement.get) match
-                            case Left(err) =>
-                                event.getPlayer().sendMessage(explain(err))
-                            case Right(_) =>
-                                playCreationEffect(loc.getLocation(), reinforcement.get)
-                                value.setAmount(value.getAmount()-1)
+        val p = event.getPlayer()
+        val i = p.getInventory()
+        val istack = i.getItemInOffHand()
+        val item = SlimefunItem.getByItem(istack)
+        if !item.isInstanceOf[PlumbAndSquare] then
+            return
+        if !RuntimeStateManager.states.contains(p.getUniqueId()) then
+            p.sendMessage("Shift left-click the plumb-and-square in your inventory to set a group to reinforce on before reinforcing")
+            event.setCancelled(true)
+            return
+
+        val pas = item.asInstanceOf[PlumbAndSquare]
+        val mats = pas.getMaterials(istack)
+        if mats.isEmpty then
+            return
+        val (kind, amount) = mats.get
+        if amount < 1 then
+            return
+        val loc = BlockAdjustment.adjustBlock(event.getBlockPlaced())
+        
+        rm.reinforce(p.getUniqueId(), ???, loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID(), kind) match
+            case Left(err) =>
+                event.getPlayer().sendMessage(explain(err))
+            case Right(_) =>
+                playCreationEffect(loc.getLocation(), kind)
+                pas.loadReinforcementMaterials(p, istack, -1, kind)
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     def onBreak(event: BlockBreakEvent): Unit =
@@ -128,37 +212,64 @@ class Listener(using rm: ReinforcementManager, gm: GroupManager, holos: Hologram
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     def onInteract(event: PlayerInteractEvent): Unit =
-        RuntimeStateManager.states(event.getPlayer().getUniqueId()) match
-            case Neutral() => ()
-            case Reinforcing(gid) =>
-                if event.getAction() != Action.RIGHT_CLICK_BLOCK then
-                    return
-                val reinforcement = reinforcementFromItem(event.getItem())
-                if reinforcement.isEmpty then
-                    // TODO: reject item use
-                    return
-                val loc = BlockAdjustment.adjustBlock(event.getClickedBlock())
-                val wid = loc.getWorld().getUID()
-                rm.reinforce(event.getPlayer().getUniqueId(), gid, loc.getX(), loc.getY(), loc.getZ(), wid, reinforcement.get) match
-                    case Left(err) =>
-                        event.getPlayer().sendMessage(explain(err))
-                    case Right(ok) =>
-                        playCreationEffect(loc.getLocation(), reinforcement.get)
-                        event.getItem().setAmount(event.getItem().getAmount()-1)
-                        event.setCancelled(true)
-            case Unreinforcing() =>
-                if event.getAction() != Action.RIGHT_CLICK_BLOCK then
-                    return
+        val p = event.getPlayer()
+        val i = p.getInventory()
+        val istack = i.getItemInMainHand()
+        val item = SlimefunItem.getByItem(istack)
+        if !item.isInstanceOf[PlumbAndSquare] then
+            return
+        if !RuntimeStateManager.states.contains(p.getUniqueId()) then
+            p.sendMessage("Shift left-click the plumb-and-square in your inventory to set a group to reinforce on before reinforcing")
+            event.setCancelled(true)
+            return
 
-                val loc = BlockAdjustment.adjustBlock(event.getClickedBlock())
-                val wid = loc.getWorld().getUID()
-                rm.unreinforce(event.getPlayer().getUniqueId(), loc.getX(), loc.getY(), loc.getZ(), wid) match
-                    case Left(err) =>
-                        event.getPlayer().sendMessage(explain(err))
-                    case Right(ok) =>
-                        event.setCancelled(true)
-                        // TODO: return the materials to the player
-            case ReinforceAsYouGo(_, _) => ()
+        val pas = item.asInstanceOf[PlumbAndSquare]
+        val mats = pas.getMaterials(istack)
+        if mats.isEmpty then
+            return
+        val (kind, amount) = mats.get
+        if amount < 1 then
+            return
+        val loc = BlockAdjustment.adjustBlock(event.getClickedBlock())
+
+        val gid = RuntimeStateManager.states(p.getUniqueId())
+        rm.reinforce(p.getUniqueId(), gid, loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID(), kind) match
+            case Left(err) =>
+                event.getPlayer().sendMessage(explain(err))
+            case Right(_) =>
+                playCreationEffect(loc.getLocation(), kind)
+                pas.loadReinforcementMaterials(p, istack, -1, kind)
+        // RuntimeStateManager.states(event.getPlayer().getUniqueId()) match
+        //     case Neutral() => ()
+        //     case Reinforcing(gid) =>
+        //         if event.getAction() != Action.RIGHT_CLICK_BLOCK then
+        //             return
+        //         val reinforcement = reinforcementFromItem(event.getItem())
+        //         if reinforcement.isEmpty then
+        //             // TODO: reject item use
+        //             return
+        //         val loc = BlockAdjustment.adjustBlock(event.getClickedBlock())
+        //         val wid = loc.getWorld().getUID()
+        //         rm.reinforce(event.getPlayer().getUniqueId(), gid, loc.getX(), loc.getY(), loc.getZ(), wid, reinforcement.get) match
+        //             case Left(err) =>
+        //                 event.getPlayer().sendMessage(explain(err))
+        //             case Right(ok) =>
+        //                 playCreationEffect(loc.getLocation(), reinforcement.get)
+        //                 event.getItem().setAmount(event.getItem().getAmount()-1)
+        //                 event.setCancelled(true)
+        //     case Unreinforcing() =>
+        //         if event.getAction() != Action.RIGHT_CLICK_BLOCK then
+        //             return
+
+        //         val loc = BlockAdjustment.adjustBlock(event.getClickedBlock())
+        //         val wid = loc.getWorld().getUID()
+        //         rm.unreinforce(event.getPlayer().getUniqueId(), loc.getX(), loc.getY(), loc.getZ(), wid) match
+        //             case Left(err) =>
+        //                 event.getPlayer().sendMessage(explain(err))
+        //             case Right(ok) =>
+        //                 event.setCancelled(true)
+        //                 // TODO: return the materials to the player
+        //     case ReinforceAsYouGo(_, _) => ()
 
     //
     //// Stuff that enforces reinforcements in the face of permissions; i.e. chest opening prevention

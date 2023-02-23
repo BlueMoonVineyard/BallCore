@@ -15,6 +15,3 @@ depend:
 commands:
   groups:
     description: Entrypoint for group commands
-  reinforcements:
-    description: Entrypoint for reinforcement commands
-    aliases: [re]

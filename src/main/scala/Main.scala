@@ -54,6 +54,5 @@ final class Main extends JavaPlugin:
         Furnace.registerItems()
         Reinforcements.Reinforcements.register()
         getCommand("groups").setExecutor(GroupsCommand())
-        getCommand("reinforcements").setExecutor(Reinforcements.Commands())
     override def onDisable() =
         ()

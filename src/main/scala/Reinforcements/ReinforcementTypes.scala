@@ -10,6 +10,13 @@ enum ReinforcementTypes(val hp: Int):
     case CopperLike extends ReinforcementTypes(200)
     case IronLike extends ReinforcementTypes(300)
 
+    def displayName(): String =
+        this match
+            case Stone => "Stone"
+            case Deepslate => "Deepslate"
+            case CopperLike => "Red"
+            case IronLike => "White"
+        
     def into(): String =
         this match
             case Stone => "stone"

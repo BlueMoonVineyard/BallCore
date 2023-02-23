@@ -9,11 +9,5 @@ import scala.collection.mutable.Map
 import java.util.UUID
 import org.bukkit.inventory.ItemStack
 
-sealed trait PlayerState
-case class Neutral() extends PlayerState
-case class Reinforcing(val group: UUID) extends PlayerState
-case class Unreinforcing() extends PlayerState
-case class ReinforceAsYouGo(val group: UUID, val item: ItemStack) extends PlayerState
-
 object RuntimeStateManager:
-    val states = Map[ju.UUID, PlayerState]().withDefault(x => Neutral())
+    val states = Map[ju.UUID, ju.UUID]()
