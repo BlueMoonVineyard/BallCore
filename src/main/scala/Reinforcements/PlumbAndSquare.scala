@@ -13,10 +13,30 @@ import org.bukkit.entity.Player
 import org.bukkit.persistence.PersistentDataType
 import org.bukkit.ChatColor
 import io.github.thebusybiscuit.slimefun4.core.attributes.NotConfigurable
+import scala.util.chaining._
 
 object PlumbAndSquare:
+    object CustomModelData:
+        def from(kind: Option[ReinforcementTypes]): CustomModelData =
+            kind match
+                case None => Empty
+                case Some(value) => from(value)
+        def from(kind: ReinforcementTypes): CustomModelData =
+            kind match
+                case ReinforcementTypes.Stone => Stone
+                case ReinforcementTypes.Deepslate => Deepslate
+                case ReinforcementTypes.CopperLike => Copper
+                case ReinforcementTypes.IronLike => Iron
+    enum CustomModelData(val num: Int):
+        case Empty extends CustomModelData(1)
+        case Stone extends CustomModelData(2)
+        case Deepslate extends CustomModelData(3)
+        case Copper extends CustomModelData(4)
+        case Iron extends CustomModelData(5)
+
     val group = ItemGroup(NamespacedKey("ballcore", "reinforcements"), CustomItemStack(Material.DIAMOND_PICKAXE, "BallCore Reinforcements"))
     val itemStack = SlimefunItemStack("PLUMB_AND_SQUARE", Material.STICK, "&rPlumb-and-Square", defaultLore())
+    itemStack.setItemMeta(itemStack.getItemMeta().tap(_.setCustomModelData(CustomModelData.Empty.num)))
     val persistenceKeyCount = NamespacedKey("ballcore", "plumb_and_square_item_count")
     val persistenceKeyType = NamespacedKey("ballcore", "plumb_and_square_item_type")
 
@@ -55,7 +75,7 @@ class PlumbAndSquare()
         val pdc = meta.getPersistentDataContainer()
         val kind = ReinforcementTypes.from(pdc.getOrDefault(keyType, PersistentDataType.STRING, ""))
         val loaded = pdc.getOrDefault(keyCount, PersistentDataType.INTEGER, 0)
-
+        meta.setCustomModelData(PlumbAndSquare.CustomModelData.from(kind).num)
         if kind.isDefined && loaded > 0 then
             val lore = List(
                 PlumbAndSquare.defaultLore(),
