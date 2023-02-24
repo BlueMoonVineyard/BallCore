@@ -44,6 +44,8 @@ import BallCore.UI.Prompts
 import org.bukkit.entity.Player
 import org.bukkit.event.inventory.PrepareItemCraftEvent
 import org.bukkit.event.inventory.CraftItemEvent
+import org.bukkit.block.data.`type`.Lectern
+import org.bukkit.event.player.PlayerTakeLecternBookEvent
 
 class Listener(using rm: ReinforcementManager, gm: GroupManager, holos: HologramManager, prompts: Prompts) extends org.bukkit.event.Listener:
     def reinforcementFromItem(is: ItemStack): Option[ReinforcementTypes] =
@@ -186,8 +188,9 @@ class Listener(using rm: ReinforcementManager, gm: GroupManager, holos: Hologram
         if amount < 1 then
             return
         val loc = BlockAdjustment.adjustBlock(event.getBlockPlaced())
-        
-        rm.reinforce(p.getUniqueId(), ???, loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID(), kind) match
+
+        val gid = RuntimeStateManager.states(p.getUniqueId())
+        rm.reinforce(p.getUniqueId(), gid, loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID(), kind) match
             case Left(err) =>
                 event.getPlayer().sendMessage(explain(err))
             case Right(_) =>
@@ -417,16 +420,56 @@ class Listener(using rm: ReinforcementManager, gm: GroupManager, holos: Hologram
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     def preventPuttingBookInLectern(event: PlayerInteractEvent): Unit =
-        ???
+        if event.getAction() != Action.RIGHT_CLICK_BLOCK then
+            return
+        val block = event.getClickedBlock()
+        if block.getType() != Material.LECTERN then
+            return
+        val blockData = block.getBlockData().asInstanceOf[Lectern]
+        if blockData.hasBook() then
+            return
+        val rein = rm.getReinforcement(block.getX(), block.getY(), block.getZ(), block.getWorld().getUID())
+        if rein.isEmpty then
+            return
+        val player = event.getPlayer()
+
+        gm.check(player.getUniqueId(), rein.get.group, Permissions.Build) match
+            case Right(ok) if ok =>
+                return
+            case _ =>
+                event.setCancelled(true)
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
-    def preventTakingBookFromLectern(event: PlayerInteractEvent): Unit =
-        ???
+    def preventTakingBookFromLectern(event: PlayerTakeLecternBookEvent): Unit =
+        val block = event.getLectern().getBlock()
+        val rein = rm.getReinforcement(block.getX(), block.getY(), block.getZ(), block.getWorld().getUID())
+        if rein.isEmpty then
+            return
+        val player = event.getPlayer()
 
-    // prevent harvesting powdered snow w/out perms
+        gm.check(player.getUniqueId(), rein.get.group, Permissions.Chests) match
+            case Right(ok) if ok =>
+                return
+            case _ =>
+                event.setCancelled(true)
+
+    // prevent harvesting reinforced powdered snow w/out perms
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     def preventLiquidPickup(event: PlayerBucketFillEvent): Unit =
-        ???
+        if event.getBlockClicked() != Material.POWDER_SNOW then
+            return
+
+        val block = event.getBlockClicked()
+        val rein = rm.getReinforcement(block.getX(), block.getY(), block.getZ(), block.getWorld().getUID())
+        if rein.isEmpty then
+            return
+        val player = event.getPlayer()
+
+        gm.check(player.getUniqueId(), rein.get.group, Permissions.RemoveReinforcements) match
+            case Right(ok) if ok =>
+                return
+            case _ =>
+                event.setCancelled(true)
 
     // prevent placing liquids in blocks
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
