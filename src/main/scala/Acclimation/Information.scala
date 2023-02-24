@@ -8,6 +8,7 @@ import org.bukkit.World
 import org.bukkit.Bukkit
 import java.util.UUID
 import org.bukkit.Location
+import org.bukkit.block.Biome
 
 object Information:
     val WorldRadiusBlocks = 4000*4
@@ -16,9 +17,12 @@ object Information:
     def latLong(x: Float, z: Float): (Float, Float) =
         (z / WorldRadiusBlocks, x / WorldRadiusBlocks)
 
-    def temperature(x: Int, z: Int): Float =
-        val biome = Bukkit.getWorld("world").getBiome(x, z)
-        ???
+    def temperature(x: Int, y: Int, z: Int): Float =
+        val world = Bukkit.getWorld("world")
+        val provider = world.getBiomeProvider()
+        val temp = world.getBlockAt(x, y, z).getTemperature()
+        // coldest is -0.7, hottest is 2.0
+        ((temp + 0.7) / 2.7).toFloat
 
     private def normalize(v: Float, min: Float, max: Float): Float =
         (v - min) / (max - min)
