@@ -104,7 +104,7 @@ class Listener(using rm: ReinforcementManager, gm: GroupManager, holos: Hologram
         event.setCancelled(true)
         p.closeInventory()
         prompts.prompt(p, "What group do you want to reinforce on?").map { group =>
-            gm.userGroups(p.getUniqueId()).map(_.find(_.name.contains(group.toLowerCase()))) match
+            gm.userGroups(p.getUniqueId()).map(_.find(_.name.toLowerCase().contains(group.toLowerCase()))) match
                 case Left(err) =>
                     p.sendMessage(err.explain())
                 case Right(Some(group)) =>
