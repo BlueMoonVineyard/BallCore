@@ -69,17 +69,17 @@ class ReinforcementSuite extends munit.FunSuite {
         val res1 = rm.reinforce(u1, gid, 0, 0, 0, world, ReinforcementTypes.IronLike)
         assert(res1 == Right(()), res1)
 
-        val res2 = rm.break(0, 0, 0, world)
+        val res2 = rm.break(0, 0, 0, 50.0, world)
         assert(res2.isRight, res2)
 
-        val res3 = rm.break(0, 0, 0, world)
+        val res3 = rm.break(0, 0, 0, 50.0, world)
         assert(res3.isRight, res3)
 
         val d1 = res2.right.get.health - res3.right.get.health
 
-        clock.changeTimeBy(ChronoUnit.HOURS.getDuration())
+        clock.changeTimeBy(ChronoUnit.HOURS.getDuration().multipliedBy(5))
 
-        val res4 = rm.break(0, 0, 0, world)
+        val res4 = rm.break(0, 0, 0, 50.0, world)
         assert(res4.isRight, res4)
 
         val d2 = res3.right.get.health - res4.right.get.health
@@ -105,21 +105,21 @@ class ReinforcementSuite extends munit.FunSuite {
         assert(res1 == Right(()), res1)
 
         def break(cond: Either[ReinforcementError, BlockState] => Boolean): Unit =
-            val res = rm.break(0, 0, 0, world)
+            val res = rm.break(0, 0, 0, 5.0, world)
             assert(cond(res), res)
 
         // if reinforcement damage logic changes, make sure to change this so that
         // it breaks the block successfully
-        break(_.isRight)
-        break(_.isRight)
+        for i <- 1 to 12 do
+            break(_.isRight)
         break(_.isLeft)
 
         val res2 = rm.reinforce(u1, gid, 0, 0, 0, world, ReinforcementTypes.Stone)
         assert(res2 == Right(()), res2)
 
         // ditto
-        break(_.isRight)
-        break(_.isRight)
+        for i <- 1 to 12 do
+            break(_.isRight)
         break(_.isLeft)
     }
 }

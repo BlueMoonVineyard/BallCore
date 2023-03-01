@@ -64,7 +64,7 @@ class ReinforcementManager()(using csm: ChunkStateManager, gsm: Groups.GroupMana
                     hoist(gsm.checkE(as, value.group, Groups.Permissions.RemoveReinforcements)).map { _ =>
                         state.blocks(bkey) = value.copy(deleted = true)
                     }
-    def break(x: Int, y: Int, z: Int, world: WorldID): Either[ReinforcementError, BlockState] =
+    def break(x: Int, y: Int, z: Int, hardness: Double, world: WorldID): Either[ReinforcementError, BlockState] =
         val (chunkX, chunkZ, offsetX, offsetZ) = toOffsets(x, z)
         val state = csm.get(ChunkKey(chunkX, chunkZ, world.toString()))
         val bkey = BlockKey(offsetX, offsetZ, y)
@@ -72,8 +72,8 @@ class ReinforcementManager()(using csm: ChunkStateManager, gsm: Groups.GroupMana
             case None => Left(DoesntExist())
             case Some(value) =>
                 // TODO: factor in hearts + acclimation
-                val hoursPassed = ChronoUnit.HOURS.between(value.placedAt, c.now())
-                val timeDamageMultiplier = max(20.0 * exp(-0.17 * hoursPassed), 1.0)
+                val hoursPassed = ChronoUnit.HOURS.between(value.placedAt, c.now()).toDouble
+                val timeDamageMultiplier = (hardness * exp((-1.0/hardness) * hoursPassed))/2.0 + 1.0
                 val base = 1.0
                 val newHealth = (value.health.doubleValue() - (base * timeDamageMultiplier)).intValue()
                 val newValue = value.copy(health = newHealth, deleted = newHealth <= 0)

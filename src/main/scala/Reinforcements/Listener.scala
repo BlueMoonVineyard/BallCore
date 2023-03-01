@@ -200,7 +200,7 @@ class Listener(using rm: ReinforcementManager, gm: GroupManager, holos: Hologram
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     def onBreak(event: BlockBreakEvent): Unit =
         val block = BlockAdjustment.adjustBlock(event.getBlock())
-        rm.break(block.getX(), block.getY(), block.getZ(), block.getWorld().getUID()) match
+        rm.break(block.getX(), block.getY(), block.getZ(), block.getType().getHardness(), block.getWorld().getUID()) match
             case Left(err) =>
                 holos.clear(block)
                 err match
@@ -580,7 +580,7 @@ class Listener(using rm: ReinforcementManager, gm: GroupManager, holos: Hologram
             val loc = BlockAdjustment.adjustBlock(block)
             val rein = rm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID())
             if rein.isDefined then
-                rm.break(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID()) match
+                rm.break(loc.getX(), loc.getY(), loc.getZ(), loc.getType().getHardness(), loc.getWorld().getUID()) match
                     case Right(_) => it.remove()
                     case Left(_) => ()
 
