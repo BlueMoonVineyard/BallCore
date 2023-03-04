@@ -44,7 +44,6 @@ lazy val actualPlugin = project
 
     libraryDependencies += "org.scalameta" %% "munit" % "0.7.29" % Test,
 
-    libraryDependencies += "org.spigotmc" % "spigot-api" % "1.19-R0.1-SNAPSHOT" % "provided", // intransitive()
     libraryDependencies += "io.papermc.paper" % "paper-api" % "1.19-R0.1-SNAPSHOT" % "provided", // intransitive()
     libraryDependencies += "me.filoghost.holographicdisplays" % "holographicdisplays-api" % "3.0.0" % "provided",
     libraryDependencies += "com.github.Slimefun" % "Slimefun4" % "RC-28" % "provided" intransitive(),

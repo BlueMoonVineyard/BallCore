@@ -22,6 +22,7 @@ import BallCore.Ores.CardinalOres
 import BallCore.Ores.Furnace
 import BallCore.Gear.QuadrantGear
 import BallCore.Reinforcements
+import BallCore.Woodcutter.Woodcutter
 import BallCore.Reinforcements.ReinforcementManager
 import BallCore.Reinforcements.ChunkStateManager
 import BallCore.DataStructures.Clock
@@ -53,6 +54,7 @@ final class Main extends JavaPlugin:
         CardinalOres.registerItems()
         Furnace.registerItems()
         Reinforcements.Reinforcements.register()
+        Woodcutter.registerItems()
         getCommand("groups").setExecutor(GroupsCommand())
     override def onDisable() =
         ()
