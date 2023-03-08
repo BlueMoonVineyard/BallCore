@@ -18,5 +18,7 @@ class TestClock(val start: Instant) extends Clock:
     var time = start
     override def now(): Instant =
         time
+    def reset() =
+        time = start
     def changeTimeBy(t: TemporalAmount) =
         time = time.plus(t)
