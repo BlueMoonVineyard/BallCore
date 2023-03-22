@@ -28,6 +28,7 @@ import BallCore.Reinforcements.ChunkStateManager
 import BallCore.DataStructures.Clock
 import BallCore.DataStructures.WallClock
 import BallCore.Reinforcements.HologramManager
+import BallCore.Hearts.HeartNetworkManager
 
 final class Main extends JavaPlugin:
     given sql: Storage.SQLManager = new Storage.SQLManager
@@ -45,6 +46,7 @@ final class Main extends JavaPlugin:
     given csm: ChunkStateManager = new ChunkStateManager
     given clock: Clock = new WallClock
     given hm: HologramManager = new HologramManager
+    given hn: HeartNetworkManager = new HeartNetworkManager
     given rm: ReinforcementManager = new ReinforcementManager
     
     override def onEnable() =

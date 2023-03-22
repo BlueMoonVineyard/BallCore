@@ -16,5 +16,5 @@ import org.bukkit.plugin.java.JavaPlugin
 object Hearts:
     val group = ItemGroup(NamespacedKey("ballcore", "hearts"), ItemStack(Material.WHITE_CONCRETE))
 
-    def registerItems()(using addon: SlimefunAddon, kvs: Storage.KeyVal, jp: JavaPlugin) =
+    def registerItems()(using addon: SlimefunAddon, hn: HeartNetworkManager, jp: JavaPlugin) =
         (new HeartBlock()).register(addon)

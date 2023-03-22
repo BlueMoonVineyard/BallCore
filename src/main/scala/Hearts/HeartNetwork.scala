@@ -10,7 +10,14 @@ import org.bukkit.Location
 import org.bukkit.entity.Player
 import java.util.UUID
 import io.github.thebusybiscuit.slimefun4.api.SlimefunAddon
-import io.circe._, io.circe.generic.auto._, io.circe.parser._, io.circe.syntax._
+
+import scalikejdbc._
+import scalikejdbc.SQL
+import scalikejdbc.NoExtractor
+
+type OwnerID = UUID
+type HeartID = UUID
+type HeartNetworkID = UUID
 
 case class Point(x: Int, y: Int, z: Int)
 
@@ -22,62 +29,110 @@ case class HeartNetworkInformation(
     centroid: Point
 )
 
-object HeartNetwork:
-    def hasHeart(owner: UUID)(using kvs: Storage.KeyVal): Boolean =
-        kvs.get[UUID](owner, "HeartNetworkID") match
-            case Some(_) => true
-            case None => false
-    def heartNetworkAt(l: Location)(using kvs: Storage.KeyVal): Option[(UUID, HeartNetworkInformation)] =
-        val point = Point(l.getBlockX(), l.getBlockY(), l.getBlockZ())
-        kvs.get[UUID]("LocationsToHeartOwners", point.asJson.noSpaces)
-            .flatMap(x => kvs.get[UUID](x, "HeartNetworkID"))
-            .flatMap(x => kvs.get[HeartNetworkInformation]("HeartNetworks", x.toString()).map(y => (x, y)))
-    def placeHeart(l: Location, owner: UUID)(using kvs: Storage.KeyVal): Option[(UUID, HeartNetworkInformation)] =
-        kvs.get[UUID](owner, "HeartNetworkID") match
-            case Some(_) =>
-                None
-            case None =>
-                val point = Point(l.getBlockX(), l.getBlockY(), l.getBlockZ())
-                kvs.set(owner, "HeartLocation", point)
-                kvs.set("LocationsToHeartOwners", point.asJson.noSpaces, owner)
+class HeartNetworkManager()(using sql: Storage.SQLManager):
+    sql.applyMigration(
+        Storage.Migration(
+            "Initial HeartNetworkManager",
+            List(
+                sql"""
+                CREATE TABLE HeartNetworks (
+                    ID TEXT NOT NULL,
+                    PRIMARY KEY(ID)
+                );
+                """,
+                sql"""
+                CREATE TABLE Hearts (
+                    X INT NOT NULL,
+                    Y INT NOT NULL,
+                    Z INT NOT NULL,
+                    World TEXT NOT NULL,
+                    Owner TEXT NOT NULL,
+                    Network TEXT NOT NULL,
+                    UNIQUE(Owner),
+                    FOREIGN KEY (Network) REFERENCES HeartNetworks (ID)
+                );
+                """,
+            ),
+            List(
+                sql"""
+                DROP TABLE Hearts;
+                """,
+                sql"""
+                DROP TABLE HeartNetworks;
+                """,
+            ),
+        )
+    )
+    private implicit val session: DBSession = AutoSession
 
-                val offsets = List((1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1))
-                offsets.view.map(offset => {
-                        val (x, y, z) = offset
-                        heartNetworkAt(l.clone().add(x, y, z))
-                    })
-                    .find(x => x.isDefined)
-                    .flatten match
-                        case Some((id, x)) =>
-                            // println("existing heart network")
-                            val hni = x.copy(players = x.players.appended(owner))
-                            kvs.set(owner, "HeartNetworkID", id)
-                            kvs.set("HeartNetworks", id.toString(), hni)
-                            Some((id, hni))
-                        case None =>
-                            // println("new heart network")
-                            val newUUID = UUID.randomUUID()
-                            val hni = HeartNetworkInformation(List(owner), point)
-                            kvs.set(owner, "HeartNetworkID", newUUID)
-                            kvs.set("HeartNetworks", newUUID.toString(), hni)
-                            Some((newUUID, hni))
-    def removeHeart(l: Location, owner: UUID)(using kvs: Storage.KeyVal): Option[(UUID, HeartNetworkInformation)] =
-        kvs.get[UUID](owner, "HeartNetworkID") match
-            case None =>
-                None
-            case Some(v) =>
-                kvs.remove(owner, "HeartNetworkID")
-                kvs.remove(owner, "HeartLocation")
+    def hasHeart(owner: UUID): Boolean =
+        sql"""SELECT EXISTS( SELECT 1 FROM Hearts WHERE Owner = ${owner} );"""
+            .map(rs => rs.int(1))
+            .single
+            .apply()
+            .map(_ > 0)
+            .getOrElse(false)
+    def heartAt(l: Location): Option[(OwnerID, HeartNetworkID)] =
+        sql"""SELECT * FROM HEARTS WHERE X = ${l.getBlockX()} AND Y = ${l.getBlockY()} AND Z = ${l.getBlockZ()}"""
+            .map(rs => (UUID.fromString(rs.string("Owner")), UUID.fromString(rs.string("Network"))))
+            .single
+            .apply()
+    def heartNetworkSize(network: HeartNetworkID): Int =
+        sql"""
+        SELECT COUNT(*) FROM Hearts WHERE Network = ${network}
+        """
+        .map(rs => rs.int(1))
+        .single
+        .apply()
+        .get
+    def placeHeart(l: Location, owner: UUID): Option[(HeartNetworkID, Int)] =
+        if hasHeart(owner) then
+            return None
 
-                val info = kvs.get[HeartNetworkInformation]("HeartNetworks", v.toString()).get
-                val newPlayers = info.players.filterNot(x => x == owner)
-                if newPlayers.length == 0 then
-                    kvs.remove("HeartNetworks", v.toString())
+        val offsets = List((1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1))
+        val network = offsets.view.map(offset => {
+                val (x, y, z) = offset
+                heartAt(l.clone().add(x, y, z))
+            })
+            .find(x => x.isDefined)
+            .flatten
+            .map(_._2)
+            .getOrElse {
+                val newID = UUID.randomUUID()
+                sql"""
+                INSERT INTO HeartNetworks (
+                    ID
+                ) VALUES (
+                    ${newID}
+                );
+                """
+                .update
+                .apply()
+                newID
+            }
+        sql"""
+        INSERT INTO Hearts (
+            X, Y, Z, World, Owner, Network
+        ) VALUES (
+            ${l.getBlockX()}, ${l.getBlockY()}, ${l.getBlockZ()}, ${l.getWorld().getUID()}, ${owner}, ${network} 
+        );
+        """
+        .update
+        .apply()
+
+        Some(network, heartNetworkSize(network))
+    def removeHeart(l: Location, owner: OwnerID): Option[(HeartNetworkID, Int)] =
+        sql"""
+        DELETE FROM Hearts WHERE Owner = ${owner} RETURNING Network;
+        """
+            .map(rs => UUID.fromString(rs.string("Network")))
+            .single
+            .apply()
+            .flatMap { network =>
+                val count = heartNetworkSize(network)
+                if count == 0 then
+                    sql"""DELETE FROM HeartNetworks WHERE ID = ${network}""".update.apply()
                     None
                 else
-                    val points = newPlayers.map { x => kvs.get[Point](x, "HeartLocation").get }
-                    val sum = points.reduceLeft { (s, v) => addPoint(s, v) }
-                    val centroid = Point(sum.x / points.size, sum.y / points.size, sum.z / points.size)
-                    val hni = info.copy(players = newPlayers, centroid = centroid)
-                    kvs.set("HeartNetworks", v.toString(), hni)
-                    Some(v, hni)
+                    Some(network, count)
+            }

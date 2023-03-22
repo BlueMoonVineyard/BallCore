@@ -21,6 +21,7 @@ lazy val dependencyPlugin = project
 
     libraryDependencies += "org.spigotmc" % "spigot-api" % "1.19-R0.1-SNAPSHOT" % "provided", // intransitive()
     libraryDependencies += "io.papermc.paper" % "paper-api" % "1.19-R0.1-SNAPSHOT" % "provided", // intransitive()
+    libraryDependencies += "com.github.plokhotnyuk.rtree2d" %% "rtree2d-core" % "0.11.12",
     libraryDependencies += "org.scalikejdbc" %% "scalikejdbc" % "4.0.0",
     libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "2.1.0",
     libraryDependencies += "org.xerial" % "sqlite-jdbc" % "3.40.0.0",
@@ -43,6 +44,7 @@ lazy val actualPlugin = project
     scalaVersion := scala3Version,
 
     libraryDependencies += "org.scalameta" %% "munit" % "0.7.29" % Test,
+    libraryDependencies += "com.github.seeseemelk" % "MockBukkit-v1.19" % "2.29.0" % Test,
 
     libraryDependencies += "io.papermc.paper" % "paper-api" % "1.19-R0.1-SNAPSHOT" % "provided", // intransitive()
     libraryDependencies += "me.filoghost.holographicdisplays" % "holographicdisplays-api" % "3.0.0" % "provided",

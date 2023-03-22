@@ -42,7 +42,7 @@ object HeartBlockListener extends Listener:
             case _ =>
                 ()
 
-class HeartBlock()(using kvs: Storage.KeyVal, sf: SlimefunAddon, jp: JavaPlugin)
+class HeartBlock()(using hn: HeartNetworkManager, sf: SlimefunAddon, jp: JavaPlugin)
     extends SlimefunItem(Hearts.group, HeartBlock.itemStack, RecipeType.NULL, null):
 
     override def preRegister(): Unit =
@@ -50,18 +50,18 @@ class HeartBlock()(using kvs: Storage.KeyVal, sf: SlimefunAddon, jp: JavaPlugin)
         addItemHandler(HeartBlock.tickHandler, onPlace, onBreak)
 
     def playerHasHeart(p: Player): Boolean =
-        HeartNetwork.hasHeart(p.getUniqueId())
+        hn.hasHeart(p.getUniqueId())
 
     private def onPlace = new BlockPlaceHandler(false):
         override def onPlayerPlace(e: BlockPlaceEvent): Unit =
             BlockStorage.addBlockInfo(e.getBlock(), "owner", e.getPlayer().getUniqueId().toString())
-            HeartNetwork.placeHeart(e.getBlock().getLocation(), e.getPlayer().getUniqueId()) match
-                case Some((_, x)) if x.players.length == 1 =>
+            hn.placeHeart(e.getBlock().getLocation(), e.getPlayer().getUniqueId()) match
+                case Some((_, x)) if x == 1 =>
                     e.getPlayer().sendMessage(s"${ChatColor.LIGHT_PURPLE}Your heart has started a new core!")
                     e.getPlayer().sendMessage(s"${ChatColor.LIGHT_PURPLE}It will strengthen your power in this land...")
                     e.getPlayer().sendMessage(s"${ChatColor.LIGHT_PURPLE}You can join forces with other players by having them place their hearts on the core.")
                 case Some((_, x)) =>
-                    e.getPlayer().sendMessage(s"${ChatColor.LIGHT_PURPLE}You've joined your heart to a core with ${x.players.length-1} other players!")
+                    e.getPlayer().sendMessage(s"${ChatColor.LIGHT_PURPLE}You've joined your heart to a core with ${x-1} other players!")
                 case None =>
                     ()
 
@@ -69,7 +69,7 @@ class HeartBlock()(using kvs: Storage.KeyVal, sf: SlimefunAddon, jp: JavaPlugin)
         override def onPlayerBreak(e: BlockBreakEvent, item: ItemStack, drops: ju.List[ItemStack]): Unit =
             val l = e.getBlock().getLocation()
             val owner = UUID.fromString(BlockStorage.getLocationInfo(l, "owner"))
-            HeartNetwork.removeHeart(e.getBlock().getLocation(), owner) match
+            hn.removeHeart(e.getBlock().getLocation(), owner) match
                 case Some(_) =>
                     e.getPlayer().sendMessage(s"${ChatColor.LIGHT_PURPLE}You've disconnected from the core...")
                 case None =>
