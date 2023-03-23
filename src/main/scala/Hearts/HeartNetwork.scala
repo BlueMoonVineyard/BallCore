@@ -11,6 +11,9 @@ import org.bukkit.entity.Player
 import java.util.UUID
 import io.github.thebusybiscuit.slimefun4.api.SlimefunAddon
 
+import com.github.plokhotnyuk.rtree2d.core._
+import EuclideanPlane._
+
 import scalikejdbc._
 import scalikejdbc.SQL
 import scalikejdbc.NoExtractor
@@ -65,6 +68,25 @@ class HeartNetworkManager()(using sql: Storage.SQLManager):
     )
     private implicit val session: DBSession = AutoSession
 
+    def populationToRadius(count: Int): Int =
+        21 * count
+    def loadHearts(): RTree[HeartNetworkID] =
+        val items = sql"""
+        SELECT
+            *,
+            (SELECT COUNT(*) FROM Hearts WHERE Hearts.Network = HeartNetworks.ID) AS HeartCount,
+            (SELECT AVG(X) FROM Hearts WHERE Hearts.Network = HeartNetworks.ID) AS CentroidX,
+            (SELECT AVG(Z) FROM Hearts WHERE Hearts.Network = HeartNetworks.ID) AS CentroidZ
+        FROM
+            HeartNetworks;
+        """
+            .map(rs => (UUID.fromString(rs.string("ID")), rs.int("HeartCount"), rs.int("CentroidX"), rs.int("CentroidZ")))
+            .list
+            .apply()
+            .map { (id, count, x, z) =>
+                entry(x, z, populationToRadius(count), id)
+            }
+        RTree(items)
     def hasHeart(owner: UUID): Boolean =
         sql"""SELECT EXISTS( SELECT 1 FROM Hearts WHERE Owner = ${owner} );"""
             .map(rs => rs.int(1))
