@@ -17,20 +17,15 @@ import org.bukkit.conversations.Prompt
 import scala.concurrent.Future
 import scala.util.Try
 import scala.concurrent.ExecutionContext
+import BallCore.Folia.EntityExecutionContext
 
 private case class PromptState(
     promise: Promise[String],
     conversation: Conversation,
 )
 
-class Prompts(ec: ExecutionContext)(using plugin: Plugin) extends ExecutionContext:
-    private val prompts = scala.collection.mutable.Map[UUID, PromptState]()
-    private given ExecutionContext = this
-
-    override def execute(runnable: Runnable): Unit =
-        ec.execute(runnable)
-    override def reportFailure(cause: Throwable): Unit =
-        ec.reportFailure(cause)
+class Prompts(using plugin: Plugin):
+    private val prompts = scala.collection.concurrent.TrieMap[UUID, PromptState]()
 
     def prompt(player: Player, prompt: String): Future[String] =
         if prompts.contains(player.getUniqueId()) then
@@ -40,6 +35,7 @@ class Prompts(ec: ExecutionContext)(using plugin: Plugin) extends ExecutionConte
             prompts.remove(player.getUniqueId())
 
         val promise = Promise[String]()
+        given ctx: ExecutionContext = EntityExecutionContext(player)
 
         val bukkitPrompt = new StringPrompt:
             override def getPromptText(context: ConversationContext): String =

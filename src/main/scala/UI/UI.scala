@@ -23,6 +23,8 @@ import javax.xml.transform.TransformerFactory
 import javax.xml.transform.dom.DOMSource
 import javax.xml.transform.stream.StreamResult
 import java.io.StringWriter
+import BallCore.Folia.EntityExecutionContext
+import org.bukkit.plugin.Plugin
 
 object UIHelpers:
     def toNode(n: Node, in: org.w3c.dom.Document): org.w3c.dom.Node =
@@ -81,9 +83,11 @@ trait UIProgram:
     def view(model: Model): Elem
     def update(msg: Message, model: Model)(using services: UIServices): Future[Model]
 
-class UIProgramRunner(program: UIProgram, flags: program.Flags, showingTo: Player)(using prompts: Prompts) extends UIServices:
+class UIProgramRunner(program: UIProgram, flags: program.Flags, showingTo: Player)(using prompts: Prompts, plugin: Plugin) extends UIServices:
     private var model = program.init(flags)
     private var transferred = false
+    private val ec = EntityExecutionContext(showingTo)
+    private given ctx: ExecutionContext = ec
 
     def render(): Unit =
         val mod = model
@@ -110,6 +114,6 @@ class UIProgramRunner(program: UIProgram, flags: program.Flags, showingTo: Playe
     def prompt(prompt: String): Future[String] =
         prompts.prompt(showingTo, prompt)
     def execute(runnable: Runnable): Unit =
-        prompts.execute(runnable)
+        ec.execute(runnable)
     def reportFailure(cause: Throwable): Unit =
-        prompts.reportFailure(cause)
+        ec.reportFailure(cause)

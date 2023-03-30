@@ -11,7 +11,7 @@ import org.bukkit.Location
 import me.filoghost.holographicdisplays.api.HolographicDisplaysAPI
 import me.filoghost.holographicdisplays.api.hologram.Hologram
 import org.bukkit.entity.Player
-import scala.collection.mutable
+import scala.collection.concurrent
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.concurrent.Future
@@ -19,12 +19,14 @@ import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext
 import org.bukkit.block.Block
 import BallCore.DataStructures.Delay
+import BallCore.Folia.LocationExecutionContext
 
-class HologramManager(using p: JavaPlugin, ec: ExecutionContext):
+class HologramManager(using p: JavaPlugin):
     private val api = HolographicDisplaysAPI.get(p)
-    private val holos = mutable.Map[(Int,Int,Int,UUID), (Hologram, () => Unit)]()
+    private val holos = concurrent.TrieMap[(Int,Int,Int,UUID), (Hologram, () => Unit)]()
 
     private def getHologram(at: Location): Hologram =
+        given ctx: ExecutionContext = LocationExecutionContext(at)
         val key = (at.getBlockX(), at.getBlockY(), at.getBlockZ(), at.getWorld().getUID())
         holos.get(key) match
             case None =>

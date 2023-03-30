@@ -46,8 +46,11 @@ import org.bukkit.event.inventory.CraftItemEvent
 import org.bukkit.block.data.`type`.Lectern
 import org.bukkit.event.player.PlayerTakeLecternBookEvent
 import BallCore.CustomItems.ItemRegistry
+import scala.concurrent.ExecutionContext
+import BallCore.Folia.EntityExecutionContext
+import org.bukkit.plugin.Plugin
 
-class Listener(using rm: ReinforcementManager, registry: ItemRegistry, gm: GroupManager, holos: HologramManager, prompts: Prompts) extends org.bukkit.event.Listener:
+class Listener(using rm: ReinforcementManager, registry: ItemRegistry, gm: GroupManager, holos: HologramManager, prompts: Prompts, plugin: Plugin) extends org.bukkit.event.Listener:
     def reinforcementFromItem(is: ItemStack): Option[ReinforcementTypes] =
         if is == null then return None
         is.getType() match
@@ -103,6 +106,7 @@ class Listener(using rm: ReinforcementManager, registry: ItemRegistry, gm: Group
 
         event.setCancelled(true)
         p.closeInventory()
+        given ctx: ExecutionContext = EntityExecutionContext(p)
         prompts.prompt(p, "What group do you want to reinforce on?").map { group =>
             gm.userGroups(p.getUniqueId()).map(_.find(_.name.toLowerCase().contains(group.toLowerCase()))) match
                 case Left(err) =>

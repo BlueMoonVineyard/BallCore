@@ -10,8 +10,9 @@ import org.bukkit.command.Command
 import org.bukkit.entity.Player
 import BallCore.Groups.GroupManager
 import BallCore.UI.UIProgramRunner
+import org.bukkit.plugin.Plugin
 
-class GroupsCommand(using prompts: UI.Prompts, gm: GroupManager) extends CommandExecutor:
+class GroupsCommand(using prompts: UI.Prompts, plugin: Plugin, gm: GroupManager) extends CommandExecutor:
     override def onCommand(sender: CommandSender, command: Command, label: String, args: Array[String]) =
         val p = Groups.GroupListProgram()
         val plr = sender.asInstanceOf[Player]

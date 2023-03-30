@@ -36,12 +36,7 @@ final class Main extends JavaPlugin:
     given keyVal: Storage.SQLKeyVal = new Storage.SQLKeyVal
     given acclimation: Acclimation.Storage = new Acclimation.Storage
     given ballcore: Main = this
-    given ec: ExecutionContext = new ExecutionContext:
-        override def execute(runnable: Runnable): Unit =
-            Bukkit.getScheduler().runTask(ballcore, runnable)
-        override def reportFailure(cause: Throwable): Unit =
-            getLogger().log(Level.WARNING, "Error in ExecutionContext:", cause)
-    given prompts: UI.Prompts = new UI.Prompts(ec)
+    given prompts: UI.Prompts = new UI.Prompts
     given gm: GroupManager = new GroupManager
     given csm: ChunkStateManager = new ChunkStateManager
     given clock: Clock = new WallClock
