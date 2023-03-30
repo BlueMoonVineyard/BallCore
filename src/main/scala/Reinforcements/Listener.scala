@@ -12,7 +12,6 @@ import org.bukkit.event.block.Action
 import org.bukkit.inventory.ItemStack
 import org.bukkit.Material
 import org.bukkit.event.block.BlockBreakEvent
-import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItem
 import org.bukkit.Location
 import org.bukkit.Particle
 import scala.util.chaining._
@@ -46,8 +45,9 @@ import org.bukkit.event.inventory.PrepareItemCraftEvent
 import org.bukkit.event.inventory.CraftItemEvent
 import org.bukkit.block.data.`type`.Lectern
 import org.bukkit.event.player.PlayerTakeLecternBookEvent
+import BallCore.CustomItems.ItemRegistry
 
-class Listener(using rm: ReinforcementManager, gm: GroupManager, holos: HologramManager, prompts: Prompts) extends org.bukkit.event.Listener:
+class Listener(using rm: ReinforcementManager, registry: ItemRegistry, gm: GroupManager, holos: HologramManager, prompts: Prompts) extends org.bukkit.event.Listener:
     def reinforcementFromItem(is: ItemStack): Option[ReinforcementTypes] =
         if is == null then return None
         is.getType() match
@@ -97,8 +97,8 @@ class Listener(using rm: ReinforcementManager, gm: GroupManager, holos: Hologram
             return
         val p = h.asInstanceOf[Player]
         val istack = event.getCurrentItem()
-        val item = SlimefunItem.getByItem(istack)
-        if !item.isInstanceOf[PlumbAndSquare] then
+        val item = registry.lookup(istack)
+        if !item.isDefined || !item.get.isInstanceOf[PlumbAndSquare] then
             return
 
         event.setCancelled(true)
@@ -121,8 +121,8 @@ class Listener(using rm: ReinforcementManager, gm: GroupManager, holos: Hologram
             return
 
         val res = recp.getResult().clone()
-        val item = SlimefunItem.getByItem(res)
-        if !item.isInstanceOf[PlumbAndSquare] then
+        val item = registry.lookup(res)
+        if !item.isDefined || !item.get.isInstanceOf[PlumbAndSquare] then
             return
 
         val h = event.getView().getPlayer()
@@ -130,7 +130,7 @@ class Listener(using rm: ReinforcementManager, gm: GroupManager, holos: Hologram
             return
 
         val p = h.asInstanceOf[Player]
-        val pas = item.asInstanceOf[PlumbAndSquare]
+        val pas = item.get.asInstanceOf[PlumbAndSquare]
         val pasStack = inv.getItem(inv.first(PlumbAndSquare.itemStack.getType()))
         val existingMats = pas.getMaterials(pasStack)
         val craftingWith = inv.getMatrix().filterNot(_ == null).filterNot(_.getType() == PlumbAndSquare.itemStack.getType())(0)
@@ -156,8 +156,8 @@ class Listener(using rm: ReinforcementManager, gm: GroupManager, holos: Hologram
         if res == null then
             return
 
-        val item = SlimefunItem.getByItem(res)
-        if !item.isInstanceOf[PlumbAndSquare] then
+        val item = registry.lookup(res)
+        if !item.isDefined || !item.get.isInstanceOf[PlumbAndSquare] then
             return
 
         val craftingWith = inv.getMatrix().filterNot(_ == null).filterNot(_.getType() == PlumbAndSquare.itemStack.getType())(0)
@@ -172,15 +172,15 @@ class Listener(using rm: ReinforcementManager, gm: GroupManager, holos: Hologram
         val p = event.getPlayer()
         val i = p.getInventory()
         val istack = i.getItemInOffHand()
-        val item = SlimefunItem.getByItem(istack)
-        if !item.isInstanceOf[PlumbAndSquare] then
+        val item = registry.lookup(istack)
+        if !item.isDefined || !item.get.isInstanceOf[PlumbAndSquare] then
             return
         if !RuntimeStateManager.states.contains(p.getUniqueId()) then
             p.sendMessage("Shift left-click the plumb-and-square in your inventory to set a group to reinforce on before reinforcing")
             event.setCancelled(true)
             return
 
-        val pas = item.asInstanceOf[PlumbAndSquare]
+        val pas = item.get.asInstanceOf[PlumbAndSquare]
         val mats = pas.getMaterials(istack)
         if mats.isEmpty then
             return
@@ -218,15 +218,15 @@ class Listener(using rm: ReinforcementManager, gm: GroupManager, holos: Hologram
         val p = event.getPlayer()
         val i = p.getInventory()
         val istack = i.getItemInMainHand()
-        val item = SlimefunItem.getByItem(istack)
-        if !item.isInstanceOf[PlumbAndSquare] then
+        val item = registry.lookup(istack)
+        if !item.isDefined || !item.get.isInstanceOf[PlumbAndSquare] then
             return
         if !RuntimeStateManager.states.contains(p.getUniqueId()) then
             p.sendMessage("Shift left-click the plumb-and-square in your inventory to set a group to reinforce on before reinforcing")
             event.setCancelled(true)
             return
 
-        val pas = item.asInstanceOf[PlumbAndSquare]
+        val pas = item.get.asInstanceOf[PlumbAndSquare]
         val mats = pas.getMaterials(istack)
         if mats.isEmpty then
             return

@@ -4,7 +4,6 @@
 
 package BallCore.Reinforcements
 
-import io.github.thebusybiscuit.slimefun4.api.SlimefunAddon
 import BallCore.Groups.GroupManager
 import BallCore.UI.Prompts
 import org.bukkit.NamespacedKey
@@ -13,6 +12,9 @@ import org.bukkit.inventory.RecipeChoice.ExactChoice
 import org.bukkit.Material
 import org.bukkit.inventory.RecipeChoice.MaterialChoice
 import org.bukkit.inventory.ItemStack
+import BallCore.CustomItems.ItemRegistry
+import org.bukkit.plugin.java.JavaPlugin
+import org.bukkit.Server
 
 object Recipes:
     val kinds = List(
@@ -23,14 +25,11 @@ object Recipes:
     )
 
 object Reinforcements:
-    def register()(using sf: SlimefunAddon, rm: ReinforcementManager, gm: GroupManager, holos: HologramManager, prompts: Prompts): Unit =
-        val plugin = sf.getJavaPlugin()
-        plugin.getServer().getPluginManager().registerEvents(Listener(), plugin)
-        (new PlumbAndSquare()).register(sf)
+    def register()(using registry: ItemRegistry, server: Server, plugin: JavaPlugin, rm: ReinforcementManager, gm: GroupManager, holos: HologramManager, prompts: Prompts): Unit =
+        server.getPluginManager().registerEvents(Listener(), plugin)
+        registry.register(PlumbAndSquare())
 
         // plumb-and-square crafting registration
-
-        val serv = sf.getJavaPlugin().getServer()
 
         Recipes.kinds.foreach { it =>
             val (key, mat) = it
@@ -39,6 +38,6 @@ object Reinforcements:
             val recp = ShapelessRecipe(key, doot)
             recp.addIngredient(1, PlumbAndSquare.itemStack.getType())
             recp.addIngredient(1, mat)
-            serv.addRecipe(recp)
+            server.addRecipe(recp)
         }
 

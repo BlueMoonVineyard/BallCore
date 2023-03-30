@@ -4,12 +4,13 @@
 
 package BallCore.Ores
 
-import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItemStack
 import org.bukkit.Material
-import io.github.thebusybiscuit.slimefun4.api.items.ItemGroup
 import org.bukkit.NamespacedKey
 import org.bukkit.inventory.ItemStack
-import io.github.thebusybiscuit.slimefun4.api.SlimefunAddon
+import BallCore.CustomItems.CustomItemStack
+import BallCore.CustomItems.ItemRegistry
+import BallCore.CustomItems.ItemGroup
+import org.bukkit.Server
 
 object CardinalOres:
     import Helpers._
@@ -17,22 +18,22 @@ object CardinalOres:
     object ItemStacks:
         // north
         val silver = ironLike("SILVER", "Silver")
-        val sapphire = SlimefunItemStack("BC_SAPPHIRE", Material.LAPIS_LAZULI, "&rSapphire")
+        val sapphire = CustomItemStack.make(NamespacedKey("ballcore", "sapphire"), Material.LAPIS_LAZULI, "&rSapphire")
 
         // south
         val sillicon = ironLike("SILLICON", "Sillicon")
-        val diamond = SlimefunItemStack("BC_DIAMOND", Material.DIAMOND, "&rDiamond")
+        val diamond = CustomItemStack.make(NamespacedKey("ballcore", "diamond"), Material.DIAMOND, "&rDiamond")
 
         // east
         val cobalt = ironLike("COBALT", "Cobalt")
-        val plutonium = SlimefunItemStack("BC_PLUTONIUM", Material.AMETHYST_SHARD, "&rPlutonium")
+        val plutonium = CustomItemStack.make(NamespacedKey("ballcore", "plutonium"), Material.AMETHYST_SHARD, "&rPlutonium")
 
         // west
         val lead = ironLike("LEAD", "Lead")
-        val emerald = SlimefunItemStack("BC_EMERALD", Material.EMERALD, "&rEmerald")
+        val emerald = CustomItemStack.make(NamespacedKey("ballcore", "emerald"), Material.EMERALD, "&rEmerald")
 
     val group = ItemGroup(NamespacedKey("ballcore", "cardinal_ores"), ItemStack(Material.IRON_INGOT))
-    def registerItems()(using plugin: SlimefunAddon): Unit =
+    def registerItems()(using registry: ItemRegistry, server: Server): Unit =
         register(group, ItemStacks.silver)
         register(group, ItemStacks.sapphire)
 

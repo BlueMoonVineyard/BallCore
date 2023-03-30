@@ -4,14 +4,12 @@
 
 package BallCore.Ores
 
-import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItemStack
 import org.bukkit.Material
 import org.bukkit.NamespacedKey
-import io.github.thebusybiscuit.slimefun4.api.SlimefunAddon
-import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItem
-import io.github.thebusybiscuit.slimefun4.api.items.ItemGroup
 import org.bukkit.inventory.ItemStack
-import io.github.thebusybiscuit.slimefun4.api.recipes.RecipeType
+import BallCore.CustomItems.ItemGroup
+import BallCore.CustomItems.ItemRegistry
+import org.bukkit.Server
 
 object QuadrantOres:
     import Helpers._
@@ -39,7 +37,7 @@ object QuadrantOres:
 
     val group = ItemGroup(NamespacedKey("ballcore", "quadrant_ores"), ItemStack(Material.IRON_INGOT))
 
-    def registerItems()(using plugin: SlimefunAddon): Unit =
+    def registerItems()(using plugin: ItemRegistry, server: Server): Unit =
         register(group, ItemStacks.iron)
         register(group, ItemStacks.gold)
         register(group, ItemStacks.copper)

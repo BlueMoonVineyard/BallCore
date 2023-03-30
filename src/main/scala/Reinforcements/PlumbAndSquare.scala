@@ -5,19 +5,16 @@
 package BallCore.Reinforcements
 
 import scala.collection.JavaConverters._
-import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItem
-import io.github.thebusybiscuit.slimefun4.api.items.ItemGroup
 import org.bukkit.NamespacedKey
-import io.github.thebusybiscuit.slimefun4.libraries.dough.items.CustomItemStack
 import org.bukkit.Material
-import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItemStack
-import io.github.thebusybiscuit.slimefun4.api.recipes.RecipeType
 import org.bukkit.inventory.ItemStack
 import org.bukkit.entity.Player
 import org.bukkit.persistence.PersistentDataType
 import org.bukkit.ChatColor
-import io.github.thebusybiscuit.slimefun4.core.attributes.NotConfigurable
 import scala.util.chaining._
+import BallCore.CustomItems.CustomItem
+import BallCore.CustomItems.CustomItemStack
+import BallCore.CustomItems.ItemGroup
 
 object PlumbAndSquare:
     object CustomModelData:
@@ -38,8 +35,8 @@ object PlumbAndSquare:
         case Copper extends CustomModelData(4)
         case Iron extends CustomModelData(5)
 
-    val group = ItemGroup(NamespacedKey("ballcore", "reinforcements"), CustomItemStack(Material.DIAMOND_PICKAXE, "BallCore Reinforcements"))
-    val itemStack = SlimefunItemStack("PLUMB_AND_SQUARE", Material.STICK, "&rPlumb-and-Square", defaultLore())
+    val group = ItemGroup(NamespacedKey("ballcore", "reinforcements"), ItemStack(Material.DIAMOND_PICKAXE))
+    val itemStack = CustomItemStack.make(NamespacedKey("ballcore", "plumb_and_square"), Material.STICK, "&rPlumb-and-Square", defaultLore())
     itemStack.setItemMeta(itemStack.getItemMeta().tap(_.setCustomModelData(CustomModelData.Empty.num)))
     val persistenceKeyCount = NamespacedKey("ballcore", "plumb_and_square_item_count")
     val persistenceKeyType = NamespacedKey("ballcore", "plumb_and_square_item_type")
@@ -54,10 +51,9 @@ object PlumbAndSquare:
             case ReinforcementTypes.CopperLike => s"&fLoaded with: &c&lRed &cReinforcement&f × ${count}"
             case ReinforcementTypes.IronLike => s"&fLoaded with: &f&lWhite &fReinforcement&f × ${count}"
 
-class PlumbAndSquare()
-    extends SlimefunItem(PlumbAndSquare.group, PlumbAndSquare.itemStack, RecipeType.NULL, null), NotConfigurable:
-
-    setUseableInWorkbench(true)
+class PlumbAndSquare extends CustomItem:
+    def group = PlumbAndSquare.group
+    def template = PlumbAndSquare.itemStack
 
     def colourise(str: String): String =
         ChatColor.translateAlternateColorCodes('&', str)

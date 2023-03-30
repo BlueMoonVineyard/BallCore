@@ -8,11 +8,11 @@ import BallCore.Hearts.Hearts
 import BallCore.UI
 
 import org.bukkit.plugin.java.JavaPlugin
-import io.github.thebusybiscuit.slimefun4.api.SlimefunAddon
 import org.bukkit.command.CommandExecutor
 import org.bukkit.command.CommandSender
 import org.bukkit.command.Command
 import org.bukkit.entity.Player
+import org.bukkit.Server
 import scala.concurrent.ExecutionContext
 import org.bukkit.Bukkit
 import java.util.logging.Level
@@ -29,13 +29,13 @@ import BallCore.DataStructures.Clock
 import BallCore.DataStructures.WallClock
 import BallCore.Reinforcements.HologramManager
 import BallCore.Hearts.HeartNetworkManager
+import BallCore.CustomItems.ItemRegistry
 
 final class Main extends JavaPlugin:
     given sql: Storage.SQLManager = new Storage.SQLManager
     given keyVal: Storage.SQLKeyVal = new Storage.SQLKeyVal
     given acclimation: Acclimation.Storage = new Acclimation.Storage
     given ballcore: Main = this
-    given addon: SlimefunAddon = new BallCoreSFAddon
     given ec: ExecutionContext = new ExecutionContext:
         override def execute(runnable: Runnable): Unit =
             Bukkit.getScheduler().runTask(ballcore, runnable)
@@ -48,6 +48,8 @@ final class Main extends JavaPlugin:
     given hm: HologramManager = new HologramManager
     given hn: HeartNetworkManager = new HeartNetworkManager
     given rm: ReinforcementManager = new ReinforcementManager
+    given server: Server = Bukkit.getServer()
+    given reg: ItemRegistry = ???
     
     override def onEnable() =
         Hearts.registerItems()

@@ -9,18 +9,18 @@ import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
 import org.bukkit.event.inventory.FurnaceSmeltEvent
 import org.bukkit.Material
-import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItem
-import io.github.thebusybiscuit.slimefun4.api.recipes.RecipeType
-import io.github.thebusybiscuit.slimefun4.api.items.ItemGroup
 import org.bukkit.NamespacedKey
 import org.bukkit.inventory.ItemStack
-import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItemStack
-import io.github.thebusybiscuit.slimefun4.api.SlimefunAddon
-import me.mrCookieSlime.Slimefun.api.BlockStorage
 import org.bukkit.block.Block
 import org.bukkit.block.{Furnace => BFurnace}
 import org.bukkit.event.inventory.FurnaceBurnEvent
 import org.bukkit.event.block.BlockPlaceEvent
+import BallCore.CustomItems.ItemGroup
+import BallCore.CustomItems.ItemRegistry
+import BallCore.CustomItems.CustomItem
+import BallCore.CustomItems.CustomItemStack
+import org.bukkit.Server
+import org.bukkit.plugin.java.JavaPlugin
 
 enum FurnaceTier:
     // tier 0 (vanilla furnace)
@@ -42,7 +42,7 @@ enum FurnaceTier:
     // dust => 1 ingot
     case Three
 
-object FurnaceListener extends Listener:
+class FurnaceListener(using registry: ItemRegistry) extends Listener:
     def spawn(from: OreVariants, tier: OreTier, by: Block): Unit =
         val loc = by.getLocation().clone().add(0, 1, 0)
         by.getWorld().dropItem(loc, from.ore(tier))
@@ -80,7 +80,7 @@ object FurnaceListener extends Listener:
                 None
 
     def tier(of: Block): FurnaceTier =
-        val furnaceItem = BlockStorage.check(of)
+        val furnaceItem = ???
         if !furnaceItem.isInstanceOf[Furnace] then
             FurnaceTier.Zero
         else
@@ -88,10 +88,10 @@ object FurnaceListener extends Listener:
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     def onItemSmelt(event: FurnaceSmeltEvent): Unit =
-        val smeltingItem = SlimefunItem.getByItem(event.getSource())
-        if !smeltingItem.isInstanceOf[Ore] then
+        val smeltingItem = registry.lookup(event.getSource())
+        if !smeltingItem.isDefined || !smeltingItem.get.isInstanceOf[Ore] then
             return
-        val ore = smeltingItem.asInstanceOf[Ore]
+        val ore = smeltingItem.get.asInstanceOf[Ore]
         check(tier(event.getBlock()), ore.tier) match
             case None =>
                 event.setCancelled(true)
@@ -105,33 +105,33 @@ object Furnaces:
 object Furnace:
     val tierOneLore = "&r&fCapable of smelting ores with increased efficiency"
 
-    val ironFurnace = SlimefunItemStack("BC_IRON_FURNACE", Material.FURNACE, "Iron Furnace", tierOneLore)
-    val tinFurnace = SlimefunItemStack("BC_TIN_FURNACE", Material.FURNACE, "Tin Furnace", tierOneLore)
-    val aluminumFurnace = SlimefunItemStack("BC_ALUMINUM_FURNACE", Material.FURNACE, "Aluminum Furnace", tierOneLore)
-    val zincFurnace = SlimefunItemStack("BC_ZINC_FURNACE", Material.FURNACE, "Zinc Furnace", tierOneLore)
+    val ironFurnace = CustomItemStack.make(NamespacedKey("ballcore", "iron_furnace"), Material.FURNACE, "Iron Furnace", tierOneLore)
+    val tinFurnace = CustomItemStack.make(NamespacedKey("ballcore", "tin_furnace"), Material.FURNACE, "Tin Furnace", tierOneLore)
+    val aluminumFurnace = CustomItemStack.make(NamespacedKey("ballcore", "aluminum_furnace"), Material.FURNACE, "Aluminum Furnace", tierOneLore)
+    val zincFurnace = CustomItemStack.make(NamespacedKey("ballcore", "zinc_furnace"), Material.FURNACE, "Zinc Furnace", tierOneLore)
 
     val tierOne = List(ironFurnace, tinFurnace, aluminumFurnace, zincFurnace)
 
     val tierTwoLore = "&r&fCapable of smelting ores with astounding efficiency"
 
-    val entschloseniteFurnace = SlimefunItemStack("BC_ENTSCHLOSSENITE_FURNACE", Material.FURNACE, "Entschlossenite Furnace", tierTwoLore)
+    val entschloseniteFurnace = CustomItemStack.make(NamespacedKey("ballcore", "entschlossenite_furnace"), Material.FURNACE, "Entschlossenite Furnace", tierTwoLore)
 
     val tierTwo = List(entschloseniteFurnace)
 
     val tierThreeLore = "&r&fCapable of smelting ores with supernatural efficiency"
 
-    val praecantatioFurnace = SlimefunItemStack("BC_PRAECANTATIO_FURNACE", Material.BLAST_FURNACE, "Praecantatio Furnace", tierThreeLore)
-    val auramFurnace = SlimefunItemStack("BC_AURAM_FURNACE", Material.BLAST_FURNACE, "Auram Furnace", tierThreeLore)
-    val alkimiaFurnace = SlimefunItemStack("BC_ALKIMIA_FURNACE", Material.BLAST_FURNACE, "Alkimia Furnace", tierThreeLore)
+    val praecantatioFurnace = CustomItemStack.make(NamespacedKey("ballcore", "praecantatio_furnace"), Material.BLAST_FURNACE, "Praecantatio Furnace", tierThreeLore)
+    val auramFurnace = CustomItemStack.make(NamespacedKey("ballcore", "auram_furnace"), Material.BLAST_FURNACE, "Auram Furnace", tierThreeLore)
+    val alkimiaFurnace = CustomItemStack.make(NamespacedKey("ballcore", "alkimia_furnace"), Material.BLAST_FURNACE, "Alkimia Furnace", tierThreeLore)
 
     val tierThree = List(praecantatioFurnace, auramFurnace, alkimiaFurnace)
 
-    def registerItems()(using sf: SlimefunAddon): Unit =
-        sf.getJavaPlugin().getServer().getPluginManager().registerEvents(FurnaceListener, sf.getJavaPlugin())
+    def registerItems()(using registry: ItemRegistry, server: Server, plugin: JavaPlugin): Unit =
+        server.getPluginManager().registerEvents(FurnaceListener(), plugin)
         List((FurnaceTier.One, tierOne), (FurnaceTier.Two, tierTwo), (FurnaceTier.Three, tierThree))
-            .foreach { (tier, items) => items.foreach { Furnace(tier, _).register(sf) } }
+            .foreach { (tier, items) => items.foreach { item => registry.register(Furnace(tier, item)) } }
 
-class Furnace(furnaceTier: FurnaceTier, items: SlimefunItemStack)
-    extends SlimefunItem(Furnaces.group, items, RecipeType.NULL, null):
-
+class Furnace(furnaceTier: FurnaceTier, items: CustomItemStack) extends CustomItem:
+    def group = Furnaces.group
+    def template = items
     val tier = furnaceTier

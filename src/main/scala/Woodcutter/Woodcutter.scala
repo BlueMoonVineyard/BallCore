@@ -1,15 +1,8 @@
 package BallCore.Woodcutter
 
-import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItem
-import io.github.thebusybiscuit.slimefun4.api.items.ItemGroup
 import org.bukkit.NamespacedKey
-import io.github.thebusybiscuit.slimefun4.libraries.dough.items.CustomItemStack
 import org.bukkit.Material
-import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItemStack
-import io.github.thebusybiscuit.slimefun4.api.recipes.RecipeType
-import io.github.thebusybiscuit.slimefun4.core.attributes.NotConfigurable
 import org.bukkit.event.Listener
-import io.github.thebusybiscuit.slimefun4.api.SlimefunAddon
 import com.destroystokyo.paper.MaterialTags
 import org.bukkit.inventory.StonecuttingRecipe
 import org.bukkit.inventory.ItemStack
@@ -20,9 +13,14 @@ import org.bukkit.event.EventPriority
 import org.bukkit.entity.Player
 import java.{util => ju}
 import java.util.Collections
-import me.mrCookieSlime.Slimefun.api.BlockStorage
 import scala.util.chaining._
 import io.papermc.paper.event.player.PlayerStonecutterRecipeSelectEvent
+import BallCore.CustomItems.CustomItem
+import BallCore.CustomItems.CustomItemStack
+import BallCore.CustomItems.ItemGroup
+import BallCore.CustomItems.ItemRegistry
+import org.bukkit.Server
+import org.bukkit.plugin.java.JavaPlugin
 
 object WoodCutterListener extends Listener:
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
@@ -38,7 +36,7 @@ object WoodCutterListener extends Listener:
         val amt = result.getAmount()
         if (amt != 5 && amt != 6 && amt != 7) || !Woodcutter.planks.contains(result.getType()) then
             return
-        val woodcutterItem = BlockStorage.check(block)
+        val woodcutterItem = ???
         val (t1, t2, t3) = Woodcutter.recipes.find { triplet =>
             val (t1, t2, t3) = triplet
             t1.key() == key || t2.key() == key || t3.key() == key
@@ -63,10 +61,10 @@ object WoodCutterListener extends Listener:
                 ()
 
 object Woodcutter:
-    val itemGroup = ItemGroup(NamespacedKey("ballcore", "woodcutters"), CustomItemStack(Material.STONECUTTER, "BallCore Woodcutters"))
-    val t1ItemStack = SlimefunItemStack("WOODCUTTER_TIER1", Material.STONECUTTER, "&rBasic Woodcutter", "&7Chops wood more efficiently")
-    val t2ItemStack = SlimefunItemStack("WOODCUTTER_TIER2", Material.STONECUTTER, "&rImproved Woodcutter", "&7Chops wood even more efficiently")
-    val t3ItemStack = SlimefunItemStack("WOODCUTTER_TIER3", Material.STONECUTTER, "&rAdvanced Woodcutter", "&7Chops wood with outstanding efficiency")
+    val itemGroup = ItemGroup(NamespacedKey("ballcore", "woodcutters"), ItemStack(Material.STONECUTTER))
+    val t1ItemStack = CustomItemStack.make(NamespacedKey("ballcore", "woodcutter_tier1"), Material.STONECUTTER, "&rBasic Woodcutter", "&7Chops wood more efficiently")
+    val t2ItemStack = CustomItemStack.make(NamespacedKey("ballcore", "woodcutter_tier2"), Material.STONECUTTER, "&rImproved Woodcutter", "&7Chops wood even more efficiently")
+    val t3ItemStack = CustomItemStack.make(NamespacedKey("ballcore", "woodcutter_tier3"), Material.STONECUTTER, "&rAdvanced Woodcutter", "&7Chops wood with outstanding efficiency")
 
     val logs = List(
         (List(Material.ACACIA_LOG, Material.ACACIA_WOOD, Material.STRIPPED_ACACIA_LOG, Material.STRIPPED_ACACIA_WOOD), Material.ACACIA_PLANKS),
@@ -101,23 +99,22 @@ object Woodcutter:
         }
     }
 
-    def registerItems()(using sf: SlimefunAddon): Unit =
-        sf.getJavaPlugin().getServer().getPluginManager().registerEvents(WoodCutterListener, sf.getJavaPlugin())
-        WoodcutterT1().register(sf)
-        WoodcutterT2().register(sf)
-        WoodcutterT3().register(sf)
-
-        val serv = sf.getJavaPlugin().getServer()
+    def registerItems()(using registry: ItemRegistry, server: Server, plugin: JavaPlugin): Unit =
+        server.getPluginManager().registerEvents(WoodCutterListener, plugin)
+        registry.register(WoodcutterT1())
+        registry.register(WoodcutterT2())
+        registry.register(WoodcutterT3())
 
         recipes.foreach { triplet =>
             val (t1, t2, t3) = triplet
-            serv.addRecipe(t1)
-            serv.addRecipe(t2)
-            serv.addRecipe(t3)
+            server.addRecipe(t1)
+            server.addRecipe(t2)
+            server.addRecipe(t3)
         }
 
-abstract class Woodcutter(val is: SlimefunItemStack)
-    extends SlimefunItem(Woodcutter.itemGroup, is, RecipeType.NULL, null), NotConfigurable
+abstract class Woodcutter(val is: CustomItemStack) extends CustomItem:
+    def group = Woodcutter.itemGroup
+    def template = is
 
 class WoodcutterT1 extends Woodcutter(Woodcutter.t1ItemStack)
 class WoodcutterT2 extends Woodcutter(Woodcutter.t2ItemStack)

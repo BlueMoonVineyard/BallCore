@@ -4,18 +4,19 @@
 
 package BallCore.Ores
 
-import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItemStack
 import org.bukkit.Material
-import io.github.thebusybiscuit.slimefun4.api.items.ItemGroup
-import io.github.thebusybiscuit.slimefun4.api.SlimefunAddon
-import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItem
-import io.github.thebusybiscuit.slimefun4.api.recipes.RecipeType
 import org.bukkit.NamespacedKey
 import org.bukkit.inventory.FurnaceRecipe
 import org.bukkit.inventory.RecipeChoice.ExactChoice
 import org.bukkit.inventory.BlastingRecipe
 import org.bukkit.inventory.ShapedRecipe
 import org.bukkit.inventory.ShapelessRecipe
+import BallCore.CustomItems.ItemRegistry
+import BallCore.CustomItems.ItemGroup
+import BallCore.CustomItems.CustomItem
+import BallCore.CustomItems.CustomItemStack
+import org.bukkit.inventory.ItemStack
+import org.bukkit.Server
 
 enum OreTier:
     case Dust
@@ -26,16 +27,16 @@ enum OreTier:
     case Block
 
 case class OreVariants(
-    dust: SlimefunItemStack,
-    scraps: SlimefunItemStack,
-    depleted: SlimefunItemStack,
-    raw: SlimefunItemStack,
-    ingot: SlimefunItemStack,
-    block: SlimefunItemStack,
+    dust: CustomItemStack,
+    scraps: CustomItemStack,
+    depleted: CustomItemStack,
+    raw: CustomItemStack,
+    ingot: CustomItemStack,
+    block: CustomItemStack,
     name: String,
     id: String,
 ):
-    def ore(tier: OreTier): SlimefunItemStack =
+    def ore(tier: OreTier): CustomItemStack =
         tier match
             case OreTier.Dust => dust
             case OreTier.Scraps => scraps
@@ -43,20 +44,19 @@ case class OreVariants(
             case OreTier.Raw => raw
             case OreTier.Ingot => ingot
             case OreTier.Block => block
-    def register(group: ItemGroup, plugin: SlimefunAddon): Unit =
+    def register(group: ItemGroup, registry: ItemRegistry, serv: Server): Unit =
         OreTier.values.foreach { tier =>
-            new Ore(group, tier, this).register(plugin)
+            registry.register(Ore(group, tier, this))
         }
-        def recipeKey(in: SlimefunItemStack) =
-            NamespacedKey(group.getKey().getNamespace(), group.getKey().getKey() + "_" + in.getItemId().toLowerCase())
-        def blastKey(in: SlimefunItemStack) =
-            NamespacedKey(group.getKey().getNamespace(), group.getKey().getKey() + "_blast_" + in.getItemId().toLowerCase())
-        def blockKey(in: SlimefunItemStack) =
-            NamespacedKey(group.getKey().getNamespace(), group.getKey().getKey() + "_block_" + in.getItemId().toLowerCase())
-        def ingotKey(in: SlimefunItemStack) =
-            NamespacedKey(group.getKey().getNamespace(), group.getKey().getKey() + "_ingot_" + in.getItemId().toLowerCase())
+        def recipeKey(in: CustomItemStack) =
+            NamespacedKey(group.key.getNamespace(), group.key.getKey() + "_" + in.id.getKey().toLowerCase())
+        def blastKey(in: CustomItemStack) =
+            NamespacedKey(group.key.getNamespace(), group.key.getKey() + "_blast_" + in.id.getKey().toLowerCase())
+        def blockKey(in: CustomItemStack) =
+            NamespacedKey(group.key.getNamespace(), group.key.getKey() + "_block_" + in.id.getKey().toLowerCase())
+        def ingotKey(in: CustomItemStack) =
+            NamespacedKey(group.key.getNamespace(), group.key.getKey() + "_ingot_" + in.id.getKey().toLowerCase())
 
-        val serv = plugin.getJavaPlugin().getServer()
         val recipeTicks = 100
         val rawRecipe = FurnaceRecipe(recipeKey(raw), ingot, ExactChoice(raw), 0.0f, recipeTicks)
         val depletedRecipe = FurnaceRecipe(recipeKey(depleted), ingot, ExactChoice(depleted), 0.0f, recipeTicks)
@@ -94,12 +94,12 @@ case class OreVariants(
 object Helpers:
     def factory(id: String, name: String, m0: Material, m1: Material, m2: Material, m3: Material): OreVariants =
         OreVariants(
-            SlimefunItemStack(s"BC_${id}_DUST", m0, s"&r$name Dust"),
-            SlimefunItemStack(s"BC_${id}_SCRAPS", m1, s"&r$name Scraps"),
-            SlimefunItemStack(s"BC_DEPLETED_${id}", m1, s"&rDepleted $name"),
-            SlimefunItemStack(s"BC_RAW_${id}", m1, s"&rRaw $name"),
-            SlimefunItemStack(s"BC_${id}_INGOT", m2, s"&r$name Ingot"),
-            SlimefunItemStack(s"BC_${id}_BLOCK", m3, s"&r$name Block"),
+            CustomItemStack.make(NamespacedKey("ballcore", s"${id}_dust"), m0, s"&r$name Dust"),
+            CustomItemStack.make(NamespacedKey("ballcore", s"${id}_scraps"), m1, s"&r$name Scraps"),
+            CustomItemStack.make(NamespacedKey("ballcore", s"depleted_${id}"), m1, s"&rDepleted $name"),
+            CustomItemStack.make(NamespacedKey("ballcore", s"raw_${id}"), m1, s"&rRaw $name"),
+            CustomItemStack.make(NamespacedKey("ballcore", s"${id}_ingot"), m2, s"&r$name Ingot"),
+            CustomItemStack.make(NamespacedKey("ballcore", s"${id}_block"), m3, s"&r$name Block"),
             name,
             id,
         )
@@ -110,8 +110,8 @@ object Helpers:
         factory(id, name, Material.GLOWSTONE, Material.RAW_GOLD, Material.GOLD_INGOT, Material.GOLD_BLOCK)
     def copperLike(id: String, name: String): OreVariants =
         factory(id, name, Material.GUNPOWDER, Material.RAW_COPPER, Material.COPPER_INGOT, Material.COPPER_BLOCK)
-    def register(group: ItemGroup, variants: OreVariants)(using plugin: SlimefunAddon) =
-        variants.register(group, plugin)
-    def register(group: ItemGroup, ms: SlimefunItemStack*)(using plugin: SlimefunAddon) =
-        ms.foreach{ new SlimefunItem(group, _, RecipeType.NULL, null).register(plugin) }
+    def register(group: ItemGroup, variants: OreVariants)(using registry: ItemRegistry, server: Server) =
+        variants.register(group, registry, server)
+    def register(group: ItemGroup, ms: CustomItemStack*)(using registry: ItemRegistry, server: Server) =
+        ms.foreach{ ??? }
 

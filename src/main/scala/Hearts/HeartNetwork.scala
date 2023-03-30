@@ -9,7 +9,6 @@ import BallCore.Storage
 import org.bukkit.Location
 import org.bukkit.entity.Player
 import java.util.UUID
-import io.github.thebusybiscuit.slimefun4.api.SlimefunAddon
 
 import com.github.plokhotnyuk.rtree2d.core._
 import EuclideanPlane._
