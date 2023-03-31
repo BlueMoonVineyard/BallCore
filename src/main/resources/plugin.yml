@@ -14,3 +14,9 @@ depend:
 commands:
   groups:
     description: Entrypoint for group commands
+  cheat:
+    description: Cheats in a custom item
+permissions:
+  ballcore.cheat:
+    description: Allows using /cheat
+    default: op

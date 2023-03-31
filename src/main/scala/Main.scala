@@ -59,5 +59,6 @@ final class Main extends JavaPlugin:
         Reinforcements.Reinforcements.register()
         Woodcutter.registerItems()
         getCommand("groups").setExecutor(GroupsCommand())
+        getCommand("cheat").setExecutor(CheatCommand())
     override def onDisable() =
         ()
