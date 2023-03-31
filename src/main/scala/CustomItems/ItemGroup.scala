@@ -6,12 +6,17 @@ import org.bukkit.Material
 import scala.util.chaining._
 import scala.collection.JavaConverters._
 import org.bukkit.ChatColor
+import org.bukkit.persistence.PersistentDataType
 
 class CustomItemStack(
     val itemID: NamespacedKey,
     val stack: ItemStack
 ) extends ItemStack(stack):
     val id = itemID
+    setItemMeta(
+        getItemMeta()
+            .tap(_.getPersistentDataContainer().set(BasicItemRegistry.persistenceKeyID, PersistentDataType.STRING, id.toString()))
+    )
 
 object CustomItemStack:
     private def translate = ChatColor.translateAlternateColorCodes('&', _)

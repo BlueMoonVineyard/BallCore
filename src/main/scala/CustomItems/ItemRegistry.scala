@@ -16,4 +16,3 @@ trait ItemRegistry:
     def register(item: CustomItem): Unit
     def lookup(from: NamespacedKey): Option[CustomItem]
     def lookup(from: ItemStack): Option[CustomItem]
-    def create(from: CustomItem): ItemStack

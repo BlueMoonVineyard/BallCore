@@ -21,10 +21,3 @@ class BasicItemRegistry extends ItemRegistry:
             .flatMap(itemMap.get)
     def lookup(from: NamespacedKey): Option[CustomItem] =
         itemMap.get(from)
-    def create(from: CustomItem): ItemStack =
-        val item = from.template.clone()
-        val meta = item.getItemMeta()
-        val pdc = meta.getPersistentDataContainer()
-        pdc.set(BasicItemRegistry.persistenceKeyID, PersistentDataType.STRING, from.id.toString())
-        item.setItemMeta(meta)
-        item

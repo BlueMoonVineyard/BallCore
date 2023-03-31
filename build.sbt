@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-val scala3Version = "3.2.2-RC1"
+val scala3Version = "3.3.0-RC3"
 val circeVersion = "0.14.1"
 
 lazy val dependencyPlugin = project

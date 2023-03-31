@@ -26,7 +26,7 @@ class CheatCommand(using registry: ItemRegistry) extends CommandExecutor:
                     case None =>
                         sender.sendMessage("bad item >:(")
                     case Some(item) =>
-                        val is = registry.create(item)
+                        val is = item.template.clone()
                         sender.asInstanceOf[Player].getInventory().addItem(is)
                         sender.sendMessage("there u go :)")
             case _ =>
