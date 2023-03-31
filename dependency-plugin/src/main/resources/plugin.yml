@@ -8,3 +8,4 @@ description: Dependency plugin of CivBalls
 authors: [Janet Blackquill]
 website: https://github.com/BlueMoonVineyard/BallCore
 api-version: 1.13
+folia-supported: true
