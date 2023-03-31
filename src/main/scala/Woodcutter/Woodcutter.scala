@@ -21,8 +21,9 @@ import BallCore.CustomItems.ItemGroup
 import BallCore.CustomItems.ItemRegistry
 import org.bukkit.Server
 import org.bukkit.plugin.java.JavaPlugin
+import BallCore.CustomItems.BlockManager
 
-object WoodCutterListener extends Listener:
+class WoodCutterListener(using bm: BlockManager, registry: ItemRegistry) extends Listener:
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     def onSelectStonecutterRecipe(event: PlayerStonecutterRecipeSelectEvent): Unit =
         val inv = event.getStonecutterInventory()
@@ -36,12 +37,12 @@ object WoodCutterListener extends Listener:
         val amt = result.getAmount()
         if (amt != 5 && amt != 6 && amt != 7) || !Woodcutter.planks.contains(result.getType()) then
             return
-        val woodcutterItem = ???
+        val woodcutterItem = bm.getCustomItem(block)
         val (t1, t2, t3) = Woodcutter.recipes.find { triplet =>
             val (t1, t2, t3) = triplet
             t1.key() == key || t2.key() == key || t3.key() == key
         }.get
-        woodcutterItem match               
+        woodcutterItem.getOrElse(null) match               
             case _: WoodcutterT1 if recp.key() == t1.key() => ()
             case _: WoodcutterT2 if recp.key() == t1.key() || recp.key() == t2.key() => ()
             case _: WoodcutterT3 if recp.key() == t1.key() || recp.key() == t2.key() || recp.key() == t3.key() => ()
@@ -99,8 +100,8 @@ object Woodcutter:
         }
     }
 
-    def registerItems()(using registry: ItemRegistry, server: Server, plugin: JavaPlugin): Unit =
-        server.getPluginManager().registerEvents(WoodCutterListener, plugin)
+    def registerItems()(using bm: BlockManager, registry: ItemRegistry, server: Server, plugin: JavaPlugin): Unit =
+        server.getPluginManager().registerEvents(WoodCutterListener(), plugin)
         registry.register(WoodcutterT1())
         registry.register(WoodcutterT2())
         registry.register(WoodcutterT3())

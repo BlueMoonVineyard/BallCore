@@ -17,6 +17,7 @@ import BallCore.CustomItems.CustomItem
 import BallCore.CustomItems.CustomItemStack
 import org.bukkit.inventory.ItemStack
 import org.bukkit.Server
+import BallCore.CustomItems.PlainCustomItem
 
 enum OreTier:
     case Dust
@@ -113,5 +114,5 @@ object Helpers:
     def register(group: ItemGroup, variants: OreVariants)(using registry: ItemRegistry, server: Server) =
         variants.register(group, registry, server)
     def register(group: ItemGroup, ms: CustomItemStack*)(using registry: ItemRegistry, server: Server) =
-        ms.foreach{ ??? }
+        ms.foreach{ x => registry.register(PlainCustomItem(group, x)) }
 

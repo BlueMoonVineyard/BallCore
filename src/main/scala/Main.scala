@@ -30,6 +30,9 @@ import BallCore.DataStructures.WallClock
 import BallCore.Reinforcements.HologramManager
 import BallCore.Hearts.HeartNetworkManager
 import BallCore.CustomItems.ItemRegistry
+import BallCore.CustomItems.BasicItemRegistry
+import BallCore.CustomItems.BlockManager
+import BallCore.CustomItems.KeyValBlockManager
 
 final class Main extends JavaPlugin:
     given sql: Storage.SQLManager = new Storage.SQLManager
@@ -44,7 +47,8 @@ final class Main extends JavaPlugin:
     given hn: HeartNetworkManager = new HeartNetworkManager
     given rm: ReinforcementManager = new ReinforcementManager
     given server: Server = Bukkit.getServer()
-    given reg: ItemRegistry = ???
+    given reg: ItemRegistry = BasicItemRegistry()
+    given bm: BlockManager = KeyValBlockManager()
     
     override def onEnable() =
         Hearts.registerItems()

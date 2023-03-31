@@ -21,6 +21,7 @@ import BallCore.CustomItems.CustomItem
 import BallCore.CustomItems.CustomItemStack
 import org.bukkit.Server
 import org.bukkit.plugin.java.JavaPlugin
+import BallCore.CustomItems.BlockManager
 
 enum FurnaceTier:
     // tier 0 (vanilla furnace)
@@ -42,7 +43,7 @@ enum FurnaceTier:
     // dust => 1 ingot
     case Three
 
-class FurnaceListener(using registry: ItemRegistry) extends Listener:
+class FurnaceListener(using bm: BlockManager, registry: ItemRegistry) extends Listener:
     def spawn(from: OreVariants, tier: OreTier, by: Block): Unit =
         val loc = by.getLocation().clone().add(0, 1, 0)
         by.getWorld().dropItem(loc, from.ore(tier))
@@ -80,8 +81,8 @@ class FurnaceListener(using registry: ItemRegistry) extends Listener:
                 None
 
     def tier(of: Block): FurnaceTier =
-        val furnaceItem = ???
-        if !furnaceItem.isInstanceOf[Furnace] then
+        val furnaceItem = bm.getCustomItem(of)
+        if !furnaceItem.isDefined || !furnaceItem.get.isInstanceOf[Furnace] then
             FurnaceTier.Zero
         else
             furnaceItem.asInstanceOf[Furnace].tier
@@ -126,7 +127,7 @@ object Furnace:
 
     val tierThree = List(praecantatioFurnace, auramFurnace, alkimiaFurnace)
 
-    def registerItems()(using registry: ItemRegistry, server: Server, plugin: JavaPlugin): Unit =
+    def registerItems()(using bm: BlockManager, registry: ItemRegistry, server: Server, plugin: JavaPlugin): Unit =
         server.getPluginManager().registerEvents(FurnaceListener(), plugin)
         List((FurnaceTier.One, tierOne), (FurnaceTier.Two, tierTwo), (FurnaceTier.Three, tierThree))
             .foreach { (tier, items) => items.foreach { item => registry.register(Furnace(tier, item)) } }

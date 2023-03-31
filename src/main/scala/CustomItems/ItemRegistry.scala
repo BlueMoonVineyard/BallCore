@@ -14,4 +14,5 @@ class PlainCustomItem(ig: ItemGroup, is: CustomItemStack) extends CustomItem:
 
 trait ItemRegistry:
     def register(item: CustomItem): Unit
+    def lookup(from: NamespacedKey): Option[CustomItem]
     def lookup(from: ItemStack): Option[CustomItem]
