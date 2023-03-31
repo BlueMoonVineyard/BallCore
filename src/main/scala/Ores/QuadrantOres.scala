@@ -16,24 +16,24 @@ object QuadrantOres:
 
     object ItemStacks:
         // +, + base ores
-        val iron = ironLike("IRON", "Iron")
-        val gold = goldLike("GOLD", "Gold")
-        val copper = copperLike("COPPER", "Copper")
+        val iron = ironLike("iron", "Iron")
+        val gold = goldLike("gold", "Gold")
+        val copper = copperLike("copper", "Copper")
 
         // +, - base ores
-        val tin = ironLike("TIN", "Tin")
-        val sulfur = goldLike("SULFUR", "Sulfur")
-        val orichalcum = copperLike("ORICHALCUM", "Orichalcum")
+        val tin = ironLike("tin", "Tin")
+        val sulfur = goldLike("sulfur", "Sulfur")
+        val orichalcum = copperLike("orichalcum", "Orichalcum")
 
         // -, - base ores
-        val aluminum = ironLike("ALUMINUM", "Aluminum")
-        val palladium = goldLike("PALLADIUM", "Palladium")
-        val hihiirogane = copperLike("HIHIIROGANE", "Hihi'irogane")
+        val aluminum = ironLike("aluminum", "Aluminum")
+        val palladium = goldLike("palladium", "Palladium")
+        val hihiirogane = copperLike("hihiirogane", "Hihi'irogane")
 
         // -, + base ores
-        val zinc = ironLike("ZINC", "Zinc")
-        val magnesium = goldLike("MAGNESIUM", "Magnesium")
-        val meteorite = copperLike("METEORITE", "Meteorite")
+        val zinc = ironLike("zinc", "Zinc")
+        val magnesium = goldLike("magnesium", "Magnesium")
+        val meteorite = copperLike("meteorite", "Meteorite")
 
     val group = ItemGroup(NamespacedKey("ballcore", "quadrant_ores"), ItemStack(Material.IRON_INGOT))
 
