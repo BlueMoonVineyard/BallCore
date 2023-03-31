@@ -8,8 +8,6 @@ import scala.util.chaining._
 import scala.math._
 import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.Location
-import me.filoghost.holographicdisplays.api.HolographicDisplaysAPI
-import me.filoghost.holographicdisplays.api.hologram.Hologram
 import org.bukkit.entity.Player
 import scala.collection.concurrent
 import java.util.UUID
@@ -20,9 +18,45 @@ import scala.concurrent.ExecutionContext
 import org.bukkit.block.Block
 import BallCore.DataStructures.Delay
 import BallCore.Folia.LocationExecutionContext
+import org.bukkit.entity.TextDisplay
+
+class Hologram(val createAt: Location)(using JavaPlugin):
+    implicit var ctx: ExecutionContext = LocationExecutionContext(createAt)
+
+    // constants copied from holographicdisplays
+    val lineHeight = 0.23
+    val spaceBetweenLines = 0.02
+    var lines = List[TextDisplay]()
+    var position = createAt
+
+    def relocate(to: Location): Unit =
+        position = to
+        ctx = LocationExecutionContext(position)
+        Future {
+            var currentY = position.getY()
+            lines.zipWithIndex.foreach { (elem, idx) =>
+                currentY -= lineHeight
+                if idx > 0 then
+                    currentY -= spaceBetweenLines
+                elem.teleport(position.clone().tap(_.setY(currentY)))
+            }
+        }
+    def clearLines(): Unit =
+        Future {
+            lines.foreach { line => line.remove() }
+            lines = List()
+        }
+    def appendLine(text: String): Unit =
+        Future {
+            position.getWorld().spawn(position, classOf[TextDisplay], { ent =>
+                ent.setText(text)
+            })
+            relocate(position)
+        }
+    def delete(): Unit =
+        clearLines()
 
 class HologramManager(using p: JavaPlugin):
-    private val api = HolographicDisplaysAPI.get(p)
     private val holos = concurrent.TrieMap[(Int,Int,Int,UUID), (Hologram, () => Unit)]()
 
     private def getHologram(at: Location): Hologram =
@@ -31,7 +65,7 @@ class HologramManager(using p: JavaPlugin):
         holos.get(key) match
             case None =>
                 val isCancelled = AtomicBoolean(false)
-                val neu = api.createHologram(at)
+                val neu = Hologram(at)
                 holos(key) = (neu, () => isCancelled.set(true))
                 Delay.by(5.seconds).andThen { _ =>
                     if !isCancelled.get() then
@@ -62,9 +96,9 @@ class HologramManager(using p: JavaPlugin):
     def display(at: Block, to: Player, text: List[String]): Unit =
         val loc = displayLocation(at.getLocation(), to)
         val holo = getHologram(at.getLocation())
-        holo.setPosition(loc)
-        holo.getLines().clear()
-        text.map(holo.getLines().appendText)
+        holo.relocate(loc)
+        holo.clearLines()
+        text.map(holo.appendLine)
 
     def clear(at: Block): Unit =
         val loc = at.getLocation()
