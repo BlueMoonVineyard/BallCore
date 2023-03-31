@@ -10,9 +10,7 @@ website: https://github.com/BlueMoonVineyard/BallCore
 folia-supported: true
 api-version: 1.13
 depend:
-  - Slimefun
   - BallCoreDependencyPlugin
-  - HolographicDisplays
 commands:
   groups:
     description: Entrypoint for group commands
