@@ -17,19 +17,19 @@ object CardinalOres:
 
     object ItemStacks:
         // north
-        val silver = ironLike("SILVER", "Silver")
+        val silver = ironLike("silver", "Silver")
         val sapphire = CustomItemStack.make(NamespacedKey("ballcore", "sapphire"), Material.LAPIS_LAZULI, "&rSapphire")
 
         // south
-        val sillicon = ironLike("SILLICON", "Sillicon")
+        val sillicon = ironLike("sillicon", "Sillicon")
         val diamond = CustomItemStack.make(NamespacedKey("ballcore", "diamond"), Material.DIAMOND, "&rDiamond")
 
         // east
-        val cobalt = ironLike("COBALT", "Cobalt")
+        val cobalt = ironLike("cobalt", "Cobalt")
         val plutonium = CustomItemStack.make(NamespacedKey("ballcore", "plutonium"), Material.AMETHYST_SHARD, "&rPlutonium")
 
         // west
-        val lead = ironLike("LEAD", "Lead")
+        val lead = ironLike("lead", "Lead")
         val emerald = CustomItemStack.make(NamespacedKey("ballcore", "emerald"), Material.EMERALD, "&rEmerald")
 
     val group = ItemGroup(NamespacedKey("ballcore", "cardinal_ores"), ItemStack(Material.IRON_INGOT))
