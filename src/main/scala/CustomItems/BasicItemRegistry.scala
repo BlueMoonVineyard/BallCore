@@ -13,6 +13,8 @@ class BasicItemRegistry extends ItemRegistry:
         itemMap += item.id -> item
     def lookup(from: ItemStack): Option[CustomItem] =
         val meta = from.getItemMeta()
+        if meta == null then
+            return None
         val pdc = meta.getPersistentDataContainer()
         Option(pdc.getOrDefault(BasicItemRegistry.persistenceKeyID, PersistentDataType.STRING, null))
             .map(NamespacedKey.fromString)
