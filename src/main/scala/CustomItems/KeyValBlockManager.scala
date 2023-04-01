@@ -12,3 +12,5 @@ class KeyValBlockManager(using kv: KeyVal) extends BlockManager:
         kv.set("blockdb", keyof(block, key), what)
     def retrieve[A](block: Block, key: String)(using Decoder[A]): Option[A] =
         kv.get("blockdb", keyof(block, key))
+    def remove(block: Block, key: String): Unit =
+        kv.remove("blockdb", keyof(block, key))

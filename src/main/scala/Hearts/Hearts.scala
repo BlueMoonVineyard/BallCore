@@ -13,9 +13,10 @@ import org.bukkit.plugin.java.JavaPlugin
 import BallCore.CustomItems.ItemGroup
 import BallCore.CustomItems.ItemRegistry
 import org.bukkit.Server
+import BallCore.CustomItems.BlockManager
 
 object Hearts:
     val group = ItemGroup(NamespacedKey("ballcore", "hearts"), ItemStack(Material.WHITE_CONCRETE))
 
-    def registerItems()(using registry: ItemRegistry, hn: HeartNetworkManager, server: Server, plugin: JavaPlugin) =
+    def registerItems()(using registry: ItemRegistry, bm: BlockManager, hn: HeartNetworkManager, server: Server, plugin: JavaPlugin) =
         registry.register(new HeartBlock())

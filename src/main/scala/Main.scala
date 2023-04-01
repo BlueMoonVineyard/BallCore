@@ -33,6 +33,7 @@ import BallCore.CustomItems.ItemRegistry
 import BallCore.CustomItems.BasicItemRegistry
 import BallCore.CustomItems.BlockManager
 import BallCore.CustomItems.KeyValBlockManager
+import BallCore.CustomItems.CustomItemListener
 
 final class Main extends JavaPlugin:
     given sql: Storage.SQLManager = new Storage.SQLManager
@@ -58,6 +59,7 @@ final class Main extends JavaPlugin:
         Furnace.registerItems()
         Reinforcements.Reinforcements.register()
         Woodcutter.registerItems()
+        CustomItemListener.register()
         getCommand("groups").setExecutor(GroupsCommand())
         getCommand("cheat").setExecutor(CheatCommand())
     override def onDisable() =
