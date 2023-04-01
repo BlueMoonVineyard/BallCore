@@ -106,6 +106,8 @@ class GroupManagementProgram(using gm: GroupManager) extends UIProgram:
                         Option(Bukkit.getOfflinePlayerIfCached(username)) match
                             case None =>
                                 services.notify("I couldn't find a player with that username")
+                            case Some(plr) if model.group.users.contains(plr.getUniqueId()) =>
+                                services.notify(s"${plr.getName()} is already in ${model.group.metadata.name}!")
                             case Some(plr) =>
                                 gm.invites.inviteToGroup(model.userID, plr.getUniqueId(), model.group.metadata.id)
                                 services.notify(s"Invited ${plr.getName()} to ${model.group.metadata.name}!")
