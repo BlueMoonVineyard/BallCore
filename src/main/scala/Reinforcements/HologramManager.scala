@@ -19,6 +19,7 @@ import org.bukkit.block.Block
 import BallCore.DataStructures.Delay
 import BallCore.Folia.LocationExecutionContext
 import org.bukkit.entity.TextDisplay
+import org.bukkit.entity.Display.Billboard
 
 class Hologram(val createAt: Location)(using JavaPlugin):
     implicit var ctx: ExecutionContext = LocationExecutionContext(createAt)
@@ -50,6 +51,7 @@ class Hologram(val createAt: Location)(using JavaPlugin):
         Future {
             position.getWorld().spawn(position, classOf[TextDisplay], { ent =>
                 ent.setText(text)
+                ent.setBillboard(Billboard.CENTER)
             })
             relocate(position)
         }

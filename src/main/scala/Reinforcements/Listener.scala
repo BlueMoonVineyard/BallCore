@@ -307,6 +307,8 @@ class Listener(using rm: ReinforcementManager, registry: ItemRegistry, gm: Group
                     case _ =>
                         // TODO: notify of permission denied
                         event.setCancelled(true)
+            case _ =>
+                ()
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     def preventHarvestingCaveVines(event: PlayerHarvestBlockEvent): Unit =
