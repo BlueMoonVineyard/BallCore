@@ -92,6 +92,7 @@ enum GroupError:
     case RoleNotFound
     case RoleAboveYours
     case CantAssignEveryone
+    case MustHavePermission
 
     def explain(): String =
         this match
@@ -106,6 +107,7 @@ enum GroupError:
             case RoleNotFound => "the role was not found"
             case RoleAboveYours => "the role was above your topmost role"
             case CantAssignEveryone => "you cannot assign the everyone role"
+            case MustHavePermission => "you must have the permission in order to give it to others"
 
 /** The GroupManager implements all of the logic relating to group management and permission */
 class GroupManager()(using sql: Storage.SQLManager):
@@ -168,6 +170,8 @@ class GroupManager()(using sql: Storage.SQLManager):
         )
     )
     implicit val session: DBSession = AutoSession
+    given gm: GroupManager = this
+    val invites = InviteManager()
 
     // private def get(group: GroupID): Either[GroupError, GroupState] =
     //     gsm.get(group) match
@@ -284,6 +288,25 @@ class GroupManager()(using sql: Storage.SQLManager):
             .guard(GroupError.GroupWouldHaveNoOwners) { _.length > 1 }
             .map { _ =>
                 sql"DELETE FROM GroupOwnerships WHERE GroupID = $group AND UserID = $as;".update.apply()
+            }
+
+    def sudoSetRolePermissions(groupID: GroupID, roleID: RoleID, permissions: Map[Permissions, RuleMode]): Unit =
+        sql"UPDATE GroupRoles SET Permissions = ${permissions.asJson.noSpaces} WHERE GroupID = ${groupID} AND RoleID = ${roleID};".update.apply()
+    def setRolePermissions(as: UserID, groupID: GroupID, roleID: RoleID, permissions: Map[Permissions, RuleMode]): Either[GroupError, Unit] =
+        getAll(groupID)
+            .guard(GroupError.NoPermissions) { _.check(Permissions.ManageRoles, as) }
+            .guard(GroupError.RoleNotFound) { _.roles.exists(_.id == roleID) }
+            .guardRoleAboveYours(as, roleID)
+            .guard(GroupError.MustHavePermission) { gs =>
+                permissions.forall { (perm, mode) =>
+                    if mode == RuleMode.Allow then
+                        gs.check(perm, as)
+                    else
+                        true
+                }
+            }
+            .map { data =>
+                sql"UPDATE GroupRoles SET Permissions = ${permissions.asJson.noSpaces} WHERE GroupID = ${groupID} AND RoleID = ${roleID};".update.apply()
             }
 
     def roles(group: GroupID): Either[GroupError, List[RoleState]] =

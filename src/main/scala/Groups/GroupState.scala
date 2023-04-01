@@ -18,6 +18,11 @@ lazy val nullUUID = ju.UUID(0, 0)
 enum RuleMode:
     case Allow, Deny
 
+    def toggle(): RuleMode =
+        this match
+            case Allow => Deny
+            case Deny => Allow
+
 implicit val rmDecoder: Decoder[RuleMode] = deriveDecoder[RuleMode]
 implicit val rmEncoder: Encoder[RuleMode] = deriveEncoder[RuleMode]
 

@@ -5,6 +5,8 @@
 import BallCore.Storage
 import BallCore.Groups
 import java.{util => ju}
+import BallCore.Groups.Permissions
+import BallCore.Groups.RuleMode
 
 class GroupsSuite extends munit.FunSuite:
     test("creating and deleting one-person group") {
@@ -20,6 +22,62 @@ class GroupsSuite extends munit.FunSuite:
 
         val res2 = gm.deleteGroup(ownerID, gid)
         assert(res2 == Right(()), res2)
+    }
+    test("people can't modify their own permissions") {
+        given sql: Storage.SQLManager = Storage.SQLManager(test = true)
+        val gm = Groups.GroupManager()
+        val ownerID = ju.UUID.randomUUID()
+        val memberID = ju.UUID.randomUUID()
+
+        val gid = gm.createGroup(ownerID, "woot!")
+
+        val roles = gm.roles(gid)
+        assert(roles.isRight, roles)
+        val actualRoles = roles.getOrElse(List())
+        val adminRoleID = actualRoles.find { x => x.name == "Admin" }.get.id
+        val modRoleID = actualRoles.find { x => x.name == "Moderator" }.get.id
+
+        gm.sudoSetRolePermissions(gid, modRoleID, Map(
+            Permissions.ManageRoles -> RuleMode.Allow,
+            Permissions.RemoveUser -> RuleMode.Allow,
+        ))
+
+        assertEquals(gm.addToGroup(memberID, gid), Right(()))
+        assertEquals(gm.assignRole(ownerID, memberID, gid, modRoleID, true), Right(()))
+
+        assertEquals(gm.setRolePermissions(memberID, gid, modRoleID, Map(
+            Permissions.InviteUser -> RuleMode.Allow,
+        )), Left(Groups.GroupError.RoleAboveYours))
+    }
+    test("people can't give out permissions they don't have") {
+        given sql: Storage.SQLManager = Storage.SQLManager(test = true)
+        val gm = Groups.GroupManager()
+        val ownerID = ju.UUID.randomUUID()
+        val memberID = ju.UUID.randomUUID()
+
+        val gid = gm.createGroup(ownerID, "woot!")
+
+        val roles = gm.roles(gid)
+        assert(roles.isRight, roles)
+        val actualRoles = roles.getOrElse(List())
+        val adminRoleID = actualRoles.find { x => x.name == "Admin" }.get.id
+        val modRoleID = actualRoles.find { x => x.name == "Moderator" }.get.id
+        val everyoneID = actualRoles.find { x => x.name == "Everyone" }.get.id
+
+        gm.sudoSetRolePermissions(gid, modRoleID, Map(
+            Permissions.ManageRoles -> RuleMode.Allow,
+            Permissions.RemoveUser -> RuleMode.Allow,
+        ))
+
+        assertEquals(gm.addToGroup(memberID, gid), Right(()))
+        assertEquals(gm.assignRole(ownerID, memberID, gid, modRoleID, true), Right(()))
+
+        assertEquals(gm.setRolePermissions(memberID, gid, everyoneID, Map(
+            Permissions.InviteUser -> RuleMode.Allow,
+        )), Left(Groups.GroupError.MustHavePermission))
+        assertEquals(gm.setRolePermissions(memberID, gid, everyoneID, Map(
+            Permissions.RemoveUser -> RuleMode.Allow,
+        )), Right(()))
     }
     test("basic permissions and role management") {
         given sql: Storage.SQLManager = Storage.SQLManager(test = true)

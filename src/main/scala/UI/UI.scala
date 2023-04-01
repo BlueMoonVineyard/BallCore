@@ -70,6 +70,7 @@ trait UITransferrer:
 
 trait UIPrompts:
     def prompt(prompt: String): Future[String]
+    def notify(what: String): Unit
 
 trait UIServices extends UITransferrer, UIPrompts, ExecutionContext
 
@@ -113,6 +114,8 @@ class UIProgramRunner(program: UIProgram, flags: program.Flags, showingTo: Playe
         newUI.render()
     def prompt(prompt: String): Future[String] =
         prompts.prompt(showingTo, prompt)
+    def notify(what: String): Unit =
+        Future { showingTo.sendMessage(what) }
     def execute(runnable: Runnable): Unit =
         ec.execute(runnable)
     def reportFailure(cause: Throwable): Unit =

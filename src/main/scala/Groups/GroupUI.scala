@@ -101,7 +101,16 @@ class GroupManagementProgram(using gm: GroupManager) extends UIProgram:
             case GroupManagementMessage.ViewRoles =>
                 model.copy(viewing = ViewingWhat.Roles)
             case GroupManagementMessage.InviteMember =>
-                ???
+                services.prompt("Who do you want to invite?")
+                    .map { username =>
+                        Option(Bukkit.getOfflinePlayerIfCached(username)) match
+                            case None =>
+                                services.notify("I couldn't find a player with that username")
+                            case Some(plr) =>
+                                gm.invites.inviteToGroup(model.userID, plr.getUniqueId(), model.group.metadata.id)
+                                services.notify(s"Invited ${plr.getName()} to ${model.group.metadata.name}!")
+                        model
+                    }
             case GroupManagementMessage.ClickRole(role) =>
                 val p = RoleManagementProgram()
                 services.transferTo(p, p.Flags(model.group.metadata.id, role, model.userID))
@@ -126,13 +135,29 @@ class RoleManagementProgram(using gm: GroupManager) extends UIProgram:
     override def update(msg: Message, model: Model)(using services: UIServices): Future[Model] =
         msg match
             case RoleManagementMessage.DeleteRole =>
-                // TODO: error reporting
-                gm.deleteRole(model.userID, model.role.id, model.groupID).toOption.get
-                val p = GroupManagementProgram()
-                services.transferTo(p, p.Flags(model.groupID, model.userID))
-                model
+                gm.deleteRole(model.userID, model.role.id, model.groupID) match
+                    case Left(err) =>
+                        services.notify(s"You cannot delete that role because ${err.explain()}")
+                        model
+                    case Right(_) =>
+                        val p = GroupManagementProgram()
+                        services.transferTo(p, p.Flags(model.groupID, model.userID))
+                        model
             case RoleManagementMessage.TogglePermission(perm) =>
-                ???
+                val newPerm = model.role.permissions.get(perm) match
+                    case None => Some(RuleMode.Allow)
+                    case Some(RuleMode.Allow) => Some(RuleMode.Deny)
+                    case Some(RuleMode.Deny) => None
+                val newPermissions =
+                    newPerm match
+                        case None => model.role.permissions.removed(perm)
+                        case Some(mode) => model.role.permissions.updated(perm, mode)
+                gm.setRolePermissions(model.userID, model.groupID, model.role.id, newPermissions) match
+                    case Left(err) =>
+                        services.notify(s"You cannot change that permission because ${err.explain()}")
+                        model
+                    case Right(_) =>
+                        model.copy(role = model.role.copy(permissions = newPermissions))
             case RoleManagementMessage.GoBack =>
                 val p = GroupManagementProgram()
                 services.transferTo(p, p.Flags(model.groupID, model.userID))
@@ -157,7 +182,7 @@ class RoleManagementProgram(using gm: GroupManager) extends UIProgram:
                             case Some(RuleMode.Allow) => s"§a✔ ${x.displayName()}"
                             case Some(RuleMode.Deny) => s"§c✖ ${x.displayName()}"
 
-                    Item(x.displayItem().toString().toLowerCase(), displayName = Some(name)) {
+                    Button(x.displayItem().toString().toLowerCase(), name, RoleManagementMessage.TogglePermission(x)) {
                         Lore(s"§r§f${x.displayExplanation()}")
                         Lore("")
 
@@ -176,9 +201,75 @@ class RoleManagementProgram(using gm: GroupManager) extends UIProgram:
             }
         }
 
+enum InviteListMessage:
+    case ClickInvite(inviter: UserID, group: GroupID)
+    case AcceptInvite(group: GroupID)
+    case DenyInvite(group: GroupID)
+
+class InvitesListProgram(using gm: GroupManager) extends UIProgram:
+    import io.circe.generic.auto._
+
+    case class Flags(userID: UserID)
+    enum Mode:
+        case List
+        case ViewingInvite(user: UserID, group: GroupState)
+    case class Model(userID: UserID, invites: List[(UserID, GroupState)], mode: Mode)
+    type Message = InviteListMessage
+
+    override def init(flags: Flags): Model =
+        val invites = gm.invites.getInvitesFor(flags.userID).map { (uid, gid) =>
+            gm.getGroup(gid).toOption.map((uid, _))
+        }.flatten
+        Model(flags.userID, invites, Mode.List)
+    override def update(msg: Message, model: Model)(using services: UIServices): Future[Model] =
+        msg match
+            case InviteListMessage.ClickInvite(user, group) =>
+                model.copy(mode = Mode.ViewingInvite(user, model.invites.find(_._1 == user).get._2))
+            case InviteListMessage.AcceptInvite(group) =>
+                gm.invites.acceptInvite(model.userID, group)
+                model
+            case InviteListMessage.DenyInvite(group) =>
+                gm.invites.deleteInvite(model.userID, group)
+                model
+    override def view(model: Model): Elem =
+        model.mode match
+            case Mode.List => list(model)
+            case Mode.ViewingInvite(user, group) => viewing(model, user, group)
+    def list(model: Model): Elem =
+        val rows = (model.invites.length / 9).max(1)
+        Root("Invites", rows) {
+            OutlinePane(0, 0, 1, rows) {
+                model.invites.foreach { invite =>
+                    val player = Bukkit.getOfflinePlayer(invite._1)
+                    Button("player_head", s"§r${player.getName()}", InviteListMessage.ClickInvite(invite._1, invite._2.metadata.id)) {
+                        SkullUsername(player.getName())
+                        Lore(s"§r§fInvited you to §a${invite._2.metadata.name}")
+                    }
+                }
+            }
+        }
+    def viewing(model: Model, inviter: UserID, group: GroupState): Elem =
+        val player = Bukkit.getOfflinePlayer(inviter)
+        Root(s"Accept / Reject Invite?", 1) {
+            OutlinePane(0, 0, 1, 1) {
+                Button("red_dye", "§rReject Invite", InviteListMessage.DenyInvite(group.metadata.id))()
+            }
+            OutlinePane(4, 0, 1, 1) {
+                val player = Bukkit.getOfflinePlayer(inviter)
+                Item("player_head", displayName = Some(s"§r${player.getName()}")) {
+                    SkullUsername(player.getName())
+                    Lore(s"§r§fInvited you to §a${group.metadata.name}")
+                }
+            }
+            OutlinePane(8, 0, 1, 1) {
+                Button("lime_dye", "§rAccept Invite", InviteListMessage.AcceptInvite(group.metadata.id))()
+            }
+        }
+
 enum GroupListMessage:
     case ClickGroup(groupID: GroupID)
     case CreateGroup
+    case Invites
 
 class GroupListProgram(using gm: GroupManager) extends UIProgram:
     import io.circe.generic.auto._
@@ -196,6 +287,10 @@ class GroupListProgram(using gm: GroupManager) extends UIProgram:
                 val p = GroupManagementProgram()
                 services.transferTo(p, p.Flags(groupID, model.userID))
                 model
+            case GroupListMessage.Invites =>
+                val p = InvitesListProgram()
+                services.transferTo(p, p.Flags(model.userID))
+                model
             case GroupListMessage.CreateGroup =>
                 val answer = services.prompt("What do you want to call the group?")
                 answer.map { result =>
@@ -208,6 +303,7 @@ class GroupListProgram(using gm: GroupManager) extends UIProgram:
         Root("Groups", 6) {
             OutlinePane(0, 0, 1, 6) {
                 Button("name_tag", "§aCreate Group", GroupListMessage.CreateGroup)()
+                Button("paper", "§aView Invites", GroupListMessage.Invites)()
             }
             OutlinePane(1, 0, 1, 6, priority = Priority.LOWEST, repeat = true) {
                 Item("black_stained_glass_pane", displayName = Some(" "))()
