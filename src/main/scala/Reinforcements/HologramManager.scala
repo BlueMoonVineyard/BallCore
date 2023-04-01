@@ -52,6 +52,7 @@ class Hologram(val createAt: Location)(using JavaPlugin):
             position.getWorld().spawn(position, classOf[TextDisplay], { ent =>
                 ent.setText(text)
                 ent.setBillboard(Billboard.CENTER)
+                lines = lines ::: List(ent)
             })
             relocate(position)
         }
