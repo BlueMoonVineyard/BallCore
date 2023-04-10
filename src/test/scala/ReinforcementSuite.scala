@@ -50,6 +50,8 @@ class ReinforcementSuite extends munit.FunSuite {
 
         val res5 = rm.unreinforce(u2, 0, 0, 0, world)
         assert(res5 == Left(Reinforcements.DoesntExist()))
+
+        csm.evictAll()
     }
     test("breaking shenanigans") {
         given sql: Storage.SQLManager = new Storage.SQLManager(test = true)
@@ -85,6 +87,8 @@ class ReinforcementSuite extends munit.FunSuite {
         val d2 = res3.right.get.health - res4.right.get.health
 
         assert(d2 < d1, (d2, d1))
+
+        csm.evictAll()
     }
     test("break and replace") {
         given sql: Storage.SQLManager = new Storage.SQLManager(test = true)
@@ -121,5 +125,7 @@ class ReinforcementSuite extends munit.FunSuite {
         for i <- 1 to 12 do
             break(_.isRight)
         break(_.isLeft)
+
+        csm.evictAll()
     }
 }

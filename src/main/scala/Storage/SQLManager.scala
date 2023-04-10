@@ -12,10 +12,11 @@ import scalikejdbc.SQL
 import scalikejdbc.NoExtractor
 import org.sqlite.SQLiteConfig
 import org.sqlite.SQLiteDataSource
-import org.sqlite.SQLiteException
+import java.util.UUID
+import java.sql.SQLException
 
 case class Migration(name: String, apply: List[scalikejdbc.SQL[Any, NoExtractor]], reverse: List[scalikejdbc.SQL[Any, NoExtractor]])
-case class MigrationFailure(which: String, num: Int, why: SQLiteException) extends Exception(s"$which failed at the ${num+1}-th fragment", why)
+case class MigrationFailure(which: String, num: Int, why: SQLException) extends Exception(s"$which failed at the ${num+1}-th fragment", why)
 
 class SQLManager(test: Boolean = false):
     File("data-storage").mkdirs()
@@ -42,9 +43,12 @@ class SQLManager(test: Boolean = false):
             if count.get == 0 then
                 migration.apply.zipWithIndex.foreach { (s, idx) =>
                     try
-                        s.update.apply()
+                        if s.tags.contains("returns") then
+                            s.map(_ => ()).list.apply()
+                        else
+                            s.update.apply()
                     catch
-                        case e: SQLiteException => throw MigrationFailure(migration.name, idx, e)
+                        case e: SQLException => throw MigrationFailure(migration.name, idx, e)
                 }
                 sql"INSERT INTO _Migrations (Name) VALUES (${migration.name});".update.apply()
         }

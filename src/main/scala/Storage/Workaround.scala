@@ -12,6 +12,7 @@ import java.util.Properties
 import java.util.logging.Logger
 import java.sql.DriverPropertyInfo
 import java.sql.SQLException
+import java.util.UUID
 
 object SQLiteNoReadOnlyDriver extends Driver
 {
@@ -36,6 +37,14 @@ object SQLiteNoReadOnlyDriver extends Driver
 
 class SQLiteNoReadOnlyConnection(sqlite: Connection) extends Connection
 {
+  org.sqlite.Function.create(
+      sqlite,
+      "generateUUID",
+      new org.sqlite.Function():
+        override protected def xFunc(): Unit =
+          result(UUID.randomUUID().toString())
+  )
+
   def abort(x: java.util.concurrent.Executor): Unit = { sqlite.abort(x) }
   def clearWarnings(): Unit = { sqlite.clearWarnings() }
   def close(): Unit = { sqlite.close() }
