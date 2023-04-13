@@ -25,7 +25,7 @@ object Recipes:
     )
 
 object Reinforcements:
-    def register()(using registry: ItemRegistry, server: Server, plugin: JavaPlugin, rm: BlockReinforcementManager, gm: GroupManager, holos: HologramManager, prompts: Prompts): Unit =
+    def register()(using registry: ItemRegistry, server: Server, plugin: JavaPlugin, brm: BlockReinforcementManager, erm: EntityReinforcementManager, gm: GroupManager, holos: HologramManager, prompts: Prompts): Unit =
         server.getPluginManager().registerEvents(Listener(), plugin)
         registry.register(PlumbAndSquare())
 

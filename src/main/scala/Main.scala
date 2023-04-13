@@ -34,6 +34,8 @@ import BallCore.CustomItems.BasicItemRegistry
 import BallCore.CustomItems.BlockManager
 import BallCore.CustomItems.KeyValBlockManager
 import BallCore.CustomItems.CustomItemListener
+import BallCore.Reinforcements.EntityStateManager
+import BallCore.Reinforcements.EntityReinforcementManager
 
 final class Main extends JavaPlugin:
     given sql: Storage.SQLManager = new Storage.SQLManager
@@ -43,10 +45,12 @@ final class Main extends JavaPlugin:
     given prompts: UI.Prompts = new UI.Prompts
     given gm: GroupManager = new GroupManager
     given csm: ChunkStateManager = new ChunkStateManager
+    given esm: EntityStateManager = new EntityStateManager
     given clock: Clock = new WallClock
     given hm: HologramManager = new HologramManager
     given hn: HeartNetworkManager = new HeartNetworkManager
-    given rm: BlockReinforcementManager = new BlockReinforcementManager
+    given brm: BlockReinforcementManager = new BlockReinforcementManager
+    given erm: EntityReinforcementManager = new EntityReinforcementManager
     given server: Server = Bukkit.getServer()
     given reg: ItemRegistry = BasicItemRegistry()
     given bm: BlockManager = KeyValBlockManager()
