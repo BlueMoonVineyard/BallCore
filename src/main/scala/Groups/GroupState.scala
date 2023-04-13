@@ -41,6 +41,8 @@ enum Permissions(val name: String):
     case Doors extends Permissions("doors")
     case Crops extends Permissions("crops")
 
+    case Entities extends Permissions("entities")
+
     def displayName(): String =
         this match
             case ManageRoles => "Manage Roles"
@@ -48,12 +50,13 @@ enum Permissions(val name: String):
             case InviteUser => "Invite Users"
             case RemoveUser => "Remove Users"
             case UpdateGroupInformation => "Modify Group Information"
-            case AddReinforcements => "Reinforce Blocks"
-            case RemoveReinforcements => "Unreinforce Blocks"
+            case AddReinforcements => "Reinforce Blocks/Entities"
+            case RemoveReinforcements => "Unreinforce Blocks/Entities"
             case Build => "Build"
             case Chests => "Use Chests"
             case Doors => "Use Doors"
             case Crops => "Use Crops"
+            case Entities => "Interact with Entities"
 
     def displayExplanation(): String =
         this match
@@ -62,12 +65,13 @@ enum Permissions(val name: String):
             case InviteUser => "Allows user to invite others"
             case RemoveUser => "Allows user to remove others"
             case UpdateGroupInformation => "Allows user to update group information"
-            case AddReinforcements => "Allows the user to reinforce blocks"
-            case RemoveReinforcements => "Allows the user to unreinforce blocks"
+            case AddReinforcements => "Allows the user to reinforce blocks and entities"
+            case RemoveReinforcements => "Allows the user to unreinforce blocks and entities"
             case Build => "Allows the user to modify reinforced blocks"
             case Chests => "Allows the user to open reinforced chests"
             case Doors => "Allows the user to open reinforced doors"
             case Crops => "Allows the user to plant and harvest crops on reinforced farmland"
+            case Entities => "Allows the user to interact with entities"
 
     def displayItem(): Material =
         this match
@@ -82,7 +86,7 @@ enum Permissions(val name: String):
             case Chests => Material.CHEST
             case Doors => Material.OAK_DOOR
             case Crops => Material.WHEAT
-        
+            case Entities => Material.EGG
 
 implicit val pKeyEncoder: KeyEncoder[Permissions] = new KeyEncoder[Permissions]:
     override def apply(perm: Permissions): String =

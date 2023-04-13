@@ -49,8 +49,10 @@ import BallCore.CustomItems.ItemRegistry
 import scala.concurrent.ExecutionContext
 import BallCore.Folia.EntityExecutionContext
 import org.bukkit.plugin.Plugin
+import org.bukkit.event.player.PlayerInteractEntityEvent
+import org.bukkit.event.entity.EntityDamageEvent
 
-class Listener(using rm: BlockReinforcementManager, registry: ItemRegistry, gm: GroupManager, holos: HologramManager, prompts: Prompts, plugin: Plugin) extends org.bukkit.event.Listener:
+class Listener(using brm: BlockReinforcementManager, erm: EntityReinforcementManager, registry: ItemRegistry, gm: GroupManager, holos: HologramManager, prompts: Prompts, plugin: Plugin) extends org.bukkit.event.Listener:
     def reinforcementFromItem(is: ItemStack): Option[ReinforcementTypes] =
         if is == null then return None
         is.getType() match
@@ -194,7 +196,7 @@ class Listener(using rm: BlockReinforcementManager, registry: ItemRegistry, gm: 
         val loc = BlockAdjustment.adjustBlock(event.getBlockPlaced())
 
         val gid = RuntimeStateManager.states(p.getUniqueId())
-        rm.reinforce(p.getUniqueId(), gid, loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID(), kind) match
+        brm.reinforce(p.getUniqueId(), gid, loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID(), kind) match
             case Left(err) =>
                 event.getPlayer().sendMessage(explain(err))
             case Right(_) =>
@@ -204,7 +206,7 @@ class Listener(using rm: BlockReinforcementManager, registry: ItemRegistry, gm: 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     def onBreak(event: BlockBreakEvent): Unit =
         val block = BlockAdjustment.adjustBlock(event.getBlock())
-        rm.break(block.getX(), block.getY(), block.getZ(), block.getType().getHardness(), block.getWorld().getUID()) match
+        brm.break(block.getX(), block.getY(), block.getZ(), block.getType().getHardness(), block.getWorld().getUID()) match
             case Left(err) =>
                 holos.clear(block)
                 err match
@@ -216,6 +218,50 @@ class Listener(using rm: BlockReinforcementManager, registry: ItemRegistry, gm: 
                 playDamageEffect(block.getLocation(), value.kind)
                 holos.display(block, event.getPlayer(), List(s"${value.health} / ${value.kind.hp}"))
                 event.setCancelled(true)
+
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    def onDamageEntity(event: EntityDamageEvent): Unit =
+        val ent = event.getEntity()
+        erm.damage(ent.getUniqueId()) match
+            case Left(err) =>
+                err match
+                    case JustBroken(bs) =>
+                        playBreakEffect(ent.getLocation(), bs.kind)
+                    case _ =>
+                        ()
+            case Right(value) =>
+                playDamageEffect(ent.getLocation(), value.kind)
+                event.setCancelled(true)
+
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    def onInteractEntity(event: PlayerInteractEntityEvent): Unit =
+        val p = event.getPlayer()
+        val i = p.getInventory()
+        val istack = i.getItemInMainHand()
+        val item = registry.lookup(istack)
+        if !item.isDefined || !item.get.isInstanceOf[PlumbAndSquare] then
+            return
+        if !RuntimeStateManager.states.contains(p.getUniqueId()) then
+            p.sendMessage("Shift left-click the plumb-and-square in your inventory to set a group to reinforce on before reinforcing")
+            event.setCancelled(true)
+            return
+
+        val pas = item.get.asInstanceOf[PlumbAndSquare]
+        val mats = pas.getMaterials(istack)
+        if mats.isEmpty then
+            return
+        val (kind, amount) = mats.get
+        if amount < 1 then
+            return
+
+        val gid = RuntimeStateManager.states(p.getUniqueId())
+        val eid = event.getRightClicked().getUniqueId()
+        erm.reinforce(p.getUniqueId(), gid, eid, kind) match
+            case Left(err) =>
+                event.getPlayer().sendMessage(explain(err))
+            case Right(value) =>
+                playCreationEffect(event.getRightClicked().getLocation(), kind)
+                pas.loadReinforcementMaterials(p, istack, -1, kind)
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     def onInteract(event: PlayerInteractEvent): Unit =
@@ -240,7 +286,7 @@ class Listener(using rm: BlockReinforcementManager, registry: ItemRegistry, gm: 
         val loc = BlockAdjustment.adjustBlock(event.getClickedBlock())
 
         val gid = RuntimeStateManager.states(p.getUniqueId())
-        rm.reinforce(p.getUniqueId(), gid, loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID(), kind) match
+        brm.reinforce(p.getUniqueId(), gid, loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID(), kind) match
             case Left(err) =>
                 event.getPlayer().sendMessage(explain(err))
             case Right(_) =>
@@ -282,13 +328,27 @@ class Listener(using rm: BlockReinforcementManager, registry: ItemRegistry, gm: 
     //// Stuff that enforces reinforcements in the face of permissions; i.e. chest opening prevention
     //
 
+    // prevent interacting with reinforced entities
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    def preventEntityInteractions(event: PlayerInteractEntityEvent): Unit =
+        val rein = erm.getReinforcement(event.getRightClicked().getUniqueId())
+        if rein.isEmpty then
+            return
+        val reinf = rein.get
+        gm.check(event.getPlayer().getUniqueId(), reinf.group, Permissions.Entities) match
+            case Right(ok) if ok =>
+                ()
+            case _ =>
+                // TODO: notify of permission denied
+                event.setCancelled(true)
+
     // prevent opening reinforced items
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     def preventOpens(event: PlayerInteractEvent): Unit =
         if !event.hasBlock() || event.getAction() != Action.RIGHT_CLICK_BLOCK then
             return
         val loc = BlockAdjustment.adjustBlock(event.getClickedBlock())
-        val rein = rm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID())
+        val rein = brm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID())
         if rein.isEmpty then
             return
         val reinf = rein.get
@@ -313,7 +373,7 @@ class Listener(using rm: BlockReinforcementManager, registry: ItemRegistry, gm: 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     def preventHarvestingCaveVines(event: PlayerHarvestBlockEvent): Unit =
         val loc = BlockAdjustment.adjustBlock(event.getHarvestedBlock())
-        val rein = rm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID())
+        val rein = brm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID())
         if rein.isEmpty then
             return
         gm.check(event.getPlayer().getUniqueId(), rein.get.group, Permissions.Crops) match
@@ -330,7 +390,7 @@ class Listener(using rm: BlockReinforcementManager, registry: ItemRegistry, gm: 
 
         val player = event.getPlayer()
         val loc = event.getBlockPlaced()
-        val rein = rm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID())
+        val rein = brm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID())
         if rein.isDefined then
             gm.check(player.getUniqueId(), rein.get.group, Permissions.Build) match
                 case Right(ok) if ok =>
@@ -355,7 +415,7 @@ class Listener(using rm: BlockReinforcementManager, registry: ItemRegistry, gm: 
                 player.getInventory().getItemInOffHand()
 
         val loc = event.getClickedBlock()
-        val rein = rm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID())
+        val rein = brm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID())
         if rein.isEmpty then
             return
         gm.check(player.getUniqueId(), rein.get.group, Permissions.Build) match
@@ -413,7 +473,7 @@ class Listener(using rm: BlockReinforcementManager, registry: ItemRegistry, gm: 
 
         val player = event.getPlayer()
         val loc = event.getClickedBlock()
-        val rein = rm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID())
+        val rein = brm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID())
         if rein.isEmpty then
             return
 
@@ -434,7 +494,7 @@ class Listener(using rm: BlockReinforcementManager, registry: ItemRegistry, gm: 
         val blockData = block.getBlockData().asInstanceOf[Lectern]
         if blockData.hasBook() then
             return
-        val rein = rm.getReinforcement(block.getX(), block.getY(), block.getZ(), block.getWorld().getUID())
+        val rein = brm.getReinforcement(block.getX(), block.getY(), block.getZ(), block.getWorld().getUID())
         if rein.isEmpty then
             return
         val player = event.getPlayer()
@@ -448,7 +508,7 @@ class Listener(using rm: BlockReinforcementManager, registry: ItemRegistry, gm: 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     def preventTakingBookFromLectern(event: PlayerTakeLecternBookEvent): Unit =
         val block = event.getLectern().getBlock()
-        val rein = rm.getReinforcement(block.getX(), block.getY(), block.getZ(), block.getWorld().getUID())
+        val rein = brm.getReinforcement(block.getX(), block.getY(), block.getZ(), block.getWorld().getUID())
         if rein.isEmpty then
             return
         val player = event.getPlayer()
@@ -466,7 +526,7 @@ class Listener(using rm: BlockReinforcementManager, registry: ItemRegistry, gm: 
             return
 
         val block = event.getBlockClicked()
-        val rein = rm.getReinforcement(block.getX(), block.getY(), block.getZ(), block.getWorld().getUID())
+        val rein = brm.getReinforcement(block.getX(), block.getY(), block.getZ(), block.getWorld().getUID())
         if rein.isEmpty then
             return
         val player = event.getPlayer()
@@ -484,7 +544,7 @@ class Listener(using rm: BlockReinforcementManager, registry: ItemRegistry, gm: 
         // air isn't reinforceable, and solid blocks can't become waterlogged
         if block.getType() == Material.AIR || block.getType().isSolid() then
             return
-        val rein = rm.getReinforcement(block.getX(), block.getY(), block.getZ(), block.getWorld().getUID())
+        val rein = brm.getReinforcement(block.getX(), block.getY(), block.getZ(), block.getWorld().getUID())
 
     // prevent bonemealing blocks
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
@@ -495,7 +555,7 @@ class Listener(using rm: BlockReinforcementManager, registry: ItemRegistry, gm: 
 
         event.getBlocks().forEach { x =>
             val loc = BlockAdjustment.adjustBlock(x.getBlock())
-            val rein = rm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID())
+            val rein = brm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID())
             if rein.isDefined then
                 gm.check(player.getUniqueId(), rein.get.group, Permissions.Crops) match
                     case Right(ok) if ok =>
@@ -514,7 +574,7 @@ class Listener(using rm: BlockReinforcementManager, registry: ItemRegistry, gm: 
     def preventPistonPush(event: BlockPistonExtendEvent): Unit =
         event.getBlocks().forEach { x =>
             val loc = BlockAdjustment.adjustBlock(event.getBlock())
-            val rein = rm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID())
+            val rein = brm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID())
             if rein.isDefined then
                 event.setCancelled(true)
         }
@@ -524,7 +584,7 @@ class Listener(using rm: BlockReinforcementManager, registry: ItemRegistry, gm: 
     def preventPistonPull(event: BlockPistonRetractEvent): Unit =
         event.getBlocks().forEach { x =>
             val loc = BlockAdjustment.adjustBlock(event.getBlock())
-            val rein = rm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID())
+            val rein = brm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID())
             if rein.isDefined then
                 event.setCancelled(true)
         }
@@ -533,7 +593,7 @@ class Listener(using rm: BlockReinforcementManager, registry: ItemRegistry, gm: 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     def preventFire(event: BlockBurnEvent): Unit =
         val loc = BlockAdjustment.adjustBlock(event.getBlock())
-        val rein = rm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID())
+        val rein = brm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID())
         if rein.isDefined then
             event.setCancelled(true)
 
@@ -541,7 +601,7 @@ class Listener(using rm: BlockReinforcementManager, registry: ItemRegistry, gm: 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     def preventZombies(event: EntityChangeBlockEvent): Unit =
         val loc = BlockAdjustment.adjustBlock(event.getBlock())
-        val rein = rm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID())
+        val rein = brm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID())
         if rein.isDefined then
             event.setCancelled(true)
 
@@ -551,7 +611,7 @@ class Listener(using rm: BlockReinforcementManager, registry: ItemRegistry, gm: 
         if event.getEntityType() != EntityType.FALLING_BLOCK then
             return
         val block = event.getLocation().getBlock()
-        val rein = rm.getReinforcement(block.getX(), block.getY(), block.getZ(), block.getWorld().getUID())
+        val rein = brm.getReinforcement(block.getX(), block.getY(), block.getZ(), block.getWorld().getUID())
         if rein.isEmpty then
             return
         event.getEntity().setGravity(false)
@@ -563,7 +623,7 @@ class Listener(using rm: BlockReinforcementManager, registry: ItemRegistry, gm: 
         if event.getToBlock().getY() < event.getToBlock().getWorld().getMinHeight() then
             return
         val loc = BlockAdjustment.adjustBlock(event.getBlock())
-        val rein = rm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID())
+        val rein = brm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID())
         if rein.isDefined then
             event.setCancelled(true)
 
@@ -572,7 +632,7 @@ class Listener(using rm: BlockReinforcementManager, registry: ItemRegistry, gm: 
     def preventPlantGrowth(event: StructureGrowEvent): Unit =
         event.getBlocks().forEach { x =>
             val loc = x.getBlock()
-            if rm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID()).isDefined then
+            if brm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID()).isDefined then
                 event.setCancelled(true)
         }
 
@@ -584,9 +644,9 @@ class Listener(using rm: BlockReinforcementManager, registry: ItemRegistry, gm: 
         while it.hasNext() do
             val block = it.next()
             val loc = BlockAdjustment.adjustBlock(block)
-            val rein = rm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID())
+            val rein = brm.getReinforcement(loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getUID())
             if rein.isDefined then
-                rm.break(loc.getX(), loc.getY(), loc.getZ(), loc.getType().getHardness(), loc.getWorld().getUID()) match
+                brm.break(loc.getX(), loc.getY(), loc.getZ(), loc.getType().getHardness(), loc.getWorld().getUID()) match
                     case Right(_) => it.remove()
                     case Left(_) => ()
 
