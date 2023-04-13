@@ -53,7 +53,7 @@ class SQLKeyVal()(using sql: SQLManager) extends KeyVal:
         )
     )
 
-    implicit val session: DBSession = AutoSession
+    implicit val session: DBSession = sql.session
 
     override def set[A](player: UUID, key: String, value: A)(using Encoder[A]): Unit =
         sql"INSERT OR REPLACE INTO PlayerKeyValue (Player, Key, Value) VALUES (${player}, ${key}, ${value.asJson.noSpaces})".update.apply()

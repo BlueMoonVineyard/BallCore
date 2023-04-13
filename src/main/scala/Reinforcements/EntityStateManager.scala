@@ -34,7 +34,7 @@ class EntityStateManager()(using sql: Storage.SQLManager, csm: ChunkStateManager
         )
     )
 
-    private implicit val session: DBSession = AutoSession
+    private implicit val session: DBSession = sql.session
     private val cache = LRUCache[UUID, ReinforcementState](1000, evict)
     private val evict = save
 
@@ -49,7 +49,7 @@ class EntityStateManager()(using sql: Storage.SQLManager, csm: ChunkStateManager
     def set(key: UUID, value: ReinforcementState): Unit =
         cache(key) = value
     private def save(key: UUID, value: ReinforcementState): Unit =
-        DB.localTx { implicit session =>
+        sql.localTx { implicit session =>
             if value.deleted then
                 val id = sql"""
                 DELETE FROM EntityReinforcements
@@ -93,7 +93,7 @@ class EntityStateManager()(using sql: Storage.SQLManager, csm: ChunkStateManager
     private def load(key: UUID): Unit =
         val item =
             sql"""
-            SELECT OffsetX, OffsetZ, Y, GroupID, Owner, Health, ReinforcementKind, PlacedAt FROM EntityReinforcements
+            SELECT GroupID, Owner, Health, ReinforcementKind, PlacedAt FROM EntityReinforcements
                 LEFT JOIN Reinforcements
                        ON Reinforcements.ID = EntityReinforcements.ReinforcementID
 

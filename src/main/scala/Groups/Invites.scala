@@ -26,7 +26,7 @@ class InviteManager()(using sql: Storage.SQLManager, gm: GroupManager):
             )
         )
     )
-    implicit val session: DBSession = AutoSession
+    implicit val session: DBSession = sql.session
 
     def inviteToGroup(from: UUID, to: UUID, group: GroupID): Unit =
         sql"""
@@ -55,7 +55,7 @@ class InviteManager()(using sql: Storage.SQLManager, gm: GroupManager):
         .apply()
 
     def acceptInvite(invitee: UserID, group: GroupID): Either[GroupError, Unit] =
-        DB.localTx { implicit session =>
+        sql.localTx { implicit session =>
             deleteInvite(invitee, group)
             gm.addToGroup(invitee, group)
         }

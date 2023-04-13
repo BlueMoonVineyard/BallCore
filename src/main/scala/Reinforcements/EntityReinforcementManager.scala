@@ -39,7 +39,7 @@ class EntityReinforcementManager()(using esm: EntityStateManager, gsm: Groups.Gr
             case None => Left(DoesntExist())
             case Some(value) =>
                 // TODO: factor in hearts + acclimation
-                val hardness = 2
+                val hardness = 20
                 val hoursPassed = ChronoUnit.HOURS.between(value.placedAt, c.now()).toDouble
                 val timeDamageMultiplier = (hardness * exp((-1.0/hardness) * hoursPassed))/2.0 + 1.0
                 val base = 1.0

@@ -12,7 +12,7 @@ class GroupsUISuite extends munit.FunSuite:
     val nullUUID = ju.UUID(0, 0)
 
     test("role management program") {
-        given sql: Storage.SQLManager = Storage.SQLManager(test = true)
+        given sql: Storage.SQLManager = Storage.SQLManager(test = Some("gus role management program"))
         given ts: TestUIServices = TestUIServices(this)
         implicit val gm: Groups.GroupManager = Groups.GroupManager()
         val ownerID = ju.UUID.randomUUID()

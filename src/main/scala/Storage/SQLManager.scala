@@ -18,24 +18,31 @@ import java.sql.SQLException
 case class Migration(name: String, apply: List[scalikejdbc.SQL[Any, NoExtractor]], reverse: List[scalikejdbc.SQL[Any, NoExtractor]])
 case class MigrationFailure(which: String, num: Int, why: SQLException) extends Exception(s"$which failed at the ${num+1}-th fragment", why)
 
-class SQLManager(test: Boolean = false):
+class SQLManager(test: Option[String] = None):
     File("data-storage").mkdirs()
 
     Class.forName("org.sqlite.JDBC")
     DriverManager.registerDriver(SQLiteNoReadOnlyDriver)
-    if test then
-        ConnectionPool.singleton("no-read-only:jdbc:sqlite::memory:", null, null)
+    if test.isDefined then
+        ConnectionPool.add(test.get, "no-read-only:jdbc:sqlite::memory:", null, null)
     else
         ConnectionPool.singleton("no-read-only:jdbc:sqlite:data-storage/BallCore.db", null, null)
 
-    private implicit val session: DBSession = AutoSession
+    val pool: ConnectionPool = if test.isDefined then ConnectionPool(test.get) else ConnectionPool()
+    given session: DBSession = if test.isDefined then NamedAutoSession(test.get) else AutoSession
 
     sql"PRAGMA foreign_keys=ON".update.apply()
     sql"CREATE TABLE IF NOT EXISTS _Migrations (Name string)".update.apply()
 
+    def localTx[A](execution: DBSession => A) =
+        if test.isDefined then
+            NamedDB(test.get).localTx(execution)
+        else
+            DB.localTx(execution)
+
     // TODO: transactions
     def applyMigration(migration: Migration): Unit =
-        DB.localTx { implicit session =>
+        localTx { implicit session =>
             val count = sql"SELECT COUNT(*) FROM _Migrations WHERE NAME = ${migration.name};"
                 .map(rs => rs.int(1))
                 .single

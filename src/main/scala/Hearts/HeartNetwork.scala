@@ -65,7 +65,7 @@ class HeartNetworkManager()(using sql: Storage.SQLManager):
             ),
         )
     )
-    private implicit val session: DBSession = AutoSession
+    private implicit val session: DBSession = sql.session
 
     def populationToRadius(count: Int): Int =
         21 * count

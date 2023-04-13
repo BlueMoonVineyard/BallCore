@@ -10,7 +10,7 @@ import BallCore.Groups.RuleMode
 
 class GroupsSuite extends munit.FunSuite:
     test("creating and deleting one-person group") {
-        given sql: Storage.SQLManager = Storage.SQLManager(test = true)
+        given sql: Storage.SQLManager = Storage.SQLManager(test = Some("gs creating and deleting one-person group"))
         val gm = Groups.GroupManager()
         val ownerID = ju.UUID.randomUUID()
         val notOwnerID = ju.UUID.randomUUID()
@@ -24,7 +24,7 @@ class GroupsSuite extends munit.FunSuite:
         assert(res2 == Right(()), res2)
     }
     test("people can't modify their own permissions") {
-        given sql: Storage.SQLManager = Storage.SQLManager(test = true)
+        given sql: Storage.SQLManager = Storage.SQLManager(test = Some("people can't modify their own permissions"))
         val gm = Groups.GroupManager()
         val ownerID = ju.UUID.randomUUID()
         val memberID = ju.UUID.randomUUID()
@@ -50,7 +50,7 @@ class GroupsSuite extends munit.FunSuite:
         )), Left(Groups.GroupError.RoleAboveYours))
     }
     test("people can't give out permissions they don't have") {
-        given sql: Storage.SQLManager = Storage.SQLManager(test = true)
+        given sql: Storage.SQLManager = Storage.SQLManager(test = Some("gs people can't give out permissions they don't have"))
         val gm = Groups.GroupManager()
         val ownerID = ju.UUID.randomUUID()
         val memberID = ju.UUID.randomUUID()
@@ -80,7 +80,7 @@ class GroupsSuite extends munit.FunSuite:
         )), Right(()))
     }
     test("basic permissions and role management") {
-        given sql: Storage.SQLManager = Storage.SQLManager(test = true)
+        given sql: Storage.SQLManager = Storage.SQLManager(test = Some("gs basic permissions and role management"))
         val gm = Groups.GroupManager()
         val ownerID = ju.UUID.randomUUID()
         val notMemberID = ju.UUID.randomUUID()
@@ -118,7 +118,7 @@ class GroupsSuite extends munit.FunSuite:
         assert(res8 == Left(Groups.GroupError.RoleAboveYours), res8)
     }
     test("multi-owner groups") {
-        given sql: Storage.SQLManager = Storage.SQLManager(test = true)
+        given sql: Storage.SQLManager = Storage.SQLManager(test = Some("gs multi-owner groups"))
         val gm = Groups.GroupManager()
 
         val owner1Id = ju.UUID.randomUUID()

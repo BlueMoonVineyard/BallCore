@@ -169,7 +169,7 @@ class GroupManager()(using sql: Storage.SQLManager):
             )
         )
     )
-    implicit val session: DBSession = AutoSession
+    implicit val session: DBSession = sql.session
     given gm: GroupManager = this
     val invites = InviteManager()
 
@@ -213,7 +213,7 @@ class GroupManager()(using sql: Storage.SQLManager):
                 ),
             ),
         )
-        DB.localTx { implicit session =>
+        sql.localTx { implicit session =>
             GroupStates(newGroupID, name).save()
             GroupMemberships(newGroupID, owner).save()
             GroupOwnerships(newGroupID, owner).save()

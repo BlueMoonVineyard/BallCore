@@ -12,7 +12,7 @@ import be.seeseemelk.mockbukkit.WorldMock
 
 class HeartSuite extends munit.FunSuite {
   test("placing standalone heart") {
-    given sql: Storage.SQLManager = Storage.SQLManager(test = true)
+    given sql: Storage.SQLManager = Storage.SQLManager(test = Some("hs placing standalone heart"))
     given hn: HeartNetworkManager = HeartNetworkManager()
     val world = WorldMock()
     val id = UUID.randomUUID()
@@ -26,7 +26,7 @@ class HeartSuite extends munit.FunSuite {
     assert(res3.isEmpty, res3)
   }
   test("two-heart network") {
-    given sql: Storage.SQLManager = Storage.SQLManager(test = true)
+    given sql: Storage.SQLManager = Storage.SQLManager(test = Some("hs two-heart network"))
     given hn: HeartNetworkManager = HeartNetworkManager()
     val world = WorldMock()
     val id1 = UUID.randomUUID()

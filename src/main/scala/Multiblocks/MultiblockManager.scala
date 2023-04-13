@@ -40,4 +40,4 @@ class MultiblockManager(using sql: Storage.SQLManager):
         )
     )
 
-    private implicit val session: DBSession = AutoSession
+    private implicit val session: DBSession = sql.session

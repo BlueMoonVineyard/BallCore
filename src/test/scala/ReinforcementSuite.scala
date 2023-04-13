@@ -19,7 +19,7 @@ import BallCore.Reinforcements.ReinforcementTypes
 
 class ReinforcementSuite extends munit.FunSuite {
     test("basic stuff") {
-        given sql: Storage.SQLManager = new Storage.SQLManager(test = true)
+        given sql: Storage.SQLManager = new Storage.SQLManager(test = Some("rs basic stuff"))
         given keyVal: Storage.SQLKeyVal = new Storage.SQLKeyVal
         given gm: Groups.GroupManager = new Groups.GroupManager
         given csm: Reinforcements.ChunkStateManager = new Reinforcements.ChunkStateManager
@@ -54,7 +54,7 @@ class ReinforcementSuite extends munit.FunSuite {
         csm.evictAll()
     }
     test("breaking shenanigans") {
-        given sql: Storage.SQLManager = new Storage.SQLManager(test = true)
+        given sql: Storage.SQLManager = new Storage.SQLManager(test = Some("rs breaking shenanigans"))
         given keyVal: Storage.SQLKeyVal = new Storage.SQLKeyVal
         given gm: Groups.GroupManager = new Groups.GroupManager
         given csm: Reinforcements.ChunkStateManager = new Reinforcements.ChunkStateManager
@@ -91,7 +91,7 @@ class ReinforcementSuite extends munit.FunSuite {
         csm.evictAll()
     }
     test("break and replace") {
-        given sql: Storage.SQLManager = new Storage.SQLManager(test = true)
+        given sql: Storage.SQLManager = new Storage.SQLManager(test = Some("rs break and replace"))
         given keyVal: Storage.SQLKeyVal = new Storage.SQLKeyVal
         given gm: Groups.GroupManager = new Groups.GroupManager
         given csm: Reinforcements.ChunkStateManager = new Reinforcements.ChunkStateManager

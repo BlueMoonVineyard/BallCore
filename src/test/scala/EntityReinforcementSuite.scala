@@ -15,7 +15,7 @@ import BallCore.Reinforcements.ReinforcementTypes
 
 class EntityReinforcementSuite extends munit.FunSuite {
     test("basic stuff") {
-        given sql: Storage.SQLManager = new Storage.SQLManager(test = true)
+        given sql: Storage.SQLManager = new Storage.SQLManager(test = Some("ers basic stuff"))
         given keyVal: Storage.SQLKeyVal = new Storage.SQLKeyVal
         given gm: Groups.GroupManager = new Groups.GroupManager
         given csm: Reinforcements.ChunkStateManager = new Reinforcements.ChunkStateManager
@@ -50,7 +50,7 @@ class EntityReinforcementSuite extends munit.FunSuite {
         assert(res5 == Left(Reinforcements.DoesntExist()))
     }
     test("damaging shenanigans") {
-        given sql: Storage.SQLManager = new Storage.SQLManager(test = true)
+        given sql: Storage.SQLManager = new Storage.SQLManager(test = Some("ers damaging shenanigans"))
         given keyVal: Storage.SQLKeyVal = new Storage.SQLKeyVal
         given gm: Groups.GroupManager = new Groups.GroupManager
         given csm: Reinforcements.ChunkStateManager = new Reinforcements.ChunkStateManager

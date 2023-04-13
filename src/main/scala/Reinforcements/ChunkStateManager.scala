@@ -83,7 +83,7 @@ class ChunkStateManager()(using sql: Storage.SQLManager):
         )
     )
 
-    private implicit val session: DBSession = AutoSession
+    private implicit val session: DBSession = sql.session
     private val cache = LRUCache[ChunkKey, ChunkState](1000, evict)
 
     def evictAll(): Unit =
@@ -129,7 +129,7 @@ class ChunkStateManager()(using sql: Storage.SQLManager):
         val cz = key.chunkZ
         val cw = key.world
 
-        DB.localTx { implicit session =>
+        sql.localTx { implicit session =>
             value.blocks.view.filter(_._2.deleted).foreach { item =>
                 val (key, _) = item
                 val id = sql"""
