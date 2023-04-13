@@ -23,7 +23,7 @@ import BallCore.Ores.Furnace
 import BallCore.Gear.QuadrantGear
 import BallCore.Reinforcements
 import BallCore.Woodcutter.Woodcutter
-import BallCore.Reinforcements.ReinforcementManager
+import BallCore.Reinforcements.BlockReinforcementManager
 import BallCore.Reinforcements.ChunkStateManager
 import BallCore.DataStructures.Clock
 import BallCore.DataStructures.WallClock
@@ -46,7 +46,7 @@ final class Main extends JavaPlugin:
     given clock: Clock = new WallClock
     given hm: HologramManager = new HologramManager
     given hn: HeartNetworkManager = new HeartNetworkManager
-    given rm: ReinforcementManager = new ReinforcementManager
+    given rm: BlockReinforcementManager = new BlockReinforcementManager
     given server: Server = Bukkit.getServer()
     given reg: ItemRegistry = BasicItemRegistry()
     given bm: BlockManager = KeyValBlockManager()

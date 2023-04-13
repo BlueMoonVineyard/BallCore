@@ -30,12 +30,12 @@ object BlockAdjustment:
             case BlockFace.SOUTH => BlockFace.EAST
             case BlockFace.WEST => BlockFace.SOUTH
             case _ => face
-    private def get(block: Block)(using rm: ReinforcementManager): Option[BlockState] =
+    private def get(block: Block)(using rm: BlockReinforcementManager): Option[ReinforcementState] =
         rm.getReinforcement(block.getX(), block.getY(), block.getZ(), block.getWorld().getUID())
 
     // there's a lot of multiblock things in minecraft, so this is responsible for choosing which block is the
     // "responsible" block
-    def adjustBlock(block: Block)(using rm: ReinforcementManager): Block =
+    def adjustBlock(block: Block)(using rm: BlockReinforcementManager): Block =
         val rein = get(block)
         if rein.isDefined then
             return block

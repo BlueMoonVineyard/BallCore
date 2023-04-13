@@ -27,14 +27,14 @@ class SQLManager(test: Boolean = false):
         ConnectionPool.singleton("no-read-only:jdbc:sqlite::memory:", null, null)
     else
         ConnectionPool.singleton("no-read-only:jdbc:sqlite:data-storage/BallCore.db", null, null)
-    {
-        sql"PRAGMA foreign_keys=ON".update.apply()(AutoSession)
-        sql"CREATE TABLE IF NOT EXISTS _Migrations (Name string)".update.apply()(AutoSession)
-    }
+
+    private implicit val session: DBSession = AutoSession
+
+    sql"PRAGMA foreign_keys=ON".update.apply()
+    sql"CREATE TABLE IF NOT EXISTS _Migrations (Name string)".update.apply()
 
     // TODO: transactions
     def applyMigration(migration: Migration): Unit =
-        implicit val session = AutoSession
         DB.localTx { implicit session =>
             val count = sql"SELECT COUNT(*) FROM _Migrations WHERE NAME = ${migration.name};"
                 .map(rs => rs.int(1))

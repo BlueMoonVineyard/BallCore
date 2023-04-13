@@ -50,7 +50,7 @@ import scala.concurrent.ExecutionContext
 import BallCore.Folia.EntityExecutionContext
 import org.bukkit.plugin.Plugin
 
-class Listener(using rm: ReinforcementManager, registry: ItemRegistry, gm: GroupManager, holos: HologramManager, prompts: Prompts, plugin: Plugin) extends org.bukkit.event.Listener:
+class Listener(using rm: BlockReinforcementManager, registry: ItemRegistry, gm: GroupManager, holos: HologramManager, prompts: Prompts, plugin: Plugin) extends org.bukkit.event.Listener:
     def reinforcementFromItem(is: ItemStack): Option[ReinforcementTypes] =
         if is == null then return None
         is.getType() match

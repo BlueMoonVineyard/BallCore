@@ -16,7 +16,7 @@ type WorldID = UUID
 
 sealed trait ReinforcementError
 case class ReinforcementGroupError(error: Groups.GroupError) extends ReinforcementError
-case class JustBroken(bs: BlockState) extends ReinforcementError
+case class JustBroken(bs: ReinforcementState) extends ReinforcementError
 case class AlreadyExists() extends ReinforcementError
 case class DoesntExist() extends ReinforcementError
 
@@ -32,7 +32,7 @@ def explain(err: ReinforcementError): String =
             "A reinforcement was just broken"
 
 /** The ReinforcementManager implements all of the logic of reinforcement data */
-class ReinforcementManager()(using csm: ChunkStateManager, gsm: Groups.GroupManager, c: Clock):
+class BlockReinforcementManager()(using csm: ChunkStateManager, gsm: Groups.GroupManager, c: Clock):
     private def toOffsets(x: Int, z: Int): (Int, Int, Int, Int) =
         (x / 16, z / 16, x % 16, z % 16)
     private def fromOffsets(chunkX: Int, chunkZ: Int, offsetX: Int, offsetZ: Int): (Int, Int) =
@@ -47,7 +47,7 @@ class ReinforcementManager()(using csm: ChunkStateManager, gsm: Groups.GroupMana
         state.blocks.get(bkey).filterNot(_.deleted) match
             case None =>
                 hoist(gsm.checkE(as, group, Groups.Permissions.AddReinforcements)).map { _ =>
-                    state.blocks(bkey) = BlockState(group, as, true, false, kind.hp, kind, c.now())
+                    state.blocks(bkey) = ReinforcementState(group, as, true, false, kind.hp, kind, c.now())
                 }
             case Some(value) =>
                 Left(AlreadyExists())
@@ -59,12 +59,13 @@ class ReinforcementManager()(using csm: ChunkStateManager, gsm: Groups.GroupMana
             case None => Left(DoesntExist())
             case Some(value) =>
                 if as == value.owner then
+                    state.blocks(bkey) = value.copy(deleted = true)
                     Right(())
                 else
                     hoist(gsm.checkE(as, value.group, Groups.Permissions.RemoveReinforcements)).map { _ =>
                         state.blocks(bkey) = value.copy(deleted = true)
                     }
-    def break(x: Int, y: Int, z: Int, hardness: Double, world: WorldID): Either[ReinforcementError, BlockState] =
+    def break(x: Int, y: Int, z: Int, hardness: Double, world: WorldID): Either[ReinforcementError, ReinforcementState] =
         val (chunkX, chunkZ, offsetX, offsetZ) = toOffsets(x, z)
         val state = csm.get(ChunkKey(chunkX, chunkZ, world.toString()))
         val bkey = BlockKey(offsetX, offsetZ, y)
@@ -82,7 +83,7 @@ class ReinforcementManager()(using csm: ChunkStateManager, gsm: Groups.GroupMana
                     Left(JustBroken(newValue))
                 else
                     Right(newValue)
-    def getReinforcement(x: Int, y: Int, z: Int, world: WorldID): Option[BlockState] =
+    def getReinforcement(x: Int, y: Int, z: Int, world: WorldID): Option[ReinforcementState] =
         val (chunkX, chunkZ, offsetX, offsetZ) = toOffsets(x, z)
         val state = csm.get(ChunkKey(chunkX, chunkZ, world.toString()))
         val bkey = BlockKey(offsetX, offsetZ, y)

@@ -17,7 +17,7 @@ case class BlockKey(
 )
 
 /** This holds the reinforcement state for a given block in a chunkstate */
-case class BlockState(
+case class ReinforcementState(
     group: Groups.GroupID,
     owner: Groups.UserID,
     dirty: Boolean,
@@ -39,5 +39,5 @@ case class ChunkState(
     // chunkX: Int,
     // chunkZ: Int,
     // world: ju.UUID,
-    blocks: Map[BlockKey, BlockState],
+    blocks: Map[BlockKey, ReinforcementState],
 )
