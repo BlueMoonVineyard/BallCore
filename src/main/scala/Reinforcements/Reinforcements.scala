@@ -25,8 +25,7 @@ object Recipes:
     )
 
 object Reinforcements:
-    def register()(using registry: ItemRegistry, server: Server, plugin: JavaPlugin, brm: BlockReinforcementManager, erm: EntityReinforcementManager, gm: GroupManager, holos: HologramManager, prompts: Prompts): Unit =
-        server.getPluginManager().registerEvents(Listener(), plugin)
+    def registerItems()(using registry: ItemRegistry, server: Server): Unit =
         registry.register(PlumbAndSquare())
 
         // plumb-and-square crafting registration
@@ -40,4 +39,15 @@ object Reinforcements:
             recp.addIngredient(1, mat)
             server.addRecipe(recp)
         }
+
+    def registerBlockListener()(using server: Server, registry: ItemRegistry, plugin: JavaPlugin, brm: BlockReinforcementManager, gm: GroupManager, holos: HologramManager, prompts: Prompts): Unit =
+        server.getPluginManager().registerEvents(Listener(), plugin)
+
+    def registerEntityListener()(using server: Server, registry: ItemRegistry, plugin: JavaPlugin, erm: EntityReinforcementManager, gm: GroupManager, holos: HologramManager): Unit =
+        server.getPluginManager().registerEvents(EntityListener(), plugin)
+
+    def register()(using registry: ItemRegistry, server: Server, plugin: JavaPlugin, brm: BlockReinforcementManager, erm: EntityReinforcementManager, gm: GroupManager, holos: HologramManager, prompts: Prompts): Unit =
+        registerItems()
+        registerBlockListener()
+        registerEntityListener()
 

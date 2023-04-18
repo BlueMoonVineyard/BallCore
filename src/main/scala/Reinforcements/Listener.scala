@@ -52,16 +52,7 @@ import org.bukkit.plugin.Plugin
 import org.bukkit.event.player.PlayerInteractEntityEvent
 import org.bukkit.event.entity.EntityDamageEvent
 
-class Listener(using brm: BlockReinforcementManager, erm: EntityReinforcementManager, registry: ItemRegistry, gm: GroupManager, holos: HologramManager, prompts: Prompts, plugin: Plugin) extends org.bukkit.event.Listener:
-    def reinforcementFromItem(is: ItemStack): Option[ReinforcementTypes] =
-        if is == null then return None
-        is.getType() match
-            case Material.STONE => Some(ReinforcementTypes.Stone)
-            case Material.DEEPSLATE => Some(ReinforcementTypes.Deepslate)
-            case Material.IRON_INGOT => Some(ReinforcementTypes.IronLike)
-            case Material.COPPER_INGOT => Some(ReinforcementTypes.CopperLike)
-            case _ => None
-
+object Listener:
     def centered(at: Location): Location =
         at.clone().tap(_.add(0.5, 0.5, 0.5))
 
@@ -88,6 +79,18 @@ class Listener(using brm: BlockReinforcementManager, erm: EntityReinforcementMan
             case ReinforcementTypes.CopperLike => (Particle.BUBBLE_POP, 500, 0.1, 0.5)
             case ReinforcementTypes.IronLike => (Particle.END_ROD, 200, 0.0, 0.13)
         at.getWorld().spawnParticle(pType, centered(at), pCount, pOffset, pOffset, pOffset, pSpeed, null)
+
+class Listener(using brm: BlockReinforcementManager, registry: ItemRegistry, gm: GroupManager, holos: HologramManager, prompts: Prompts, plugin: Plugin) extends org.bukkit.event.Listener:
+    import Listener._
+
+    def reinforcementFromItem(is: ItemStack): Option[ReinforcementTypes] =
+        if is == null then return None
+        is.getType() match
+            case Material.STONE => Some(ReinforcementTypes.Stone)
+            case Material.DEEPSLATE => Some(ReinforcementTypes.Deepslate)
+            case Material.IRON_INGOT => Some(ReinforcementTypes.IronLike)
+            case Material.COPPER_INGOT => Some(ReinforcementTypes.CopperLike)
+            case _ => None
 
     //
     //// Plumb-and-square crafting and group switching
@@ -220,50 +223,6 @@ class Listener(using brm: BlockReinforcementManager, erm: EntityReinforcementMan
                 event.setCancelled(true)
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
-    def onDamageEntity(event: EntityDamageEvent): Unit =
-        val ent = event.getEntity()
-        erm.damage(ent.getUniqueId()) match
-            case Left(err) =>
-                err match
-                    case JustBroken(bs) =>
-                        playBreakEffect(ent.getLocation(), bs.kind)
-                    case _ =>
-                        ()
-            case Right(value) =>
-                playDamageEffect(ent.getLocation(), value.kind)
-                event.setCancelled(true)
-
-    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
-    def onInteractEntity(event: PlayerInteractEntityEvent): Unit =
-        val p = event.getPlayer()
-        val i = p.getInventory()
-        val istack = i.getItemInMainHand()
-        val item = registry.lookup(istack)
-        if !item.isDefined || !item.get.isInstanceOf[PlumbAndSquare] then
-            return
-        if !RuntimeStateManager.states.contains(p.getUniqueId()) then
-            p.sendMessage("Shift left-click the plumb-and-square in your inventory to set a group to reinforce on before reinforcing")
-            event.setCancelled(true)
-            return
-
-        val pas = item.get.asInstanceOf[PlumbAndSquare]
-        val mats = pas.getMaterials(istack)
-        if mats.isEmpty then
-            return
-        val (kind, amount) = mats.get
-        if amount < 1 then
-            return
-
-        val gid = RuntimeStateManager.states(p.getUniqueId())
-        val eid = event.getRightClicked().getUniqueId()
-        erm.reinforce(p.getUniqueId(), gid, eid, kind) match
-            case Left(err) =>
-                event.getPlayer().sendMessage(explain(err))
-            case Right(value) =>
-                playCreationEffect(event.getRightClicked().getLocation(), kind)
-                pas.loadReinforcementMaterials(p, istack, -1, kind)
-
-    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     def onInteract(event: PlayerInteractEvent): Unit =
         val p = event.getPlayer()
         val i = p.getInventory()
@@ -327,20 +286,6 @@ class Listener(using brm: BlockReinforcementManager, erm: EntityReinforcementMan
     //
     //// Stuff that enforces reinforcements in the face of permissions; i.e. chest opening prevention
     //
-
-    // prevent interacting with reinforced entities
-    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
-    def preventEntityInteractions(event: PlayerInteractEntityEvent): Unit =
-        val rein = erm.getReinforcement(event.getRightClicked().getUniqueId())
-        if rein.isEmpty then
-            return
-        val reinf = rein.get
-        gm.check(event.getPlayer().getUniqueId(), reinf.group, Permissions.Entities) match
-            case Right(ok) if ok =>
-                ()
-            case _ =>
-                // TODO: notify of permission denied
-                event.setCancelled(true)
 
     // prevent opening reinforced items
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
