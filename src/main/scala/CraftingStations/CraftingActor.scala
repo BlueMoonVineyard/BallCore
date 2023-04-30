@@ -10,6 +10,12 @@ import BallCore.Folia.LocationExecutionContext
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import BallCore.Folia.EntityExecutionContext
+import org.bukkit.block.BlockFace
+import org.bukkit.Material
+import org.bukkit.block.Chest
+import org.bukkit.inventory.RecipeChoice
+import org.bukkit.inventory.Inventory
+import org.bukkit.inventory.ItemStack
 
 trait Actor[Msg]:
 	def handle(m: Msg): Unit
@@ -32,14 +38,63 @@ class CraftingActor(using p: Plugin) extends Actor[CraftingMessage]:
 	p.getServer().getAsyncScheduler().runAtFixedRate(p, _ => send(CraftingMessage.tick), 0, 1, TimeUnit.SECONDS)
 
 	var jobs = Map[Player, Job]()
+	val sides = List(BlockFace.NORTH, BlockFace.SOUTH, BlockFace.WEST, BlockFace.EAST)
+
+	def ensureLoaded(b: Block): Unit =
+		// ensure any double chests across chunk seams are loaded
+		sides.foreach(face => b.getRelative(face))
+
+	def updateFirst[A](l: List[A])(p: A => Boolean)(update: A => A): List[A] =
+		val found = l.zipWithIndex.find { case (item, _) => p(item) }
+		found match
+			case Some((item, idx)) => l.updated(idx, update(item))
+			case None => l
+
+	def inventoryContains(recipe: List[(RecipeChoice, Int)], inventory: Inventory): Boolean =
+		var rezept = recipe
+		inventory.getStorageContents().foreach { is =>
+			rezept = updateFirst(rezept)((ingredient, amount) => ingredient.test(is) && amount > 0)((ingredient, amount) => (ingredient, amount - is.getAmount()))
+		}
+		rezept.forall(_._2 <= 0)
+
+	def removeFrom(recipe: List[(RecipeChoice, Int)], inventory: Inventory): Boolean =
+		var rezept = recipe
+		inventory.getStorageContents().foreach { is =>
+			rezept = updateFirst(rezept)((ingredient, amount) => ingredient.test(is) && amount > 0) { (ingredient, amount) => 
+				inventory.removeItem(is)
+				(ingredient, amount - is.getAmount())
+			}
+		}
+		rezept.forall(_._2 <= 0)
+
+	def insertInto(outputs: List[ItemStack], inventory: Inventory, at: Block): Unit =
+		outputs.foreach { output =>
+			if !inventory.addItem(output).isEmpty() then
+				at.getWorld().dropItemNaturally(at.getLocation(), output)
+		}
 
 	def completeJob(player: Player, job: Job): Unit =
-		// slurp inputs
-		// dump outputs
+		val workChest = sides.map(face => job.factory.getRelative(face)).find(block => block.getType() == Material.CHEST || block.getType() == Material.TRAPPED_CHEST) match
+			case None =>
+				// TODO: notify of failure
+				return
+			case Some(value) => value
+
+		ensureLoaded(workChest)
+		val chest = workChest.getState().asInstanceOf[Chest]
+		val inv = chest.getBlockInventory()
+
 		given ec: ExecutionContext = EntityExecutionContext(player)
-		Future {
-			// notify player of completion
-		}
+		if removeFrom(job.recipe.inputs, inv) then
+			insertInto(job.recipe.outputs, inv, job.factory)
+
+			Future {
+				// notify player of completion
+			}
+		else
+			Future {
+				// notify player of failure
+			}
 
 	def handle(m: CraftingMessage): Unit =
 		m match
