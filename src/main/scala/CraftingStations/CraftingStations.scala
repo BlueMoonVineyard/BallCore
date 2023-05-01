@@ -18,6 +18,8 @@ object CraftingStations:
 		given act: CraftingActor = CraftingActor()
 		Thread.startVirtualThread(() => act.mainLoop())
 		registry.register(DyeVat())
+		registry.register(GlazingKiln())
+		registry.register(Kiln())
 
 abstract class CraftingStation(recipes: List[Recipe])(using act: CraftingActor, p: Plugin, prompts: Prompts) extends CustomItem, Listeners.BlockClicked:
     def onBlockClicked(event: PlayerInteractEvent): Unit =

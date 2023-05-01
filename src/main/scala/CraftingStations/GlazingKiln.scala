@@ -46,7 +46,7 @@ object GlazingKiln:
     )
     val recipes = pairs.map { it =>
         val (dye, terracotta, name) = it
-        Recipe(name, List((MaterialChoice(dye), 4), (MaterialChoice(Material.TERRACOTTA), 64)), List(ItemStack(terracotta, 64)), 300)
+        Recipe(name, List((MaterialChoice(dye), 4), (MaterialChoice(Material.TERRACOTTA), 64)), List(ItemStack(terracotta, 64)), 10)
     }
 
 class GlazingKiln()(using act: CraftingActor, p: Plugin, prompts: Prompts) extends CraftingStation(GlazingKiln.recipes):
