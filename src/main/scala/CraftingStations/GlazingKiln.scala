@@ -3,6 +3,10 @@ package BallCore.CraftingStations
 import org.bukkit.Material
 import org.bukkit.inventory.RecipeChoice.MaterialChoice
 import org.bukkit.inventory.ItemStack
+import org.bukkit.plugin.Plugin
+import BallCore.UI.Prompts
+import BallCore.CustomItems.CustomItemStack
+import org.bukkit.NamespacedKey
 
 object GlazingKiln:
     val pairs = List(
@@ -44,3 +48,7 @@ object GlazingKiln:
         val (dye, terracotta, name) = it
         Recipe(name, List((MaterialChoice(dye), 4), (MaterialChoice(Material.TERRACOTTA), 64)), List(ItemStack(terracotta, 64)), 300)
     }
+
+class GlazingKiln()(using act: CraftingActor, p: Plugin, prompts: Prompts) extends CraftingStation(GlazingKiln.recipes):
+    def group = CraftingStations.group
+    def template = CustomItemStack.make(NamespacedKey("ballcore", "glazing_kiln"), Material.CAULDRON, "&rGlazing Kiln", "&rDyes and glazes more terracotta with less dyes than normal crafting")

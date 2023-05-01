@@ -39,12 +39,6 @@ object DyeVat:
         Recipe(name, List((MaterialChoice(dye), 4), (MaterialChoice(Material.WHITE_WOOL), 64)), List(ItemStack(wool, 64)), 10)
     }
 
-class DyeVat()(using act: CraftingActor, p: Plugin, prompts: Prompts) extends CustomItem, Listeners.BlockClicked:
+class DyeVat()(using act: CraftingActor, p: Plugin, prompts: Prompts) extends CraftingStation(DyeVat.recipes):
     def group = CraftingStations.group
     def template = CustomItemStack.make(NamespacedKey("ballcore", "dye_vat"), Material.CAULDRON, "&rDye Vat", "&rDyes more wools with less dyes than normal crafting")
-
-    def onBlockClicked(event: PlayerInteractEvent): Unit =
-        val p = RecipeSelectorProgram(DyeVat.recipes)
-        val plr = event.getPlayer()
-        val runner = UIProgramRunner(p, p.Flags(plr, event.getClickedBlock()), plr)
-        runner.render()
