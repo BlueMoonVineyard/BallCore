@@ -5,6 +5,8 @@ import org.bukkit.event.EventPriority
 import org.bukkit.event.block.BlockPlaceEvent
 import org.bukkit.event.block.BlockBreakEvent
 import org.bukkit.plugin.Plugin
+import org.bukkit.event.player.PlayerInteractEvent
+import org.bukkit.event.block.Action
 
 object CustomItemListener:
     def register()(using bm: BlockManager, reg: ItemRegistry, plugin: Plugin): Unit =
@@ -43,4 +45,20 @@ class CustomItemListener(using bm: BlockManager, reg: ItemRegistry) extends org.
                 event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), item.template)
             case _ =>
         
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    def onInteract(event: PlayerInteractEvent): Unit =
+        if !event.hasBlock() || event.getAction() != Action.RIGHT_CLICK_BLOCK then
+            return
+
+        bm.getCustomItem(event.getClickedBlock()) match
+            case Some(item) =>
+                val cancelled =
+                    item match
+                        case click: Listeners.BlockClicked =>
+                            click.onBlockClicked(event)
+                            event.isCancelled()
+                        case _ => false
+                if cancelled then
+                    return
+            case _ =>
         

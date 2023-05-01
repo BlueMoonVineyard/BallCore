@@ -16,6 +16,7 @@ import org.bukkit.block.Chest
 import org.bukkit.inventory.RecipeChoice
 import org.bukkit.inventory.Inventory
 import org.bukkit.inventory.ItemStack
+import scala.util.chaining._
 
 trait Actor[Msg]:
 	def handle(m: Msg): Unit
@@ -25,9 +26,9 @@ trait Actor[Msg]:
 	def send(m: Msg): Unit =
 		this.queue.add(m)
 	def mainLoop(): Unit =
-		this.queue.forEach { msg =>
+		while true do
+			val msg = this.queue.take()
 			handle(msg)
-		}
 
 enum CraftingMessage:
 	case startWorking(p: Player, f: Block, r: Recipe)
@@ -53,17 +54,20 @@ class CraftingActor(using p: Plugin) extends Actor[CraftingMessage]:
 	def inventoryContains(recipe: List[(RecipeChoice, Int)], inventory: Inventory): Boolean =
 		var rezept = recipe
 		inventory.getStorageContents().foreach { is =>
-			rezept = updateFirst(rezept)((ingredient, amount) => ingredient.test(is) && amount > 0)((ingredient, amount) => (ingredient, amount - is.getAmount()))
+			if is != null then
+				rezept = updateFirst(rezept)((ingredient, amount) => ingredient.test(is) && amount > 0)((ingredient, amount) => (ingredient, amount - is.getAmount()))
 		}
 		rezept.forall(_._2 <= 0)
 
 	def removeFrom(recipe: List[(RecipeChoice, Int)], inventory: Inventory): Boolean =
 		var rezept = recipe
 		inventory.getStorageContents().foreach { is =>
-			rezept = updateFirst(rezept)((ingredient, amount) => ingredient.test(is) && amount > 0) { (ingredient, amount) => 
-				inventory.removeItem(is)
-				(ingredient, amount - is.getAmount())
-			}
+			if is != null then
+				rezept = updateFirst(rezept)((ingredient, amount) => ingredient.test(is) && amount > 0) { (ingredient, amount) => 
+					val targeted = is.clone().tap(_.setAmount(amount.min(is.getAmount())))
+					inventory.removeItem(targeted)
+					(ingredient, amount - targeted.getAmount())
+				}
 		}
 		rezept.forall(_._2 <= 0)
 
@@ -74,9 +78,13 @@ class CraftingActor(using p: Plugin) extends Actor[CraftingMessage]:
 		}
 
 	def completeJob(player: Player, job: Job): Unit =
+		given ec: ExecutionContext = EntityExecutionContext(player)
 		val workChest = sides.map(face => job.factory.getRelative(face)).find(block => block.getType() == Material.CHEST || block.getType() == Material.TRAPPED_CHEST) match
 			case None =>
-				// TODO: notify of failure
+				Future {
+					// notify player of failure to locate chest
+					player.sendMessage("oi where is ur chest >:(")
+				}
 				return
 			case Some(value) => value
 
@@ -84,16 +92,17 @@ class CraftingActor(using p: Plugin) extends Actor[CraftingMessage]:
 		val chest = workChest.getState().asInstanceOf[Chest]
 		val inv = chest.getBlockInventory()
 
-		given ec: ExecutionContext = EntityExecutionContext(player)
 		if removeFrom(job.recipe.inputs, inv) then
 			insertInto(job.recipe.outputs, inv, job.factory)
 
 			Future {
 				// notify player of completion
+				player.sendMessage("your thing is completed :)")
 			}
 		else
 			Future {
 				// notify player of failure
+				player.sendMessage("your thing is failure >:(")
 			}
 
 	def handle(m: CraftingMessage): Unit =
