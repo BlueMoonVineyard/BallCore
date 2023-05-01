@@ -13,6 +13,8 @@ import scala.concurrent.ExecutionContext
 import BallCore.Folia.EntityExecutionContext
 import org.bukkit.plugin.Plugin
 import scala.concurrent.Future
+import BallCore.UI.UIProgramRunner
+import BallCore.UI.Prompts
 
 object DyeVat:
     val pairs = List(
@@ -37,11 +39,12 @@ object DyeVat:
         Recipe(name, List((MaterialChoice(dye), 4), (MaterialChoice(Material.WHITE_WOOL), 64)), List(ItemStack(wool, 64)), 10)
     }
 
-class DyeVat()(using act: CraftingActor, p: Plugin) extends CustomItem, Listeners.BlockClicked:
+class DyeVat()(using act: CraftingActor, p: Plugin, prompts: Prompts) extends CustomItem, Listeners.BlockClicked:
     def group = CraftingStations.group
     def template = CustomItemStack.make(NamespacedKey("ballcore", "dye_vat"), Material.CAULDRON, "&rDye Vat", "&rDyes more wools with less dyes than normal crafting")
 
     def onBlockClicked(event: PlayerInteractEvent): Unit =
-        given ec: ExecutionContext = EntityExecutionContext(event.getPlayer())
-        Future { event.getPlayer().sendMessage("clicksies!") }
-        act.send(CraftingMessage.startWorking(event.getPlayer(), event.getClickedBlock(), DyeVat.recipes(0)))
+        val p = RecipeSelectorProgram(DyeVat.recipes)
+        val plr = event.getPlayer()
+        val runner = UIProgramRunner(p, p.Flags(plr, event.getClickedBlock()), plr)
+        runner.render()
