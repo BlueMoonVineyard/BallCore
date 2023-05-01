@@ -47,4 +47,7 @@ lazy val actualPlugin = project
     libraryDependencies += "com.github.seeseemelk" % "MockBukkit-v1.19" % "2.29.0" % Test,
 
     libraryDependencies += "dev.folia" % "folia-api" % "1.19.4-R0.1-SNAPSHOT" % "provided", // intransitive()
+
+    Test / fork := true,
+    Test / run / javaOptions += "--enable-preview",
   )
