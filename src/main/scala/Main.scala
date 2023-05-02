@@ -37,6 +37,7 @@ import BallCore.CustomItems.CustomItemListener
 import BallCore.Reinforcements.EntityStateManager
 import BallCore.Reinforcements.EntityReinforcementManager
 import BallCore.CraftingStations.CraftingStations
+import BallCore.Chat.ChatActor
 
 final class Main extends JavaPlugin:
     given sql: Storage.SQLManager = new Storage.SQLManager
@@ -66,6 +67,11 @@ final class Main extends JavaPlugin:
         Woodcutter.registerItems()
         CustomItemListener.register()
         CraftingStations.register()
+        given ac: ChatActor = Chat.Chat.register()
+        val chatCommands = ChatCommands()
+        getCommand("group").setExecutor(chatCommands.Group)
+        getCommand("global").setExecutor(chatCommands.Global)
+        getCommand("local").setExecutor(chatCommands.Local)
         getCommand("groups").setExecutor(GroupsCommand())
         getCommand("cheat").setExecutor(CheatCommand())
     override def onDisable() =

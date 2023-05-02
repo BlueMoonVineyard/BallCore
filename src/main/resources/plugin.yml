@@ -16,6 +16,13 @@ commands:
     description: Entrypoint for group commands
   cheat:
     description: Cheats in a custom item
+  group:
+    description: Changes your chat channel to a specific group
+    aliases: [g]
+  global:
+    description: Changes your chat channel to global chat
+  local:
+    description: Changes your chat channel to local chat
 permissions:
   ballcore.cheat:
     description: Allows using /cheat

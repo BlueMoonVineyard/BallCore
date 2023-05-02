@@ -18,7 +18,7 @@ object CraftingStations:
 	val group = ItemGroup(NamespacedKey("ballcore", "crafting_stations"), ItemStack(Material.CRAFTING_TABLE))
 	def register()(using p: Plugin, registry: ItemRegistry, prompts: Prompts): Unit =
 		given act: CraftingActor = CraftingActor()
-		Thread.startVirtualThread(() => act.mainLoop())
+		act.startListener()
 		registry.register(DyeVat())
 		registry.register(GlazingKiln())
 		registry.register(Kiln())

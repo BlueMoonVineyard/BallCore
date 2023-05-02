@@ -52,12 +52,7 @@ type PaneAccumulator = Accumulator[Pane, Object => InventoryClickEvent => Unit]
 type ItemAccumulator = Accumulator[GuiItem, Object => InventoryClickEvent => Unit]
 type LoreAccumulator = Accumulator[Component, Box[Option[String]]]
 
-object Elements:
-    private val registeredProperties = scala.collection.mutable.Set[String]()
-    def nil[T, E]: (Accumulator[T, E]) ?=> Unit = {
-
-    }
-
+class ChatElements:
     extension (sc: StringContext)
         def txt(args: Any*): Component =
             val strings = sc.parts.iterator
@@ -70,11 +65,22 @@ object Elements:
                 it = it.append(Component.text(strings.next()))
             it
 
+    def txt(of: String): Component =
+        Component.text(of)
+
     extension (c: Component)
         def style(color: TextColor, decorations: TextDecoration*): Component =
             c.style(Style.style(color, decorations: _*))
         def not(decoration: TextDecoration): Component =
             c.decoration(decoration, false)
+
+object ChatElements extends ChatElements
+
+object Elements extends ChatElements:
+    private val registeredProperties = scala.collection.mutable.Set[String]()
+    def nil[T, E]: (Accumulator[T, E]) ?=> Unit = {
+
+    }
 
     def Root(title: Component, rows: Int)(inner: (PaneAccumulator) ?=> Unit = nil)(using cb: Object => InventoryClickEvent => Unit): ChestGui =
         val chest = ChestGui(rows, ComponentHolder.of(title))

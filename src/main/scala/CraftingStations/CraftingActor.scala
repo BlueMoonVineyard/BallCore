@@ -19,18 +19,7 @@ import org.bukkit.inventory.ItemStack
 import scala.util.chaining._
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
-
-trait Actor[Msg]:
-	def handle(m: Msg): Unit
-
-	val queue = LinkedTransferQueue[Msg]()
-
-	def send(m: Msg): Unit =
-		this.queue.add(m)
-	def mainLoop(): Unit =
-		while true do
-			val msg = this.queue.take()
-			handle(msg)
+import BallCore.DataStructures.Actor
 
 enum CraftingMessage:
 	case startWorking(p: Player, f: Block, r: Recipe)

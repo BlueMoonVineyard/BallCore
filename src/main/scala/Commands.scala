@@ -13,6 +13,8 @@ import BallCore.UI.UIProgramRunner
 import org.bukkit.plugin.Plugin
 import BallCore.CustomItems.ItemRegistry
 import org.bukkit.NamespacedKey
+import BallCore.Chat.ChatActor
+import BallCore.Chat.ChatMessage
 
 class CheatCommand(using registry: ItemRegistry) extends CommandExecutor:
     override def onCommand(sender: CommandSender, command: Command, label: String, args: Array[String]): Boolean =
@@ -40,3 +42,27 @@ class GroupsCommand(using prompts: UI.Prompts, plugin: Plugin, gm: GroupManager)
         val runner = UIProgramRunner(p, p.Flags(plr.getUniqueId()), plr)
         runner.render()
         return true
+
+class ChatCommands(using ca: ChatActor, gm: GroupManager):
+    object Group extends CommandExecutor:
+        override def onCommand(sender: CommandSender, command: Command, label: String, args: Array[String]): Boolean =
+            val p = sender.asInstanceOf[Player]
+            val group = args(0)
+            gm.userGroups(p.getUniqueId()).map(_.find(_.name.toLowerCase().contains(group.toLowerCase()))) match
+                case Left(err) =>
+                    p.sendMessage(err.explain())
+                case Right(Some(group)) =>
+                    ca.send(ChatMessage.chattingInGroup(p, group.id))
+                case Right(None) =>
+                    p.sendMessage(s"I couldn't find a group matching '${group}'")
+            true
+    object Global extends CommandExecutor:
+        override def onCommand(sender: CommandSender, command: Command, label: String, args: Array[String]): Boolean =
+            val p = sender.asInstanceOf[Player]
+            ca.send(ChatMessage.chattingInGlobal(p))
+            true
+    object Local extends CommandExecutor:
+        override def onCommand(sender: CommandSender, command: Command, label: String, args: Array[String]): Boolean =
+            val p = sender.asInstanceOf[Player]
+            ca.send(ChatMessage.chattingInLocal(p))
+            true

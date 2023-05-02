@@ -10,6 +10,10 @@ import BallCore.Groups.Extensions._
 import scalikejdbc._
 import java.{util => ju}
 import io.circe._, io.circe.generic.semiauto._, io.circe.parser._, io.circe.syntax._
+import net.kyori.adventure.audience.Audience
+import org.bukkit.Bukkit
+import scala.collection.JavaConverters._
+import org.bukkit.entity.Player
 
 inline def uuid(from: String) = ju.UUID.fromString(from)
 
@@ -352,6 +356,16 @@ class GroupManager()(using sql: Storage.SQLManager):
             .map { data =>
                 sql"INSERT INTO GroupMemberships (GroupID, UserID) VALUES ($group, $user);".update.apply()
             }
+
+    def groupAudience(groupID: GroupID): Either[GroupError, (String, Audience)] =
+        val gs =
+            sql"SELECT * FROM GroupStates WHERE ID = ${groupID}".map(GroupStates.apply).single.apply() match
+                case None => return Left(GroupError.GroupNotFound)
+                case Some(it) => it
+
+        val members = getGroupMembers(groupID).map(_.userID)
+        val onlineMembers = Bukkit.getServer().getOnlinePlayers().asScala.filter(plr => members.contains(plr.getUniqueId()))
+        Right((gs.name, Audience.audience(onlineMembers.asJava)))
 
     def userGroups(userID: UserID): Either[GroupError, List[GroupStates]] =
         Right(sql"""
