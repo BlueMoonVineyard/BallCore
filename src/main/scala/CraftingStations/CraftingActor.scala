@@ -17,6 +17,8 @@ import org.bukkit.inventory.RecipeChoice
 import org.bukkit.inventory.Inventory
 import org.bukkit.inventory.ItemStack
 import scala.util.chaining._
+import net.kyori.adventure.text.Component
+import net.kyori.adventure.text.format.NamedTextColor
 
 trait Actor[Msg]:
 	def handle(m: Msg): Unit
@@ -82,8 +84,7 @@ class CraftingActor(using p: Plugin) extends Actor[CraftingMessage]:
 		val workChest = sides.map(face => job.factory.getRelative(face)).find(block => block.getType() == Material.CHEST || block.getType() == Material.TRAPPED_CHEST) match
 			case None =>
 				Future {
-					// notify player of failure to locate chest
-					player.sendMessage("oi where is ur chest >:(")
+					notifyFailedJob(player, job, "Chest Missing!")
 				}
 				return
 			case Some(value) => value
@@ -96,14 +97,51 @@ class CraftingActor(using p: Plugin) extends Actor[CraftingMessage]:
 			insertInto(job.recipe.outputs, inv, job.factory)
 
 			Future {
-				// notify player of completion
-				player.sendMessage("your thing is completed :)")
+				notifyFinishedJob(player, job)
 			}
 		else
 			Future {
-				// notify player of failure
-				player.sendMessage("your thing is failure >:(")
+				notifyFailedJob(player, job, "Ingredients Missing!")
 			}
+
+	def notifyFinishedJob(player: Player, job: Job): Unit =
+		val component =
+			Component.text()
+				.append(Component.text(job.recipe.name, NamedTextColor.GOLD))
+				.append(Component.text(" "))
+				.append(Component.text("|".repeat(40), NamedTextColor.GREEN))
+				.append(Component.text(" "))
+				.append(Component.text(s"All Done!"))
+				.build()
+		player.sendActionBar(component)
+
+	def notifyFailedJob(player: Player, job: Job, what: String): Unit =
+		val component =
+			Component.text()
+				.append(Component.text(job.recipe.name, NamedTextColor.GOLD))
+				.append(Component.text(" "))
+				.append(Component.text("|".repeat(40), NamedTextColor.RED))
+				.append(Component.text(" "))
+				.append(Component.text(what))
+				.build()
+		player.sendActionBar(component)
+
+	def notifyInProgressJob(player: Player, job: Job): Unit =
+		val progressBarSize = 40
+		val done = (progressBarSize * job.currentWork) / job.recipe.work
+		val notDone = progressBarSize - done
+
+		val component =
+			Component.text()
+				.append(Component.text(job.recipe.name, NamedTextColor.GOLD))
+				.append(Component.text(" "))
+				.append(Component.text("|".repeat(done), NamedTextColor.GREEN))
+				.append(Component.text("|".repeat(notDone), NamedTextColor.GRAY))
+				.append(Component.text(" "))
+				.append(Component.text(s"${job.currentWork} / ${job.recipe.work} Work"))
+				.build()
+
+		player.sendActionBar(component)
 
 	def handle(m: CraftingMessage): Unit =
 		m match
@@ -118,6 +156,9 @@ class CraftingActor(using p: Plugin) extends Actor[CraftingMessage]:
 					if cond then
 						given ec: ExecutionContext = LocationExecutionContext(j.factory.getLocation())
 						Future { completeJob(p, j) }
+					else
+						given ec: ExecutionContext = EntityExecutionContext(p)
+						Future { notifyInProgressJob(p, j) }
 					cond
 				}
 		
