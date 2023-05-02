@@ -4,115 +4,124 @@
 
 package BallCore.UI
 
+import scala.collection.JavaConverters._
 import scala.xml.Elem
 import scala.xml.Node
 import com.github.stefvanschie.inventoryframework.pane.Pane.Priority
 import io.circe._, io.circe.parser._, io.circe.syntax._
 import com.github.stefvanschie.inventoryframework.gui.`type`.util.Gui
 import scala.reflect.ClassTag
+import net.kyori.adventure.text.Component
+import com.github.stefvanschie.inventoryframework.gui.`type`.ChestGui
+import com.github.stefvanschie.inventoryframework.adventuresupport.TextHolder
+import com.github.stefvanschie.inventoryframework.adventuresupport.ComponentHolder
+import com.github.stefvanschie.inventoryframework.pane.Pane
+import com.github.stefvanschie.inventoryframework.pane.{OutlinePane => IFOutlinePane, StaticPane => IFStaticPane}
+import com.github.stefvanschie.inventoryframework.gui.GuiItem
+import org.bukkit.Material
+import org.bukkit.inventory.ItemStack
+import net.kyori.adventure.text.ComponentLike
+import net.kyori.adventure.text.format.TextColor
+import net.kyori.adventure.text.format.TextDecoration
+import net.kyori.adventure.text.format.Style
+import org.bukkit.event.inventory.InventoryClickEvent
+import net.kyori.adventure.text.format.NamedTextColor
+import net.kyori.adventure.text.format.TextDecoration.State
+import org.bukkit.inventory.meta.SkullMeta
 
 // trait AccumulatorFn:
 
 object Accumulator:
-    def run(inner: (Accumulator) ?=> Unit): List[Node] =
-        given akku: Accumulator = Accumulator()
+    def run[T](inner: (Accumulator[T, Unit]) ?=> Unit): List[T] =
+        run(inner, ())
+    def run[T, E](inner: (Accumulator[T, E]) ?=> Unit, item: E): List[T] =
+        given akku: Accumulator[T, E] = Accumulator(item)
         inner
         akku.items.toList
 
-class Accumulator:
-    var items = scala.collection.mutable.ArrayBuffer[Node]()
-    def add(item: Node): Unit =
+class Box[T](val initial: T):
+    var it = initial
+
+class Accumulator[T, E](val extra: E):
+    var items = scala.collection.mutable.ArrayBuffer[T]()
+    def ctx = extra
+    def add(item: T): Unit =
         items.append(item)
+
+type PaneAccumulator = Accumulator[Pane, Object => InventoryClickEvent => Unit]
+type ItemAccumulator = Accumulator[GuiItem, Object => InventoryClickEvent => Unit]
+type LoreAccumulator = Accumulator[Component, Box[Option[String]]]
 
 object Elements:
     private val registeredProperties = scala.collection.mutable.Set[String]()
-    val nil: (Accumulator) ?=> Unit = {
+    def nil[T, E]: (Accumulator[T, E]) ?=> Unit = {
 
     }
 
-    def Root(title: String, rows: Int)(inner: (Accumulator) ?=> Unit = nil): Elem =
-        // val doot = paginatedPane
-        <chestgui title={title} rows={rows.toString}>
-            { Accumulator.run(inner) }
-        </chestgui>
+    extension (sc: StringContext)
+        def txt(args: Any*): Component =
+            val strings = sc.parts.iterator
+            var it = Component.text(strings.next())
+            val expressions = args.iterator
+            while strings.hasNext do
+                expressions.next() match
+                    case c: ComponentLike => it = it.append(c)
+                    case obj => it = it.append(Component.text(obj.toString()))
+                it = it.append(Component.text(strings.next()))
+            it
 
-    def PaginatedPane(x: Int, y: Int, length: Int, height: Int)(inner: (Accumulator) ?=> Unit = nil)(using an: Accumulator): Unit =
-        an add <paginatedpane x={x.toString} y={y.toString} length={length.toString} height={height.toString}>
-            { Accumulator.run(inner) }
-        </paginatedpane>
+    extension (c: Component)
+        def style(color: TextColor, decorations: TextDecoration*): Component =
+            c.style(Style.style(color, decorations: _*))
+        def not(decoration: TextDecoration): Component =
+            c.decoration(decoration, false)
 
-    def Page(inner: (Accumulator) ?=> Unit = nil)(using an: Accumulator): Unit =
-        an add <page>
-            { Accumulator.run(inner) }
-        </page>
+    def Root(title: Component, rows: Int)(inner: (PaneAccumulator) ?=> Unit = nil)(using cb: Object => InventoryClickEvent => Unit): ChestGui =
+        val chest = ChestGui(rows, ComponentHolder.of(title))
+        Accumulator.run(inner, cb).foreach(x => chest.addPane(x))
+        chest
 
-    def OutlinePane(x: Int, y: Int, length: Int, height: Int, priority: Priority = Priority.NORMAL, repeat: Boolean = false)(inner: (Accumulator) ?=> Unit = nil)(using an: Accumulator): Unit =
-        an add <outlinepane x={x.toString} y={y.toString} length={length.toString} height={height.toString} priority={priority.toString().toLowerCase()} repeat={if repeat then "true" else "false"}>
-            { Accumulator.run(inner) }
-        </outlinepane>
+    def OutlinePane(x: Int, y: Int, length: Int, height: Int, priority: Priority = Priority.NORMAL, repeat: Boolean = false)(inner: (ItemAccumulator) ?=> Unit = nil)(using an: PaneAccumulator): Unit =
+        val pane = IFOutlinePane(x, y, length, height, priority)
+        pane.setRepeat(repeat)
+        Accumulator.run(inner, an.extra).foreach(x => pane.addItem(x))
+        an add pane
 
-    def StaticPane(x: Int, y: Int, length: Int, height: Int, priority: Priority = Priority.NORMAL, repeat: Boolean = false)(inner: (Accumulator) ?=> Unit = nil)(using an: Accumulator) =
-        an add <staticpane x={x.toString} y={y.toString} length={length.toString} height={height.toString} priority={priority.toString().toLowerCase()} repeat={if repeat then "true" else "false"}>
-            { Accumulator.run(inner) }
-        </staticpane>
+    def Item(id: Material, amount: Int = 1, displayName: Option[Component] = None)(inner: (LoreAccumulator) ?=> Unit = nil)(using an: ItemAccumulator): Unit =
+        val is = ItemStack(id, amount)
+        val im = is.getItemMeta()
 
-    def Item(id: String, amount: Int = 1, displayName: Option[String] = None)(inner: (Accumulator) ?=> Unit = nil)(using an: Accumulator): Unit =
-        val nodes = Accumulator.run(inner)
-        val lores = nodes.filter(_.label == "line")
-        val other = nodes.filterNot(_.label == "property").filterNot(_.label == "line")
+        displayName match
+            case Some(x) => im.displayName(x.style(x => x.decorationIfAbsent(TextDecoration.ITALIC, State.FALSE)))
+            case None =>
+        val poki = Box[Option[String]](None)
+        im.lore(Accumulator.run(inner, poki).map(line => line.style(x => x.decorationIfAbsent(TextDecoration.ITALIC, State.FALSE))).asJava)
 
-        an add <item id={id} amount={amount.toString} onClick="block">
-            { displayName.map(name => <displayname>{name}</displayname>) }
-            { other }
-            <lore>
-                { lores }
-            </lore>
-        </item>
+        poki.it match
+            case Some(x) if im.isInstanceOf[SkullMeta] => im.asInstanceOf[SkullMeta].setOwner(x)
+            case _ =>
 
-    def Button[Msg](id: String, displayName: String, onClick: Msg, amount: Int = 1)(inner: (Accumulator) ?=> Unit = nil)(using an: Accumulator, enc: Encoder[Msg], dec: Decoder[Msg]): Unit =
-        val nodes = Accumulator.run(inner)
-        val lores = nodes.filter(_.label == "line")
-        val other = nodes.filterNot(_.label == "property").filterNot(_.label == "line")
-        val name = onClick.getClass.getTypeName
+        is.setItemMeta(im)
+        an add GuiItem(is, ev => ev.setCancelled(true))
 
-        if !registeredProperties.contains(name) then
-            Gui.registerProperty(name, str => decode[Msg](str).toOption.get)
-            registeredProperties.add(name)
-        an add <item id={id} amount={amount.toString} onClick="dispatch">
-            <displayname>{displayName}</displayname>
-            { other }
-            <lore>
-                { lores }
-            </lore>
-            <properties>
-                <property type={name}>{onClick.asJson.noSpaces}</property>
-            </properties>
-        </item>
+    def Button[Msg](id: Material, displayName: Component, onClick: Msg, amount: Int = 1)(inner: (LoreAccumulator) ?=> Unit = nil)(using an: ItemAccumulator): Unit =
+        val is = ItemStack(id, amount)
+        val im = is.getItemMeta()
+        val baked = an.extra(onClick.asInstanceOf[Object])
 
-    def Lore(line: String)(using an: Accumulator): Unit =
-        an add <line>{line}</line>
+        im.displayName(displayName.style(x => x.decorationIfAbsent(TextDecoration.ITALIC, State.FALSE)))
+        val poki = Box[Option[String]](None)
+        im.lore(Accumulator.run(inner, poki).map(line => line.style(x => x.decorationIfAbsent(TextDecoration.ITALIC, State.FALSE))).asJava)
 
-    def SkullUsername(username: String)(using an: Accumulator): Unit =
-        an add <skull owner={username} />
+        poki.it match
+            case Some(x) if im.isInstanceOf[SkullMeta] => im.asInstanceOf[SkullMeta].setOwner(x)
+            case _ =>
 
-    // def paginatedPane =
-    //     <chestgui title="Shop" rows="6">
-    //         <paginatedpane x="0" y="0" length="9" height="5">
-    //             <page>
-    //             <outlinepane x="0" y="0" length="9" height="5">
-    //                 <item id="golden_sword" />
-    //                 <item id="light_gray_glazed_terracotta" amount="16" />
-    //                 <item id="cooked_cod" amount="64" />
-    //             </outlinepane>
-    //             </page>
-    //         </paginatedpane>
-    //         <outlinepane x="0" y="5" length="9" height="1" priority="lowest" repeat="true">
-    //             <item id="black_stained_glass_pane" />
-    //         </outlinepane>
-    //         <staticpane x="0" y="5" length="9" height="1">
-    //             <item id="red_wool" x="0" y="0" />
-    //             <item id="barrier" x="4" y="0" />
-    //             <item id="green_wool" x="8" y="0" />
-    //         </staticpane>
-    //     </chestgui>
+        is.setItemMeta(im)
+        an add GuiItem(is, ev => baked(ev))
 
+    def Lore(line: Component)(using an: LoreAccumulator): Unit =
+        an add line
+
+    def SkullUsername(username: String)(using an: LoreAccumulator): Unit =
+        an.extra.it = Some(username)

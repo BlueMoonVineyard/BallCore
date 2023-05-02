@@ -8,16 +8,15 @@ import org.bukkit.block.Block
 import BallCore.UI.callback
 import BallCore.UI.Elements._
 import scala.jdk.CollectionConverters._
-import scala.xml.Elem
 import org.bukkit.inventory.RecipeChoice
 import org.bukkit.inventory.RecipeChoice.MaterialChoice
 import org.bukkit.inventory.ItemStack
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer
-
-enum RecipeSelectorMessage:
-	case selectRecipe(index: Int)
-	case nextPage
-	case prevPage
+import net.kyori.adventure.text.format.NamedTextColor
+import net.kyori.adventure.text.format.TextDecoration
+import com.github.stefvanschie.inventoryframework.gui.`type`.util.Gui
+import net.kyori.adventure.text.Component
+import org.bukkit.Material
 
 class RecipeSelectorProgram(recipes: List[Recipe])(using actor: CraftingActor) extends UIProgram:
 	import io.circe.generic.auto._
@@ -27,20 +26,23 @@ class RecipeSelectorProgram(recipes: List[Recipe])(using actor: CraftingActor) e
 
 	case class Flags(player: Player, factory: Block)
 	case class Model(player: Player, factory: Block, page: Int)
-	type Message = RecipeSelectorMessage
+	enum Message:
+		case selectRecipe(index: Int)
+		case nextPage
+		case prevPage
 
 	override def init(flags: Flags): Model =
 		Model(flags.player, flags.factory, 0)
 
 	override def update(msg: Message, model: Model)(using services: UIServices): Future[Model] =
 		msg match
-			case RecipeSelectorMessage.selectRecipe(index) =>
+			case Message.selectRecipe(index) =>
 				actor.send(CraftingMessage.startWorking(model.player, model.factory, recipes(index)))
 				services.notify("You've started working on that recipe!")
 				model
-			case RecipeSelectorMessage.nextPage =>
+			case Message.nextPage =>
 				model.copy(page = (model.page + 1).min(numPages-1))
-			case RecipeSelectorMessage.prevPage =>
+			case Message.prevPage =>
 				model.copy(page = (model.page - 1).max(0))
 
 	def choiceToString(input: RecipeChoice): String =
@@ -50,34 +52,35 @@ class RecipeSelectorProgram(recipes: List[Recipe])(using actor: CraftingActor) e
 			case _ =>
 				s"TODO: ${input}"
 
-	def nameOf(s: ItemStack): String =
+	def nameOf(s: ItemStack): Component =
 		if s.getItemMeta().hasDisplayName() then
-			PlainTextComponentSerializer.plainText().serialize(s.getItemMeta().displayName())
+			s.getItemMeta().displayName()
 		else
-			s.getI18NDisplayName()
+			Component.text(s.getI18NDisplayName())
 
-	override def view(model: Model): Elem =
-		Root(s"Recipes (Page ${model.page+1} of ${numPages})", 6) {
+	override def view(model: Model): Callback ?=> Gui =
+		Root(txt"Recipes (Page ${model.page+1} of ${numPages})", 6) {
 			OutlinePane(0, 0, 9, 5) {
 				paginated(model.page).foreach { (recipe, idx) =>
-					Button(recipe.outputs(0).getType().toString().toLowerCase(), s"§a${recipe.name}", RecipeSelectorMessage.selectRecipe(idx)) {
-						Lore(s"§r§f§nIngredients")
+					Button(recipe.outputs(0).getType(), txt"${recipe.name}".color(NamedTextColor.GREEN), Message.selectRecipe(idx)) {
+						Lore(txt"Ingredients".style(NamedTextColor.WHITE, TextDecoration.UNDERLINED))
 						recipe.inputs.foreach { (input, amount) =>
-							Lore(s"§f - §7§l${choiceToString(input)}§f × ${amount}")
+							Lore(txt" - ${txt"${choiceToString(input)}".style(NamedTextColor.GRAY, TextDecoration.BOLD)} × ${amount}".color(NamedTextColor.WHITE))
 						}
-						Lore(s"")
-						Lore(s"§r§f§nResults")
+						Lore(txt"")
+						Lore(txt"Results".style(NamedTextColor.WHITE, TextDecoration.UNDERLINED))
 						recipe.outputs.foreach { output =>
-							Lore(s"§f - §7§l${nameOf(output)}§f × ${output.getAmount()}")
-							Lore(s"§f   §5(${output.getItemMeta().getLore().get(0)})")
+							Lore(txt" - ${nameOf(output).style(NamedTextColor.GRAY, TextDecoration.BOLD)} × ${output.getAmount()}".color(NamedTextColor.WHITE))
+							Lore(txt"   (${output.getItemMeta().getLore().get(0)})".color(NamedTextColor.DARK_PURPLE))
 						}
-						Lore(s"")
-						Lore(s"§fTakes §a${recipe.work} seconds§f of work")
+						Lore(txt"")
+						val time = txt"${recipe.work} seconds".color(NamedTextColor.GREEN)
+						Lore(txt"Takes ${time} of work".color(NamedTextColor.WHITE))
 					}
 				}
 			}
 			OutlinePane(0, 5, 9, 1) {
-				Button("red_dye", "§aPrevious Page", RecipeSelectorMessage.prevPage)()
-				Button("lime_dye", "§aNext Page", RecipeSelectorMessage.nextPage)()
+				Button(Material.RED_DYE, txt"Previous Page".color(NamedTextColor.GREEN), Message.prevPage)()
+				Button(Material.LIME_DYE, txt"Next Page".color(NamedTextColor.GREEN), Message.nextPage)()
 			}
 		}

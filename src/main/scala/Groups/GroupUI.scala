@@ -6,7 +6,6 @@ package BallCore.Groups
 
 import BallCore.UI.callback
 import BallCore.UI.Elements._
-import scala.xml.Elem
 import org.bukkit.entity.HumanEntity
 import com.github.stefvanschie.inventoryframework.pane.Pane.Priority
 import org.bukkit.Material
@@ -14,93 +13,93 @@ import org.bukkit.event.inventory.InventoryClickEvent
 import BallCore.UI.Prompts
 import org.bukkit.entity.Player
 import scala.concurrent.ExecutionContext
-import BallCore.UI.Accumulator
+import BallCore.UI.PaneAccumulator
 import org.bukkit.Bukkit
 import BallCore.UI.UIProgram
 import BallCore.UI.UIServices
 import scala.concurrent.Future
-
-enum GroupManagementMessage:
-    case ViewMembers
-    case ViewRoles
-    case InviteMember
-    case ClickRole(role: RoleID)
+import net.kyori.adventure.text.format.NamedTextColor
+import com.github.stefvanschie.inventoryframework.pane.Pane
+import net.kyori.adventure.text.format.TextDecoration
+import com.github.stefvanschie.inventoryframework.gui.`type`.util.Gui
 
 class GroupManagementProgram(using gm: GroupManager) extends UIProgram:
-    import io.circe.generic.auto._
-
     case class Flags(groupID: GroupID, userID: UserID)
     case class Model(group: GroupState, userID: UserID, viewing: ViewingWhat)
     enum ViewingWhat:
         case Players
         case Roles
-    type Message = GroupManagementMessage
+    enum Message:
+        case ViewMembers
+        case ViewRoles
+        case InviteMember
+        case ClickRole(role: RoleID)
 
     override def init(flags: Flags): Model =
         val group = gm.getGroup(flags.groupID).toOption.get
         Model(group, flags.userID, ViewingWhat.Players)
-    override def view(model: Model): Elem =
+    override def view(model: Model): Callback ?=> Gui =
         val group = model.group
-        Root(s"Viewing ${group.metadata.name}", 6) {
+        Root(txt"Viewing ${group.metadata.name}", 6) {
             OutlinePane(0, 0, 1, 6) {
-                Button("player_head", "§aMembers", GroupManagementMessage.ViewMembers)()
+                Button(Material.PLAYER_HEAD, txt"Members".style(NamedTextColor.GREEN), Message.ViewMembers)()
                 if group.check(Permissions.ManageRoles, model.userID) then
-                    Button("writable_book", "§aManage Roles", GroupManagementMessage.ViewRoles)()
+                    Button(Material.WRITABLE_BOOK, txt"Manage Roles".style(NamedTextColor.GREEN), Message.ViewRoles)()
                 if group.check(Permissions.InviteUser, model.userID) then
-                    Button("compass", "§aInvite A Member", GroupManagementMessage.InviteMember)()
+                    Button(Material.COMPASS, txt"Invite A Member".style(NamedTextColor.GREEN), Message.InviteMember)()
             }
             OutlinePane(1, 0, 1, 6, priority = Priority.LOWEST, repeat = true) {
-                Item("black_stained_glass_pane", displayName = Some(" "))()
+                Item(Material.BLACK_STAINED_GLASS_PANE, displayName = Some(txt""))()
             }
             model.viewing match
                 case ViewingWhat.Players => Players(model)
                 case ViewingWhat.Roles => Roles(model)
         }
-    def Players(model: Model)(using Accumulator): Unit =
+    def Players(model: Model)(using PaneAccumulator): Unit =
         val group = model.group
         OutlinePane(2, 0, 7, 6) {
             group.users.keys.toList.map(x => Bukkit.getOfflinePlayer(x)).sortBy(_.getName()).foreach { x =>
-                Item("player_head", displayName = Some(s"§r${x.getName()}")) {
+                Item(Material.PLAYER_HEAD, displayName = Some(txt"${x.getName()}")) {
                     SkullUsername(x.getName())
                     if group.owners.contains(x.getUniqueId()) then
-                        Lore("§a§lOwner")
+                        Lore(txt"Owner".style(NamedTextColor.GREEN, TextDecoration.BOLD))
                     val roles = group.roles
                         .filter(r => group.users(x.getUniqueId()).contains(r.id))
                         .filterNot(_.id == nullUUID)
                     if roles.length > 0 then
-                        Lore("")
-                        Lore("§r§f§nRoles")
+                        Lore(txt"")
+                        Lore(txt"Roles".style(NamedTextColor.WHITE, TextDecoration.UNDERLINED))
                         roles.foreach { x =>
-                            Lore(s"§r§f- ${x.name}")
+                            Lore(txt"- ${x.name}".style(NamedTextColor.WHITE))
                         }
                 }
             }
         }
-    def Roles(model: Model)(using Accumulator): Unit =
+    def Roles(model: Model)(using PaneAccumulator): Unit =
         val group = model.group
         OutlinePane(2, 0, 7, 6) {
             group.roles.foreach { x =>
-                Button("leather_chestplate", s"§r§f${x.name}", GroupManagementMessage.ClickRole(x.id)) {
+                Button(Material.LEATHER_CHESTPLATE, txt"${x.name}".style(NamedTextColor.WHITE), Message.ClickRole(x.id)) {
                     if x.permissions.size > 0 then
-                        Lore("")
-                        Lore("§r§f§nPermissions")
+                        Lore(txt"")
+                        Lore(txt"Permissions".style(NamedTextColor.WHITE, TextDecoration.UNDERLINED))
                         x.permissions.toList.sortBy(_._1.ordinal).foreach { x =>
                             val (p, r) = x
                             if r == RuleMode.Allow then
-                                Lore(s"§r§a- ✔ ${p.displayName()}")
+                                Lore(txt"- ✔ ${p.displayName()}".style(NamedTextColor.GREEN))
                             else
-                                Lore(s"§r§c- ✖ ${p.displayName()}")
+                                Lore(txt"- ✖ ${p.displayName()}".style(NamedTextColor.RED))
                         }
                 }
             }
         }
     override def update(msg: Message, model: Model)(using services: UIServices): Future[Model] =
         msg match
-            case GroupManagementMessage.ViewMembers =>
+            case Message.ViewMembers =>
                 model.copy(viewing = ViewingWhat.Players)
-            case GroupManagementMessage.ViewRoles =>
+            case Message.ViewRoles =>
                 model.copy(viewing = ViewingWhat.Roles)
-            case GroupManagementMessage.InviteMember =>
+            case Message.InviteMember =>
                 services.prompt("Who do you want to invite?")
                     .map { username =>
                         Option(Bukkit.getOfflinePlayerIfCached(username)) match
@@ -113,22 +112,18 @@ class GroupManagementProgram(using gm: GroupManager) extends UIProgram:
                                 services.notify(s"Invited ${plr.getName()} to ${model.group.metadata.name}!")
                         model
                     }
-            case GroupManagementMessage.ClickRole(role) =>
+            case Message.ClickRole(role) =>
                 val p = RoleManagementProgram()
                 services.transferTo(p, p.Flags(model.group.metadata.id, role, model.userID))
                 model
-        
-enum RoleManagementMessage:
-    case DeleteRole
-    case TogglePermission(val perm: Permissions)
-    case GoBack
 
 class RoleManagementProgram(using gm: GroupManager) extends UIProgram:
-    import io.circe.generic.auto._
-
     case class Flags(groupID: GroupID, roleID: RoleID, userID: UserID)
     case class Model(group: GroupState, groupID: GroupID, userID: UserID, role: RoleState)
-    type Message = RoleManagementMessage
+    enum Message:
+        case DeleteRole
+        case TogglePermission(val perm: Permissions)
+        case GoBack
 
     override def init(flags: Flags): Model =
         val group = gm.getGroup(flags.groupID).toOption.get
@@ -136,7 +131,7 @@ class RoleManagementProgram(using gm: GroupManager) extends UIProgram:
         Model(group, flags.groupID, flags.userID, role)
     override def update(msg: Message, model: Model)(using services: UIServices): Future[Model] =
         msg match
-            case RoleManagementMessage.DeleteRole =>
+            case Message.DeleteRole =>
                 gm.deleteRole(model.userID, model.role.id, model.groupID) match
                     case Left(err) =>
                         services.notify(s"You cannot delete that role because ${err.explain()}")
@@ -145,7 +140,7 @@ class RoleManagementProgram(using gm: GroupManager) extends UIProgram:
                         val p = GroupManagementProgram()
                         services.transferTo(p, p.Flags(model.groupID, model.userID))
                         model
-            case RoleManagementMessage.TogglePermission(perm) =>
+            case Message.TogglePermission(perm) =>
                 val newPerm = model.role.permissions.get(perm) match
                     case None => Some(RuleMode.Allow)
                     case Some(RuleMode.Allow) => Some(RuleMode.Deny)
@@ -160,21 +155,21 @@ class RoleManagementProgram(using gm: GroupManager) extends UIProgram:
                         model
                     case Right(_) =>
                         model.copy(role = model.role.copy(permissions = newPermissions))
-            case RoleManagementMessage.GoBack =>
+            case Message.GoBack =>
                 val p = GroupManagementProgram()
                 services.transferTo(p, p.Flags(model.groupID, model.userID))
                 model
-    override def view(model: Model): Elem =
+    override def view(model: Model): Callback ?=> Gui =
         val role = model.role
         val group = model.group
-        Root(s"Viewing Role ${role.name} in ${group.metadata.name}", 6) {
+        Root(txt"Viewing Role ${role.name} in ${group.metadata.name}", 6) {
             OutlinePane(0, 0, 1, 6) {
-                Button("oak_door", "§fGo Back", RoleManagementMessage.GoBack)()
+                Button(Material.OAK_DOOR, txt"Go Back".style(NamedTextColor.WHITE), Message.GoBack)()
                 if role.id != nullUUID then
-                    Button("lava_bucket", "§aDelete Role", RoleManagementMessage.DeleteRole)()
+                    Button(Material.LAVA_BUCKET, txt"Delete Role".style(NamedTextColor.GREEN), Message.DeleteRole)()
             }
             OutlinePane(1, 0, 1, 6, priority = Priority.LOWEST, repeat = true) {
-                Item("black_stained_glass_pane", displayName = Some(" "))()
+                Item(Material.BLACK_STAINED_GLASS_PANE, displayName = Some(txt""))()
             }
             OutlinePane(2, 0, 7, 6) {
                 Permissions.values.foreach { x =>
@@ -184,39 +179,35 @@ class RoleManagementProgram(using gm: GroupManager) extends UIProgram:
                             case Some(RuleMode.Allow) => s"§a✔ ${x.displayName()}"
                             case Some(RuleMode.Deny) => s"§c✖ ${x.displayName()}"
 
-                    Button(x.displayItem().toString().toLowerCase(), name, RoleManagementMessage.TogglePermission(x)) {
-                        Lore(s"§r§f${x.displayExplanation()}")
-                        Lore("")
+                    Button(x.displayItem(), txt"${name}", Message.TogglePermission(x)) {
+                        Lore(txt"${x.displayExplanation()}".color(NamedTextColor.WHITE))
+                        Lore(txt"")
 
                         role.permissions.get(x) match
-                            case None => Lore(s"§7This role does not affect this permission")
-                            case Some(RuleMode.Allow) => Lore(s"§7This role allows this permission unless overridden by a higher role")
-                            case Some(RuleMode.Deny) => Lore(s"§7This role denies this permission unless overridden by a higher role")
+                            case None => Lore(txt"This role does not affect this permission".color(NamedTextColor.GRAY))
+                            case Some(RuleMode.Allow) => Lore(txt"This role allows this permission unless overridden by a higher role".color(NamedTextColor.GRAY))
+                            case Some(RuleMode.Deny) => Lore(txt"This role denies this permission unless overridden by a higher role".color(NamedTextColor.GRAY))
 
-                        Lore("")
+                        Lore(txt"")
                         role.permissions.get(x) match
-                            case None => Lore(s"§7Click to toggle §fignore§7/allow/deny")
-                            case Some(RuleMode.Allow) => Lore(s"§7Click to toggle ignore/§fallow§7/deny")
-                            case Some(RuleMode.Deny) => Lore(s"§7Click to toggle ignore/allow/§fdeny§7")
+                            case None => Lore(txt"Click to toggle ${txt"ignore".color(NamedTextColor.WHITE)}/allow/deny".color(NamedTextColor.GRAY))
+                            case Some(RuleMode.Allow) => Lore(txt"Click to toggle ignore/${txt"allow".color(NamedTextColor.WHITE)}/deny".color(NamedTextColor.GRAY))
+                            case Some(RuleMode.Deny) => Lore(txt"Click to toggle ignore/allow/${txt"deny".color(NamedTextColor.WHITE)}".color(NamedTextColor.GRAY))
                     }
                 }
             }
         }
 
-enum InviteListMessage:
-    case ClickInvite(inviter: UserID, group: GroupID)
-    case AcceptInvite(group: GroupID)
-    case DenyInvite(group: GroupID)
-
 class InvitesListProgram(using gm: GroupManager) extends UIProgram:
-    import io.circe.generic.auto._
-
     case class Flags(userID: UserID)
     enum Mode:
         case List
         case ViewingInvite(user: UserID, group: GroupState)
     case class Model(userID: UserID, invites: List[(UserID, GroupState)], mode: Mode)
-    type Message = InviteListMessage
+    enum Message:
+        case ClickInvite(inviter: UserID, group: GroupID)
+        case AcceptInvite(group: GroupID)
+        case DenyInvite(group: GroupID)
 
     override def init(flags: Flags): Model =
         val invites = gm.invites.getInvitesFor(flags.userID).map { (uid, gid) =>
@@ -225,94 +216,90 @@ class InvitesListProgram(using gm: GroupManager) extends UIProgram:
         Model(flags.userID, invites, Mode.List)
     override def update(msg: Message, model: Model)(using services: UIServices): Future[Model] =
         msg match
-            case InviteListMessage.ClickInvite(user, group) =>
+            case Message.ClickInvite(user, group) =>
                 model.copy(mode = Mode.ViewingInvite(user, model.invites.find(_._1 == user).get._2))
-            case InviteListMessage.AcceptInvite(group) =>
+            case Message.AcceptInvite(group) =>
                 gm.invites.acceptInvite(model.userID, group)
                 model
-            case InviteListMessage.DenyInvite(group) =>
+            case Message.DenyInvite(group) =>
                 gm.invites.deleteInvite(model.userID, group)
                 model
-    override def view(model: Model): Elem =
+    override def view(model: Model): Callback ?=> Gui =
         model.mode match
             case Mode.List => list(model)
             case Mode.ViewingInvite(user, group) => viewing(model, user, group)
-    def list(model: Model): Elem =
+    def list(model: Model): Callback ?=> Gui =
         val rows = (model.invites.length / 9).max(1)
-        Root("Invites", rows) {
+        Root(txt"Invites", rows) {
             OutlinePane(0, 0, 1, rows) {
                 model.invites.foreach { invite =>
                     val player = Bukkit.getOfflinePlayer(invite._1)
-                    Button("player_head", s"§r${player.getName()}", InviteListMessage.ClickInvite(invite._1, invite._2.metadata.id)) {
+                    Button(Material.PLAYER_HEAD, txt"${player.getName()}".color(NamedTextColor.WHITE), Message.ClickInvite(invite._1, invite._2.metadata.id)) {
                         SkullUsername(player.getName())
-                        Lore(s"§r§fInvited you to §a${invite._2.metadata.name}")
+                        Lore(txt"Invited you to ${txt"${invite._2.metadata.name}".color(NamedTextColor.GREEN)}".color(NamedTextColor.WHITE))
                     }
                 }
             }
         }
-    def viewing(model: Model, inviter: UserID, group: GroupState): Elem =
+    def viewing(model: Model, inviter: UserID, group: GroupState): Callback ?=> Gui =
         val player = Bukkit.getOfflinePlayer(inviter)
-        Root(s"Accept / Reject Invite?", 1) {
+        Root(txt"Accept / Reject Invite?", 1) {
             OutlinePane(0, 0, 1, 1) {
-                Button("red_dye", "§rReject Invite", InviteListMessage.DenyInvite(group.metadata.id))()
+                Button(Material.RED_DYE, txt"Reject Invite".color(NamedTextColor.WHITE), Message.DenyInvite(group.metadata.id))()
             }
             OutlinePane(4, 0, 1, 1) {
                 val player = Bukkit.getOfflinePlayer(inviter)
-                Item("player_head", displayName = Some(s"§r${player.getName()}")) {
+                Item(Material.PLAYER_HEAD, displayName = Some(txt"§${player.getName()}".style(NamedTextColor.WHITE))) {
                     SkullUsername(player.getName())
-                    Lore(s"§r§fInvited you to §a${group.metadata.name}")
+                    Lore(txt"Invited you to ${txt"${group.metadata.name}".style(NamedTextColor.GREEN)}".style(NamedTextColor.WHITE))
                 }
             }
             OutlinePane(8, 0, 1, 1) {
-                Button("lime_dye", "§rAccept Invite", InviteListMessage.AcceptInvite(group.metadata.id))()
+                Button(Material.LIME_DYE, txt"Accept Invite".color(NamedTextColor.WHITE), Message.AcceptInvite(group.metadata.id))()
             }
         }
 
-enum GroupListMessage:
-    case ClickGroup(groupID: GroupID)
-    case CreateGroup
-    case Invites
-
 class GroupListProgram(using gm: GroupManager) extends UIProgram:
-    import io.circe.generic.auto._
-
     case class Flags(userID: UserID)
     case class Model(userID: UserID, groups: List[GroupStates])
-    type Message = GroupListMessage
+    enum Message:
+        case ClickGroup(groupID: GroupID)
+        case CreateGroup
+        case Invites
 
     override def init(flags: Flags): Model =
         Model(flags.userID, gm.userGroups(flags.userID).toOption.get)
 
     override def update(msg: Message, model: Model)(using services: UIServices): Future[Model] =
         msg match
-            case GroupListMessage.ClickGroup(groupID) =>
+            case Message.ClickGroup(groupID) =>
                 val p = GroupManagementProgram()
                 services.transferTo(p, p.Flags(groupID, model.userID))
                 model
-            case GroupListMessage.Invites =>
+            case Message.Invites =>
                 val p = InvitesListProgram()
                 services.transferTo(p, p.Flags(model.userID))
                 model
-            case GroupListMessage.CreateGroup =>
+            case Message.CreateGroup =>
                 val answer = services.prompt("What do you want to call the group?")
                 answer.map { result =>
                     gm.createGroup(model.userID, result)
                     model.copy(groups = gm.userGroups(model.userID).toOption.get)
                 }
 
-    override def view(model: Model): Elem =
+    override def view(model: Model): Callback ?=> Gui =
         val groups = model.groups
-        Root("Groups", 6) {
+        Root(txt"Groups", 6) {
             OutlinePane(0, 0, 1, 6) {
-                Button("name_tag", "§aCreate Group", GroupListMessage.CreateGroup)()
-                Button("paper", "§aView Invites", GroupListMessage.Invites)()
+                Button(Material.NAME_TAG, txt"Create Group".color(NamedTextColor.GREEN), Message.CreateGroup)()
+                Button(Material.PAPER, txt"View Invites".color(NamedTextColor.GREEN), Message.Invites)()
             }
             OutlinePane(1, 0, 1, 6, priority = Priority.LOWEST, repeat = true) {
-                Item("black_stained_glass_pane", displayName = Some(" "))()
+                Item(Material.BLACK_STAINED_GLASS_PANE, displayName = Some(txt" "))()
             }
             OutlinePane(2, 0, 7, 6) {
                 groups.foreach { x =>
-                    Button("leather_chestplate", s"§a${x.name}", GroupListMessage.ClickGroup(x.id))()
+                    Button(Material.LEATHER_CHESTPLATE, txt"${x.name}".color(NamedTextColor.GREEN), Message.ClickGroup(x.id))()
                 }
             }
         }
