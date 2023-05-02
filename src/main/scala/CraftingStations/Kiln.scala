@@ -32,7 +32,8 @@ object Kiln:
 	}.appended {
 		Recipe("Smelt Glass", List((MaterialChoice(Material.SAND, Material.RED_SAND, Material.SOUL_SAND), 64)), List(ItemStack(Material.GLASS, 64)), 10)
 	}
+	val template = CustomItemStack.make(NamespacedKey("ballcore", "kiln"), Material.SMOKER, "&rKiln", "&rSmelts nonmetals more efficiently than normal smelting")
 
 class Kiln()(using act: CraftingActor, p: Plugin, prompts: Prompts) extends CraftingStation(Kiln.recipes):
     def group = CraftingStations.group
-    def template = CustomItemStack.make(NamespacedKey("ballcore", "kiln"), Material.CAULDRON, "&rKiln", "&rSmelts nonmetals more efficiently than normal smelting")
+    def template = Kiln.template

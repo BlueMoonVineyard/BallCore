@@ -12,6 +12,7 @@ import scala.xml.Elem
 import org.bukkit.inventory.RecipeChoice
 import org.bukkit.inventory.RecipeChoice.MaterialChoice
 import org.bukkit.inventory.ItemStack
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer
 
 enum RecipeSelectorMessage:
 	case selectRecipe(index: Int)
@@ -45,9 +46,15 @@ class RecipeSelectorProgram(recipes: List[Recipe])(using actor: CraftingActor) e
 	def choiceToString(input: RecipeChoice): String =
 		input match
 			case m: MaterialChoice =>
-				m.getChoices().asScala.map(mat => ItemStack(mat).getI18NDisplayName()).mkString(" or ")
+				m.getChoices().asScala.map(mat => ItemStack(mat).getI18NDisplayName()).mkString(" §for§7§l ")
 			case _ =>
 				s"TODO: ${input}"
+
+	def nameOf(s: ItemStack): String =
+		if s.getItemMeta().hasDisplayName() then
+			PlainTextComponentSerializer.plainText().serialize(s.getItemMeta().displayName())
+		else
+			s.getI18NDisplayName()
 
 	override def view(model: Model): Elem =
 		Root(s"Recipes (Page ${model.page+1} of ${numPages})", 6) {
@@ -61,7 +68,8 @@ class RecipeSelectorProgram(recipes: List[Recipe])(using actor: CraftingActor) e
 						Lore(s"")
 						Lore(s"§r§f§nResults")
 						recipe.outputs.foreach { output =>
-							Lore(s"§f - §7§l${output.getI18NDisplayName()}§f × ${output.getAmount()}")
+							Lore(s"§f - §7§l${nameOf(output)}§f × ${output.getAmount()}")
+							Lore(s"§f   §5(${output.getItemMeta().getLore().get(0)})")
 						}
 						Lore(s"")
 						Lore(s"§fTakes §a${recipe.work} seconds§f of work")

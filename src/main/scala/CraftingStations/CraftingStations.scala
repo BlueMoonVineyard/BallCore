@@ -11,6 +11,8 @@ import org.bukkit.event.player.PlayerInteractEvent
 import BallCore.CustomItems.Listeners
 import BallCore.CustomItems.CustomItem
 import BallCore.UI.UIProgramRunner
+import org.bukkit.inventory.ShapedRecipe
+import org.bukkit.inventory.RecipeChoice.MaterialChoice
 
 object CraftingStations:
 	val group = ItemGroup(NamespacedKey("ballcore", "crafting_stations"), ItemStack(Material.CRAFTING_TABLE))
@@ -20,10 +22,18 @@ object CraftingStations:
 		registry.register(DyeVat())
 		registry.register(GlazingKiln())
 		registry.register(Kiln())
+		registry.register(StationMaker())
+		val smRecipe = ShapedRecipe(NamespacedKey("ballcore", "craft_station_maker"), StationMaker.template)
+		smRecipe.shape(
+			"II",
+			"II",
+		)
+		smRecipe.setIngredient('I', MaterialChoice(Material.CRAFTING_TABLE))
+		p.getServer().addRecipe(smRecipe)
 
 abstract class CraftingStation(recipes: List[Recipe])(using act: CraftingActor, p: Plugin, prompts: Prompts) extends CustomItem, Listeners.BlockClicked:
-    def onBlockClicked(event: PlayerInteractEvent): Unit =
-        val p = RecipeSelectorProgram(DyeVat.recipes)
-        val plr = event.getPlayer()
-        val runner = UIProgramRunner(p, p.Flags(plr, event.getClickedBlock()), plr)
-        runner.render()
+	def onBlockClicked(event: PlayerInteractEvent): Unit =
+		val p = RecipeSelectorProgram(recipes)
+		val plr = event.getPlayer()
+		val runner = UIProgramRunner(p, p.Flags(plr, event.getClickedBlock()), plr)
+		runner.render()

@@ -38,7 +38,8 @@ object DyeVat:
         val (dye, wool, name) = it
         Recipe(name, List((MaterialChoice(dye), 4), (MaterialChoice(Material.WHITE_WOOL), 64)), List(ItemStack(wool, 64)), 10)
     }
+    val template = CustomItemStack.make(NamespacedKey("ballcore", "dye_vat"), Material.CAULDRON, "&rDye Vat", "&rDyes more wools with less dyes than normal crafting")
 
 class DyeVat()(using act: CraftingActor, p: Plugin, prompts: Prompts) extends CraftingStation(DyeVat.recipes):
     def group = CraftingStations.group
-    def template = CustomItemStack.make(NamespacedKey("ballcore", "dye_vat"), Material.CAULDRON, "&rDye Vat", "&rDyes more wools with less dyes than normal crafting")
+    def template = DyeVat.template
