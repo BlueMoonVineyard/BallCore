@@ -45,7 +45,9 @@ class EntityStateManager()(using sql: Storage.SQLManager, csm: ChunkStateManager
         if !cache.contains(key) then
             load(key)
 
-        cache.get(key)
+        cache.get(key) match
+            case Some(x) if !x.deleted => Some(x)
+            case _ => None
     def set(key: UUID, value: ReinforcementState): Unit =
         cache(key) = value
     private def save(key: UUID, value: ReinforcementState): Unit =

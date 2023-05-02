@@ -8,6 +8,9 @@ import BallCore.CustomItems.ItemRegistry
 import BallCore.Groups.GroupManager
 import BallCore.Groups.Permissions
 import org.bukkit.event.Listener
+import org.bukkit.event.vehicle.VehicleDamageEvent
+import org.bukkit.event.vehicle.VehicleEnterEvent
+import org.bukkit.entity.Player
 
 class EntityListener()(using erm: EntityReinforcementManager, registry: ItemRegistry, gm: GroupManager) extends Listener:
     import BallCore.Reinforcements.Listener._
@@ -24,6 +27,37 @@ class EntityListener()(using erm: EntityReinforcementManager, registry: ItemRegi
                         ()
             case Right(value) =>
                 playDamageEffect(ent.getLocation(), value.kind)
+                event.setCancelled(true)
+
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    def onDamageVehicle(event: VehicleDamageEvent): Unit =
+        val ent = event.getVehicle()
+        erm.damage(ent.getUniqueId()) match
+            case Left(err) =>
+                err match
+                    case JustBroken(bs) =>
+                        playBreakEffect(ent.getLocation(), bs.kind)
+                    case _ =>
+                        ()
+            case Right(value) =>
+                playDamageEffect(ent.getLocation(), value.kind)
+                event.setCancelled(true)
+
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    def onEnterVehicle(event: VehicleEnterEvent): Unit =
+        val rein = erm.getReinforcement(event.getVehicle().getUniqueId())
+        if rein.isEmpty then
+            return
+        val reinf = rein.get
+        val ent = event.getEntered()
+        if !ent.isInstanceOf[Player] then
+            event.setCancelled(true)
+            return
+        gm.check(ent.asInstanceOf[Player].getUniqueId(), reinf.group, Permissions.Entities) match
+            case Right(ok) if ok =>
+                ()
+            case _ =>
+                // TODO: notify of permission denied
                 event.setCancelled(true)
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
@@ -55,6 +89,7 @@ class EntityListener()(using erm: EntityReinforcementManager, registry: ItemRegi
             case Right(value) =>
                 playCreationEffect(event.getRightClicked().getLocation(), kind)
                 pas.loadReinforcementMaterials(p, istack, -1, kind)
+                event.setCancelled(true)
 
     // prevent interacting with reinforced entities
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
