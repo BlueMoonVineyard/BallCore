@@ -66,9 +66,24 @@ class HeartNetworkManager()(using sql: Storage.SQLManager):
         )
     )
     private implicit val session: DBSession = sql.session
+    private var heartNetworkRTree = loadHearts()
+    private var heartNetworkMapToRTree: Map[HeartNetworkID, RTreeEntry[HeartNetworkID]] = heartNetworkRTree.entries.map(ent => ent.value -> ent).toMap
 
     def populationToRadius(count: Int): Int =
         21 * count
+    def recomputeEntryFor(id: HeartNetworkID): RTreeEntry[HeartNetworkID] =
+        val (count, x, z) =
+            sql"""
+            SELECT
+                (SELECT COUNT(*) FROM Hearts WHERE Hearts.Network = ${id}) AS HeartCount,
+                (SELECT AVG(X) FROM Hearts WHERE Hearts.Network = ${id}) AS CentroidX,
+                (SELECT AVG(Z) FROM Hearts WHERE Hearts.Network = ${id}) AS CentroidZ;
+            """
+            .map(rs => (rs.int("HeartCount"), rs.int("CentroidX"), rs.int("CentroidZ")))
+            .single
+            .apply()
+            .get
+        entry(x, z, populationToRadius(count), id)
     def loadHearts(): RTree[HeartNetworkID] =
         val items = sql"""
         SELECT
@@ -98,6 +113,8 @@ class HeartNetworkManager()(using sql: Storage.SQLManager):
             .map(rs => (UUID.fromString(rs.string("Owner")), UUID.fromString(rs.string("Network"))))
             .single
             .apply()
+    def heartNetworksContaining(l: Location): IndexedSeq[HeartNetworkID] =
+        heartNetworkRTree.searchAll(l.getX().toFloat, l.getZ().toFloat).map(_.value)
     def heartNetworkSize(network: HeartNetworkID): Int =
         sql"""
         SELECT COUNT(*) FROM Hearts WHERE Network = ${network}
@@ -141,6 +158,10 @@ class HeartNetworkManager()(using sql: Storage.SQLManager):
         .update
         .apply()
 
+        val entry = recomputeEntryFor(network)
+        heartNetworkRTree = RTree.update(heartNetworkRTree, heartNetworkMapToRTree.get(network), Some(entry))
+        heartNetworkMapToRTree += network -> entry
+
         Some(network, heartNetworkSize(network))
     def removeHeart(l: Location, owner: OwnerID): Option[(HeartNetworkID, Int)] =
         sql"""
@@ -153,7 +174,12 @@ class HeartNetworkManager()(using sql: Storage.SQLManager):
                 val count = heartNetworkSize(network)
                 if count == 0 then
                     sql"""DELETE FROM HeartNetworks WHERE ID = ${network}""".update.apply()
+                    heartNetworkRTree = RTree.update(heartNetworkRTree, heartNetworkMapToRTree.get(network), None)
+                    heartNetworkMapToRTree -= network
                     None
                 else
+                    val entry = recomputeEntryFor(network)
+                    heartNetworkRTree = RTree.update(heartNetworkRTree, heartNetworkMapToRTree.get(network), Some(entry))
+                    heartNetworkMapToRTree += network -> entry
                     Some(network, count)
             }
