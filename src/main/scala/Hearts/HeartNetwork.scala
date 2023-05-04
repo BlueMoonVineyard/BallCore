@@ -71,6 +71,13 @@ class HeartNetworkManager()(using sql: Storage.SQLManager):
 
     def populationToRadius(count: Int): Int =
         21 * count
+    def getHeartNetworkFor(player: OwnerID): Option[HeartNetworkID] =
+        sql"""
+        SELECT Network FROM Hearts WHERE Owner = ${player};
+        """
+        .map(rs => UUID.fromString(rs.string("Network")))
+        .single
+        .apply()
     def recomputeEntryFor(id: HeartNetworkID): RTreeEntry[HeartNetworkID] =
         val (count, x, z) =
             sql"""

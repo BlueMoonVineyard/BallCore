@@ -38,6 +38,7 @@ import BallCore.Reinforcements.EntityStateManager
 import BallCore.Reinforcements.EntityReinforcementManager
 import BallCore.CraftingStations.CraftingStations
 import BallCore.Chat.ChatActor
+import BallCore.Acclimation.AcclimationActor
 
 final class Main extends JavaPlugin:
     given sql: Storage.SQLManager = new Storage.SQLManager
@@ -67,6 +68,7 @@ final class Main extends JavaPlugin:
         Woodcutter.registerItems()
         CustomItemListener.register()
         CraftingStations.register()
+        AcclimationActor.register()
         given ac: ChatActor = Chat.Chat.register()
         val chatCommands = ChatCommands()
         getCommand("group").setExecutor(chatCommands.Group)

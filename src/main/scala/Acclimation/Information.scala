@@ -14,20 +14,20 @@ object Information:
     val WorldRadiusBlocks = 4000*4
     val SeaLevel = 67
 
-    def latLong(x: Float, z: Float): (Float, Float) =
+    def latLong(x: Double, z: Double): (Double, Double) =
         (z / WorldRadiusBlocks, x / WorldRadiusBlocks)
 
-    def temperature(x: Int, y: Int, z: Int): Float =
+    def temperature(x: Int, y: Int, z: Int): Double =
         val world = Bukkit.getWorld("world")
         val provider = world.getBiomeProvider()
         val temp = world.getBlockAt(x, y, z).getTemperature()
         // coldest is -0.7, hottest is 2.0
-        ((temp + 0.7) / 2.7).toFloat
+        ((temp + 0.7) / 2.7)
 
-    private def normalize(v: Float, min: Float, max: Float): Float =
+    private def normalize(v: Double, min: Double, max: Double): Double =
         (v - min) / (max - min)
 
-    def elevation(y: Int): Float =
+    def elevation(y: Int): Double =
         val world = Bukkit.getWorld("world")
         if y < SeaLevel then
             -normalize(y, world.getMinHeight, SeaLevel)
