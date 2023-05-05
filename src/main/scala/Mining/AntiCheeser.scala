@@ -7,6 +7,7 @@ import scalikejdbc.NoExtractor
 import BallCore.Storage.Migration
 import org.bukkit.block.Block
 import scala.util.chaining._
+import org.bukkit.Material
 
 /*
 
@@ -20,8 +21,9 @@ Every chance to get something from breaking decreases the health by one.
 */
 
 trait LayerCounter:
-	def count(chunkX: Int, chunkZ: Int, y: Int): Int
+    def count(chunkX: Int, chunkZ: Int, y: Int): Int
 
+// methods must only be called within the scheduler for the target blocks
 class AntiCheeser()(using sql: SQLManager):
     sql.applyMigration(
         Migration(
@@ -29,12 +31,12 @@ class AntiCheeser()(using sql: SQLManager):
             List(
                 sql"""
                 CREATE TABLE MiningAntiCheeser (
-                	ChunkX INT NOT NULL,
-                	ChunkZ INT NOT NULL,
-                	Y INT NOT NULL,
-                	World TEXT NOT NULL,
-                	Health INT NOT NULL,
-                	UNIQUE(ChunkX, ChunkZ, Y, World)
+                    ChunkX INT NOT NULL,
+                    ChunkZ INT NOT NULL,
+                    Y INT NOT NULL,
+                    World TEXT NOT NULL,
+                    Health INT NOT NULL,
+                    UNIQUE(ChunkX, ChunkZ, Y, World)
                 );
                 """,
             ),
@@ -48,32 +50,38 @@ class AntiCheeser()(using sql: SQLManager):
     private implicit val session: DBSession = sql.session
 
     def countNonAirBlocksInSlice(b: Block): Int =
-    	???
+        val cx0 = b.getChunk().getX() << 4
+        val cz0 = b.getChunk().getZ() << 4
+        val types = for {
+            dx <- 0 to 15
+            dz <- 0 to 15
+        } yield b.getWorld().getBlockAt(cx0 + dx, cz0 + dz, b.getY()).getType()
+        types.count(_ != Material.AIR)
 
     def blockBroken(b: Block): Boolean =
-    	val cx = b.getChunk().getX()
-    	val cz = b.getChunk().getZ()
-    	val y = b.getY()
-    	val world = b.getWorld().getUID()
+        val cx = b.getChunk().getX()
+        val cz = b.getChunk().getZ()
+        val y = b.getY()
+        val world = b.getWorld().getUID()
 
-    	val health =
-    		sql"""
-    		SELECT Health FROM MiningAntiCheeser WHERE ChunkX = ${cx} AND ChunkZ = ${cz} AND Y = ${y} AND World = ${world};
-    		"""
-    		.map(rs => rs.int("Health"))
-    		.single
-    		.apply()
-    		.getOrElse(countNonAirBlocksInSlice(b))
-    		.tap(_ - 1)
+        val health =
+            sql"""
+            SELECT Health FROM MiningAntiCheeser WHERE ChunkX = ${cx} AND ChunkZ = ${cz} AND Y = ${y} AND World = ${world};
+            """
+            .map(rs => rs.int("Health"))
+            .single
+            .apply()
+            .getOrElse(countNonAirBlocksInSlice(b))
+            .tap(_ - 1)
 
-    	sql"""
-    	INSERT OR REPLACE INTO MiningAntiCheeser (
-    		Health, ChunkX, ChunkZ, Y, World
-    	) VALUES (
-    		${health.max(0)}, ${cx}, ${cz}, ${y}, ${world}
-    	);
-    	"""
-    	.update
-    	.apply()
+        sql"""
+        INSERT OR REPLACE INTO MiningAntiCheeser (
+            Health, ChunkX, ChunkZ, Y, World
+        ) VALUES (
+            ${health.max(0)}, ${cx}, ${cz}, ${y}, ${world}
+        );
+        """
+        .update
+        .apply()
 
-    	health >= 0
+        health >= 0
