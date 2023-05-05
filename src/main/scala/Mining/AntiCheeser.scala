@@ -20,9 +20,6 @@ Every chance to get something from breaking decreases the health by one.
 
 */
 
-trait LayerCounter:
-    def count(chunkX: Int, chunkZ: Int, y: Int): Int
-
 // methods must only be called within the scheduler for the target blocks
 class AntiCheeser()(using sql: SQLManager):
     sql.applyMigration(
@@ -49,14 +46,14 @@ class AntiCheeser()(using sql: SQLManager):
     )
     private implicit val session: DBSession = sql.session
 
-    def countNonAirBlocksInSlice(b: Block): Int =
+    def countEligibleBlocks(b: Block): Int =
         val cx0 = b.getChunk().getX() << 4
         val cz0 = b.getChunk().getZ() << 4
         val types = for {
             dx <- 0 to 15
             dz <- 0 to 15
         } yield b.getWorld().getBlockAt(cx0 + dx, cz0 + dz, b.getY()).getType()
-        types.count(_ != Material.AIR)
+        types.count(kind => Mining.stoneBlocks.contains(kind))
 
     def blockBroken(b: Block): Boolean =
         val cx = b.getChunk().getX()
@@ -71,7 +68,7 @@ class AntiCheeser()(using sql: SQLManager):
             .map(rs => rs.int("Health"))
             .single
             .apply()
-            .getOrElse(countNonAirBlocksInSlice(b))
+            .getOrElse(countEligibleBlocks(b))
             .tap(_ - 1)
 
         sql"""

@@ -11,8 +11,16 @@ import org.bukkit.Location
 import org.bukkit.block.Biome
 
 object Information:
-    val WorldRadiusBlocks = 4000*4
+    val WorldRadiusBlocks = 2000
     val SeaLevel = 67
+
+    // -1.0 to 1.0, returns 0.0 to 1.0, with 1.0 being the same point and
+    // 0.0 being opposite extrema of the spectrum
+    def similarityNeg(a: Double, b: Double): Double =
+        val adjustedA = (a + 1.0) / 2.0
+        val adjustedB = (b + 1.0) / 2.0
+
+        1.0 - (adjustedA - adjustedB).abs
 
     def latLong(x: Double, z: Double): (Double, Double) =
         (z / WorldRadiusBlocks, x / WorldRadiusBlocks)
