@@ -103,9 +103,9 @@ case class OreVariants(
 
         val ingotFromNuggetRecipe = ShapedRecipe(ingotFromNuggetKey(ingot), ingot)
         ingotFromNuggetRecipe.shape(
-            "III",
-            "III",
-            "III",
+            "NNN",
+            "NNN",
+            "NNN",
         )
         ingotFromNuggetRecipe.setIngredient('N', ExactChoice(nugget))
         serv.addRecipe(ingotFromNuggetRecipe)
