@@ -39,6 +39,7 @@ import BallCore.Reinforcements.EntityReinforcementManager
 import BallCore.CraftingStations.CraftingStations
 import BallCore.Chat.ChatActor
 import BallCore.Acclimation.AcclimationActor
+import BallCore.Mining.AntiCheeser
 
 final class Main extends JavaPlugin:
     given sql: Storage.SQLManager = new Storage.SQLManager
@@ -54,6 +55,7 @@ final class Main extends JavaPlugin:
     given hn: HeartNetworkManager = new HeartNetworkManager
     given brm: BlockReinforcementManager = new BlockReinforcementManager
     given erm: EntityReinforcementManager = new EntityReinforcementManager
+    given ac: AntiCheeser = new AntiCheeser
     given server: Server = Bukkit.getServer()
     given reg: ItemRegistry = BasicItemRegistry()
     given bm: BlockManager = KeyValBlockManager()
@@ -69,6 +71,7 @@ final class Main extends JavaPlugin:
         CustomItemListener.register()
         CraftingStations.register()
         AcclimationActor.register()
+        Mining.Mining.register()
         given ac: ChatActor = Chat.Chat.register()
         val chatCommands = ChatCommands()
         getCommand("group").setExecutor(chatCommands.Group)
