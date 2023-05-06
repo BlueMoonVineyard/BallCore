@@ -112,6 +112,8 @@ class MiningListener()(using ac: AntiCheeser, as: Acclimation.Storage) extends L
     def onBreakBlock(event: BlockBreakEvent): Unit =
         if !ac.blockBroken(event.getBlock()) then
             return
+        if !Mining.stoneBlocks.contains(event.getBlock().getType()) then
+            return
 
         val p = event.getPlayer()
         val plr = event.getPlayer().getUniqueId()
