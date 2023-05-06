@@ -100,6 +100,13 @@ enum Cardinal:
     case east
     case south
     case west
+object WorldLocation:
+    import Quadrant._
+    import Cardinal._
+    val norths = List(quadrant(northwest), quadrant(northeast), cardinal(north), everywhere)
+    val wests = List(quadrant(northwest), quadrant(southwest), cardinal(west), everywhere)
+    val souths = List(quadrant(southwest), quadrant(southeast), cardinal(south), everywhere)
+    val easts = List(quadrant(northeast), quadrant(southeast), cardinal(east), everywhere)
 enum WorldLocation:
     case quadrant(which: Quadrant)
     case cardinal(which: Cardinal)
@@ -128,6 +135,17 @@ class MiningListener()(using ac: AntiCheeser, as: Acclimation.Storage) extends L
 
         // figure out what could possibly drop
         val possibleDrops = Mining.drops.filter(_.yLevels.contains(event.getBlock().getY()))
+            .filter { drops =>
+                if event.getBlock().getZ() < 0 then
+                    WorldLocation.norths.contains(drops.where)
+                else
+                    WorldLocation.souths.contains(drops.where)
+            }.filter { drops =>
+                if event.getBlock().getX() < 0 then
+                    WorldLocation.wests.contains(drops.where)
+                else
+                    WorldLocation.easts.contains(drops.where)
+            }
 
         possibleDrops.exists { maybe =>
             val baseline = maybe.chance * 0.2
