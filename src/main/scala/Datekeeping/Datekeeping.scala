@@ -12,6 +12,12 @@ case class GameDate(
     val minute: Long,
 )
 
+enum Season:
+    case spring
+    case summer
+    case autumn
+    case winter
+
 object Datekeeping:
     // pizza tower release date on steam
     val epoch = Instant.ofEpochSecond(1674756019)
