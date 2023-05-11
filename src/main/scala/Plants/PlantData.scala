@@ -42,7 +42,7 @@ object PlantData:
 		PlantData( ageable(WHEAT), coldArid, autumn ),
 	)
 
-	def todo(name: String) = ???
+	def todo(name: String) = null
 
 enum Climate:
 	case warmArid
