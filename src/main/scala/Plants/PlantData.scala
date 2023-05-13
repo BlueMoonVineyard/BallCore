@@ -7,6 +7,8 @@ import BallCore.CustomItems.CustomItemStack
 import org.bukkit.NamespacedKey
 import scala.util.chaining._
 import org.bukkit.inventory.ItemStack
+import BallCore.CustomItems.CustomItem
+import BallCore.CustomItems.ItemGroup
 
 object PlantData:
 	import Season._
@@ -45,14 +47,19 @@ object PlantData:
 		PlantData( ageable(WHEAT), coldArid, autumn ),
 	)
 
-	val apricot = CustomItemStack.make(NamespacedKey("ballcore", "apricot"), Material.APPLE, "&rApricot")
+	val fruits = ItemGroup(NamespacedKey("ballcore", "fruits"), ItemStack(APPLE))
+	val apricot = CustomItemStack.make(NamespacedKey("ballcore", "apricot"), APPLE, "&rApricot")
 		.tap(is => is.setItemMeta(is.getItemMeta().tap(_.setCustomModelData(1))))
-	val peach = CustomItemStack.make(NamespacedKey("ballcore", "peach"), Material.APPLE, "&rPeach")
+	val peach = CustomItemStack.make(NamespacedKey("ballcore", "peach"), APPLE, "&rPeach")
 		.tap(is => is.setItemMeta(is.getItemMeta().tap(_.setCustomModelData(2))))
-	val pear = CustomItemStack.make(NamespacedKey("ballcore", "pear"), Material.APPLE, "&rPear")
+	val pear = CustomItemStack.make(NamespacedKey("ballcore", "pear"), APPLE, "&rPear")
 		.tap(is => is.setItemMeta(is.getItemMeta().tap(_.setCustomModelData(3))))
-	val plum = CustomItemStack.make(NamespacedKey("ballcore", "plum"), Material.APPLE, "&rPlum")
+	val plum = CustomItemStack.make(NamespacedKey("ballcore", "plum"), APPLE, "&rPlum")
 		.tap(is => is.setItemMeta(is.getItemMeta().tap(_.setCustomModelData(4))))
+
+class Fruit(val what: CustomItemStack) extends CustomItem:
+	def group = PlantData.fruits
+	def template = what
 
 enum Climate:
 	case warmArid
