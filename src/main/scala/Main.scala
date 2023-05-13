@@ -72,6 +72,7 @@ final class Main extends JavaPlugin:
         CraftingStations.register()
         AcclimationActor.register()
         Mining.Mining.register()
+        Plants.Plants.register()
         given ac: ChatActor = Chat.Chat.register()
         val chatCommands = ChatCommands()
         getCommand("group").setExecutor(chatCommands.Group)
