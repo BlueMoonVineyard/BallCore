@@ -5,8 +5,9 @@ import BallCore.CustomItems.ItemRegistry
 
 object Plants:
 	def register()(using p: Plugin, reg: ItemRegistry): Unit =
-		reg.register(Fruit(PlantData.apricot))
-		reg.register(Fruit(PlantData.peach))
-		reg.register(Fruit(PlantData.pear))
-		reg.register(Fruit(PlantData.plum))
+		reg.register(Fruit(Fruit.apricot))
+		reg.register(Fruit(Fruit.peach))
+		reg.register(Fruit(Fruit.pear))
+		reg.register(Fruit(Fruit.plum))
 		p.getServer().getPluginManager().registerEvents(VanillaPlantBlocker(), p)
+		p.getServer().getPluginManager().registerEvents(CustomPlantListener(), p)

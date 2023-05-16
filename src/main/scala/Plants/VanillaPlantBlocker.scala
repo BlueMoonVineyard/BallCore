@@ -10,6 +10,7 @@ import org.bukkit.event.block.BlockDispenseEvent
 import org.bukkit.block.data.`type`.Dispenser
 import scala.util.chaining._
 import org.bukkit.event.block.BlockGrowEvent
+import org.bukkit.event.world.StructureGrowEvent
 
 object VanillaPlantBlocker:
 	val bonemealables = Set(
@@ -49,6 +50,10 @@ object VanillaPlantBlocker:
 	)
 
 class VanillaPlantBlocker() extends Listener:
+	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	def onBigPlantGrow(event: StructureGrowEvent): Unit =
+		event.setCancelled(true)
+
 	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
 	def onPlantGrow(event: BlockGrowEvent): Unit =
 		event.setCancelled(true)

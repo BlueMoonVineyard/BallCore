@@ -10,55 +10,19 @@ import org.bukkit.inventory.ItemStack
 import BallCore.CustomItems.CustomItem
 import BallCore.CustomItems.ItemGroup
 
-object PlantData:
-	import Season._
-	import Climate._
-	import Plant._
-	import Material._
-	import TreeType._
-
-	val plants = List(
-		PlantData( generateTree(MANGROVE_PROPAGULE, MANGROVE), warmHumid, spring ),
-		PlantData( generateTree(JUNGLE_SAPLING, JUNGLE), warmHumid, spring ),
-		PlantData( bamboo, warmHumid, summer ),
-		PlantData( generateTree(Material.AZALEA, TreeType.AZALEA), warmHumid, summer ),
-		PlantData( generateTree(ACACIA_SAPLING, ACACIA), warmHumid, autumn ),
-		PlantData( ageable(COCOA), warmHumid, autumn ),
-	//
-		PlantData( ageable(CARROTS), warmArid, spring ),
-		PlantData( fruitTree(BIG_TREE, peach), warmArid, spring ),
-		PlantData( verticalPlant(CACTUS), warmArid, summer ),
-		PlantData( ageable(MELON_STEM), warmArid, summer ),
-		PlantData( generateTree(OAK_SAPLING, TREE), warmArid, autumn ),
-		PlantData( ageable(BEETROOTS), warmArid, autumn ),
-	//
-		PlantData( ageable(POTATOES), coldHumid, spring ),
-		PlantData( verticalPlant(SUGAR_CANE), coldHumid, spring ),
-		PlantData( fruitTree(BIG_TREE, plum), coldHumid, summer ),
-		PlantData( generateTree(DARK_OAK_SAPLING, DARK_OAK), coldHumid, summer ),
-		PlantData( generateTree(SPRUCE_SAPLING, REDWOOD), coldHumid, autumn ),
-		PlantData( fruitTree(BIG_TREE, ItemStack(APPLE)), coldHumid, autumn ),
-	//
-		PlantData( fruitTree(BIG_TREE, apricot), coldArid, spring ),
-		PlantData( generateTree(BIRCH_SAPLING, BIRCH), coldArid, spring ),
-		PlantData( ageable(SWEET_BERRY_BUSH), coldArid, summer ),
-		PlantData( fruitTree(BIG_TREE, pear), coldArid, summer ),
-		PlantData( ageable(PUMPKIN_STEM), coldArid, autumn ),
-		PlantData( ageable(WHEAT), coldArid, autumn ),
-	)
-
-	val fruits = ItemGroup(NamespacedKey("ballcore", "fruits"), ItemStack(APPLE))
-	val apricot = CustomItemStack.make(NamespacedKey("ballcore", "apricot"), APPLE, "&rApricot")
+object Fruit:
+	val fruits = ItemGroup(NamespacedKey("ballcore", "fruits"), ItemStack(Material.APPLE))
+	val apricot = CustomItemStack.make(NamespacedKey("ballcore", "apricot"), Material.APPLE, "&rApricot")
 		.tap(is => is.setItemMeta(is.getItemMeta().tap(_.setCustomModelData(1))))
-	val peach = CustomItemStack.make(NamespacedKey("ballcore", "peach"), APPLE, "&rPeach")
+	val peach = CustomItemStack.make(NamespacedKey("ballcore", "peach"), Material.APPLE, "&rPeach")
 		.tap(is => is.setItemMeta(is.getItemMeta().tap(_.setCustomModelData(2))))
-	val pear = CustomItemStack.make(NamespacedKey("ballcore", "pear"), APPLE, "&rPear")
+	val pear = CustomItemStack.make(NamespacedKey("ballcore", "pear"), Material.APPLE, "&rPear")
 		.tap(is => is.setItemMeta(is.getItemMeta().tap(_.setCustomModelData(3))))
-	val plum = CustomItemStack.make(NamespacedKey("ballcore", "plum"), APPLE, "&rPlum")
+	val plum = CustomItemStack.make(NamespacedKey("ballcore", "plum"), Material.APPLE, "&rPlum")
 		.tap(is => is.setItemMeta(is.getItemMeta().tap(_.setCustomModelData(4))))
 
 class Fruit(val what: CustomItemStack) extends CustomItem:
-	def group = PlantData.fruits
+	def group = Fruit.fruits
 	def template = what
 
 enum Climate:
@@ -68,7 +32,7 @@ enum Climate:
 	case coldHumid
 
 // divided by how we're supposed to grow the plant
-enum Plant:
+enum PlantType:
 	case ageable(mat: Material)
 	case generateTree(mat: Material, kind: TreeType)
 	case stemmedAgeable(mat: Material)
@@ -77,8 +41,35 @@ enum Plant:
 	case bamboo
 	case fruitTree(looksLike: TreeType, fruit: ItemStack)
 
-case class PlantData(
-	val plant: Plant,
+enum Plant(
+	val plant: PlantType,
 	val growingClimate: Climate,
 	val growingSeason: Season,
-)
+):
+	case Mangrove extends Plant( PlantType.generateTree(Material.MANGROVE_PROPAGULE, TreeType.MANGROVE), Climate.warmHumid, Season.spring )
+	case Jungle extends Plant( PlantType.generateTree(Material.JUNGLE_SAPLING, TreeType.JUNGLE), Climate.warmHumid, Season.spring )
+	case Bamboo extends Plant( PlantType.bamboo, Climate.warmHumid, Season.summer )
+	case Azalea extends Plant( PlantType.generateTree(Material.AZALEA, TreeType.AZALEA), Climate.warmHumid, Season.summer )
+	case Acacia extends Plant( PlantType.generateTree(Material.ACACIA_SAPLING, TreeType.ACACIA), Climate.warmHumid, Season.autumn )
+	case Cocoa extends Plant( PlantType.ageable(Material.COCOA), Climate.warmHumid, Season.autumn )
+
+	case Carrot extends Plant( PlantType.ageable(Material.CARROTS), Climate.warmArid, Season.spring )
+	case Peach extends Plant( PlantType.fruitTree(TreeType.BIG_TREE, Fruit.peach), Climate.warmArid, Season.spring )
+	case Cactus extends Plant( PlantType.verticalPlant(Material.CACTUS), Climate.warmArid, Season.summer )
+	case Melon extends Plant( PlantType.ageable(Material.MELON_STEM), Climate.warmArid, Season.summer )
+	case Oak extends Plant( PlantType.generateTree(Material.OAK_SAPLING, TreeType.TREE), Climate.warmArid, Season.autumn )
+	case Beetroot extends Plant( PlantType.ageable(Material.BEETROOTS), Climate.warmArid, Season.autumn )
+
+	case Potato extends Plant( PlantType.ageable(Material.POTATOES), Climate.coldHumid, Season.spring )
+	case SugarCane extends Plant( PlantType.verticalPlant(Material.SUGAR_CANE), Climate.coldHumid, Season.spring )
+	case Plum extends Plant( PlantType.fruitTree(TreeType.BIG_TREE, Fruit.plum), Climate.coldHumid, Season.summer )
+	case DarkOak extends Plant( PlantType.generateTree(Material.DARK_OAK_SAPLING, TreeType.DARK_OAK), Climate.coldHumid, Season.summer )
+	case Spruce extends Plant( PlantType.generateTree(Material.SPRUCE_SAPLING, TreeType.REDWOOD), Climate.coldHumid, Season.autumn )
+	case Apple extends Plant( PlantType.fruitTree(TreeType.BIG_TREE, ItemStack(Material.APPLE)), Climate.coldHumid, Season.autumn )
+
+	case Apricot extends Plant( PlantType.fruitTree(TreeType.BIG_TREE, Fruit.apricot), Climate.coldArid, Season.spring )
+	case Birch extends Plant( PlantType.generateTree(Material.BIRCH_SAPLING, TreeType.BIRCH), Climate.coldArid, Season.spring )
+	case SweetBerry extends Plant( PlantType.ageable(Material.SWEET_BERRY_BUSH), Climate.coldArid, Season.summer )
+	case Pear extends Plant( PlantType.fruitTree(TreeType.BIG_TREE, Fruit.pear), Climate.coldArid, Season.summer )
+	case PumpkinStem extends Plant( PlantType.ageable(Material.PUMPKIN_STEM), Climate.coldArid, Season.autumn )
+	case Wheat extends Plant( PlantType.ageable(Material.WHEAT), Climate.coldArid, Season.autumn )
