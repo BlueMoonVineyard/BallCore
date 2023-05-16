@@ -9,6 +9,7 @@ import org.bukkit.Material
 import org.bukkit.event.block.BlockDispenseEvent
 import org.bukkit.block.data.`type`.Dispenser
 import scala.util.chaining._
+import org.bukkit.event.block.BlockGrowEvent
 
 object VanillaPlantBlocker:
 	val bonemealables = Set(
@@ -48,6 +49,10 @@ object VanillaPlantBlocker:
 	)
 
 class VanillaPlantBlocker() extends Listener:
+	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	def onPlantGrow(event: BlockGrowEvent): Unit =
+		event.setCancelled(true)
+
 	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
 	def onPlayerBonemeal(event: PlayerInteractEvent): Unit =
 		if event.getAction() != Action.RIGHT_CLICK_BLOCK || event.getClickedBlock() == null then
