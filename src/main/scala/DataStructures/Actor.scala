@@ -14,4 +14,7 @@ trait Actor[Msg]:
 	private def mainLoop(): Unit =
 		while true do
 			val msg = this.queue.take()
-			handle(msg)
+			try
+				handle(msg)
+			catch
+				case e: Exception => e.printStackTrace()

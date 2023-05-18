@@ -14,58 +14,32 @@ import org.bukkit.block.data.BlockData
 import scala.util.Random
 import org.bukkit.util.Consumer
 import org.bukkit.block.BlockState
+import org.bukkit.block.BlockFace
 
-class CustomPlantListener() extends Listener:
-	var uwu = List[PlantData]()
-
+class CustomPlantListener()(using pbm: PlantBatchManager) extends Listener:
 	@EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
 	def onPlantCrop(event: BlockPlaceEvent): Unit =
 		val plant = Plant.values.find { p =>
 			p.plant match
-				case PlantType.ageable(mat) =>
+				case PlantType.ageable(mat, _) =>
 					mat == event.getBlockPlaced().getType()
-				case PlantType.generateTree(mat, kind) =>
+				case PlantType.generateTree(mat, kind, _) =>
 					mat == event.getBlockPlaced().getType()
-				case PlantType.stemmedAgeable(stem, fruit) =>
+				case PlantType.stemmedAgeable(stem, fruit, _) =>
 					stem == event.getBlockPlaced().getType()
-				case PlantType.verticalPlant(mat) =>
+				case PlantType.verticalPlant(mat, _) =>
 					mat == event.getBlockPlaced().getType()
-				case PlantType.bamboo =>
+				case PlantType.bamboo(_) =>
 					Material.BAMBOO == event.getBlockPlaced().getType()
-				case PlantType.fruitTree(looksLike, fruit) =>
+				case PlantType.fruitTree(looksLike, fruit, _) =>
 					false
 		}
 		plant match
 			case None =>
 			case Some(what) =>
-				uwu = uwu appended PlantData(what, event.getBlock(), Instant.now())
+				pbm.send(PlantMsg.startGrowing(what, event.getBlock()))
 
 	@EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
 	def onDebugRightClick(event: PlayerInteractEvent): Unit =
-		uwu.find(_.where == event.getClickedBlock()) match
-			case None =>
-			case Some(value) =>
-				value.what.plant match
-					case PlantType.ageable(mat) =>
-						value.where.setBlockData(
-							value.where.getBlockData().asInstanceOf[Ageable].tap(x => x.setAge(x.getAge() + 1)), true
-						)
-					case PlantType.generateTree(mat, kind) =>
-						val block = event.getClickedBlock()
-						val consumer: Consumer[BlockState] = state => {}
-						block.setType(Material.AIR, true)
-						block.getWorld().generateTree(block.getLocation(), java.util.Random(), kind, consumer)
-					case PlantType.stemmedAgeable(stem, fruit) =>
-						val ageable = value.where.getBlockData().asInstanceOf[Ageable]
-						ageable.setAge(ageable.getAge() + 1)
-						value.where.setBlockData(ageable)
-						if ageable.getAge() == ageable.getMaximumAge() then
-							event.getClickedBlock().setType(fruit, true)
-					case PlantType.verticalPlant(mat) =>
-						???
-					case PlantType.bamboo =>
-						???
-					case PlantType.fruitTree(looksLike, fruit) =>
-						???
-				
-		
+		pbm.send(PlantMsg.tickPlants)
+
