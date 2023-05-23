@@ -27,10 +27,13 @@ enum CraftingMessage:
 	case tick
 
 class CraftingActor(using p: Plugin) extends Actor[CraftingMessage]:
-	p.getServer().getAsyncScheduler().runAtFixedRate(p, _ => send(CraftingMessage.tick), 0, 1, TimeUnit.SECONDS)
-
 	var jobs = Map[Player, Job]()
 	val sides = List(BlockFace.NORTH, BlockFace.SOUTH, BlockFace.WEST, BlockFace.EAST)
+
+	protected def handleInit(): Unit =
+		p.getServer().getAsyncScheduler().runAtFixedRate(p, _ => send(CraftingMessage.tick), 0, 1, TimeUnit.SECONDS)
+	protected def handleShutdown(): Unit =
+		()
 
 	def ensureLoaded(b: Block): Unit =
 		// ensure any double chests across chunk seams are loaded

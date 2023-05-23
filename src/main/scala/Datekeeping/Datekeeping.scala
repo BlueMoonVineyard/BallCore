@@ -3,6 +3,8 @@ package BallCore.Datekeeping
 import java.time.Instant
 import BallCore.DataStructures.Clock
 import java.time.Duration
+import java.time.temporal.TemporalUnit
+import java.time.temporal.Temporal
 
 case class GameDate(
     val year: Long, // 12*31*24*60 minutes
@@ -18,9 +20,25 @@ enum Season:
     case autumn
     case winter
 
+enum DateUnit(val width: Duration) extends TemporalUnit:
+    case minute extends DateUnit(Datekeeping.Periods.minute)
+    case hour extends DateUnit(Datekeeping.Periods.hour)
+    case day extends DateUnit(Datekeeping.Periods.day)
+    case month extends DateUnit(Datekeeping.Periods.month)
+    case year extends DateUnit(Datekeeping.Periods.year)
+
+    override def isDateBased(): Boolean = false
+    override def isTimeBased(): Boolean = false
+    override def isDurationEstimated(): Boolean = false
+    override def getDuration(): Duration = width
+    override def between(temporal1Inclusive: Temporal, temporal2Exclusive: Temporal): Long =
+        temporal1Inclusive.until(temporal2Exclusive, this)
+    override def addTo[R <: Temporal](temporal: R, amount: Long): R =
+        temporal.plus(width.multipliedBy(amount)).asInstanceOf[R]
+
 object Datekeeping:
     // pizza tower release date on steam
-    val epoch = Instant.ofEpochSecond(1674756019)
+    val epoch = Instant.ofEpochSecond(1674756019).truncatedTo(DateUnit.year)
 
     // start year (pizza tower album track count * 10)
     val year0 = 730

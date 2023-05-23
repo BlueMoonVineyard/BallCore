@@ -16,6 +16,11 @@ import org.bukkit.Bukkit
 import org.bukkit.plugin.Plugin
 import scala.concurrent.Future
 import scala.collection.mutable
+import java.time.LocalDateTime
+import BallCore.Datekeeping.DateUnit
+import java.time.temporal.ChronoUnit
+import BallCore.Datekeeping.Datekeeping.Periods
+import java.util.concurrent.TimeUnit
 
 enum PlantMsg:
 	case startGrowing(what: Plant, where: Block)
@@ -54,6 +59,15 @@ object DBPlantData:
 		)
 
 class PlantBatchManager()(using sql: SQLManager, p: Plugin) extends Actor[PlantMsg]:
+	def millisToNextHour(): Long =
+		val nextHour = LocalDateTime.now().plus(1, DateUnit.hour).truncatedTo(DateUnit.hour)
+		LocalDateTime.now().until(nextHour, ChronoUnit.MILLIS)
+
+	protected def handleInit(): Unit =
+		p.getServer().getAsyncScheduler().runAtFixedRate(p, _ => send(PlantMsg.tickPlants), millisToNextHour(), Periods.hour.toMillis(), TimeUnit.MILLISECONDS)
+	protected def handleShutdown(): Unit =
+		saveAll()
+
 	sql.applyMigration(
 		Storage.Migration(
 			"Initial PlantBatchManager",
@@ -68,7 +82,8 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin) extends Actor[PlantM
 					Y INTEGER NOT NULL,
 					Kind TEXT NOT NULL,
 					AgeIngameHours INTEGER NOT NULL,
-					IncompleteGrowthAdvancements INTEGER NOT NULL
+					IncompleteGrowthAdvancements INTEGER NOT NULL,
+					UNIQUE(ChunkX, ChunkZ, World, OffsetX, OffsetZ, Y)
 				);
 				"""
 			),
@@ -86,7 +101,32 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin) extends Actor[PlantM
 		((chunkX*16) + offsetX, (chunkZ*16) + offsetZ)
 
 	private val plants = mutable.Map[(Int, Int, UUID), Map[(Int, Int, Int), DBPlantData]]()
+	private implicit val session: DBSession = sql.session
 
+	private def saveAll(): Unit =
+		plants.foreach { (_, chunk) =>
+			chunk.foreach { (_, plant) =>
+				save(plant)
+			}
+		}
+	private def save(value: DBPlantData): Unit =
+		if value.deleted then
+			sql"""
+			DELETE FROM Plants
+				WHERE ChunkX = ${value.chunkX}
+				  AND ChunkZ = ${value.chunkZ}
+				  AND World = ${value.world}
+				  AND OffsetX = ${value.offsetX}
+				  AND OffsetZ = ${value.offsetZ}
+				  AND Y = ${value.yPos};
+			""".update.apply()
+		else
+			sql"""
+            INSERT OR REPLACE INTO Plants
+                (ChunkX, ChunkZ, World, OffsetX, OffsetZ, Y, Kind, AgeIngameHours, IncompleteGrowthAdvancements)
+            VALUES
+            	(${value.chunkX}, ${value.chunkZ}, ${value.world}, ${value.offsetX}, ${value.offsetZ}, ${value.yPos}, ${value.what.toString()}, ${value.ageIngameHours}, ${value.incompleteGrowthAdvancements});
+			"""
 	private def get(cx: Int, cz: Int, w: UUID): Map[(Int, Int, Int), DBPlantData] =
 		plants.get((cx, cz, w)).getOrElse(Map())
 	private def set(cx: Int, cz: Int, w: UUID, ox: Int, oz: Int, y: Int, f: DBPlantData): Unit =

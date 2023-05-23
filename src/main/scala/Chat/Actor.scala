@@ -34,6 +34,11 @@ class ChatActor(using p: Plugin, gm: GroupManager) extends Actor[ChatMessage]:
 	val groupGrey = TextColor.fromHexString("#9b9ea2")
 	val localGrey = TextColor.fromHexString("#b6b9bd")
 
+	protected def handleInit(): Unit =
+		()
+	protected def handleShutdown(): Unit =
+		()
+
 	def handle(m: ChatMessage): Unit =
 		m match
 			case ChatMessage.send(p, m) =>

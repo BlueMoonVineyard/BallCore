@@ -28,13 +28,15 @@ object AcclimationActor:
 		AcclimationActor().startListener()
 
 class AcclimationActor(using s: Storage, p: Plugin, hnm: HeartNetworkManager) extends Actor[AcclimationMessage]:
-	p.getServer().getAsyncScheduler().runAtFixedRate(p, _ => send(AcclimationMessage.tick), millisToNextSixthHour(), sixHoursMillis, TimeUnit.MILLISECONDS)
-
 	private def sixHoursMillis = 6 * 60 * 60 * 1000
 	private def millisToNextSixthHour(): Long =
 		val nextHour = LocalDateTime.now().plusHours(6).truncatedTo(ChronoUnit.HOURS)
 		LocalDateTime.now().until(nextHour, ChronoUnit.MILLIS)
 
+	protected def handleInit(): Unit =
+		p.getServer().getAsyncScheduler().runAtFixedRate(p, _ => send(AcclimationMessage.tick), millisToNextSixthHour(), sixHoursMillis, TimeUnit.MILLISECONDS)
+	protected def handleShutdown(): Unit =
+		()
 	def handle(m: AcclimationMessage): Unit =
 		m match
 			case AcclimationMessage.tick =>
