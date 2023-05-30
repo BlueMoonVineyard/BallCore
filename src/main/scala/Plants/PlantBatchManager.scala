@@ -122,10 +122,10 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin) extends Actor[PlantM
 			""".update.apply()
 		else
 			sql"""
-            INSERT OR REPLACE INTO Plants
-                (ChunkX, ChunkZ, World, OffsetX, OffsetZ, Y, Kind, AgeIngameHours, IncompleteGrowthAdvancements)
-            VALUES
-            	(${value.chunkX}, ${value.chunkZ}, ${value.world}, ${value.offsetX}, ${value.offsetZ}, ${value.yPos}, ${value.what.toString()}, ${value.ageIngameHours}, ${value.incompleteGrowthAdvancements});
+			INSERT OR REPLACE INTO Plants
+				(ChunkX, ChunkZ, World, OffsetX, OffsetZ, Y, Kind, AgeIngameHours, IncompleteGrowthAdvancements)
+			VALUES
+				(${value.chunkX}, ${value.chunkZ}, ${value.world}, ${value.offsetX}, ${value.offsetZ}, ${value.yPos}, ${value.what.toString()}, ${value.ageIngameHours}, ${value.incompleteGrowthAdvancements});
 			"""
 	private def get(cx: Int, cz: Int, w: UUID): Map[(Int, Int, Int), DBPlantData] =
 		plants.get((cx, cz, w)).getOrElse(Map())
