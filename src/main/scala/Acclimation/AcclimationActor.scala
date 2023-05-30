@@ -7,6 +7,7 @@ import org.bukkit.plugin.Plugin
 import java.util.concurrent.TimeUnit
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
+import BallCore.DataStructures.ShutdownCallbacks
 
 enum AcclimationMessage:
 	// ticks every 6 hours
@@ -24,7 +25,7 @@ def lerp(a: Double, b: Double, f: Double): Double =
 	a * (1.0 - f) + (b * f)
 
 object AcclimationActor:
-	def register()(using s: Storage, p: Plugin, hnm: HeartNetworkManager): Unit =
+	def register()(using s: Storage, p: Plugin, hnm: HeartNetworkManager, sm: ShutdownCallbacks): Unit =
 		AcclimationActor().startListener()
 
 class AcclimationActor(using s: Storage, p: Plugin, hnm: HeartNetworkManager) extends Actor[AcclimationMessage]:

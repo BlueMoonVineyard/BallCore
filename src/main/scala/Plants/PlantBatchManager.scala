@@ -65,6 +65,7 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin) extends Actor[PlantM
 
 	protected def handleInit(): Unit =
 		p.getServer().getAsyncScheduler().runAtFixedRate(p, _ => send(PlantMsg.tickPlants), millisToNextHour(), Periods.hour.toMillis(), TimeUnit.MILLISECONDS)
+		load()
 	protected def handleShutdown(): Unit =
 		saveAll()
 
@@ -109,6 +110,12 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin) extends Actor[PlantM
 				save(plant)
 			}
 		}
+	private def load(): Unit =
+		sql"SELECT * FROM Plants"
+			.foreach { row =>
+				val pd = DBPlantData(row)
+				set(pd.chunkX, pd.chunkZ, pd.world, pd.offsetX, pd.offsetZ, pd.yPos, pd)
+			}
 	private def save(value: DBPlantData): Unit =
 		if value.deleted then
 			sql"""
@@ -126,7 +133,7 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin) extends Actor[PlantM
 				(ChunkX, ChunkZ, World, OffsetX, OffsetZ, Y, Kind, AgeIngameHours, IncompleteGrowthAdvancements)
 			VALUES
 				(${value.chunkX}, ${value.chunkZ}, ${value.world}, ${value.offsetX}, ${value.offsetZ}, ${value.yPos}, ${value.what.toString()}, ${value.ageIngameHours}, ${value.incompleteGrowthAdvancements});
-			"""
+			""".update.apply()
 	private def get(cx: Int, cz: Int, w: UUID): Map[(Int, Int, Int), DBPlantData] =
 		plants.get((cx, cz, w)).getOrElse(Map())
 	private def set(cx: Int, cz: Int, w: UUID, ox: Int, oz: Int, y: Int, f: DBPlantData): Unit =

@@ -40,6 +40,10 @@ import BallCore.CraftingStations.CraftingStations
 import BallCore.Chat.ChatActor
 import BallCore.Acclimation.AcclimationActor
 import BallCore.Mining.AntiCheeser
+import BallCore.DataStructures.ShutdownCallbacks
+import BallCore.Plants.PlantBatchManager
+import scala.concurrent.Await
+import java.time.Duration
 
 final class Main extends JavaPlugin:
     given sql: Storage.SQLManager = new Storage.SQLManager
@@ -59,6 +63,7 @@ final class Main extends JavaPlugin:
     given server: Server = Bukkit.getServer()
     given reg: ItemRegistry = BasicItemRegistry()
     given bm: BlockManager = KeyValBlockManager()
+    given sm: ShutdownCallbacks = ShutdownCallbacks()
     
     override def onEnable() =
         Hearts.registerItems()
@@ -72,7 +77,7 @@ final class Main extends JavaPlugin:
         CraftingStations.register()
         AcclimationActor.register()
         Mining.Mining.register()
-        Plants.Plants.register()
+        given pbm: PlantBatchManager = Plants.Plants.register()
         given ac: ChatActor = Chat.Chat.register()
         val chatCommands = ChatCommands()
         getCommand("group").setExecutor(chatCommands.Group)
@@ -81,4 +86,5 @@ final class Main extends JavaPlugin:
         getCommand("groups").setExecutor(GroupsCommand())
         getCommand("cheat").setExecutor(CheatCommand())
     override def onDisable() =
-        ()
+        import scala.concurrent.ExecutionContext.Implicits.global
+        Await.ready(sm.shutdown(), scala.concurrent.duration.Duration.Inf)

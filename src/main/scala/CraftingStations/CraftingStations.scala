@@ -13,10 +13,11 @@ import BallCore.CustomItems.CustomItem
 import BallCore.UI.UIProgramRunner
 import org.bukkit.inventory.ShapedRecipe
 import org.bukkit.inventory.RecipeChoice.MaterialChoice
+import BallCore.DataStructures.ShutdownCallbacks
 
 object CraftingStations:
 	val group = ItemGroup(NamespacedKey("ballcore", "crafting_stations"), ItemStack(Material.CRAFTING_TABLE))
-	def register()(using p: Plugin, registry: ItemRegistry, prompts: Prompts): Unit =
+	def register()(using p: Plugin, registry: ItemRegistry, prompts: Prompts, sm: ShutdownCallbacks): Unit =
 		given act: CraftingActor = CraftingActor()
 		act.startListener()
 		registry.register(DyeVat())

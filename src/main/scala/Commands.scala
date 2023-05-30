@@ -15,15 +15,17 @@ import BallCore.CustomItems.ItemRegistry
 import org.bukkit.NamespacedKey
 import BallCore.Chat.ChatActor
 import BallCore.Chat.ChatMessage
+import BallCore.Plants.PlantBatchManager
+import BallCore.Plants.PlantMsg
 
-class CheatCommand(using registry: ItemRegistry) extends CommandExecutor:
+class CheatCommand(using registry: ItemRegistry, pbm: PlantBatchManager) extends CommandExecutor:
     override def onCommand(sender: CommandSender, command: Command, label: String, args: Array[String]): Boolean =
         if !sender.permissionValue("ballcore.cheat").toBooleanOrElse(false) then
             sender.sendMessage("no cheating for u >:(")
             return false
 
         args match
-            case Array(name, _*) =>
+            case Array("spawn", name, _*) =>
                 registry.lookup(NamespacedKey.fromString(name)) match
                     case None =>
                         sender.sendMessage("bad item >:(")
@@ -31,8 +33,11 @@ class CheatCommand(using registry: ItemRegistry) extends CommandExecutor:
                         val is = item.template.clone()
                         sender.asInstanceOf[Player].getInventory().addItem(is)
                         sender.sendMessage("there u go :)")
+            case Array("tick-plants", _*) =>
+                pbm.send(PlantMsg.tickPlants)
+                sender.sendMessage("an hour of ingame time has passed :)")
             case _ =>
-                sender.sendMessage("give me an item name >:(")
+                sender.sendMessage("bad cheating >:(")
         true
 
 class GroupsCommand(using prompts: UI.Prompts, plugin: Plugin, gm: GroupManager) extends CommandExecutor:
