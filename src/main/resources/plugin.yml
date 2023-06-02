@@ -11,6 +11,13 @@ folia-supported: true
 api-version: 1.13
 depend:
   - BallCoreDependencyPlugin
+softdepend:
+  - ProtocolLib
+  - ProtocolSupport
+  - ViaVersion
+  - ViaBackwards
+  - ViaRewind
+  - Geyser-Spigot
 commands:
   groups:
     description: Entrypoint for group commands

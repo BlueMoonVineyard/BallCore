@@ -44,6 +44,8 @@ import BallCore.DataStructures.ShutdownCallbacks
 import BallCore.Plants.PlantBatchManager
 import scala.concurrent.Await
 import java.time.Duration
+import net.megavex.scoreboardlibrary.api.ScoreboardLibrary
+import BallCore.Sidebar.SidebarActor
 
 final class Main extends JavaPlugin:
     given sql: Storage.SQLManager = new Storage.SQLManager
@@ -66,6 +68,11 @@ final class Main extends JavaPlugin:
     given sm: ShutdownCallbacks = ShutdownCallbacks()
     
     override def onEnable() =
+        given lib: ScoreboardLibrary = ScoreboardLibrary.loadScoreboardLibrary(this)
+        given sid: SidebarActor = SidebarActor()
+        sid.startListener()
+
+        Datekeeping.Datekeeping.startSidebarClock()
         Hearts.registerItems()
         QuadrantOres.registerItems()
         QuadrantGear.registerItems()
