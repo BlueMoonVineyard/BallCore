@@ -46,6 +46,8 @@ import scala.concurrent.Await
 import java.time.Duration
 import net.megavex.scoreboardlibrary.api.ScoreboardLibrary
 import BallCore.Sidebar.SidebarActor
+import BallCore.Sigils.Sigil
+import BallCore.Sigils.BanishmentManager
 
 final class Main extends JavaPlugin:
     given sql: Storage.SQLManager = new Storage.SQLManager
@@ -66,6 +68,7 @@ final class Main extends JavaPlugin:
     given reg: ItemRegistry = BasicItemRegistry()
     given bm: BlockManager = KeyValBlockManager()
     given sm: ShutdownCallbacks = ShutdownCallbacks()
+    given bam: BanishmentManager = BanishmentManager()
     
     override def onEnable() =
         given lib: ScoreboardLibrary = ScoreboardLibrary.loadScoreboardLibrary(this)
@@ -84,6 +87,7 @@ final class Main extends JavaPlugin:
         CraftingStations.register()
         AcclimationActor.register()
         Mining.Mining.register()
+        Sigil.register()
         given pbm: PlantBatchManager = Plants.Plants.register()
         given ac: ChatActor = Chat.Chat.register()
         val chatCommands = ChatCommands()
