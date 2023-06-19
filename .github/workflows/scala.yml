@@ -12,6 +12,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions: write-all
 
     steps:
     - uses: actions/checkout@v3
@@ -29,3 +30,22 @@ jobs:
       uses: codecov/codecov-action@v3
       with:
         fail_ci_if_error: true
+    - name: Assemble dependency plugin
+      run: sbt dependencyPlugin/assembly
+    - name: Package main plugin
+      run: sbt actualPlugin/package
+    - name: Move jars
+      run: |
+        cp ./target/scala-3.3.0-RC3/ballcore_3-0.1.0-SNAPSHOT.jar BallCore.jar
+        cp ./dependency-plugin/target/scala-3.3.0-RC3/BallCoreDependencyPlugin.jar BallCoreDependencyPlugin.jar
+    - name: Update jars
+      uses: andelf/nightly-release@main
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ci
+        name: 'Continuous integration $$'
+        prerelease: true
+        files: |
+          ./BallCoreDependencyPlugin.jar
+          ./BallCore.jar
