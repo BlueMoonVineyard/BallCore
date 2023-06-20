@@ -4,7 +4,7 @@
 
 val scala3Version = "3.3.0-RC3"
 val circeVersion = "0.14.1"
-val scoreBoardLibraryVersion = "2.0.0-RC8"
+val scoreBoardLibraryVersion = "2.0.0-RC9"
 
 lazy val dependencyPlugin = project
   .in(file("dependency-plugin"))
@@ -28,7 +28,7 @@ lazy val dependencyPlugin = project
     libraryDependencies += "org.xerial" % "sqlite-jdbc" % "3.40.0.0",
     libraryDependencies += "com.github.megavexnetwork.scoreboard-library" % "scoreboard-library-api" % scoreBoardLibraryVersion,
     libraryDependencies += "com.github.megavexnetwork.scoreboard-library" % "scoreboard-library-implementation" % scoreBoardLibraryVersion,
-    libraryDependencies += "com.github.megavexnetwork.scoreboard-library" % "scoreboard-library-v1_19_R3" % scoreBoardLibraryVersion,
+    libraryDependencies += "com.github.megavexnetwork.scoreboard-library" % "scoreboard-library-v1_20_R1" % scoreBoardLibraryVersion,
     libraryDependencies += "com.github.retrooper.packetevents" % "spigot" % "2.0.0-SNAPSHOT" % "provided",
 
     // currently vendored in lib for a bugfix
