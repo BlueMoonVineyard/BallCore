@@ -20,6 +20,27 @@ import org.bukkit.Server
 import BallCore.CustomItems.PlainCustomItem
 import scala.util.chaining._
 
+/// helper class for managing custom model data numbers of the oretier ore types
+enum OreTypes(val num: Int):
+    case iron extends OreTypes(10)
+    case tin extends OreTypes(20)
+    case aluminum extends OreTypes(30)
+    case zinc extends OreTypes(40)
+    case silver extends OreTypes(50)
+    case sillicon extends OreTypes(60)
+    case cobalt extends OreTypes(70)
+    case lead extends OreTypes(80)
+
+    case copper extends OreTypes(10)
+    case orichalcum extends OreTypes(20)
+    case hihiirogane extends OreTypes(30)
+    case meteorite extends OreTypes(40)
+
+    case gold extends OreTypes(10)
+    case sulfur extends OreTypes(20)
+    case palladium extends OreTypes(30)
+    case magnesium extends OreTypes(40)
+
 enum OreTier:
     case Dust
     case Scraps
@@ -115,25 +136,30 @@ case class OreVariants(
         serv.addRecipe(nuggetRecipe)
 
 object Helpers:
-    def factory(id: String, name: String, m0: Material, m1: Material, m2: Material, m3: Material, m4: Material): OreVariants =
+    def factory(id: String, name: String, num: Int, m0: Material, m1: Material, m2: Material, m3: Material, m4: Material): OreVariants =
         OreVariants(
-            CustomItemStack.make(NamespacedKey("ballcore", s"${id}_dust"), m0, s"&r$name Dust"),
-            CustomItemStack.make(NamespacedKey("ballcore", s"${id}_scraps"), m1, s"&r$name Scraps"),
-            CustomItemStack.make(NamespacedKey("ballcore", s"depleted_${id}"), m1, s"&rDepleted $name"),
-            CustomItemStack.make(NamespacedKey("ballcore", s"raw_${id}"), m1, s"&rRaw $name"),
-            CustomItemStack.make(NamespacedKey("ballcore", s"${id}_nugget"), m2, s"&r$name Nugget"),
-            CustomItemStack.make(NamespacedKey("ballcore", s"${id}_ingot"), m3, s"&r$name Ingot"),
-            CustomItemStack.make(NamespacedKey("ballcore", s"${id}_block"), m4, s"&r$name Block"),
+            withCustomModelData(CustomItemStack.make(NamespacedKey("ballcore", s"${id}_dust"), m0, s"&r$name Dust"), num + 0),
+            withCustomModelData(CustomItemStack.make(NamespacedKey("ballcore", s"${id}_scraps"), m1, s"&r$name Scraps"), num + 1),
+            withCustomModelData(CustomItemStack.make(NamespacedKey("ballcore", s"depleted_${id}"), m1, s"&rDepleted $name"), num + 2),
+            withCustomModelData(CustomItemStack.make(NamespacedKey("ballcore", s"raw_${id}"), m1, s"&rRaw $name"), num + 3),
+            withCustomModelData(CustomItemStack.make(NamespacedKey("ballcore", s"${id}_nugget"), m2, s"&r$name Nugget"), num + 4),
+            withCustomModelData(CustomItemStack.make(NamespacedKey("ballcore", s"${id}_ingot"), m3, s"&r$name Ingot"), num + 5),
+            withCustomModelData(CustomItemStack.make(NamespacedKey("ballcore", s"${id}_block"), m4, s"&r$name Block"), num + 6),
             name,
             id,
         )
 
-    def ironLike(id: String, name: String): OreVariants =
-        factory(id, name, Material.SUGAR, Material.RAW_IRON, Material.IRON_NUGGET, Material.IRON_INGOT, Material.IRON_BLOCK)
-    def goldLike(id: String, name: String): OreVariants =
-        factory(id, name, Material.GLOWSTONE, Material.RAW_GOLD, Material.GOLD_NUGGET, Material.GOLD_INGOT, Material.GOLD_BLOCK)
-    def copperLike(id: String, name: String): OreVariants =
-        factory(id, name, Material.GUNPOWDER, Material.RAW_COPPER, Material.IRON_NUGGET, Material.COPPER_INGOT, Material.COPPER_BLOCK)
+    def withCustomModelData(is: CustomItemStack, md: Int): CustomItemStack =
+        val im = is.getItemMeta()
+        im.setCustomModelData(md)
+        is.setItemMeta(im)
+        is
+    def ironLike(id: String, name: String, num: Int): OreVariants =
+        factory(id, name, num, Material.SUGAR, Material.RAW_IRON, Material.IRON_NUGGET, Material.IRON_INGOT, Material.IRON_BLOCK)
+    def goldLike(id: String, name: String, num: Int): OreVariants =
+        factory(id, name, num, Material.GLOWSTONE, Material.RAW_GOLD, Material.GOLD_NUGGET, Material.GOLD_INGOT, Material.GOLD_BLOCK)
+    def copperLike(id: String, name: String, num: Int): OreVariants =
+        factory(id, name, num, Material.GUNPOWDER, Material.RAW_COPPER, Material.IRON_NUGGET, Material.COPPER_INGOT, Material.COPPER_BLOCK)
     def register(group: ItemGroup, variants: OreVariants)(using registry: ItemRegistry, server: Server) =
         variants.register(group, registry, server)
     def register(group: ItemGroup, ms: CustomItemStack*)(using registry: ItemRegistry, server: Server) =

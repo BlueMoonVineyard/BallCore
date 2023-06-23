@@ -16,24 +16,24 @@ object QuadrantOres:
 
     object ItemStacks:
         // +, + base ores
-        val iron = ironLike("iron", "Iron")
-        val gold = goldLike("gold", "Gold")
-        val copper = copperLike("copper", "Copper")
+        val iron = ironLike("iron", "Iron", OreTypes.iron.num)
+        val gold = goldLike("gold", "Gold", OreTypes.gold.num)
+        val copper = copperLike("copper", "Copper", OreTypes.copper.num)
 
         // +, - base ores
-        val tin = ironLike("tin", "Tin")
-        val sulfur = goldLike("sulfur", "Sulfur")
-        val orichalcum = copperLike("orichalcum", "Orichalcum")
+        val tin = ironLike("tin", "Tin", OreTypes.tin.num)
+        val sulfur = goldLike("sulfur", "Sulfur", OreTypes.sulfur.num)
+        val orichalcum = copperLike("orichalcum", "Orichalcum", OreTypes.orichalcum.num)
 
         // -, - base ores
-        val aluminum = ironLike("aluminum", "Aluminum")
-        val palladium = goldLike("palladium", "Palladium")
-        val hihiirogane = copperLike("hihiirogane", "Hihi'irogane")
+        val aluminum = ironLike("aluminum", "Aluminum", OreTypes.aluminum.num)
+        val palladium = goldLike("palladium", "Palladium", OreTypes.palladium.num)
+        val hihiirogane = copperLike("hihiirogane", "Hihi'irogane", OreTypes.hihiirogane.num)
 
         // -, + base ores
-        val zinc = ironLike("zinc", "Zinc")
-        val magnesium = goldLike("magnesium", "Magnesium")
-        val meteorite = copperLike("meteorite", "Meteorite")
+        val zinc = ironLike("zinc", "Zinc", OreTypes.zinc.num)
+        val magnesium = goldLike("magnesium", "Magnesium", OreTypes.magnesium.num)
+        val meteorite = copperLike("meteorite", "Meteorite", OreTypes.meteorite.num)
 
     val group = ItemGroup(NamespacedKey("ballcore", "quadrant_ores"), ItemStack(Material.IRON_INGOT))
 
