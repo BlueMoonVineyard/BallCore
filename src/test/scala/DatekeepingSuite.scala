@@ -12,9 +12,9 @@ class DatekeepingSuite extends munit.FunSuite:
         given uhr: TestClock = TestClock(Datekeeping.epoch)
 
         val jetzt = Datekeeping.time()
-        assertEquals(jetzt, GameDate(Datekeeping.year0, 0, 0, 0, 0))
+        assertEquals(jetzt, GameDate(Datekeeping.year0, 0, 1, 0, 0))
 
         uhr.changeTimeBy(Duration.ofMinutes(60))
         val oneDayFromJetzt = Datekeeping.time()
-        assertEquals(oneDayFromJetzt, GameDate(Datekeeping.year0, 0, 1, 0, 0))
+        assertEquals(oneDayFromJetzt, GameDate(Datekeeping.year0, 0, 2, 0, 0))
     }
