@@ -97,19 +97,15 @@ class SigilListener(using bm: BanishmentManager, hnm: HeartNetworkManager, da: D
 		if banished then
 			event.setCancelled(true)
 
-	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-	def onEntityDeath(event: EntityDeathEvent): Unit =
-		if !event.getEntity().isInstanceOf[Player] then
-			return
-
-		val killed = event.getEntity().asInstanceOf[Player]
-		given ec: ExecutionContext = EntityExecutionContext(killed)
-		da.getEligiblePlayers(killed).andThen { players =>
-			players.get.exists { uuid =>
-				val attacker = Bukkit.getPlayer(uuid)
+	private def doSigilBinding(killed: Player, on: List[UUID]): Unit =
+		on match
+			case head :: next =>
+				val attacker = Bukkit.getPlayer(head)
 				if attacker == null then
-					false
-				else
+					return doSigilBinding(killed, next)
+
+				given ec: ExecutionContext = EntityExecutionContext(attacker)
+				Future {
 					val searched =
 						attacker.getInventory().all(Sigil.itemStack.getType()).asScala
 							.find((slot, is) => {
@@ -120,8 +116,9 @@ class SigilListener(using bm: BanishmentManager, hnm: HeartNetworkManager, da: D
 									val sigil = item.get.asInstanceOf[Sigil]
 									sigil.isEmpty(is)
 							})
+
 					searched match
-						case None => false
+						case None => doSigilBinding(killed, next)
 						case Some(value) =>
 							val (slot, stack) = value
 							val sigil = ir.lookup(stack).get.asInstanceOf[Sigil]
@@ -134,6 +131,15 @@ class SigilListener(using bm: BanishmentManager, hnm: HeartNetworkManager, da: D
 								newStack.setItemMeta(sigil.itemMetaForBound(newStack, killed))
 								if !attacker.getInventory().addItem(newStack).isEmpty() then
 									attacker.getWorld().dropItemNaturally(attacker.getLocation(), newStack)
-							true
-			}
-		}
+							()
+				}
+			case Nil => ()
+
+	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+	def onEntityDeath(event: EntityDeathEvent): Unit =
+		if !event.getEntity().isInstanceOf[Player] then
+			return
+
+		val killed = event.getEntity().asInstanceOf[Player]
+		given ec: ExecutionContext = EntityExecutionContext(killed)
+		da.getEligiblePlayers(killed).map(players => doSigilBinding(killed, players))
