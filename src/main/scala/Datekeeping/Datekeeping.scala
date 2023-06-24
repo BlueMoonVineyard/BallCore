@@ -95,7 +95,7 @@ object Datekeeping:
         val dateHour = (((minutes % (12*31*24*60)) % (31*24*60)) % (24*60)) / 60
         val dateMinutes = (((minutes % (12*31*24*60)) % (31*24*60)) % (24*60)) % 60
 
-        GameDate(dateYear, dateMonth, dateDay, dateHour, dateMinutes)
+        GameDate(dateYear, dateMonth, dateDay + 1, dateHour, dateMinutes)
 
     def startSidebarClock()(using sid: SidebarActor, c: Clock, p: Plugin): Unit =
         import BallCore.UI.ChatElements._
