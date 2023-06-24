@@ -29,7 +29,7 @@ class Prompts(using plugin: Plugin) extends Listener:
 
     private def stringify(c: Component) = PlainTextComponentSerializer.plainText().serialize(c)
 
-    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     def playerChat(event: AsyncChatEvent): Unit =
         prompts.get(event.getPlayer().getUniqueId()).map { prompt =>
             event.setCancelled(true)
