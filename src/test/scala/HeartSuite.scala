@@ -24,11 +24,14 @@ class HeartSuite extends munit.FunSuite {
     assert(res2.isDefined, res2)
 
     val rtreeRes1 = hn.heartNetworksContaining(Location(world, 1, 0, 1))
-    assertEquals(rtreeRes1.length, 1)
-    assertEquals(rtreeRes1(0), heartNetworkID)
+    assertEquals(rtreeRes1.length, 1, "something obviously inside the heart")
+    assertEquals(rtreeRes1(0), heartNetworkID, "make sure it actually matches the heart")
 
     val rtreeRes2 = hn.heartNetworksContaining(Location(world, 40, 0, 40))
-    assertEquals(rtreeRes2.length, 0)
+    assertEquals(rtreeRes2.length, 0, "something totally outside the heart")
+
+    val rtreeRes4 = hn.heartNetworksContaining(Location(world, 30, 0, 30))
+    assertEquals(rtreeRes4.length, 0, "something within the heart's bounding box but not actually within the heart itself")
 
     val res3 = hn.removeHeart(Location(world, 0, 0, 0), ownerID)
     assert(res3.isEmpty, res3)

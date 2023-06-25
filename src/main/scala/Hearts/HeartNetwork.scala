@@ -70,7 +70,7 @@ class HeartNetworkManager()(using sql: Storage.SQLManager):
     private var heartNetworkMapToRTree: Map[HeartNetworkID, RTreeEntry[HeartNetworkID]] = heartNetworkRTree.entries.map(ent => ent.value -> ent).toMap
 
     def populationToRadius(count: Int): Int =
-        21 * count
+        30 * count
     def getHeartNetworkFor(player: OwnerID): Option[HeartNetworkID] =
         sql"""
         SELECT Network FROM Hearts WHERE Owner = ${player};
@@ -121,7 +121,16 @@ class HeartNetworkManager()(using sql: Storage.SQLManager):
             .single
             .apply()
     def heartNetworksContaining(l: Location): IndexedSeq[HeartNetworkID] =
-        heartNetworkRTree.searchAll(l.getX().toFloat, l.getZ().toFloat).map(_.value)
+        val lx = l.getX().toFloat
+        val ly = l.getZ().toFloat
+        heartNetworkRTree.searchAll(lx, ly)
+            .filter( entry => {
+                val radius = (entry.maxX - entry.minX) / 2.0
+                val xCentre = (entry.maxX + entry.minX) / 2.0
+                val yCentre = (entry.maxY + entry.minY) / 2.0
+                math.sqrt(math.pow(lx - xCentre, 2) + math.pow(ly - yCentre, 2)) < radius
+            })
+            .map(_.value)
     def heartNetworkSize(network: HeartNetworkID): Int =
         sql"""
         SELECT COUNT(*) FROM Hearts WHERE Network = ${network}
