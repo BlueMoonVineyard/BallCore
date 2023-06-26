@@ -3,7 +3,7 @@ package BallCore.Sigils
 import BallCore.Storage
 import scalikejdbc._
 import scalikejdbc.DBSession
-import BallCore.Groups.GroupID
+import BallCore.Hearts.HeartNetworkID
 import BallCore.Groups.UserID
 import java.util.UUID
 
@@ -15,9 +15,9 @@ class BanishmentManager()(using sql: Storage.SQLManager):
 				sql"""
 				CREATE TABLE Banishments (
 					UserID TEXT NOT NULL,
-					GroupID TEXT NOT NULL,
-					UNIQUE(UserID, GroupID),
-					FOREIGN KEY (GroupID) REFERENCES GroupStates(ID) ON DELETE CASCADE
+					HeartNetworkID TEXT NOT NULL,
+					UNIQUE(UserID, HeartNetworkID),
+					FOREIGN KEY (HeartNetworkID) REFERENCES HeartNetworks(ID) ON DELETE CASCADE
 				);
 				""",
 			),
@@ -30,18 +30,18 @@ class BanishmentManager()(using sql: Storage.SQLManager):
 	)
 	private implicit val session: DBSession = sql.session
 
-	def banishedUsers(from: GroupID): List[UserID] =
+	def banishedUsers(from: HeartNetworkID): List[UserID] =
 		sql"""
-		SELECT UserID FROM Banishments WHERE GroupID = ${from};
+		SELECT UserID FROM Banishments WHERE HeartNetworkID = ${from};
 		"""
 		.map(rs => UUID.fromString(rs.string("UserID")))
 		.list
 		.apply()
 
-	def isBanished(user: UserID, from: GroupID): Boolean =
+	def isBanished(user: UserID, from: HeartNetworkID): Boolean =
 		sql"""
 		SELECT EXISTS (
-			SELECT 1 FROM Banishments WHERE UserID = ${user} AND GroupID = ${from}
+			SELECT 1 FROM Banishments WHERE UserID = ${user} AND HeartNetworkID = ${from}
 		);
 		"""
 		.map(rs => rs.boolean(0))
@@ -49,10 +49,10 @@ class BanishmentManager()(using sql: Storage.SQLManager):
 		.apply()
 		.getOrElse(false)
 
-	def banish(user: UserID, from: GroupID): Unit =
+	def banish(user: UserID, from: HeartNetworkID): Unit =
 		sql"""
 		INSERT INTO Banishments (
-			UserID, GroupID
+			UserID, HeartNetworkID
 		) VALUES (
 			${user}, ${from}
 		);
@@ -60,11 +60,11 @@ class BanishmentManager()(using sql: Storage.SQLManager):
 		.update
 		.apply()
 
-	def unbanish(user: UserID, from: GroupID): Unit =
+	def unbanish(user: UserID, from: HeartNetworkID): Unit =
 		sql"""
 		DELETE FROM Banishments
 			WHERE UserID = ${user}
-			  AND GroupID = ${from};
+			  AND HeartNetworkID = ${from};
 		"""
 		.update
 		.apply()

@@ -23,6 +23,7 @@ import net.kyori.adventure.text.format.NamedTextColor
 import java.{util => ju}
 import scala.collection.JavaConverters._
 import net.kyori.adventure.text.format.TextDecoration
+import java.util.concurrent.TimeUnit
 
 object Sigil:
     enum CustomModelData(val num: Int):
@@ -35,10 +36,13 @@ object Sigil:
 
     val persistenceKeyPlayer = NamespacedKey("ballcore", "sigil_bound_player_uuid")
 
-    def register()(using registry: ItemRegistry, p: Plugin, cb: ShutdownCallbacks, hmn: HeartNetworkManager, bm: BanishmentManager): Unit =
+    def register()(using registry: ItemRegistry, p: Plugin, cb: ShutdownCallbacks, hmn: HeartNetworkManager, bm: BanishmentManager, cem: CustomEntityManager): Unit =
         registry.register(Sigil())
+        registry.register(SlimeEgg())
         given da: DamageActor = DamageActor()
         da.startListener()
+        val behaviours = SlimeBehaviours()
+        p.getServer().getAsyncScheduler().runAtFixedRate(p, _ => behaviours.doSlimeLooks(), 0L, 600L, TimeUnit.MILLISECONDS)
         p.getServer().getPluginManager().registerEvents(DamageListener(), p)
         p.getServer().getPluginManager().registerEvents(SigilListener(), p)
 

@@ -44,9 +44,26 @@ class CustomItemListener(using bm: BlockManager, reg: ItemRegistry) extends org.
                 event.setDropItems(false)
                 event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), item.template)
             case _ =>
-        
+
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    def onInteract(event: PlayerInteractEvent): Unit =
+    def onInteractItem(event: PlayerInteractEvent): Unit =
+        if !event.hasItem() || event.getAction() != Action.RIGHT_CLICK_BLOCK then
+            return
+
+        reg.lookup(event.getItem()) match
+            case Some(item) =>
+                val cancelled =
+                    item match
+                        case click: Listeners.ItemUsedOnBlock =>
+                            click.onItemUsed(event)
+                            event.isCancelled()
+                        case _ => false
+                if cancelled then
+                    return
+            case None =>
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    def onInteractBlock(event: PlayerInteractEvent): Unit =
         if !event.hasBlock() || event.getAction() != Action.RIGHT_CLICK_BLOCK then
             return
 

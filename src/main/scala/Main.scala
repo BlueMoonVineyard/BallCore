@@ -48,6 +48,7 @@ import net.megavex.scoreboardlibrary.api.ScoreboardLibrary
 import BallCore.Sidebar.SidebarActor
 import BallCore.Sigils.Sigil
 import BallCore.Sigils.BanishmentManager
+import BallCore.Sigils.CustomEntityManager
 
 final class Main extends JavaPlugin:
     given sql: Storage.SQLManager = new Storage.SQLManager
@@ -69,6 +70,7 @@ final class Main extends JavaPlugin:
     given bm: BlockManager = KeyValBlockManager()
     given sm: ShutdownCallbacks = ShutdownCallbacks()
     given bam: BanishmentManager = BanishmentManager()
+    given cem: CustomEntityManager = CustomEntityManager()
     
     override def onEnable() =
         given lib: ScoreboardLibrary = ScoreboardLibrary.loadScoreboardLibrary(this)
