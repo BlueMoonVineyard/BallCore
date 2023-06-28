@@ -34,6 +34,8 @@ jobs:
       run: sbt dependencyPlugin/assembly
     - name: Package main plugin
       run: sbt actualPlugin/package
+    - name: Package hub plugin
+      run: sbt hubPlugin/package
     - name: Move jars
       run: |
         cp ./target/scala-3.3.0-RC3/ballcore_3-0.1.0-SNAPSHOT.jar BallCore.jar
