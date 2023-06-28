@@ -57,3 +57,21 @@ lazy val actualPlugin = project
     Test / fork := true,
     Test / run / javaOptions += "--enable-preview",
   )
+
+lazy val hubPlugin = project
+  .in(file("hub-plugin"))
+  .dependsOn(dependencyPlugin)
+  .settings(
+    name := "BallCoreHub",
+    version := "0.1.0-SNAPSHOT",
+
+    scalaVersion := scala3Version,
+
+    libraryDependencies += "org.scalameta" %% "munit" % "0.7.29" % Test,
+    libraryDependencies += "com.github.seeseemelk" % "MockBukkit-v1.19" % "2.29.0" % Test,
+
+    libraryDependencies += "dev.folia" % "folia-api" % "1.19.4-R0.1-SNAPSHOT" % "provided", // intransitive()
+
+    Test / fork := true,
+    Test / run / javaOptions += "--enable-preview",
+  )
