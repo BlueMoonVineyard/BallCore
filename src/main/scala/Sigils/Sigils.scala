@@ -24,6 +24,7 @@ import java.{util => ju}
 import scala.collection.JavaConverters._
 import net.kyori.adventure.text.format.TextDecoration
 import java.util.concurrent.TimeUnit
+import org.bukkit.inventory.ShapelessRecipe
 
 object Sigil:
     enum CustomModelData(val num: Int):
@@ -45,6 +46,12 @@ object Sigil:
         p.getServer().getAsyncScheduler().runAtFixedRate(p, _ => behaviours.doSlimeLooks(), 0L, 600L, TimeUnit.MILLISECONDS)
         p.getServer().getPluginManager().registerEvents(DamageListener(), p)
         p.getServer().getPluginManager().registerEvents(SigilListener(), p)
+
+        val sigilRecipe = ShapelessRecipe(NamespacedKey("ballcore", "unbound_sigil"), Sigil.itemStack)
+        sigilRecipe.addIngredient(Material.HONEYCOMB)
+        sigilRecipe.addIngredient(Material.REDSTONE_BLOCK)
+        sigilRecipe.addIngredient(Material.COAL_BLOCK)
+        p.getServer().addRecipe(sigilRecipe)
 
 class Sigil extends CustomItem:
     import UI.ChatElements._
