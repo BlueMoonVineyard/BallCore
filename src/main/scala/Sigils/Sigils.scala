@@ -37,7 +37,7 @@ object Sigil:
 
     val persistenceKeyPlayer = NamespacedKey("ballcore", "sigil_bound_player_uuid")
 
-    def register()(using registry: ItemRegistry, p: Plugin, cb: ShutdownCallbacks, hmn: HeartNetworkManager, bm: BanishmentManager, cem: CustomEntityManager): Unit =
+    def register()(using registry: ItemRegistry, p: Plugin, cb: ShutdownCallbacks, hmn: HeartNetworkManager, ssm: SigilSlimeManager, cem: CustomEntityManager): Unit =
         registry.register(Sigil())
         registry.register(SlimeEgg())
         given da: DamageActor = DamageActor()

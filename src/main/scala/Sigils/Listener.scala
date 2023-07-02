@@ -90,10 +90,10 @@ class DamageListener(using da: DamageActor) extends Listener:
 			return
 		da.damage(damager, player, e.getDamage())
 
-class SigilListener(using bm: BanishmentManager, hnm: HeartNetworkManager, da: DamageActor, ir: ItemRegistry, p: Plugin) extends Listener:
+class SigilListener(using ssm: SigilSlimeManager, hnm: HeartNetworkManager, da: DamageActor, ir: ItemRegistry, p: Plugin) extends Listener:
 	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
 	def onPlayerMove(event: PlayerMoveEvent): Unit =
-		val banished = hnm.heartNetworksContaining(event.getTo()).exists { gid => bm.isBanished(event.getPlayer().getUniqueId(), gid) }
+		val banished = hnm.heartNetworksContaining(event.getTo()).exists { gid => ssm.isBanished(event.getPlayer().getUniqueId(), gid) }
 		if banished then
 			event.setCancelled(true)
 

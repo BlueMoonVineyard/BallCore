@@ -68,6 +68,9 @@ class ChatElements:
     def txt(of: String): Component =
         Component.text(of)
 
+    object Colors:
+        val red = TextColor.fromHexString("#e93d58")
+
     extension (c: Component)
         def style(color: TextColor, decorations: TextDecoration*): Component =
             c.style(Style.style(color, decorations: _*))

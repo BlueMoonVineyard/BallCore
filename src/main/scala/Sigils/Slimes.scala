@@ -27,6 +27,9 @@ import scala.concurrent.Future
 import org.bukkit.plugin.Plugin
 import org.bukkit.entity.Entity
 import org.bukkit.event.Listener
+import BallCore.Hearts.HeartNetworkManager
+import BallCore.Hearts.HeartNetworkID
+import BallCore.Groups.UserID
 
 object Slimes:
 	val sigilSlime = ItemStack(Material.STICK)
@@ -40,6 +43,87 @@ object Slimes:
 	val entityKind = NamespacedKey("ballcore", "sigil_slime")
 
 case class EntityIDPair(val interaction: UUID, val display: UUID)
+
+class SigilSlimeManager(using sql: Storage.SQLManager):
+	private implicit val session: DBSession = sql.session
+
+	sql.applyMigration(
+		Storage.Migration(
+			"Initial Sigil Slime Manager",
+			List(
+				sql"""
+				CREATE TABLE SigilSlimes (
+					BanishedUserID TEXT,
+					HeartNetworkID TEXT NOT NULL,
+					InteractionEntityID TEXT NOT NULL,
+					UNIQUE(BanishedUserID, HeartNetworkID),
+					UNIQUE(InteractionEntityID),
+					FOREIGN KEY (HeartNetworkID) REFERENCES HeartNetworks(ID) ON DELETE CASCADE,
+					FOREIGN KEY (InteractionEntityID) REFERENCES CustomEntities(InteractionEntityID) ON DELETE CASCADE
+				);
+				"""
+			),
+			List(
+				sql"""
+				DROP TABLE SigilSlimes;
+				"""
+			)
+		),
+	)
+
+	def addSlime(entity: UUID, heartNetwork: HeartNetworkID): Unit =
+		sql"""
+		INSERT INTO SigilSlimes (
+			HeartNetworkID, InteractionEntityID
+		) VALUES (
+			${heartNetwork}, ${entity}
+		)
+		"""
+		.update
+		.apply()
+
+	def banishedUsers(from: HeartNetworkID): List[UserID] =
+		sql"""
+		SELECT UserID FROM SigilSlimes WHERE HeartNetworkID = ${from} AND BanishedUserID IS NOT NULL;
+		"""
+		.map(rs => UUID.fromString(rs.string("BanishedUserID")))
+		.list
+		.apply()
+
+	def isBanished(user: UserID, from: HeartNetworkID): Boolean =
+		sql"""
+		SELECT EXISTS (
+			SELECT 1 FROM SigilSlimes WHERE BanishedUserID = ${user} AND HeartNetworkID = ${from}
+		);
+		"""
+		.map(rs => rs.boolean(1))
+		.single
+		.apply()
+		.getOrElse(false)
+
+	def banish(user: UserID, slime: UUID): Unit =
+		sql"""
+		UPDATE SigilSlimes
+		SET
+			BanishedUserID = ${user}
+		WHERE
+			InteractionEntityID = ${slime};
+		"""
+		.update
+		.apply()
+
+	def unbanish(user: UserID, slime: UUID): Unit =
+		sql"""
+		UPDATE SigilSlimes
+		SET
+			BanishedUserID = NULL
+		WHERE
+			InteractionEntityID = ${slime} AND
+			BanishedUserID = ${user};
+		"""
+		.update
+		.apply()
+
 
 class CustomEntityManager(using sql: Storage.SQLManager):
 	private implicit val session: DBSession = sql.session
@@ -121,15 +205,25 @@ class SlimeBehaviours()(using cem: CustomEntityManager, p: Plugin) extends Liste
 								}
 							case _ =>
 					}
-				})				
+				})
 			}
 		}
 
-class SlimeEgg(using cem: CustomEntityManager) extends CustomItem, Listeners.ItemUsedOnBlock:
+class SlimeEgg(using cem: CustomEntityManager, ssm: SigilSlimeManager, hnm: HeartNetworkManager) extends CustomItem, Listeners.ItemUsedOnBlock:
 	def group = Sigil.group
 	def template = Slimes.slimeEggStack
 
 	override def onItemUsed(event: PlayerInteractEvent): Unit =
+		val heartNetwork =
+			hnm.getHeartNetworkFor(event.getPlayer().getUniqueId()) match
+				case None =>
+					import BallCore.UI.ChatElements._
+					event.getPlayer().sendMessage(txt"You must have a Civilization Heart placed to spawn a Sigil Slime!".color(Colors.red))
+					event.setCancelled(true)
+					return
+				case Some(value) =>
+					value
+
 		val block = event.getClickedBlock()
 		val world = block.getWorld()
 
@@ -147,3 +241,4 @@ class SlimeEgg(using cem: CustomEntityManager) extends CustomItem, Listeners.Ite
 		interaction.setResponsive(true)
 
 		cem.addEntity(interaction, itemDisplay, Slimes.entityKind)
+		ssm.addSlime(interaction.getUniqueId(), heartNetwork)

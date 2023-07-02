@@ -7,6 +7,7 @@ import BallCore.Hearts.HeartNetworkID
 import BallCore.Groups.UserID
 import java.util.UUID
 
+@deprecated("see SigilSlimeManager instead")
 class BanishmentManager()(using sql: Storage.SQLManager):
 	sql.applyMigration(
 		Storage.Migration(
