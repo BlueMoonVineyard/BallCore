@@ -193,6 +193,8 @@ class GroupManager()(using sql: Storage.SQLManager):
                     (Permissions.InviteUser, RuleMode.Allow),
                     (Permissions.RemoveUser, RuleMode.Allow),
                     (Permissions.UpdateGroupInformation, RuleMode.Allow),
+                    (Permissions.ManageClaims, RuleMode.Allow),
+
                     (Permissions.AddReinforcements, RuleMode.Allow),
                     (Permissions.RemoveReinforcements, RuleMode.Allow),
                 ),
@@ -214,6 +216,7 @@ class GroupManager()(using sql: Storage.SQLManager):
                     (Permissions.Doors, RuleMode.Allow),
                     (Permissions.Crops, RuleMode.Allow),
                     (Permissions.Build, RuleMode.Allow),
+                    (Permissions.Entities, RuleMode.Allow),
                 ),
             ),
         )

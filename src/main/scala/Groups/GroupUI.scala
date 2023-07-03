@@ -22,10 +22,11 @@ import net.kyori.adventure.text.format.NamedTextColor
 import com.github.stefvanschie.inventoryframework.pane.Pane
 import net.kyori.adventure.text.format.TextDecoration
 import com.github.stefvanschie.inventoryframework.gui.`type`.util.Gui
+import BallCore.Beacons.CivBeaconManager
 
-class GroupManagementProgram(using gm: GroupManager) extends UIProgram:
+class GroupManagementProgram(using gm: GroupManager, cbm: CivBeaconManager) extends UIProgram:
     case class Flags(groupID: GroupID, userID: UserID)
-    case class Model(group: GroupState, userID: UserID, viewing: ViewingWhat)
+    case class Model(group: GroupState, userID: UserID, viewing: ViewingWhat, canBindToHeart: Boolean)
     enum ViewingWhat:
         case Players
         case Roles
@@ -33,11 +34,13 @@ class GroupManagementProgram(using gm: GroupManager) extends UIProgram:
         case ViewMembers
         case ViewRoles
         case InviteMember
+        case BindToHeart
         case ClickRole(role: RoleID)
 
     override def init(flags: Flags): Model =
         val group = gm.getGroup(flags.groupID).toOption.get
-        Model(group, flags.userID, ViewingWhat.Players)
+        val canBindToHeart = cbm.getBeaconFor(flags.userID).map(cbm.beaconSize).map(_ == 1).getOrElse(false)
+        Model(group, flags.userID, ViewingWhat.Players, canBindToHeart)
     override def view(model: Model): Callback ?=> Gui =
         val group = model.group
         Root(txt"Viewing ${group.metadata.name}", 6) {
@@ -47,6 +50,8 @@ class GroupManagementProgram(using gm: GroupManager) extends UIProgram:
                     Button(Material.WRITABLE_BOOK, txt"Manage Roles".style(NamedTextColor.GREEN), Message.ViewRoles)()
                 if group.check(Permissions.InviteUser, model.userID) then
                     Button(Material.COMPASS, txt"Invite A Member".style(NamedTextColor.GREEN), Message.InviteMember)()
+                if model.canBindToHeart then
+                    Button(Material.WHITE_CONCRETE, txt"Bind to Beacon".style(NamedTextColor.GREEN), Message.BindToHeart)()
             }
             OutlinePane(1, 0, 1, 6, priority = Priority.LOWEST, repeat = true) {
                 Item(Material.BLACK_STAINED_GLASS_PANE, displayName = Some(txt""))()
@@ -99,6 +104,18 @@ class GroupManagementProgram(using gm: GroupManager) extends UIProgram:
                 model.copy(viewing = ViewingWhat.Players)
             case Message.ViewRoles =>
                 model.copy(viewing = ViewingWhat.Roles)
+            case Message.BindToHeart =>
+                cbm.getBeaconFor(model.userID).map { beacon =>
+                    cbm.setGroup(beacon, model.group.metadata.id).isRight
+                } match
+                    case None =>
+                        services.notify(s"You don't have a Civilization Beacon to bind ${model.group.metadata.name} to!")
+                    case Some(ok) =>
+                        if ok then
+                            services.notify(s"Bound ${model.group.metadata.name} to your Civilization Beacon!")
+                        else
+                            services.notify(s"Failed to bind ${model.group.metadata.name} to your Civilization Beacon!")
+                    model.copy(canBindToHeart = cbm.getBeaconFor(model.userID).map(cbm.beaconSize).map(_ == 1).getOrElse(false))
             case Message.InviteMember =>
                 services.prompt("Who do you want to invite?")
                     .map { username =>
@@ -117,7 +134,7 @@ class GroupManagementProgram(using gm: GroupManager) extends UIProgram:
                 services.transferTo(p, p.Flags(model.group.metadata.id, role, model.userID))
                 model
 
-class RoleManagementProgram(using gm: GroupManager) extends UIProgram:
+class RoleManagementProgram(using gm: GroupManager, cbm: CivBeaconManager) extends UIProgram:
     case class Flags(groupID: GroupID, roleID: RoleID, userID: UserID)
     case class Model(group: GroupState, groupID: GroupID, userID: UserID, role: RoleState)
     enum Message:
@@ -259,7 +276,7 @@ class InvitesListProgram(using gm: GroupManager) extends UIProgram:
             }
         }
 
-class GroupListProgram(using gm: GroupManager) extends UIProgram:
+class GroupListProgram(using gm: GroupManager, cbm: CivBeaconManager) extends UIProgram:
     case class Flags(userID: UserID)
     case class Model(userID: UserID, groups: List[GroupStates])
     enum Message:

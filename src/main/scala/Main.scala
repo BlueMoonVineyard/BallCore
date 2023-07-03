@@ -4,7 +4,7 @@
 
 package BallCore
 
-import BallCore.Hearts.Hearts
+import BallCore.Beacons.Beacons
 import BallCore.UI
 
 import org.bukkit.plugin.java.JavaPlugin
@@ -28,7 +28,7 @@ import BallCore.Reinforcements.ChunkStateManager
 import BallCore.DataStructures.Clock
 import BallCore.DataStructures.WallClock
 import BallCore.Reinforcements.HologramManager
-import BallCore.Hearts.HeartNetworkManager
+import BallCore.Beacons.CivBeaconManager
 import BallCore.CustomItems.ItemRegistry
 import BallCore.CustomItems.BasicItemRegistry
 import BallCore.CustomItems.BlockManager
@@ -47,9 +47,9 @@ import java.time.Duration
 import net.megavex.scoreboardlibrary.api.ScoreboardLibrary
 import BallCore.Sidebar.SidebarActor
 import BallCore.Sigils.Sigil
-import BallCore.Sigils.BanishmentManager
 import BallCore.Sigils.CustomEntityManager
 import BallCore.Sigils.SigilSlimeManager
+import BallCore.PolygonEditor.PolygonEditor
 
 final class Main extends JavaPlugin:
     given sql: Storage.SQLManager = new Storage.SQLManager
@@ -62,7 +62,7 @@ final class Main extends JavaPlugin:
     given esm: EntityStateManager = new EntityStateManager
     given clock: Clock = new WallClock
     given hm: HologramManager = new HologramManager
-    given hn: HeartNetworkManager = new HeartNetworkManager
+    given hn: CivBeaconManager = new CivBeaconManager
     given brm: BlockReinforcementManager = new BlockReinforcementManager
     given erm: EntityReinforcementManager = new EntityReinforcementManager
     given ac: AntiCheeser = new AntiCheeser
@@ -72,6 +72,7 @@ final class Main extends JavaPlugin:
     given sm: ShutdownCallbacks = ShutdownCallbacks()
     given cem: CustomEntityManager = CustomEntityManager()
     given bam: SigilSlimeManager = SigilSlimeManager()
+    given editor: PolygonEditor = new PolygonEditor()
     
     override def onEnable() =
         given lib: ScoreboardLibrary = ScoreboardLibrary.loadScoreboardLibrary(this)
@@ -79,7 +80,7 @@ final class Main extends JavaPlugin:
         sid.startListener()
 
         Datekeeping.Datekeeping.startSidebarClock()
-        Hearts.registerItems()
+        Beacons.registerItems()
         QuadrantOres.registerItems()
         QuadrantGear.registerItems()
         CardinalOres.registerItems()
@@ -89,6 +90,7 @@ final class Main extends JavaPlugin:
         CustomItemListener.register()
         CraftingStations.register()
         AcclimationActor.register()
+        PolygonEditor.register()
         Mining.Mining.register()
         Sigil.register()
         given pbm: PlantBatchManager = Plants.Plants.register()
@@ -97,8 +99,9 @@ final class Main extends JavaPlugin:
         getCommand("group").setExecutor(chatCommands.Group)
         getCommand("global").setExecutor(chatCommands.Global)
         getCommand("local").setExecutor(chatCommands.Local)
-        getCommand("groups").setExecutor(GroupsCommand())
+        getCommand("groups").setExecutor(new GroupsCommand)
         getCommand("cheat").setExecutor(CheatCommand())
+        getCommand("done").setExecutor(DoneCommand())
     override def onDisable() =
         import scala.concurrent.ExecutionContext.Implicits.global
         Await.ready(sm.shutdown(), scala.concurrent.duration.Duration.Inf)

@@ -17,7 +17,7 @@ import scala.util.Try
 import org.bukkit.plugin.Plugin
 import BallCore.DataStructures.ShutdownCallbacks
 import org.bukkit.entity.Damageable
-import BallCore.Hearts.HeartNetworkManager
+import BallCore.Beacons.CivBeaconManager
 import BallCore.UI
 import net.kyori.adventure.text.format.NamedTextColor
 import java.{util => ju}
@@ -37,7 +37,7 @@ object Sigil:
 
     val persistenceKeyPlayer = NamespacedKey("ballcore", "sigil_bound_player_uuid")
 
-    def register()(using registry: ItemRegistry, p: Plugin, cb: ShutdownCallbacks, hmn: HeartNetworkManager, ssm: SigilSlimeManager, cem: CustomEntityManager): Unit =
+    def register()(using registry: ItemRegistry, p: Plugin, cb: ShutdownCallbacks, hmn: CivBeaconManager, ssm: SigilSlimeManager, cem: CustomEntityManager): Unit =
         registry.register(Sigil())
         registry.register(SlimeEgg())
         given da: DamageActor = DamageActor()

@@ -30,16 +30,10 @@ object BlockAdjustment:
             case BlockFace.SOUTH => BlockFace.EAST
             case BlockFace.WEST => BlockFace.SOUTH
             case _ => face
-    private def get(block: Block)(using rm: BlockReinforcementManager): Option[ReinforcementState] =
-        rm.getReinforcement(block.getX(), block.getY(), block.getZ(), block.getWorld().getUID())
 
     // there's a lot of multiblock things in minecraft, so this is responsible for choosing which block is the
     // "responsible" block
-    def adjustBlock(block: Block)(using rm: BlockReinforcementManager): Block =
-        val rein = get(block)
-        if rein.isDefined then
-            return block
-
+    def adjustBlock(block: Block): Block =
         block.getType() match
             case CHEST | TRAPPED_CHEST =>
                 val chest = block.getBlockData().asInstanceOf[Chest]
@@ -50,19 +44,10 @@ object BlockAdjustment:
                         block
                     // for double chests, we prefer the left one to have the reinforement
                     case Type.LEFT =>
-                        val newFace = clockwise(facing)
-                        val otherBlock = block.getLocation().add(newFace.getDirection()).getBlock()
-                        val other = get(otherBlock)
-                        if other.isDefined then
-                            // only when the right block was already reinforced as a single chest do we want
-                            // to use it for reinforcements
-                            otherBlock
-                        else
-                            block
+                        block
                     case Type.RIGHT =>
                         val newFace = counterclockwise(facing)
                         val otherBlock = block.getLocation().add(newFace.getDirection()).getBlock()
-                        // right chests will always prefer the left one for reinforcement
                         otherBlock
             // plants defer to the block below them
             case DANDELION

@@ -1,7 +1,7 @@
 package BallCore.Acclimation
 
 import BallCore.DataStructures.Actor
-import BallCore.Hearts.HeartNetworkManager
+import BallCore.Beacons.CivBeaconManager
 import org.bukkit.Bukkit
 import org.bukkit.plugin.Plugin
 import java.util.concurrent.TimeUnit
@@ -25,10 +25,10 @@ def lerp(a: Double, b: Double, f: Double): Double =
 	a * (1.0 - f) + (b * f)
 
 object AcclimationActor:
-	def register()(using s: Storage, p: Plugin, hnm: HeartNetworkManager, sm: ShutdownCallbacks): Unit =
+	def register()(using s: Storage, p: Plugin, hnm: CivBeaconManager, sm: ShutdownCallbacks): Unit =
 		AcclimationActor().startListener()
 
-class AcclimationActor(using s: Storage, p: Plugin, hnm: HeartNetworkManager) extends Actor[AcclimationMessage]:
+class AcclimationActor(using s: Storage, p: Plugin, hnm: CivBeaconManager) extends Actor[AcclimationMessage]:
 	private def sixHoursMillis = 6 * 60 * 60 * 1000
 	private def millisToNextSixthHour(): Long =
 		val nextHour = LocalDateTime.now().plusHours(6).truncatedTo(ChronoUnit.HOURS)
@@ -54,10 +54,10 @@ class AcclimationActor(using s: Storage, p: Plugin, hnm: HeartNetworkManager) ex
 					val elevation = Information.elevation(location.getY().toInt)
 
 					val adjustFactor =
-						hnm.getHeartNetworkFor(uuid) match
-							case Some(network) if hnm.heartNetworksContaining(location).contains(network) =>
+						hnm.getBeaconFor(uuid) match
+							case Some(beacon) if hnm.beaconContaining(location) == Some(beacon) =>
 								BoostFactors.boosted
-							case Some(network) =>
+							case Some(beacon) =>
 								BoostFactors.antiBoosted
 							case None =>
 								BoostFactors.nonBoosted

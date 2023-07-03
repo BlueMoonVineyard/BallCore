@@ -68,14 +68,23 @@ class ChatElements:
     def txt(of: String): Component =
         Component.text(of)
 
+    def keybind(of: String): Component =
+        Component.keybind(of)
+
     object Colors:
         val red = TextColor.fromHexString("#e93d58")
+        val teal = TextColor.fromHexString("#00d485")
+        val grellow = TextColor.fromHexString("#b6e521")
 
     extension (c: Component)
         def style(color: TextColor, decorations: TextDecoration*): Component =
             c.style(Style.style(color, decorations: _*))
         def not(decoration: TextDecoration): Component =
             c.decoration(decoration, false)
+    extension (s: Seq[Component])
+        def mkComponent(separator: Component): Component =
+            s.reduce((a, b) => a.append(separator).append(b))
+
 
 object ChatElements extends ChatElements
 

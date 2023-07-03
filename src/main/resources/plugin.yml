@@ -30,6 +30,8 @@ commands:
     description: Changes your chat channel to global chat
   local:
     description: Changes your chat channel to local chat
+  done:
+    description: Completes the editor
 permissions:
   ballcore.cheat:
     description: Allows using /cheat

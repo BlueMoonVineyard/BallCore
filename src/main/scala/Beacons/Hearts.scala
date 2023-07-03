@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-package BallCore.Hearts
+package BallCore.Beacons
 
 import BallCore.Storage
 
@@ -14,9 +14,11 @@ import BallCore.CustomItems.ItemGroup
 import BallCore.CustomItems.ItemRegistry
 import org.bukkit.Server
 import BallCore.CustomItems.BlockManager
+import BallCore.PolygonEditor.PolygonEditor
+import BallCore.Groups.GroupManager
 
-object Hearts:
+object Beacons:
     val group = ItemGroup(NamespacedKey("ballcore", "hearts"), ItemStack(Material.WHITE_CONCRETE))
 
-    def registerItems()(using registry: ItemRegistry, bm: BlockManager, hn: HeartNetworkManager, server: Server, plugin: JavaPlugin) =
+    def registerItems()(using registry: ItemRegistry, pe: PolygonEditor, gm: GroupManager, bm: BlockManager, hn: CivBeaconManager, server: Server, plugin: JavaPlugin) =
         registry.register(new HeartBlock())

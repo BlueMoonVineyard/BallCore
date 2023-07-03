@@ -15,6 +15,7 @@ import org.bukkit.inventory.ItemStack
 import BallCore.CustomItems.ItemRegistry
 import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.Server
+import BallCore.Beacons.CivBeaconManager
 
 object Recipes:
     val kinds = List(
@@ -40,13 +41,13 @@ object Reinforcements:
             server.addRecipe(recp)
         }
 
-    def registerBlockListener()(using server: Server, registry: ItemRegistry, plugin: JavaPlugin, brm: BlockReinforcementManager, gm: GroupManager, holos: HologramManager, prompts: Prompts): Unit =
+    def registerBlockListener()(using server: Server, registry: ItemRegistry, plugin: JavaPlugin, cbm: CivBeaconManager, gm: GroupManager, holos: HologramManager, prompts: Prompts): Unit =
         server.getPluginManager().registerEvents(Listener(), plugin)
 
     def registerEntityListener()(using server: Server, registry: ItemRegistry, plugin: JavaPlugin, erm: EntityReinforcementManager, gm: GroupManager, holos: HologramManager): Unit =
         server.getPluginManager().registerEvents(EntityListener(), plugin)
 
-    def register()(using registry: ItemRegistry, server: Server, plugin: JavaPlugin, brm: BlockReinforcementManager, erm: EntityReinforcementManager, gm: GroupManager, holos: HologramManager, prompts: Prompts): Unit =
+    def register()(using registry: ItemRegistry, server: Server, plugin: JavaPlugin, cbm: CivBeaconManager, erm: EntityReinforcementManager, gm: GroupManager, holos: HologramManager, prompts: Prompts): Unit =
         registerItems()
         registerBlockListener()
         registerEntityListener()

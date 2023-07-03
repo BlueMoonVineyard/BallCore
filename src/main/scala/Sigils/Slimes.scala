@@ -27,8 +27,8 @@ import scala.concurrent.Future
 import org.bukkit.plugin.Plugin
 import org.bukkit.entity.Entity
 import org.bukkit.event.Listener
-import BallCore.Hearts.HeartNetworkManager
-import BallCore.Hearts.HeartNetworkID
+import BallCore.Beacons.CivBeaconManager
+import BallCore.Beacons.BeaconID
 import BallCore.Groups.UserID
 
 object Slimes:
@@ -54,11 +54,11 @@ class SigilSlimeManager(using sql: Storage.SQLManager):
 				sql"""
 				CREATE TABLE SigilSlimes (
 					BanishedUserID TEXT,
-					HeartNetworkID TEXT NOT NULL,
+					BeaconID TEXT NOT NULL,
 					InteractionEntityID TEXT NOT NULL,
-					UNIQUE(BanishedUserID, HeartNetworkID),
+					UNIQUE(BanishedUserID, BeaconID),
 					UNIQUE(InteractionEntityID),
-					FOREIGN KEY (HeartNetworkID) REFERENCES HeartNetworks(ID) ON DELETE CASCADE,
+					FOREIGN KEY (BeaconID) REFERENCES Beacons(ID) ON DELETE CASCADE,
 					FOREIGN KEY (InteractionEntityID) REFERENCES CustomEntities(InteractionEntityID) ON DELETE CASCADE
 				);
 				"""
@@ -71,29 +71,29 @@ class SigilSlimeManager(using sql: Storage.SQLManager):
 		),
 	)
 
-	def addSlime(entity: UUID, heartNetwork: HeartNetworkID): Unit =
+	def addSlime(entity: UUID, beacon: BeaconID): Unit =
 		sql"""
 		INSERT INTO SigilSlimes (
-			HeartNetworkID, InteractionEntityID
+			BeaconID, InteractionEntityID
 		) VALUES (
-			${heartNetwork}, ${entity}
+			${beacon}, ${entity}
 		)
 		"""
 		.update
 		.apply()
 
-	def banishedUsers(from: HeartNetworkID): List[UserID] =
+	def banishedUsers(from: BeaconID): List[UserID] =
 		sql"""
-		SELECT UserID FROM SigilSlimes WHERE HeartNetworkID = ${from} AND BanishedUserID IS NOT NULL;
+		SELECT UserID FROM SigilSlimes WHERE BeaconID = ${from} AND BanishedUserID IS NOT NULL;
 		"""
 		.map(rs => UUID.fromString(rs.string("BanishedUserID")))
 		.list
 		.apply()
 
-	def isBanished(user: UserID, from: HeartNetworkID): Boolean =
+	def isBanished(user: UserID, from: BeaconID): Boolean =
 		sql"""
 		SELECT EXISTS (
-			SELECT 1 FROM SigilSlimes WHERE BanishedUserID = ${user} AND HeartNetworkID = ${from}
+			SELECT 1 FROM SigilSlimes WHERE BanishedUserID = ${user} AND BeaconID = ${from}
 		);
 		"""
 		.map(rs => rs.boolean(1))
@@ -209,13 +209,13 @@ class SlimeBehaviours()(using cem: CustomEntityManager, p: Plugin) extends Liste
 			}
 		}
 
-class SlimeEgg(using cem: CustomEntityManager, ssm: SigilSlimeManager, hnm: HeartNetworkManager) extends CustomItem, Listeners.ItemUsedOnBlock:
+class SlimeEgg(using cem: CustomEntityManager, ssm: SigilSlimeManager, hnm: CivBeaconManager) extends CustomItem, Listeners.ItemUsedOnBlock:
 	def group = Sigil.group
 	def template = Slimes.slimeEggStack
 
 	override def onItemUsed(event: PlayerInteractEvent): Unit =
-		val heartNetwork =
-			hnm.getHeartNetworkFor(event.getPlayer().getUniqueId()) match
+		val beacon =
+			hnm.getBeaconFor(event.getPlayer().getUniqueId()) match
 				case None =>
 					import BallCore.UI.ChatElements._
 					event.getPlayer().sendMessage(txt"You must have a Civilization Heart placed to spawn a Sigil Slime!".color(Colors.red))
@@ -241,4 +241,4 @@ class SlimeEgg(using cem: CustomEntityManager, ssm: SigilSlimeManager, hnm: Hear
 		interaction.setResponsive(true)
 
 		cem.addEntity(interaction, itemDisplay, Slimes.entityKind)
-		ssm.addSlime(interaction.getUniqueId(), heartNetwork)
+		ssm.addSlime(interaction.getUniqueId(), beacon)
