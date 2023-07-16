@@ -11,6 +11,10 @@ import net.kyori.adventure.text.format.TextColor
 import BallCore.Groups.GroupManager
 import scala.collection.JavaConverters._
 import net.kyori.adventure.audience.Audience
+import java.util.regex.Pattern
+import net.kyori.adventure.text.TextReplacementConfig
+import net.kyori.adventure.text.event.ClickEvent
+import net.kyori.adventure.text.format.TextDecoration
 
 enum ChatMessage:
 	case send(p: Player, m: Component)
@@ -33,15 +37,29 @@ class ChatActor(using p: Plugin, gm: GroupManager) extends Actor[ChatMessage]:
 	val globalGrey = TextColor.fromHexString("#686b6f")
 	val groupGrey = TextColor.fromHexString("#9b9ea2")
 	val localGrey = TextColor.fromHexString("#b6b9bd")
+	val urlColor = TextColor.fromHexString("#2aa1bf")
+
+	val urlRegex = Pattern.compile("https?:\\/\\/(?:www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b(?:[-a-zA-Z0-9()@:%_\\+.~#?&\\/=]*)")
+	val urlReplacer =
+		TextReplacementConfig.builder()
+			.`match`(urlRegex)
+			.replacement(c => c.clickEvent(ClickEvent.openUrl(c.content()))
+				.decoration(TextDecoration.UNDERLINED, true)
+				.color(urlColor))
+			.build()
 
 	protected def handleInit(): Unit =
 		()
 	protected def handleShutdown(): Unit =
 		()
 
+	def preprocess(playerMessage: Component): Component =
+		playerMessage.replaceText(urlReplacer)
+
 	def handle(m: ChatMessage): Unit =
 		m match
-			case ChatMessage.send(p, m) =>
+			case ChatMessage.send(p, m_) =>
+				val m = preprocess(m_)
 				states(p) match
 					case PlayerState.globalChat =>
 						Bukkit.getServer().sendMessage(txt"[!] ${p.getDisplayName()}: ${m.color(NamedTextColor.WHITE)}".color(globalGrey))
