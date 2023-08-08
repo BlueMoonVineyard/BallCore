@@ -13,5 +13,4 @@ class ChunkExecutionContext(cx: Int, cz: Int, world: World)(using plugin: Plugin
     override def execute(runnable: Runnable): Unit =
         sched.run(plugin, world, cx, cz, _ => runnable.run())
     override def reportFailure(cause: Throwable): Unit =
-        println(cause)
         plugin.getLogger().log(Level.WARNING, s"Error in ChunkExecutionContext for ${cx}/${cz} in ${world}:", cause)

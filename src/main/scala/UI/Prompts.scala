@@ -18,6 +18,7 @@ import io.papermc.paper.event.player.AsyncChatEvent
 import org.bukkit.event.EventPriority
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer
 import net.kyori.adventure.text.Component
+import BallCore.Folia.FireAndForget
 
 private case class PromptState(
     promise: Promise[String],
@@ -47,7 +48,7 @@ class Prompts(using plugin: Plugin) extends Listener:
         given ctx: ExecutionContext = EntityExecutionContext(player)
 
         val state = PromptState(promise)
-        Future {
+        FireAndForget {
             player.closeInventory()
             player.sendMessage(prompt)
         }

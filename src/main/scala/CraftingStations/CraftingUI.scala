@@ -71,7 +71,8 @@ class RecipeSelectorProgram(recipes: List[Recipe])(using actor: CraftingActor) e
 						Lore(txt"Results".style(NamedTextColor.WHITE, TextDecoration.UNDERLINED))
 						recipe.outputs.foreach { output =>
 							Lore(txt" - ${nameOf(output).style(NamedTextColor.GRAY, TextDecoration.BOLD)} × ${output.getAmount()}".color(NamedTextColor.WHITE))
-							Lore(txt"   (${output.getItemMeta().getLore().get(0)})".color(NamedTextColor.DARK_PURPLE))
+							if output.getItemMeta().getLore() != null then
+								Lore(txt"   (${output.getItemMeta().getLore().get(0)})".color(NamedTextColor.DARK_PURPLE))
 						}
 						Lore(txt"")
 						val time = txt"${recipe.work} seconds".color(NamedTextColor.GREEN)

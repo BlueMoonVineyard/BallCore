@@ -15,6 +15,7 @@ import scala.concurrent.ExecutionContext
 import org.bukkit.entity.Player
 import BallCore.Folia.EntityExecutionContext
 import org.bukkit.plugin.Plugin
+import BallCore.Folia.FireAndForget
 
 trait UITransferrer:
     def transferTo(p: UIProgram, f: p.Flags): Unit
@@ -44,7 +45,7 @@ class UIProgramRunner(program: UIProgram, flags: program.Flags, showingTo: Playe
 
     def render(): Unit =
         val mod = model
-        Future {
+        FireAndForget {
             given cb: program.Callback = this.dispatch
             val res = program.view(mod)
             res.show(showingTo)
@@ -66,7 +67,7 @@ class UIProgramRunner(program: UIProgram, flags: program.Flags, showingTo: Playe
     def prompt(prompt: String): Future[String] =
         prompts.prompt(showingTo, prompt)
     def notify(what: String): Unit =
-        Future { showingTo.sendMessage(what) }
+        FireAndForget { showingTo.sendMessage(what) }
     def execute(runnable: Runnable): Unit =
         ec.execute(runnable)
     def reportFailure(cause: Throwable): Unit =

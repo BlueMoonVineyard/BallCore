@@ -11,5 +11,4 @@ class LocationExecutionContext(loc: Location)(using plugin: Plugin) extends Exec
     override def execute(runnable: Runnable): Unit =
         sched.execute(plugin, loc, runnable)
     override def reportFailure(cause: Throwable): Unit =
-        println(cause)
         plugin.getLogger().log(Level.WARNING, s"Error in LocationExecutionContext for ${loc}:", cause)

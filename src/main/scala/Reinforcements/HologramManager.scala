@@ -20,6 +20,7 @@ import BallCore.DataStructures.Delay
 import BallCore.Folia.LocationExecutionContext
 import org.bukkit.entity.TextDisplay
 import org.bukkit.entity.Display.Billboard
+import BallCore.Folia.FireAndForget
 
 class Hologram(val createAt: Location)(using JavaPlugin):
     implicit var ctx: ExecutionContext = LocationExecutionContext(createAt)
@@ -33,7 +34,7 @@ class Hologram(val createAt: Location)(using JavaPlugin):
     def relocate(to: Location): Unit =
         position = to
         ctx = LocationExecutionContext(position)
-        Future {
+        FireAndForget {
             var currentY = position.getY()
             lines.zipWithIndex.foreach { (elem, idx) =>
                 currentY -= lineHeight
@@ -43,12 +44,12 @@ class Hologram(val createAt: Location)(using JavaPlugin):
             }
         }
     def clearLines(): Unit =
-        Future {
+        FireAndForget {
             lines.foreach { line => line.remove() }
             lines = List()
         }
     def appendLine(text: String): Unit =
-        Future {
+        FireAndForget {
             position.getWorld().spawn(position, classOf[TextDisplay], { ent =>
                 ent.setText(text)
                 ent.setBillboard(Billboard.CENTER)

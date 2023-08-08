@@ -22,6 +22,7 @@ import scala.concurrent.ExecutionContext
 import scala.collection.JavaConverters._
 import BallCore.CustomItems.ItemRegistry
 import BallCore.Folia.EntityExecutionContext
+import BallCore.Folia.FireAndForget
 
 enum DamageMessage:
 	case damage(from: UUID, against: UUID, damage: Double)
@@ -105,7 +106,7 @@ class SigilListener(using ssm: SigilSlimeManager, hnm: CivBeaconManager, da: Dam
 					return doSigilBinding(killed, next)
 
 				given ec: ExecutionContext = EntityExecutionContext(attacker)
-				Future {
+				FireAndForget {
 					val searched =
 						attacker.getInventory().all(Sigil.itemStack.getType()).asScala
 							.find((slot, is) => {

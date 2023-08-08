@@ -30,6 +30,7 @@ import org.bukkit.event.Listener
 import BallCore.Beacons.CivBeaconManager
 import BallCore.Beacons.BeaconID
 import BallCore.Groups.UserID
+import BallCore.Folia.FireAndForget
 
 object Slimes:
 	val sigilSlime = ItemStack(Material.STICK)
@@ -194,7 +195,7 @@ class SlimeBehaviours()(using cem: CustomEntityManager, p: Plugin) extends Liste
 						cem.entityKind(interaction) match
 							case Some((kind, disp)) if kind == Slimes.entityKind =>
 								given ec: ExecutionContext = EntityExecutionContext(interaction)
-								Future {
+								FireAndForget {
 									val players =
 										interaction.getNearbyEntities(10, 3, 10).asScala.flatMap(castOption[Player])
 									val player = players(randomizer.nextInt(players.length))

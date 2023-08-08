@@ -21,6 +21,7 @@ import BallCore.Datekeeping.DateUnit
 import java.time.temporal.ChronoUnit
 import BallCore.Datekeeping.Datekeeping.Periods
 import java.util.concurrent.TimeUnit
+import BallCore.Folia.FireAndForget
 
 enum PlantMsg:
 	case startGrowing(what: Plant, where: Block)
@@ -193,7 +194,7 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin) extends Actor[PlantM
 					val world = Bukkit.getWorld(worldID)
 					given ec: ChunkExecutionContext = ChunkExecutionContext(cx, cz, world)
 
-					Future {
+					FireAndForget {
 						val (done, notDone) = map.filter(!_._2.deleted).mapValues { data =>
 							val (x, z) = fromOffsets(data.chunkX, data.chunkZ, data.offsetX, data.offsetZ)
 							val block = world.getBlockAt(x, data.yPos, z)

@@ -20,6 +20,7 @@ import scala.util.chaining._
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
 import BallCore.DataStructures.Actor
+import BallCore.Folia.FireAndForget
 
 enum CraftingMessage:
 	case startWorking(p: Player, f: Block, r: Recipe)
@@ -75,7 +76,7 @@ class CraftingActor(using p: Plugin) extends Actor[CraftingMessage]:
 		given ec: ExecutionContext = EntityExecutionContext(player)
 		val workChest = sides.map(face => job.factory.getRelative(face)).find(block => block.getType() == Material.CHEST || block.getType() == Material.TRAPPED_CHEST) match
 			case None =>
-				Future {
+				FireAndForget {
 					notifyFailedJob(player, job, "Chest Missing!")
 				}
 				return
@@ -88,11 +89,11 @@ class CraftingActor(using p: Plugin) extends Actor[CraftingMessage]:
 		if removeFrom(job.recipe.inputs, inv) then
 			insertInto(job.recipe.outputs, inv, job.factory)
 
-			Future {
+			FireAndForget {
 				notifyFinishedJob(player, job)
 			}
 		else
-			Future {
+			FireAndForget {
 				notifyFailedJob(player, job, "Ingredients Missing!")
 			}
 
@@ -147,10 +148,10 @@ class CraftingActor(using p: Plugin) extends Actor[CraftingMessage]:
 					val cond = j.currentWork >= j.recipe.work
 					if cond then
 						given ec: ExecutionContext = LocationExecutionContext(j.factory.getLocation())
-						Future { completeJob(p, j) }
+						FireAndForget { completeJob(p, j) }
 					else
 						given ec: ExecutionContext = EntityExecutionContext(p)
-						Future { notifyInProgressJob(p, j) }
+						FireAndForget { notifyInProgressJob(p, j) }
 					cond
 				}
 		

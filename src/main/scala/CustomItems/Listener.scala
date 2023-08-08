@@ -7,6 +7,7 @@ import org.bukkit.event.block.BlockBreakEvent
 import org.bukkit.plugin.Plugin
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.block.Action
+import org.bukkit.inventory.EquipmentSlot
 
 object CustomItemListener:
     def register()(using bm: BlockManager, reg: ItemRegistry, plugin: Plugin): Unit =
@@ -64,6 +65,8 @@ class CustomItemListener(using bm: BlockManager, reg: ItemRegistry) extends org.
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     def onInteractBlock(event: PlayerInteractEvent): Unit =
+        if event.getHand() != EquipmentSlot.HAND then
+            return
         if !event.hasBlock() || event.getAction() != Action.RIGHT_CLICK_BLOCK then
             return
 
@@ -75,7 +78,7 @@ class CustomItemListener(using bm: BlockManager, reg: ItemRegistry) extends org.
                             click.onBlockClicked(event)
                             event.isCancelled()
                         case _ => false
+                event.setCancelled(true)
                 if cancelled then
                     return
             case _ =>
-        
