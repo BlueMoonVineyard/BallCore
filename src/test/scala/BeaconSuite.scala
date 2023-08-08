@@ -21,7 +21,6 @@ class HeartSuite extends munit.FunSuite {
     val ownerID = UUID.randomUUID()
     val res = hn.placeHeart(Location(world, 0, 0, 0), ownerID)
     assert(res.isDefined, res)
-    val heartNetworkID = res.get._1
 
     val res2 = hn.heartAt(Location(world, 0, 0, 0))
     assert(res2.isDefined, res2)

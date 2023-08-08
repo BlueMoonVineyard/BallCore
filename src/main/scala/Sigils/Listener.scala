@@ -19,7 +19,7 @@ import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
 import org.bukkit.Bukkit
 import scala.concurrent.ExecutionContext
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import BallCore.CustomItems.ItemRegistry
 import BallCore.Folia.EntityExecutionContext
 import BallCore.Folia.FireAndForget
@@ -58,7 +58,7 @@ class DamageActor()(using p: Plugin) extends Actor[DamageMessage]:
 					}.filterNot(_._2 <= 0)
 				}.filterNot(_._2.values.sum <= 0)
 	override protected def handleInit(): Unit =
-		p.getServer().getAsyncScheduler().runAtFixedRate(p, _ => send(DamageMessage.tick), 0, 1, TimeUnit.SECONDS)
+		val _ = p.getServer().getAsyncScheduler().runAtFixedRate(p, _ => send(DamageMessage.tick), 0, 1, TimeUnit.SECONDS)
 	override protected def handleShutdown(): Unit = ()
 
 class DamageListener(using da: DamageActor) extends Listener:
@@ -109,7 +109,7 @@ class SigilListener(using ssm: SigilSlimeManager, hnm: CivBeaconManager, da: Dam
 				FireAndForget {
 					val searched =
 						attacker.getInventory().all(Sigil.itemStack.getType()).asScala
-							.find((slot, is) => {
+							.find((_, is) => {
 								val item = ir.lookup(is)
 								if !item.isDefined || !item.get.isInstanceOf[Sigil] then
 									false
@@ -131,7 +131,7 @@ class SigilListener(using ssm: SigilSlimeManager, hnm: CivBeaconManager, da: Dam
 								newStack.setAmount(1)
 								newStack.setItemMeta(sigil.itemMetaForBound(newStack, killed))
 								if !attacker.getInventory().addItem(newStack).isEmpty() then
-									attacker.getWorld().dropItemNaturally(attacker.getLocation(), newStack)
+									val _ = attacker.getWorld().dropItemNaturally(attacker.getLocation(), newStack)
 							()
 				}
 			case Nil => ()
@@ -143,4 +143,4 @@ class SigilListener(using ssm: SigilSlimeManager, hnm: CivBeaconManager, da: Dam
 
 		val killed = event.getEntity().asInstanceOf[Player]
 		given ec: ExecutionContext = EntityExecutionContext(killed)
-		da.getEligiblePlayers(killed).map(players => doSigilBinding(killed, players))
+		da.getEligiblePlayers(killed).foreach(players => doSigilBinding(killed, players))

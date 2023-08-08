@@ -7,15 +7,12 @@ package BallCore.Beacons
 import BallCore.Storage
 
 import org.bukkit.Location
-import org.bukkit.entity.Player
 import java.util.UUID
 
 import com.github.plokhotnyuk.rtree2d.core._
 import EuclideanPlane._
 
 import scalikejdbc._
-import scalikejdbc.SQL
-import scalikejdbc.NoExtractor
 import org.locationtech.jts.geom.Polygon
 import java.io.ObjectInputStream
 import org.locationtech.jts.triangulate.DelaunayTriangulationBuilder
@@ -170,7 +167,7 @@ class CivBeaconManager()(using sql: Storage.SQLManager):
                 yield triangleCollection.getGeometryN(i).asInstanceOf[Polygon]
 
         triangles.map { triangle =>
-            val Array(minmin, minmax, maxmax, maxmin, _) =
+            val Array(minmin, _, maxmax, _, _) =
                 triangle.getEnvelope()
                     .asInstanceOf[Polygon]
                     .getCoordinates()
@@ -221,7 +218,7 @@ class CivBeaconManager()(using sql: Storage.SQLManager):
             .map(rs => (UUID.fromString(rs.string("ID")), rs.binaryStream("Polygon")))
             .list
             .apply()
-            .filterNot( (id, polygonBlob) => polygonBlob == null )
+            .filterNot( (_, polygonBlob) => polygonBlob == null )
             .flatMap(triangulate)
         RTree(items)
     def hasHeart(owner: UUID): Boolean =
@@ -279,7 +276,7 @@ class CivBeaconManager()(using sql: Storage.SQLManager):
         val actualArea =
             polygon.getArea()
         val heartsOutsidePolygon =
-            hearts.filterNot((x, y, z) => polygon.contains( geometryFactory.createPoint(Coordinate(x, z)) ))
+            hearts.filterNot((x, _, z) => polygon.contains( geometryFactory.createPoint(Coordinate(x, z)) ))
 
         if actualArea > expectedArea then
             Left(PolygonAdjustmentError.polygonTooLarge(expectedArea, actualArea))

@@ -14,10 +14,10 @@ class ChatListener(using ca: ChatActor) extends org.bukkit.event.Listener:
 
 	@EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
 	def joinEvent(event: PlayerJoinEvent): Unit =
-		event.setJoinMessage(null)
+		event.joinMessage(null)
 		ca.send(ChatMessage.joined(event.getPlayer()))
 
 	@EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
 	def leaveEvent(event: PlayerQuitEvent): Unit =
-		event.setQuitMessage(null)
+		event.quitMessage(null)
 		ca.send(ChatMessage.left(event.getPlayer()))

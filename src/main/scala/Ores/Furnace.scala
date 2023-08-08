@@ -12,9 +12,6 @@ import org.bukkit.Material
 import org.bukkit.NamespacedKey
 import org.bukkit.inventory.ItemStack
 import org.bukkit.block.Block
-import org.bukkit.block.{Furnace => BFurnace}
-import org.bukkit.event.inventory.FurnaceBurnEvent
-import org.bukkit.event.block.BlockPlaceEvent
 import BallCore.CustomItems.ItemGroup
 import BallCore.CustomItems.ItemRegistry
 import BallCore.CustomItems.CustomItem
@@ -23,6 +20,7 @@ import org.bukkit.Server
 import org.bukkit.plugin.java.JavaPlugin
 import BallCore.CustomItems.BlockManager
 import scala.util.chaining._
+import BallCore.UI.Elements._
 
 enum FurnaceTier:
     // tier 0 (vanilla furnace)
@@ -76,26 +74,26 @@ object Furnaces:
     val group = ItemGroup(NamespacedKey("ballcore", "furnaces"), ItemStack(Material.WHITE_CONCRETE))
 
 object Furnace:
-    val tierOneLore = "&r&fCapable of smelting ores with increased efficiency"
+    val tierOneLore = txt"Capable of smelting ores with increased efficiency"
 
-    val ironFurnace = CustomItemStack.make(NamespacedKey("ballcore", "iron_furnace"), Material.FURNACE, "Iron Furnace", tierOneLore)
-    val tinFurnace = CustomItemStack.make(NamespacedKey("ballcore", "tin_furnace"), Material.FURNACE, "Tin Furnace", tierOneLore)
-    val aluminumFurnace = CustomItemStack.make(NamespacedKey("ballcore", "aluminum_furnace"), Material.FURNACE, "Aluminum Furnace", tierOneLore)
-    val zincFurnace = CustomItemStack.make(NamespacedKey("ballcore", "zinc_furnace"), Material.FURNACE, "Zinc Furnace", tierOneLore)
+    val ironFurnace = CustomItemStack.make(NamespacedKey("ballcore", "iron_furnace"), Material.FURNACE, txt"Iron Furnace", tierOneLore)
+    val tinFurnace = CustomItemStack.make(NamespacedKey("ballcore", "tin_furnace"), Material.FURNACE, txt"Tin Furnace", tierOneLore)
+    val aluminumFurnace = CustomItemStack.make(NamespacedKey("ballcore", "aluminum_furnace"), Material.FURNACE, txt"Aluminum Furnace", tierOneLore)
+    val zincFurnace = CustomItemStack.make(NamespacedKey("ballcore", "zinc_furnace"), Material.FURNACE, txt"Zinc Furnace", tierOneLore)
 
     val tierOne = List(ironFurnace, tinFurnace, aluminumFurnace, zincFurnace)
 
-    val tierTwoLore = "&r&fCapable of smelting ores with astounding efficiency"
+    val tierTwoLore = txt"Capable of smelting ores with astounding efficiency"
 
-    val entschloseniteFurnace = CustomItemStack.make(NamespacedKey("ballcore", "entschlossenite_furnace"), Material.FURNACE, "Entschlossenite Furnace", tierTwoLore)
+    val entschloseniteFurnace = CustomItemStack.make(NamespacedKey("ballcore", "entschlossenite_furnace"), Material.FURNACE, txt"Entschlossenite Furnace", tierTwoLore)
 
     val tierTwo = List(entschloseniteFurnace)
 
-    val tierThreeLore = "&r&fCapable of smelting ores with supernatural efficiency"
+    val tierThreeLore = txt"Capable of smelting ores with supernatural efficiency"
 
-    val praecantatioFurnace = CustomItemStack.make(NamespacedKey("ballcore", "praecantatio_furnace"), Material.BLAST_FURNACE, "Praecantatio Furnace", tierThreeLore)
-    val auramFurnace = CustomItemStack.make(NamespacedKey("ballcore", "auram_furnace"), Material.BLAST_FURNACE, "Auram Furnace", tierThreeLore)
-    val alkimiaFurnace = CustomItemStack.make(NamespacedKey("ballcore", "alkimia_furnace"), Material.BLAST_FURNACE, "Alkimia Furnace", tierThreeLore)
+    val praecantatioFurnace = CustomItemStack.make(NamespacedKey("ballcore", "praecantatio_furnace"), Material.BLAST_FURNACE, txt"Praecantatio Furnace", tierThreeLore)
+    val auramFurnace = CustomItemStack.make(NamespacedKey("ballcore", "auram_furnace"), Material.BLAST_FURNACE, txt"Auram Furnace", tierThreeLore)
+    val alkimiaFurnace = CustomItemStack.make(NamespacedKey("ballcore", "alkimia_furnace"), Material.BLAST_FURNACE, txt"Alkimia Furnace", tierThreeLore)
 
     val tierThree = List(praecantatioFurnace, auramFurnace, alkimiaFurnace)
 

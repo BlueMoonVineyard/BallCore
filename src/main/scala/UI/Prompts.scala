@@ -32,7 +32,7 @@ class Prompts(using plugin: Plugin) extends Listener:
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     def playerChat(event: AsyncChatEvent): Unit =
-        prompts.get(event.getPlayer().getUniqueId()).map { prompt =>
+        prompts.get(event.getPlayer().getUniqueId()).foreach { prompt =>
             event.setCancelled(true)
             prompt.promise.complete(Try(stringify(event.message())))
             prompts.remove(event.getPlayer().getUniqueId())
@@ -42,7 +42,7 @@ class Prompts(using plugin: Plugin) extends Listener:
         if prompts.contains(player.getUniqueId()) then
             val state = prompts(player.getUniqueId())
             state.promise.failure(Exception("cancelled by another prompt"))
-            prompts.remove(player.getUniqueId())
+            val _ = prompts.remove(player.getUniqueId())
 
         val promise = Promise[String]()
         given ctx: ExecutionContext = EntityExecutionContext(player)

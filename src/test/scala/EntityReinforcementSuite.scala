@@ -2,21 +2,15 @@ import BallCore.Storage
 import BallCore.Groups
 import BallCore.Reinforcements
 import java.{util => ju}
-import org.bukkit.NamespacedKey
-import java.util.jar.Attributes.Name
 import BallCore.DataStructures.Clock
 import BallCore.DataStructures.TestClock
 import java.time.Instant
-import java.time.temporal.TemporalAmount
 import java.time.temporal.ChronoUnit
-import BallCore.Reinforcements.ReinforcementError
-import BallCore.Reinforcements.ReinforcementState
 import BallCore.Reinforcements.ReinforcementTypes
 
 class EntityReinforcementSuite extends munit.FunSuite {
     test("basic stuff") {
         given sql: Storage.SQLManager = new Storage.SQLManager(test = Some("ers basic stuff"))
-        given keyVal: Storage.SQLKeyVal = new Storage.SQLKeyVal
         given gm: Groups.GroupManager = new Groups.GroupManager
         given csm: Reinforcements.ChunkStateManager = new Reinforcements.ChunkStateManager
         given esm: Reinforcements.EntityStateManager = new Reinforcements.EntityStateManager
@@ -25,7 +19,6 @@ class EntityReinforcementSuite extends munit.FunSuite {
 
         val u1 = ju.UUID.randomUUID()
         val u2 = ju.UUID.randomUUID()
-        val world = ju.UUID.randomUUID()
         val entity = ju.UUID.randomUUID()
 
         val gid = gm.createGroup(u1, "test")
@@ -51,7 +44,6 @@ class EntityReinforcementSuite extends munit.FunSuite {
     }
     test("damaging shenanigans") {
         given sql: Storage.SQLManager = new Storage.SQLManager(test = Some("ers damaging shenanigans"))
-        given keyVal: Storage.SQLKeyVal = new Storage.SQLKeyVal
         given gm: Groups.GroupManager = new Groups.GroupManager
         given csm: Reinforcements.ChunkStateManager = new Reinforcements.ChunkStateManager
         given esm: Reinforcements.EntityStateManager = new Reinforcements.EntityStateManager
@@ -60,7 +52,6 @@ class EntityReinforcementSuite extends munit.FunSuite {
 
         val u1 = ju.UUID.randomUUID()
         val u2 = ju.UUID.randomUUID()
-        val world = ju.UUID.randomUUID()
         val entity = ju.UUID.randomUUID()
 
         val gid = gm.createGroup(u1, "test")
@@ -75,14 +66,14 @@ class EntityReinforcementSuite extends munit.FunSuite {
         val res3 = erm.damage(entity)
         assert(res3.isRight, res3)
 
-        val d1 = res2.right.get.health - res3.right.get.health
+        val d1 = res2.toOption.get.health - res3.toOption.get.health
 
         clock.changeTimeBy(ChronoUnit.HOURS.getDuration().multipliedBy(5))
 
         val res4 = erm.damage(entity)
         assert(res4.isRight, res4)
 
-        val d2 = res3.right.get.health - res4.right.get.health
+        val d2 = res3.toOption.get.health - res4.toOption.get.health
 
         assert(d2 < d1, (d2, d1))
 

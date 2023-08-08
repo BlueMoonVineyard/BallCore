@@ -7,7 +7,6 @@ import scalikejdbc.NoExtractor
 import BallCore.Storage.Migration
 import org.bukkit.block.Block
 import scala.util.chaining._
-import org.bukkit.Material
 
 /*
 

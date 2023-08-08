@@ -4,15 +4,9 @@
 
 package BallCore.Groups
 
-import BallCore.UI.callback
 import BallCore.UI.Elements._
-import org.bukkit.entity.HumanEntity
 import com.github.stefvanschie.inventoryframework.pane.Pane.Priority
 import org.bukkit.Material
-import org.bukkit.event.inventory.InventoryClickEvent
-import BallCore.UI.Prompts
-import org.bukkit.entity.Player
-import scala.concurrent.ExecutionContext
 import BallCore.UI.PaneAccumulator
 import org.bukkit.Bukkit
 import BallCore.UI.UIProgram
@@ -65,7 +59,7 @@ class GroupManagementProgram(using gm: GroupManager, cbm: CivBeaconManager) exte
         OutlinePane(2, 0, 7, 6) {
             group.users.keys.toList.map(x => Bukkit.getOfflinePlayer(x)).sortBy(_.getName()).foreach { x =>
                 Item(Material.PLAYER_HEAD, displayName = Some(txt"${x.getName()}")) {
-                    SkullUsername(x.getName())
+                    Skull(x)
                     if group.owners.contains(x.getUniqueId()) then
                         Lore(txt"Owner".style(NamedTextColor.GREEN, TextDecoration.BOLD))
                     val roles = group.roles
@@ -252,14 +246,13 @@ class InvitesListProgram(using gm: GroupManager) extends UIProgram:
                 model.invites.foreach { invite =>
                     val player = Bukkit.getOfflinePlayer(invite._1)
                     Button(Material.PLAYER_HEAD, txt"${player.getName()}".color(NamedTextColor.WHITE), Message.ClickInvite(invite._1, invite._2.metadata.id)) {
-                        SkullUsername(player.getName())
+                        Skull(player)
                         Lore(txt"Invited you to ${txt"${invite._2.metadata.name}".color(NamedTextColor.GREEN)}".color(NamedTextColor.WHITE))
                     }
                 }
             }
         }
     def viewing(model: Model, inviter: UserID, group: GroupState): Callback ?=> Gui =
-        val player = Bukkit.getOfflinePlayer(inviter)
         Root(txt"Accept / Reject Invite?", 1) {
             OutlinePane(0, 0, 1, 1) {
                 Button(Material.RED_DYE, txt"Reject Invite".color(NamedTextColor.WHITE), Message.DenyInvite(group.metadata.id))()
@@ -267,7 +260,7 @@ class InvitesListProgram(using gm: GroupManager) extends UIProgram:
             OutlinePane(4, 0, 1, 1) {
                 val player = Bukkit.getOfflinePlayer(inviter)
                 Item(Material.PLAYER_HEAD, displayName = Some(txt"§${player.getName()}".style(NamedTextColor.WHITE))) {
-                    SkullUsername(player.getName())
+                    Skull(player)
                     Lore(txt"Invited you to ${txt"${group.metadata.name}".style(NamedTextColor.GREEN)}".style(NamedTextColor.WHITE))
                 }
             }

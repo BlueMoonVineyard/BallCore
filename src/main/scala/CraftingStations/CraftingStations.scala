@@ -30,7 +30,7 @@ object CraftingStations:
 			"II",
 		)
 		smRecipe.setIngredient('I', MaterialChoice(Material.CRAFTING_TABLE))
-		p.getServer().addRecipe(smRecipe)
+		val _ = p.getServer().addRecipe(smRecipe)
 
 abstract class CraftingStation(recipes: List[Recipe])(using act: CraftingActor, p: Plugin, prompts: Prompts) extends CustomItem, Listeners.BlockClicked:
 	def onBlockClicked(event: PlayerInteractEvent): Unit =

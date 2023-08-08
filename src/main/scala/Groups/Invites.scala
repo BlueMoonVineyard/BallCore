@@ -37,7 +37,7 @@ class InviteManager()(using sql: Storage.SQLManager, gm: GroupManager):
         )
         """
         .update
-        .apply()
+        .apply(); ()
 
     def getInvitesFor(player: UUID): List[(UUID, GroupID)] =
         sql"""
@@ -52,7 +52,7 @@ class InviteManager()(using sql: Storage.SQLManager, gm: GroupManager):
         DELETE FROM Invites WHERE Invitee = ${invitee} AND GroupID = ${group}
         """
         .update
-        .apply()
+        .apply(); ()
 
     def acceptInvite(invitee: UserID, group: GroupID): Either[GroupError, Unit] =
         sql.localTx { implicit session =>

@@ -11,8 +11,6 @@ import java.util.concurrent.TimeUnit
 import BallCore.Sidebar.SidebarLine
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask
 import java.util.function.Consumer
-import java.time.LocalTime
-import org.bukkit.World
 import org.bukkit.Bukkit
 
 case class GameDate(
@@ -116,4 +114,4 @@ object Datekeeping:
                 Bukkit.getServer().getWorld("world").setTime(minute.floor.toLong + 18000)
             })
         }
-        p.getServer().getAsyncScheduler().runAtFixedRate(p, handler, 0, 1000, TimeUnit.MILLISECONDS)
+        val _ = p.getServer().getAsyncScheduler().runAtFixedRate(p, handler, 0, 1000, TimeUnit.MILLISECONDS)

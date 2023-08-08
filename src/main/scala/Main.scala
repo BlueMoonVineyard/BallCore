@@ -5,23 +5,15 @@
 package BallCore
 
 import BallCore.Beacons.Beacons
-import BallCore.UI
-
 import org.bukkit.plugin.java.JavaPlugin
-import org.bukkit.command.CommandExecutor
-import org.bukkit.command.CommandSender
-import org.bukkit.command.Command
-import org.bukkit.entity.Player
 import org.bukkit.Server
 import scala.concurrent.ExecutionContext
 import org.bukkit.Bukkit
-import java.util.logging.Level
 import BallCore.Groups.GroupManager
 import BallCore.Ores.QuadrantOres
 import BallCore.Ores.CardinalOres
 import BallCore.Ores.Furnace
 import BallCore.Gear.QuadrantGear
-import BallCore.Reinforcements
 import BallCore.Woodcutter.Woodcutter
 import BallCore.Reinforcements.BlockReinforcementManager
 import BallCore.Reinforcements.ChunkStateManager
@@ -43,7 +35,6 @@ import BallCore.Mining.AntiCheeser
 import BallCore.DataStructures.ShutdownCallbacks
 import BallCore.Plants.PlantBatchManager
 import scala.concurrent.Await
-import java.time.Duration
 import net.megavex.scoreboardlibrary.api.ScoreboardLibrary
 import BallCore.Sidebar.SidebarActor
 import BallCore.Sigils.Sigil
@@ -104,4 +95,4 @@ final class Main extends JavaPlugin:
         getCommand("done").setExecutor(DoneCommand())
     override def onDisable() =
         import scala.concurrent.ExecutionContext.Implicits.global
-        Await.ready(sm.shutdown(), scala.concurrent.duration.Duration.Inf)
+        val _ = Await.ready(sm.shutdown(), scala.concurrent.duration.Duration.Inf)

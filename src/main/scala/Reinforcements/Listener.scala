@@ -25,7 +25,6 @@ import org.bukkit.block.data.Openable
 import BallCore.Groups.GroupManager
 import BallCore.Groups.Permissions
 import org.bukkit.event.player.PlayerHarvestBlockEvent
-import org.bukkit.event.block.BlockDispenseEvent
 import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.event.entity.EntitySpawnEvent
 import org.bukkit.entity.EntityType
@@ -36,25 +35,13 @@ import org.bukkit.event.block.BlockPistonRetractEvent
 import org.bukkit.event.block.BlockFertilizeEvent
 import com.destroystokyo.paper.MaterialTags
 import org.bukkit.block.data.Lightable
-import org.bukkit.event.inventory.InventoryInteractEvent
-import org.bukkit.event.inventory.InventoryClickEvent
-import org.bukkit.event.inventory.ClickType
-import BallCore.UI.Prompts
 import org.bukkit.entity.Player
-import org.bukkit.event.inventory.PrepareItemCraftEvent
-import org.bukkit.event.inventory.CraftItemEvent
 import org.bukkit.block.data.`type`.Lectern
 import org.bukkit.event.player.PlayerTakeLecternBookEvent
-import BallCore.CustomItems.ItemRegistry
-import scala.concurrent.ExecutionContext
-import BallCore.Folia.EntityExecutionContext
-import org.bukkit.plugin.Plugin
-import org.bukkit.event.player.PlayerInteractEntityEvent
-import org.bukkit.event.entity.EntityDamageEvent
 import BallCore.Beacons.CivBeaconManager
 import BallCore.Groups.GroupError
 import org.bukkit.block.Block
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 object Listener:
     def centered(at: Location): Location =
@@ -84,7 +71,7 @@ object Listener:
             case ReinforcementTypes.IronLike => (Particle.END_ROD, 200, 0.0, 0.13)
         at.getWorld().spawnParticle(pType, centered(at), pCount, pOffset, pOffset, pOffset, pSpeed, null)
 
-class Listener(using registry: ItemRegistry, cbm: CivBeaconManager, gm: GroupManager, holos: HologramManager, prompts: Prompts, plugin: Plugin) extends org.bukkit.event.Listener:
+class Listener(using cbm: CivBeaconManager, gm: GroupManager) extends org.bukkit.event.Listener:
     import Listener._
 
     def reinforcementFromItem(is: ItemStack): Option[ReinforcementTypes] =
@@ -95,86 +82,6 @@ class Listener(using registry: ItemRegistry, cbm: CivBeaconManager, gm: GroupMan
             case Material.IRON_INGOT => Some(ReinforcementTypes.IronLike)
             case Material.COPPER_INGOT => Some(ReinforcementTypes.CopperLike)
             case _ => None
-
-    //
-    //// Plumb-and-square crafting and group switching
-    //
-
-    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
-    def onShiftLeftClick(event: InventoryClickEvent): Unit =
-        if event.getClick() != ClickType.SHIFT_LEFT then
-            return
-        val h = event.getWhoClicked()
-        if !h.isInstanceOf[Player] then
-            return
-        val p = h.asInstanceOf[Player]
-        val istack = event.getCurrentItem()
-        val item = registry.lookup(istack)
-        if !item.isDefined || !item.get.isInstanceOf[PlumbAndSquare] then
-            return
-
-        event.setCancelled(true)
-        p.closeInventory()
-        given ctx: ExecutionContext = EntityExecutionContext(p)
-        prompts.prompt(p, "What group do you want to reinforce on?").map { group =>
-            gm.userGroups(p.getUniqueId()).map(_.find(_.name.toLowerCase().contains(group.toLowerCase()))) match
-                case Left(err) =>
-                    p.sendMessage(err.explain())
-                case Right(Some(group)) =>
-                    RuntimeStateManager.states(p.getUniqueId()) = group.id
-                case Right(None) =>
-                    p.sendMessage(s"I couldn't find a group matching '${group}'")
-        }
-
-    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
-    def onPrepareCraft(event: PrepareItemCraftEvent): Unit =
-        val inv = event.getInventory()
-        val recp = inv.getRecipe()
-        if recp == null then
-            return
-
-        val res = recp.getResult().clone()
-        val item = registry.lookup(res)
-        if !item.isDefined || !item.get.isInstanceOf[PlumbAndSquare] then
-            return
-
-        val h = event.getView().getPlayer()
-        if !h.isInstanceOf[Player] then
-            return
-
-        val p = h.asInstanceOf[Player]
-        val pas = item.get.asInstanceOf[PlumbAndSquare]
-        val pasStack = inv.getItem(inv.first(PlumbAndSquare.itemStack.getType()))
-        val existingMats = pas.getMaterials(pasStack)
-        val craftingWith = inv.getMatrix().filterNot(_ == null).filterNot(_.getType() == PlumbAndSquare.itemStack.getType())(0)
-
-        if !existingMats.isEmpty then
-            val (kind, count) = existingMats.get
-            if Some(kind) != reinforcementFromItem(craftingWith) then
-                inv.setResult(ItemStack(Material.AIR))
-                return
-
-        val kind = reinforcementFromItem(craftingWith).get
-        val newStack = pasStack.clone()
-        newStack.setAmount(1)
-        pas.loadReinforcementMaterials(p, newStack, craftingWith.getAmount(), kind)
-
-        inv.setResult(newStack)
-
-    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
-    def onDoCraft(event: CraftItemEvent): Unit =
-        val inv = event.getInventory()
-        val res = inv.getResult()
-
-        if res == null then
-            return
-
-        val item = registry.lookup(res)
-        if !item.isDefined || !item.get.isInstanceOf[PlumbAndSquare] then
-            return
-
-        val craftingWith = inv.getMatrix().filterNot(_ == null).filterNot(_.getType() == PlumbAndSquare.itemStack.getType())(0)
-        craftingWith.setAmount(0)
 
     //
     //// Stuff that interacts with the RSM; i.e. that mutates block states
@@ -214,7 +121,7 @@ class Listener(using registry: ItemRegistry, cbm: CivBeaconManager, gm: GroupMan
         if !event.hasBlock() || event.getAction() != Action.RIGHT_CLICK_BLOCK then
             return
         val loc = BlockAdjustment.adjustBlock(event.getClickedBlock())
-        event.getClickedBlock().getState() match
+        loc.getState() match
             case _: Container =>
                 checkAt(event.getClickedBlock(), event.getPlayer(), Permissions.Chests) match
                     case Right(ok) if ok =>
@@ -398,15 +305,14 @@ class Listener(using registry: ItemRegistry, cbm: CivBeaconManager, gm: GroupMan
         if player == null then
             return
 
-        event.getBlocks().asScala.exists { x =>
+        if event.getBlocks().asScala.exists { x =>
             checkAt(x.getBlock(), player, Permissions.Crops) match
                 case Right(ok) if ok =>
                     false
                 case _ =>
-                    // TODO: notify of permission denied
-                    event.setCancelled(true)
                     true
-        }
+        } then event.setCancelled(true)
+        // TODO: notify of permission denied
 
     //
     //// Stuff that enforces reinforcements in the face of non-permissions; i.e. stuff like preventing water from killing reinforced blocks
@@ -416,25 +322,23 @@ class Listener(using registry: ItemRegistry, cbm: CivBeaconManager, gm: GroupMan
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     def preventPistonPush(event: BlockPistonExtendEvent): Unit =
         val piston = event.getBlock().getLocation()
-        event.getBlocks().asScala.exists { x =>
+        if event.getBlocks().asScala.exists { x =>
             if cbm.beaconContaining(piston) != cbm.beaconContaining(x.getLocation()) then
-                event.setCancelled(true)
                 true
             else
                 false
-        }
+        } then event.setCancelled(true)
 
     // prevent pistons from pulling blocks
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     def preventPistonPull(event: BlockPistonRetractEvent): Unit =
         val piston = event.getBlock().getLocation()
-        event.getBlocks().asScala.exists { x =>
+        if event.getBlocks().asScala.exists { x =>
             if cbm.beaconContaining(piston) != cbm.beaconContaining(x.getLocation()) then
-                event.setCancelled(true)
                 true
             else
                 false
-        }
+        } then event.setCancelled(true)
     
     // prevent fire from burning blocks
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
@@ -467,14 +371,13 @@ class Listener(using registry: ItemRegistry, cbm: CivBeaconManager, gm: GroupMan
     // prevent plants from breaking reinforced blocks
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     def preventPlantGrowth(event: StructureGrowEvent): Unit =
-        event.getBlocks().asScala.exists { x =>
+        if event.getBlocks().asScala.exists { x =>
             val loc = x.getBlock().getLocation()
             if cbm.beaconContaining(loc) != cbm.beaconContaining(event.getLocation()) then
-                event.setCancelled(true)
                 true
             else
                 false
-        }
+        } then event.setCancelled(true)
 
     // have explosions damage blocks
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)

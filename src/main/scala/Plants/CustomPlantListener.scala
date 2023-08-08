@@ -5,16 +5,8 @@ import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
 import org.bukkit.event.block.BlockPlaceEvent
 import org.bukkit.Material
-import java.time.Instant
 import org.bukkit.event.player.PlayerInteractEvent
-import org.bukkit.block.data.Ageable
 import scala.util.chaining._
-import org.bukkit.BlockChangeDelegate
-import org.bukkit.block.data.BlockData
-import scala.util.Random
-import org.bukkit.util.Consumer
-import org.bukkit.block.BlockState
-import org.bukkit.block.BlockFace
 
 class CustomPlantListener()(using pbm: PlantBatchManager) extends Listener:
 	@EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)

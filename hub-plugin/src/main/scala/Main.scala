@@ -21,22 +21,29 @@ class ChatListener extends Listener:
     def chatEvent(event: AsyncChatEvent): Unit =
         event.setCancelled(true)
         val message =
-            Component.text(s"[Hub] ${event.getPlayer().getDisplayName()}: ", TextColor.fromHexString("#009356"))
+            Component.text("[Hub] ")
+                .append(event.getPlayer().displayName())
+                .append(Component.text(": "))
                 .append(event.message().color(NamedTextColor.WHITE))
+                .color(TextColor.fromHexString("#009356"))
         Bukkit.getServer().sendMessage(message)
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     def joinEvent(event: PlayerJoinEvent): Unit =
-        event.setJoinMessage(null)
+        event.joinMessage(null)
         val message =
-            Component.text(s"${event.getPlayer().getDisplayName()} has joined the hub", NamedTextColor.YELLOW)
+            event.getPlayer().displayName()
+                .append(Component.text(" has joined the hub"))
+                .color(NamedTextColor.YELLOW)
         Bukkit.getServer().sendMessage(message)
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     def leaveEvent(event: PlayerQuitEvent): Unit =
-        event.setQuitMessage(null)
+        event.quitMessage(null)
         val message =
-            Component.text(s"${event.getPlayer().getDisplayName()} has left the hub", NamedTextColor.YELLOW)
+            event.getPlayer().displayName()
+                .append(Component.text(" has left the hub"))
+                .color(NamedTextColor.YELLOW)
         Bukkit.getServer().sendMessage(message)
 
 final class Main extends JavaPlugin:

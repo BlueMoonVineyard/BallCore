@@ -7,7 +7,6 @@ package BallCore.Reinforcements
 import java.{util => ju}
 import scala.collection.mutable.Map
 import java.util.UUID
-import org.bukkit.inventory.ItemStack
 
 object RuntimeStateManager:
     val states = Map[ju.UUID, ju.UUID]()

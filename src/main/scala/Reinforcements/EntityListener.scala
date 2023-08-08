@@ -4,7 +4,6 @@ import org.bukkit.event.EventHandler
 import org.bukkit.event.entity.EntityDamageEvent
 import org.bukkit.event.player.PlayerInteractEntityEvent
 import org.bukkit.event.EventPriority
-import BallCore.CustomItems.ItemRegistry
 import BallCore.Groups.GroupManager
 import BallCore.Groups.Permissions
 import org.bukkit.event.Listener
@@ -12,7 +11,7 @@ import org.bukkit.event.vehicle.VehicleDamageEvent
 import org.bukkit.event.vehicle.VehicleEnterEvent
 import org.bukkit.entity.Player
 
-class EntityListener()(using erm: EntityReinforcementManager, registry: ItemRegistry, gm: GroupManager) extends Listener:
+class EntityListener()(using erm: EntityReinforcementManager, gm: GroupManager) extends Listener:
     import BallCore.Reinforcements.Listener._
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
@@ -58,37 +57,6 @@ class EntityListener()(using erm: EntityReinforcementManager, registry: ItemRegi
                 ()
             case _ =>
                 // TODO: notify of permission denied
-                event.setCancelled(true)
-
-    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
-    def onInteractEntity(event: PlayerInteractEntityEvent): Unit =
-        val p = event.getPlayer()
-        val i = p.getInventory()
-        val istack = i.getItemInMainHand()
-        val item = registry.lookup(istack)
-        if !item.isDefined || !item.get.isInstanceOf[PlumbAndSquare] then
-            return
-        if !RuntimeStateManager.states.contains(p.getUniqueId()) then
-            p.sendMessage("Shift left-click the plumb-and-square in your inventory to set a group to reinforce on before reinforcing")
-            event.setCancelled(true)
-            return
-
-        val pas = item.get.asInstanceOf[PlumbAndSquare]
-        val mats = pas.getMaterials(istack)
-        if mats.isEmpty then
-            return
-        val (kind, amount) = mats.get
-        if amount < 1 then
-            return
-
-        val gid = RuntimeStateManager.states(p.getUniqueId())
-        val eid = event.getRightClicked().getUniqueId()
-        erm.reinforce(p.getUniqueId(), gid, eid, kind) match
-            case Left(err) =>
-                event.getPlayer().sendMessage(explain(err))
-            case Right(value) =>
-                playCreationEffect(event.getRightClicked().getLocation(), kind)
-                pas.loadReinforcementMaterials(p, istack, -1, kind)
                 event.setCancelled(true)
 
     // prevent interacting with reinforced entities

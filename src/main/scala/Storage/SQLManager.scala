@@ -6,13 +6,9 @@ package BallCore.Storage
 
 import java.sql.DriverManager
 import java.io.File
-import scala.util.{Try, Using}
 import scalikejdbc._
 import scalikejdbc.SQL
 import scalikejdbc.NoExtractor
-import org.sqlite.SQLiteConfig
-import org.sqlite.SQLiteDataSource
-import java.util.UUID
 import java.sql.SQLException
 
 case class Migration(name: String, apply: List[scalikejdbc.SQL[Any, NoExtractor]], reverse: List[scalikejdbc.SQL[Any, NoExtractor]])
@@ -57,5 +53,5 @@ class SQLManager(test: Option[String] = None):
                     catch
                         case e: SQLException => throw MigrationFailure(migration.name, idx, e)
                 }
-                sql"INSERT INTO _Migrations (Name) VALUES (${migration.name});".update.apply()
+                sql"INSERT INTO _Migrations (Name) VALUES (${migration.name});".update.apply(); ()
         }

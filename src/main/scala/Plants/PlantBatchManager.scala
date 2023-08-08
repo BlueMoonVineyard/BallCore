@@ -11,10 +11,8 @@ import scalikejdbc.NoExtractor
 import java.util.UUID
 import scala.util.chaining._
 import BallCore.Folia.ChunkExecutionContext
-import org.bukkit.World
 import org.bukkit.Bukkit
 import org.bukkit.plugin.Plugin
-import scala.concurrent.Future
 import scala.collection.mutable
 import java.time.LocalDateTime
 import BallCore.Datekeeping.DateUnit
@@ -127,14 +125,14 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin) extends Actor[PlantM
 				  AND OffsetX = ${value.offsetX}
 				  AND OffsetZ = ${value.offsetZ}
 				  AND Y = ${value.yPos};
-			""".update.apply()
+			""".update.apply(); ()
 		else
 			sql"""
 			INSERT OR REPLACE INTO Plants
 				(ChunkX, ChunkZ, World, OffsetX, OffsetZ, Y, Kind, AgeIngameHours, IncompleteGrowthAdvancements)
 			VALUES
 				(${value.chunkX}, ${value.chunkZ}, ${value.world}, ${value.offsetX}, ${value.offsetZ}, ${value.yPos}, ${value.what.toString()}, ${value.ageIngameHours}, ${value.incompleteGrowthAdvancements});
-			""".update.apply()
+			""".update.apply(); ()
 	private def get(cx: Int, cz: Int, w: UUID): Map[(Int, Int, Int), DBPlantData] =
 		plants.get((cx, cz, w)).getOrElse(Map())
 	private def set(cx: Int, cz: Int, w: UUID, ox: Int, oz: Int, y: Int, f: DBPlantData): Unit =
@@ -195,12 +193,12 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin) extends Actor[PlantM
 					given ec: ChunkExecutionContext = ChunkExecutionContext(cx, cz, world)
 
 					FireAndForget {
-						val (done, notDone) = map.filter(!_._2.deleted).mapValues { data =>
+						val (done, notDone) = map.filter(!_._2.deleted).view.mapValues { data =>
 							val (x, z) = fromOffsets(data.chunkX, data.chunkZ, data.offsetX, data.offsetZ)
 							val block = world.getBlockAt(x, data.yPos, z)
 
 							(data, block)
-						}.toList.partition { (key, in) =>
+						}.toList.partition { (_, in) =>
 							val (data, block) = in
 
 							1.to(data.incompleteGrowthAdvancements).exists { _ =>

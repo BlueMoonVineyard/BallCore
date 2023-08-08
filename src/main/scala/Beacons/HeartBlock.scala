@@ -4,24 +4,15 @@
 
 package BallCore.Beacons
 
-import BallCore.Storage
 import org.bukkit.Material
 import org.bukkit.NamespacedKey
 import org.bukkit.event.block.BlockPlaceEvent
 import org.bukkit.event.block.BlockBreakEvent
-import org.bukkit.inventory.ItemStack
-import java.{util => ju}
 import java.util.UUID
-import org.bukkit.event.Listener
-import org.bukkit.event.EventHandler
-import org.bukkit.event.EventPriority
-import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.entity.Player
 import org.bukkit.ChatColor
 import BallCore.CustomItems.CustomItemStack
 import BallCore.CustomItems.CustomItem
-import BallCore.CustomItems.ItemRegistry
-import org.bukkit.Server
 import BallCore.CustomItems.Listeners
 import BallCore.CustomItems.BlockManager
 import org.bukkit.event.player.PlayerInteractEvent
@@ -29,12 +20,13 @@ import BallCore.PolygonEditor.PolygonEditor
 import BallCore.Groups.GroupManager
 import BallCore.Groups.Permissions
 import org.bukkit.inventory.EquipmentSlot
+import BallCore.UI.Elements._
 
 object HeartBlock:
-    val itemStack = CustomItemStack.make(NamespacedKey("ballcore", "civilization_heart"), Material.WHITE_CONCRETE, "&rCivilization Heart", "&rIt beats with the power of a budding civilization...")
+    val itemStack = CustomItemStack.make(NamespacedKey("ballcore", "civilization_heart"), Material.WHITE_CONCRETE, txt"Civilization Heart", txt"It beats with the power of a budding civilization...")
     // val tickHandler = RainbowTickHandler(Material.WHITE_CONCRETE, Material.PINK_CONCRETE, Material.RED_CONCRETE, Material.PINK_CONCRETE)
 
-class HeartBlock()(using hn: CivBeaconManager, editor: PolygonEditor, gm: GroupManager, server: Server, plugin: JavaPlugin, bm: BlockManager)
+class HeartBlock()(using hn: CivBeaconManager, editor: PolygonEditor, gm: GroupManager, bm: BlockManager)
     extends CustomItem, Listeners.BlockPlaced, Listeners.BlockRemoved, Listeners.BlockClicked:
 
     def group = Beacons.group
@@ -49,7 +41,7 @@ class HeartBlock()(using hn: CivBeaconManager, editor: PolygonEditor, gm: GroupM
         hn.heartAt(event.getClickedBlock().getLocation())
             .map(_._2)
             .flatMap(beacon => hn.getGroup(beacon).map(group => (beacon, group)))
-            .map { (beacon, group) =>
+            .foreach { (beacon, group) =>
                 gm.checkE(event.getPlayer().getUniqueId(), group, Permissions.ManageClaims) match
                     case Left(err) =>
                         event.getPlayer().sendMessage(s"You cannot edit claims because ${err.explain()}")
@@ -74,7 +66,6 @@ class HeartBlock()(using hn: CivBeaconManager, editor: PolygonEditor, gm: GroupM
                 ()
 
     def onBlockRemoved(event: BlockBreakEvent): Unit =
-        val l = event.getBlock().getLocation()
         val owner = bm.retrieve[UUID](event.getBlock(), "owner").get
         hn.removeHeart(event.getBlock().getLocation(), owner) match
             case Some(_) =>

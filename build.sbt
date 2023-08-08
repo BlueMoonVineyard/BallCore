@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-val scala3Version = "3.3.0-RC3"
+val scala3Version = "3.3.1-RC1"
 val circeVersion = "0.14.1"
 val scoreBoardLibraryVersion = "2.0.0-RC9"
 

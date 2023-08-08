@@ -16,13 +16,6 @@ import org.bukkit.block.data.`type`.PointedDripstone
 
 object BlockAdjustment:
     import org.bukkit.Material._
-    private def clockwise(face: BlockFace): BlockFace =
-        face match
-            case BlockFace.NORTH => BlockFace.EAST
-            case BlockFace.EAST => BlockFace.SOUTH
-            case BlockFace.SOUTH => BlockFace.WEST
-            case BlockFace.WEST => BlockFace.NORTH
-            case _ => face
     private def counterclockwise(face: BlockFace): BlockFace =
         face match
             case BlockFace.NORTH => BlockFace.WEST

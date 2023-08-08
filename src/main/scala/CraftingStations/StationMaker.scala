@@ -6,6 +6,7 @@ import org.bukkit.plugin.Plugin
 import BallCore.UI.Prompts
 import BallCore.CustomItems.CustomItemStack
 import org.bukkit.NamespacedKey
+import BallCore.UI.Elements._
 
 object StationMaker:
 	val recipes = List(
@@ -51,7 +52,7 @@ object StationMaker:
 			30,
 		),
 	)
-	val template = CustomItemStack.make(NamespacedKey("ballcore", "station_maker"), Material.CARTOGRAPHY_TABLE, "&rStation Maker", "&rAllows creating improved crafting stations")
+	val template = CustomItemStack.make(NamespacedKey("ballcore", "station_maker"), Material.CARTOGRAPHY_TABLE, txt"Station Maker", txt"Allows creating improved crafting stations")
 
 class StationMaker()(using act: CraftingActor, p: Plugin, prompts: Prompts) extends CraftingStation(StationMaker.recipes):
     def group = CraftingStations.group

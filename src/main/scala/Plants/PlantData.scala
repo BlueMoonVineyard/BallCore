@@ -9,18 +9,17 @@ import scala.util.chaining._
 import org.bukkit.inventory.ItemStack
 import BallCore.CustomItems.CustomItem
 import BallCore.CustomItems.ItemGroup
-import org.bukkit.block.Block
-import java.time.Instant
+import BallCore.UI.Elements._
 
 object Fruit:
 	val fruits = ItemGroup(NamespacedKey("ballcore", "fruits"), ItemStack(Material.APPLE))
-	val apricot = CustomItemStack.make(NamespacedKey("ballcore", "apricot"), Material.APPLE, "&rApricot")
+	val apricot = CustomItemStack.make(NamespacedKey("ballcore", "apricot"), Material.APPLE, txt"Apricot")
 		.tap(is => is.setItemMeta(is.getItemMeta().tap(_.setCustomModelData(1))))
-	val peach = CustomItemStack.make(NamespacedKey("ballcore", "peach"), Material.APPLE, "&rPeach")
+	val peach = CustomItemStack.make(NamespacedKey("ballcore", "peach"), Material.APPLE, txt"Peach")
 		.tap(is => is.setItemMeta(is.getItemMeta().tap(_.setCustomModelData(2))))
-	val pear = CustomItemStack.make(NamespacedKey("ballcore", "pear"), Material.APPLE, "&rPear")
+	val pear = CustomItemStack.make(NamespacedKey("ballcore", "pear"), Material.APPLE, txt"Pear")
 		.tap(is => is.setItemMeta(is.getItemMeta().tap(_.setCustomModelData(3))))
-	val plum = CustomItemStack.make(NamespacedKey("ballcore", "plum"), Material.APPLE, "&rPlum")
+	val plum = CustomItemStack.make(NamespacedKey("ballcore", "plum"), Material.APPLE, txt"Plum")
 		.tap(is => is.setItemMeta(is.getItemMeta().tap(_.setCustomModelData(4))))
 
 class Fruit(val what: CustomItemStack) extends CustomItem:

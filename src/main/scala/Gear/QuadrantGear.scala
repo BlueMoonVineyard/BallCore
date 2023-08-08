@@ -4,7 +4,6 @@
 
 package BallCore.Gear
 
-import org.bukkit.Material
 import org.bukkit.enchantments.Enchantment
 import BallCore.CustomItems.ItemRegistry
 import org.bukkit.Server

@@ -6,12 +6,9 @@ import BallCore.Storage
 import BallCore.Groups
 import BallCore.Reinforcements
 import java.{util => ju}
-import org.bukkit.NamespacedKey
-import java.util.jar.Attributes.Name
 import BallCore.DataStructures.Clock
 import BallCore.DataStructures.TestClock
 import java.time.Instant
-import java.time.temporal.TemporalAmount
 import java.time.temporal.ChronoUnit
 import BallCore.Reinforcements.ReinforcementError
 import BallCore.Reinforcements.ReinforcementState
@@ -20,7 +17,6 @@ import BallCore.Reinforcements.ReinforcementTypes
 class ReinforcementSuite extends munit.FunSuite {
     test("basic stuff") {
         given sql: Storage.SQLManager = new Storage.SQLManager(test = Some("rs basic stuff"))
-        given keyVal: Storage.SQLKeyVal = new Storage.SQLKeyVal
         given gm: Groups.GroupManager = new Groups.GroupManager
         given csm: Reinforcements.ChunkStateManager = new Reinforcements.ChunkStateManager
         given clock: Clock = new TestClock(Instant.MIN)
@@ -55,7 +51,6 @@ class ReinforcementSuite extends munit.FunSuite {
     }
     test("breaking shenanigans") {
         given sql: Storage.SQLManager = new Storage.SQLManager(test = Some("rs breaking shenanigans"))
-        given keyVal: Storage.SQLKeyVal = new Storage.SQLKeyVal
         given gm: Groups.GroupManager = new Groups.GroupManager
         given csm: Reinforcements.ChunkStateManager = new Reinforcements.ChunkStateManager
         given clock: TestClock = new TestClock(Instant.MIN)
@@ -77,14 +72,14 @@ class ReinforcementSuite extends munit.FunSuite {
         val res3 = rm.break(0, 0, 0, 50.0, world)
         assert(res3.isRight, res3)
 
-        val d1 = res2.right.get.health - res3.right.get.health
+        val d1 = res2.toOption.get.health - res3.toOption.get.health
 
         clock.changeTimeBy(ChronoUnit.HOURS.getDuration().multipliedBy(5))
 
         val res4 = rm.break(0, 0, 0, 50.0, world)
         assert(res4.isRight, res4)
 
-        val d2 = res3.right.get.health - res4.right.get.health
+        val d2 = res3.toOption.get.health - res4.toOption.get.health
 
         assert(d2 < d1, (d2, d1))
 
@@ -92,7 +87,6 @@ class ReinforcementSuite extends munit.FunSuite {
     }
     test("break and replace") {
         given sql: Storage.SQLManager = new Storage.SQLManager(test = Some("rs break and replace"))
-        given keyVal: Storage.SQLKeyVal = new Storage.SQLKeyVal
         given gm: Groups.GroupManager = new Groups.GroupManager
         given csm: Reinforcements.ChunkStateManager = new Reinforcements.ChunkStateManager
         given clock: TestClock = new TestClock(Instant.MIN)

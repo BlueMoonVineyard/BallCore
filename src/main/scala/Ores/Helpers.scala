@@ -13,12 +13,11 @@ import org.bukkit.inventory.ShapedRecipe
 import org.bukkit.inventory.ShapelessRecipe
 import BallCore.CustomItems.ItemRegistry
 import BallCore.CustomItems.ItemGroup
-import BallCore.CustomItems.CustomItem
 import BallCore.CustomItems.CustomItemStack
-import org.bukkit.inventory.ItemStack
 import org.bukkit.Server
 import BallCore.CustomItems.PlainCustomItem
 import scala.util.chaining._
+import BallCore.UI.Elements._
 
 /// helper class for managing custom model data numbers of the oretier ore types
 enum OreTypes(val num: Int):
@@ -79,14 +78,13 @@ case class OreVariants(
             NamespacedKey(group.key.getNamespace(), group.key.getKey() + "_ingot_from_nugget_" + in.id.getKey().toLowerCase())
 
         val initialYield = nugget.clone().tap(_.setAmount(6))
-        val scrapsYield = nugget.clone().tap(_.setAmount(4))
 
         val recipeTicks = 100
         val rawRecipe = FurnaceRecipe(recipeKey(raw), initialYield, ExactChoice(raw), 0.0f, recipeTicks)
-        serv.addRecipe(rawRecipe)
+        val _ = serv.addRecipe(rawRecipe)
 
         val rawRecipeB = BlastingRecipe(blastKey(raw), initialYield, ExactChoice(raw), 0.0f, recipeTicks)
-        serv.addRecipe(rawRecipeB)
+        val _ = serv.addRecipe(rawRecipeB)
 
         val blockRecipe = ShapedRecipe(blockKey(block), block)
         blockRecipe.shape(
@@ -95,11 +93,11 @@ case class OreVariants(
             "III",
         )
         blockRecipe.setIngredient('I', ExactChoice(ingot))
-        serv.addRecipe(blockRecipe)
+        val _ = serv.addRecipe(blockRecipe)
 
         val ingotFromBlockRecipe = ShapelessRecipe(ingotFromBlockKey(ingot), ingot.clone().tap(_.setAmount(9)))
         ingotFromBlockRecipe.addIngredient(ExactChoice(block))
-        serv.addRecipe(ingotFromBlockRecipe)
+        val _ = serv.addRecipe(ingotFromBlockRecipe)
 
         val ingotFromNuggetRecipe = ShapedRecipe(ingotFromNuggetKey(ingot), ingot)
         ingotFromNuggetRecipe.shape(
@@ -108,19 +106,19 @@ case class OreVariants(
             "NNN",
         )
         ingotFromNuggetRecipe.setIngredient('N', ExactChoice(nugget))
-        serv.addRecipe(ingotFromNuggetRecipe)
+        val _ = serv.addRecipe(ingotFromNuggetRecipe)
 
         val nuggetRecipe = ShapelessRecipe(nuggetKey(nugget), nugget.clone().tap(_.setAmount(9)))
         nuggetRecipe.addIngredient(ExactChoice(ingot))
-        serv.addRecipe(nuggetRecipe)
+        val _ = serv.addRecipe(nuggetRecipe)
 
 object Helpers:
     def factory(id: String, name: String, num: Int, raw: Material, nugget: Material, ingot: Material, block: Material): OreVariants =
         OreVariants(
-            withCustomModelData(CustomItemStack.make(NamespacedKey("ballcore", s"raw_${id}"), raw, s"&rRaw $name"), num + 3),
-            withCustomModelData(CustomItemStack.make(NamespacedKey("ballcore", s"${id}_nugget"), nugget, s"&r$name Nugget"), num + 4),
-            withCustomModelData(CustomItemStack.make(NamespacedKey("ballcore", s"${id}_ingot"), ingot, s"&r$name Ingot"), num + 5),
-            withCustomModelData(CustomItemStack.make(NamespacedKey("ballcore", s"${id}_block"), block, s"&r$name Block"), num + 6),
+            withCustomModelData(CustomItemStack.make(NamespacedKey("ballcore", s"raw_${id}"), raw, txt"&rRaw $name"), num + 3),
+            withCustomModelData(CustomItemStack.make(NamespacedKey("ballcore", s"${id}_nugget"), nugget, txt"&r$name Nugget"), num + 4),
+            withCustomModelData(CustomItemStack.make(NamespacedKey("ballcore", s"${id}_ingot"), ingot, txt"&r$name Ingot"), num + 5),
+            withCustomModelData(CustomItemStack.make(NamespacedKey("ballcore", s"${id}_block"), block, txt"&r$name Block"), num + 6),
             name,
             id,
         )

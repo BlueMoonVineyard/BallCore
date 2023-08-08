@@ -4,19 +4,13 @@
 
 package BallCore.UI
 
-import scala.collection.JavaConverters._
-import scala.xml.Elem
-import scala.xml.Node
+import scala.jdk.CollectionConverters._
 import com.github.stefvanschie.inventoryframework.pane.Pane.Priority
-import io.circe._, io.circe.parser._, io.circe.syntax._
-import com.github.stefvanschie.inventoryframework.gui.`type`.util.Gui
-import scala.reflect.ClassTag
 import net.kyori.adventure.text.Component
 import com.github.stefvanschie.inventoryframework.gui.`type`.ChestGui
-import com.github.stefvanschie.inventoryframework.adventuresupport.TextHolder
 import com.github.stefvanschie.inventoryframework.adventuresupport.ComponentHolder
 import com.github.stefvanschie.inventoryframework.pane.Pane
-import com.github.stefvanschie.inventoryframework.pane.{OutlinePane => IFOutlinePane, StaticPane => IFStaticPane}
+import com.github.stefvanschie.inventoryframework.pane.{OutlinePane => IFOutlinePane}
 import com.github.stefvanschie.inventoryframework.gui.GuiItem
 import org.bukkit.Material
 import org.bukkit.inventory.ItemStack
@@ -25,9 +19,9 @@ import net.kyori.adventure.text.format.TextColor
 import net.kyori.adventure.text.format.TextDecoration
 import net.kyori.adventure.text.format.Style
 import org.bukkit.event.inventory.InventoryClickEvent
-import net.kyori.adventure.text.format.NamedTextColor
 import net.kyori.adventure.text.format.TextDecoration.State
 import org.bukkit.inventory.meta.SkullMeta
+import org.bukkit.OfflinePlayer
 
 // trait AccumulatorFn:
 
@@ -50,7 +44,7 @@ class Accumulator[T, E](val extra: E):
 
 type PaneAccumulator = Accumulator[Pane, Object => InventoryClickEvent => Unit]
 type ItemAccumulator = Accumulator[GuiItem, Object => InventoryClickEvent => Unit]
-type LoreAccumulator = Accumulator[Component, Box[Option[String]]]
+type LoreAccumulator = Accumulator[Component, Box[Option[OfflinePlayer]]]
 
 class ChatElements:
     extension (sc: StringContext)
@@ -89,7 +83,6 @@ class ChatElements:
 object ChatElements extends ChatElements
 
 object Elements extends ChatElements:
-    private val registeredProperties = scala.collection.mutable.Set[String]()
     def nil[T, E]: (Accumulator[T, E]) ?=> Unit = {
 
     }
@@ -110,13 +103,13 @@ object Elements extends ChatElements:
         val im = is.getItemMeta()
 
         displayName match
-            case Some(x) => im.displayName(x.style(x => x.decorationIfAbsent(TextDecoration.ITALIC, State.FALSE)))
+            case Some(x) => im.displayName(x.style(x => { x.decorationIfAbsent(TextDecoration.ITALIC, State.FALSE); () }))
             case None =>
-        val poki = Box[Option[String]](None)
-        im.lore(Accumulator.run(inner, poki).map(line => line.style(x => x.decorationIfAbsent(TextDecoration.ITALIC, State.FALSE))).asJava)
+        val poki = Box[Option[OfflinePlayer]](None)
+        im.lore(Accumulator.run(inner, poki).map(line => line.style(x => { x.decorationIfAbsent(TextDecoration.ITALIC, State.FALSE); () })).asJava)
 
         poki.it match
-            case Some(x) if im.isInstanceOf[SkullMeta] => im.asInstanceOf[SkullMeta].setOwner(x)
+            case Some(x) if im.isInstanceOf[SkullMeta] => im.asInstanceOf[SkullMeta].setOwningPlayer(x)
             case _ =>
 
         is.setItemMeta(im)
@@ -127,12 +120,12 @@ object Elements extends ChatElements:
         val im = is.getItemMeta()
         val baked = an.extra(onClick.asInstanceOf[Object])
 
-        im.displayName(displayName.style(x => x.decorationIfAbsent(TextDecoration.ITALIC, State.FALSE)))
-        val poki = Box[Option[String]](None)
-        im.lore(Accumulator.run(inner, poki).map(line => line.style(x => x.decorationIfAbsent(TextDecoration.ITALIC, State.FALSE))).asJava)
+        im.displayName(displayName.style(x => { x.decorationIfAbsent(TextDecoration.ITALIC, State.FALSE); () }))
+        val poki = Box[Option[OfflinePlayer]](None)
+        im.lore(Accumulator.run(inner, poki).map(line => line.style(x => { x.decorationIfAbsent(TextDecoration.ITALIC, State.FALSE); () })).asJava)
 
         poki.it match
-            case Some(x) if im.isInstanceOf[SkullMeta] => im.asInstanceOf[SkullMeta].setOwner(x)
+            case Some(x) if im.isInstanceOf[SkullMeta] => im.asInstanceOf[SkullMeta].setOwningPlayer(x)
             case _ =>
 
         is.setItemMeta(im)
@@ -141,5 +134,5 @@ object Elements extends ChatElements:
     def Lore(line: Component)(using an: LoreAccumulator): Unit =
         an add line
 
-    def SkullUsername(username: String)(using an: LoreAccumulator): Unit =
-        an.extra.it = Some(username)
+    def Skull(player: OfflinePlayer)(using an: LoreAccumulator): Unit =
+        an.extra.it = Some(player)

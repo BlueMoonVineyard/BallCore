@@ -12,14 +12,13 @@ import java.{util => ju}
 import io.circe._, io.circe.generic.semiauto._, io.circe.parser._, io.circe.syntax._
 import net.kyori.adventure.audience.Audience
 import org.bukkit.Bukkit
-import scala.collection.JavaConverters._
-import org.bukkit.entity.Player
+import scala.jdk.CollectionConverters._
 
 inline def uuid(from: String) = ju.UUID.fromString(from)
 
 case class GroupStates(id: ju.UUID, name: String):
     def save()(implicit session: DBSession): Unit =
-        sql"REPLACE INTO GroupStates (ID, Name) VALUES (${id}, ${name});".update.apply()
+        sql"REPLACE INTO GroupStates (ID, Name) VALUES (${id}, ${name});".update.apply(); ()
 object GroupStates:
     def apply(ws: WrappedResultSet): GroupStates =
         GroupStates(uuid(ws.string("ID")), ws.string("Name"))
@@ -29,7 +28,7 @@ given Encoder[GroupStates] = deriveEncoder[GroupStates]
 
 case class GroupMemberships(groupID: ju.UUID, userID: ju.UUID):
     def save()(implicit session: DBSession): Unit =
-        sql"REPLACE INTO GroupMemberships (GroupID, UserID) VALUES (${groupID}, ${userID});".update.apply()
+        sql"REPLACE INTO GroupMemberships (GroupID, UserID) VALUES (${groupID}, ${userID});".update.apply(); ()
 object GroupMemberships:
     def apply(ws: WrappedResultSet): GroupMemberships =
         GroupMemberships(uuid(ws.string("GroupID")), uuid(ws.string("UserID")))
@@ -41,7 +40,7 @@ case class GroupRoles(groupID: ju.UUID, roleID: ju.UUID, name: String, hoist: Bo
             (GroupID, RoleID, Name, Hoist, Permissions, Ord)
         VALUES
             (${groupID}, ${roleID}, ${name}, ${hoist}, ${permissions.asJson.noSpaces}, ${ord});
-        """.update.apply()
+        """.update.apply(); ()
 object GroupRoles:
     def apply(ws: WrappedResultSet): GroupRoles =
         GroupRoles(
@@ -60,7 +59,7 @@ case class GroupRoleMemberships(groupID: ju.UUID, roleID: ju.UUID, userID: ju.UU
             (GroupID, RoleID, UserID)
         VALUES
             ($groupID, $roleID, $userID);
-        """.update.apply()
+        """.update.apply(); ()
 object GroupRoleMemberships:
     def apply(ws: WrappedResultSet): GroupRoleMemberships =
         GroupRoleMemberships(
@@ -76,7 +75,7 @@ case class GroupOwnerships(groupID: ju.UUID, userID: ju.UUID):
             (GroupID, UserID)
         VALUES
             ($groupID, $userID);
-        """.update.apply()
+        """.update.apply(); ()
 object GroupOwnerships:
     def apply(ws: WrappedResultSet): GroupOwnerships =
         GroupOwnerships(
@@ -239,7 +238,7 @@ class GroupManager()(using sql: Storage.SQLManager):
             .guard(GroupError.MustBeOwner) { _ => owners.view.map(_.userID).contains(as) }
             .guard(GroupError.MustBeOnlyOwner) { _ => owners.length == 1 }
             .map { _ =>
-                sql"DELETE FROM GroupStates WHERE ID = ${group};".update.apply()
+                sql"DELETE FROM GroupStates WHERE ID = ${group};".update.apply(); ()
             }
 
     private def getGroupOwners(group: GroupID): List[GroupOwnerships] =
@@ -284,7 +283,7 @@ class GroupManager()(using sql: Storage.SQLManager):
             .guard(GroupError.TargetNotInGroup) { _ => members.view.map(_.userID).contains(target) }
             .guard(GroupError.TargetIsAlreadyOwner) { _ => !owners.view.map(_.userID).contains(target) }
             .map { _ =>
-                sql"INSERT INTO GroupOwnerships (GroupID, UserID) VALUES ($group, $target);".update.apply()
+                sql"INSERT INTO GroupOwnerships (GroupID, UserID) VALUES ($group, $target);".update.apply(); ()
             }
 
     def giveUpOwnership(as: UserID, group: GroupID): Either[GroupError, Unit] =
@@ -294,11 +293,11 @@ class GroupManager()(using sql: Storage.SQLManager):
             .guard(GroupError.MustBeOwner) { _.contains(as) }
             .guard(GroupError.GroupWouldHaveNoOwners) { _.length > 1 }
             .map { _ =>
-                sql"DELETE FROM GroupOwnerships WHERE GroupID = $group AND UserID = $as;".update.apply()
+                sql"DELETE FROM GroupOwnerships WHERE GroupID = $group AND UserID = $as;".update.apply(); ()
             }
 
     def sudoSetRolePermissions(groupID: GroupID, roleID: RoleID, permissions: Map[Permissions, RuleMode]): Unit =
-        sql"UPDATE GroupRoles SET Permissions = ${permissions.asJson.noSpaces} WHERE GroupID = ${groupID} AND RoleID = ${roleID};".update.apply()
+        sql"UPDATE GroupRoles SET Permissions = ${permissions.asJson.noSpaces} WHERE GroupID = ${groupID} AND RoleID = ${roleID};".update.apply(); ()
     def setRolePermissions(as: UserID, groupID: GroupID, roleID: RoleID, permissions: Map[Permissions, RuleMode]): Either[GroupError, Unit] =
         getAll(groupID)
             .guard(GroupError.NoPermissions) { _.check(Permissions.ManageRoles, as) }
@@ -312,8 +311,8 @@ class GroupManager()(using sql: Storage.SQLManager):
                         true
                 }
             }
-            .map { data =>
-                sql"UPDATE GroupRoles SET Permissions = ${permissions.asJson.noSpaces} WHERE GroupID = ${groupID} AND RoleID = ${roleID};".update.apply()
+            .map { _ =>
+                sql"UPDATE GroupRoles SET Permissions = ${permissions.asJson.noSpaces} WHERE GroupID = ${groupID} AND RoleID = ${roleID};".update.apply(); ()
             }
 
     def roles(group: GroupID): Either[GroupError, List[RoleState]] =
@@ -333,8 +332,8 @@ class GroupManager()(using sql: Storage.SQLManager):
             .guard(GroupError.RoleNotFound) { _.roles.exists(_.id == role) }
             .guard(GroupError.CantAssignEveryone) { _ => nullUUID != role }
             .guardRoleAboveYours(as, role)
-            .map { data =>
-                sql"DELETE FROM GroupRoles WHERE GroupID = $group AND RoleID = $role".update.apply()
+            .map { _ =>
+                sql"DELETE FROM GroupRoles WHERE GroupID = $group AND RoleID = $role".update.apply(); ()
             }
 
     def assignRole(as: UserID, target: UserID, group: GroupID, role: RoleID, has: Boolean): Either[GroupError, Unit] =
@@ -344,11 +343,11 @@ class GroupManager()(using sql: Storage.SQLManager):
             .guard(GroupError.TargetNotInGroup) { _.users.contains(target) }
             .guard(GroupError.CantAssignEveryone) { _ => nullUUID != role }
             .guardRoleAboveYours(as, role)
-            .map { data =>
+            .map { _ =>
                 if has then
-                    sql"REPLACE INTO GroupRoleMemberships (GroupID, RoleID, UserID) VALUES ($group, $role, $target);".update.apply()
+                    sql"REPLACE INTO GroupRoleMemberships (GroupID, RoleID, UserID) VALUES ($group, $role, $target);".update.apply(); ()
                 else
-                    sql"DELETE FROM GroupRoleMemberships WHERE GroupID = $group AND RoleID = $role AND UserID = $target".update.apply()
+                    sql"DELETE FROM GroupRoleMemberships WHERE GroupID = $group AND RoleID = $role AND UserID = $target".update.apply(); ()
             }
 
     // TODO: invites/passwords
@@ -356,8 +355,8 @@ class GroupManager()(using sql: Storage.SQLManager):
         val members = getGroupMembers(group)
         Right(())
             .guard(GroupError.AlreadyInGroup) { _ => !members.view.map(_.userID).contains(user) }
-            .map { data =>
-                sql"INSERT INTO GroupMemberships (GroupID, UserID) VALUES ($group, $user);".update.apply()
+            .map { _ =>
+                sql"INSERT INTO GroupMemberships (GroupID, UserID) VALUES ($group, $user);".update.apply(); ()
             }
 
     def groupAudience(groupID: GroupID): Either[GroupError, (String, Audience)] =

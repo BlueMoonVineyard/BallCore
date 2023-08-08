@@ -1,3 +1,4 @@
+
 // SPDX-FileCopyrightText: 2023 Janet Blackquill <uhhadd@gmail.com>
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
@@ -6,7 +7,6 @@ package BallCore.DataStructures
 
 object Delay:
     import java.util.{Timer, TimerTask}
-    import java.util.Date
     import scala.concurrent._
     import scala.concurrent.duration.FiniteDuration
     import scala.util.Try

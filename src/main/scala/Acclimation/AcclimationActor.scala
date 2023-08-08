@@ -35,7 +35,7 @@ class AcclimationActor(using s: Storage, p: Plugin, hnm: CivBeaconManager) exten
 		LocalDateTime.now().until(nextHour, ChronoUnit.MILLIS)
 
 	protected def handleInit(): Unit =
-		p.getServer().getAsyncScheduler().runAtFixedRate(p, _ => send(AcclimationMessage.tick), millisToNextSixthHour(), sixHoursMillis, TimeUnit.MILLISECONDS)
+		val _ = p.getServer().getAsyncScheduler().runAtFixedRate(p, _ => send(AcclimationMessage.tick), millisToNextSixthHour(), sixHoursMillis, TimeUnit.MILLISECONDS)
 	protected def handleShutdown(): Unit =
 		()
 	def handle(m: AcclimationMessage): Unit =

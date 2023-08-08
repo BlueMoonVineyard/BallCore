@@ -4,11 +4,7 @@
 
 package BallCore.Acclimation
 
-import org.bukkit.World
 import org.bukkit.Bukkit
-import java.util.UUID
-import org.bukkit.Location
-import org.bukkit.block.Biome
 
 object Information:
     val WorldRadiusBlocks = 2000
@@ -27,7 +23,6 @@ object Information:
 
     def temperature(x: Int, y: Int, z: Int): Double =
         val world = Bukkit.getWorld("world")
-        val provider = world.getBiomeProvider()
         val temp = world.getBlockAt(x, y, z).getTemperature()
         // coldest is -0.7, hottest is 2.0
         ((temp + 0.7) / 2.7)

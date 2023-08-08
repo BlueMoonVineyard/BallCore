@@ -4,12 +4,8 @@
 
 package BallCore.UI
 
-import com.github.stefvanschie.inventoryframework.gui.`type`.ChestGui
 import com.github.stefvanschie.inventoryframework.gui.`type`.util.Gui
-import com.github.stefvanschie.inventoryframework.pane.OutlinePane
-import com.github.stefvanschie.inventoryframework.pane.PaginatedPane
 import org.bukkit.event.inventory.InventoryClickEvent
-import org.bukkit.entity.HumanEntity
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext
 import org.bukkit.entity.Player
@@ -55,7 +51,7 @@ class UIProgramRunner(program: UIProgram, flags: program.Flags, showingTo: Playe
     def dispatch(obj: Object)(event: InventoryClickEvent): Unit =
         implicit val s: UIServices = this
         event.setCancelled(true)
-        program.update(obj.asInstanceOf[program.Message], model).map { x =>
+        program.update(obj.asInstanceOf[program.Message], model).foreach { x =>
             model = x
             if !transferred then
                 render()

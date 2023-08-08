@@ -12,7 +12,6 @@ import org.bukkit.entity.Player
 import scala.collection.concurrent
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
-import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext
 import org.bukkit.block.Block
@@ -21,6 +20,7 @@ import BallCore.Folia.LocationExecutionContext
 import org.bukkit.entity.TextDisplay
 import org.bukkit.entity.Display.Billboard
 import BallCore.Folia.FireAndForget
+import net.kyori.adventure.text.Component
 
 class Hologram(val createAt: Location)(using JavaPlugin):
     implicit var ctx: ExecutionContext = LocationExecutionContext(createAt)
@@ -48,10 +48,10 @@ class Hologram(val createAt: Location)(using JavaPlugin):
             lines.foreach { line => line.remove() }
             lines = List()
         }
-    def appendLine(text: String): Unit =
+    def appendLine(text: Component): Unit =
         FireAndForget {
             position.getWorld().spawn(position, classOf[TextDisplay], { ent =>
-                ent.setText(text)
+                ent.text(text)
                 ent.setBillboard(Billboard.CENTER)
                 lines = lines ::: List(ent)
             })
@@ -97,17 +97,17 @@ class HologramManager(using p: JavaPlugin):
             .tap(_.multiply(0.55 * sqrt(2)))
         base.tap(_.add(vec))
 
-    def display(at: Block, to: Player, text: List[String]): Unit =
+    def display(at: Block, to: Player, text: List[Component]): Unit =
         val loc = displayLocation(at.getLocation(), to)
         val holo = getHologram(at.getLocation())
         holo.relocate(loc)
         holo.clearLines()
-        text.map(holo.appendLine)
+        text.foreach(holo.appendLine)
 
     def clear(at: Block): Unit =
         val loc = at.getLocation()
         val key = (loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(), loc.getWorld().getUID())
-        holos.get(key).map { (holo, cb) =>
+        holos.get(key).foreach { (holo, cb) =>
             cb()
             holos.remove(key)
             holo.delete()

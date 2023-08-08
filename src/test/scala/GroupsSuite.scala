@@ -34,7 +34,6 @@ class GroupsSuite extends munit.FunSuite:
         val roles = gm.roles(gid)
         assert(roles.isRight, roles)
         val actualRoles = roles.getOrElse(List())
-        val adminRoleID = actualRoles.find { x => x.name == "Admin" }.get.id
         val modRoleID = actualRoles.find { x => x.name == "Moderator" }.get.id
 
         gm.sudoSetRolePermissions(gid, modRoleID, Map(
@@ -60,7 +59,6 @@ class GroupsSuite extends munit.FunSuite:
         val roles = gm.roles(gid)
         assert(roles.isRight, roles)
         val actualRoles = roles.getOrElse(List())
-        val adminRoleID = actualRoles.find { x => x.name == "Admin" }.get.id
         val modRoleID = actualRoles.find { x => x.name == "Moderator" }.get.id
         val everyoneID = actualRoles.find { x => x.name == "Everyone" }.get.id
 

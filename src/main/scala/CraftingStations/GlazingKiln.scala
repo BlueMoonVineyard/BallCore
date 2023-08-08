@@ -7,6 +7,7 @@ import org.bukkit.plugin.Plugin
 import BallCore.UI.Prompts
 import BallCore.CustomItems.CustomItemStack
 import org.bukkit.NamespacedKey
+import BallCore.UI.Elements._
 
 object GlazingKiln:
     val pairs = List(
@@ -48,7 +49,7 @@ object GlazingKiln:
         val (dye, terracotta, name) = it
         Recipe(name, List((MaterialChoice(dye), 4), (MaterialChoice(Material.TERRACOTTA), 64)), List(ItemStack(terracotta, 64)), 10)
     }
-    val template = CustomItemStack.make(NamespacedKey("ballcore", "glazing_kiln"), Material.SMOKER, "&rGlazing Kiln", "&rDyes and glazes more terracotta with less dyes than normal crafting")
+    val template = CustomItemStack.make(NamespacedKey("ballcore", "glazing_kiln"), Material.SMOKER, txt"Glazing Kiln", txt"Dyes and glazes more terracotta with less dyes than normal crafting")
 
 class GlazingKiln()(using act: CraftingActor, p: Plugin, prompts: Prompts) extends CraftingStation(GlazingKiln.recipes):
     def group = CraftingStations.group

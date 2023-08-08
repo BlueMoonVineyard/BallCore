@@ -5,15 +5,14 @@ import org.bukkit.entity.Player
 import BallCore.UI.UIServices
 import scala.concurrent.Future
 import org.bukkit.block.Block
-import BallCore.UI.callback
 import BallCore.UI.Elements._
 import scala.jdk.CollectionConverters._
 import org.bukkit.inventory.RecipeChoice
 import org.bukkit.inventory.RecipeChoice.MaterialChoice
 import org.bukkit.inventory.ItemStack
-import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer
 import net.kyori.adventure.text.format.NamedTextColor
 import net.kyori.adventure.text.format.TextDecoration
+import net.kyori.adventure.text.format.TextDecoration.State
 import com.github.stefvanschie.inventoryframework.gui.`type`.util.Gui
 import net.kyori.adventure.text.Component
 import org.bukkit.Material
@@ -45,18 +44,18 @@ class RecipeSelectorProgram(recipes: List[Recipe])(using actor: CraftingActor) e
 			case Message.prevPage =>
 				model.copy(page = (model.page - 1).max(0))
 
-	def choiceToString(input: RecipeChoice): String =
+	def choiceToString(input: RecipeChoice): Component =
 		input match
 			case m: MaterialChoice =>
-				m.getChoices().asScala.map(mat => ItemStack(mat).getI18NDisplayName()).mkString(" §for§7§l ")
+				m.getChoices().asScala.map(mat => nameOf(ItemStack(mat)).decoration(TextDecoration.BOLD, State.TRUE)).toList.mkComponent(txt" or ")
 			case _ =>
-				s"TODO: ${input}"
+				txt"TODO: ${input}"
 
 	def nameOf(s: ItemStack): Component =
 		if s.getItemMeta().hasDisplayName() then
 			s.getItemMeta().displayName()
 		else
-			Component.text(s.getI18NDisplayName())
+			Component.translatable(s)
 
 	override def view(model: Model): Callback ?=> Gui =
 		Root(txt"Recipes (Page ${model.page+1} of ${numPages})", 6) {
@@ -71,8 +70,8 @@ class RecipeSelectorProgram(recipes: List[Recipe])(using actor: CraftingActor) e
 						Lore(txt"Results".style(NamedTextColor.WHITE, TextDecoration.UNDERLINED))
 						recipe.outputs.foreach { output =>
 							Lore(txt" - ${nameOf(output).style(NamedTextColor.GRAY, TextDecoration.BOLD)} × ${output.getAmount()}".color(NamedTextColor.WHITE))
-							if output.getItemMeta().getLore() != null then
-								Lore(txt"   (${output.getItemMeta().getLore().get(0)})".color(NamedTextColor.DARK_PURPLE))
+							if output.getItemMeta().hasLore() then
+								Lore(txt"   (${output.getItemMeta().lore().get(0)})".color(NamedTextColor.DARK_PURPLE))
 						}
 						Lore(txt"")
 						val time = txt"${recipe.work} seconds".color(NamedTextColor.GREEN)

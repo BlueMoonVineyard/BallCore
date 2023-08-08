@@ -95,25 +95,24 @@ class ChunkStateManager()(using sql: Storage.SQLManager):
 
     private def load(key: ChunkKey): Unit =
         val cs = ChunkState(Map())
-        val items =
-            sql"""
-            SELECT OffsetX, OffsetZ, Y, GroupID, Owner, Health, ReinforcementKind, PlacedAt FROM BlockReinforcements
-                LEFT JOIN Reinforcements
-                       ON Reinforcements.ID = BlockReinforcements.ReinforcementID
+        sql"""
+        SELECT OffsetX, OffsetZ, Y, GroupID, Owner, Health, ReinforcementKind, PlacedAt FROM BlockReinforcements
+            LEFT JOIN Reinforcements
+                   ON Reinforcements.ID = BlockReinforcements.ReinforcementID
 
-                WHERE ChunkX = ${key.chunkX}
-                  AND ChunkZ = ${key.chunkZ}
-                  AND World = ${key.world};
-            """
-                .map(rs => (rs.int("OffsetX"), rs.int("OffsetZ"), rs.int("Y"), rs.string("GroupID"), rs.string("Owner"), rs.int("Health"), rs.string("ReinforcementKind"), rs.date("PlacedAt")))
-                .list
-                .apply()
-                .foreach { tuple =>
-                    val (offsetX, offsetZ, y, group, owner, health, reinforcementKind, date) = tuple
-                    val gid = ju.UUID.fromString(group)
-                    val uid = ju.UUID.fromString(owner)
-                    cs.blocks(BlockKey(offsetX, offsetZ, y)) = ReinforcementState(gid, uid, false, false, health, ReinforcementTypes.from(reinforcementKind).get, date.toInstant())
-                }
+            WHERE ChunkX = ${key.chunkX}
+              AND ChunkZ = ${key.chunkZ}
+              AND World = ${key.world};
+        """
+            .map(rs => (rs.int("OffsetX"), rs.int("OffsetZ"), rs.int("Y"), rs.string("GroupID"), rs.string("Owner"), rs.int("Health"), rs.string("ReinforcementKind"), rs.date("PlacedAt")))
+            .list
+            .apply()
+            .foreach { tuple =>
+                val (offsetX, offsetZ, y, group, owner, health, reinforcementKind, date) = tuple
+                val gid = ju.UUID.fromString(group)
+                val uid = ju.UUID.fromString(owner)
+                cs.blocks(BlockKey(offsetX, offsetZ, y)) = ReinforcementState(gid, uid, false, false, health, ReinforcementTypes.from(reinforcementKind).get, date.toInstant())
+            }
         cache(key) = cs
 
     def get(key: ChunkKey): ChunkState =

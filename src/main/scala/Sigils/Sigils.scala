@@ -16,15 +16,15 @@ import java.util.UUID
 import scala.util.Try
 import org.bukkit.plugin.Plugin
 import BallCore.DataStructures.ShutdownCallbacks
-import org.bukkit.entity.Damageable
 import BallCore.Beacons.CivBeaconManager
 import BallCore.UI
 import net.kyori.adventure.text.format.NamedTextColor
 import java.{util => ju}
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import net.kyori.adventure.text.format.TextDecoration
 import java.util.concurrent.TimeUnit
 import org.bukkit.inventory.ShapelessRecipe
+import BallCore.UI.Elements._
 
 object Sigil:
     enum CustomModelData(val num: Int):
@@ -32,7 +32,7 @@ object Sigil:
         case Active extends CustomModelData(2)
 
     val group = ItemGroup(NamespacedKey("ballcore", "sigils"), ItemStack(Material.ENDER_PEARL))
-    val itemStack = CustomItemStack.make(NamespacedKey("ballcore", "sigil"), Material.PAPER, "&rSigil")
+    val itemStack = CustomItemStack.make(NamespacedKey("ballcore", "sigil"), Material.PAPER, txt"Sigil")
     itemStack.setItemMeta(itemStack.getItemMeta().tap(_.setCustomModelData(CustomModelData.Empty.num)))
 
     val persistenceKeyPlayer = NamespacedKey("ballcore", "sigil_bound_player_uuid")
@@ -51,7 +51,7 @@ object Sigil:
         sigilRecipe.addIngredient(Material.HONEYCOMB)
         sigilRecipe.addIngredient(Material.REDSTONE_BLOCK)
         sigilRecipe.addIngredient(Material.COAL_BLOCK)
-        p.getServer().addRecipe(sigilRecipe)
+        val _ = p.getServer().addRecipe(sigilRecipe)
 
 class Sigil extends CustomItem:
     import UI.ChatElements._

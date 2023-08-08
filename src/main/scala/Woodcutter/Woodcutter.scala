@@ -3,17 +3,11 @@ package BallCore.Woodcutter
 import org.bukkit.NamespacedKey
 import org.bukkit.Material
 import org.bukkit.event.Listener
-import com.destroystokyo.paper.MaterialTags
 import org.bukkit.inventory.StonecuttingRecipe
 import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.RecipeChoice.MaterialChoice
-import org.bukkit.event.inventory.PrepareItemCraftEvent
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
-import org.bukkit.entity.Player
-import java.{util => ju}
-import java.util.Collections
-import scala.util.chaining._
 import io.papermc.paper.event.player.PlayerStonecutterRecipeSelectEvent
 import BallCore.CustomItems.CustomItem
 import BallCore.CustomItems.CustomItemStack
@@ -22,6 +16,7 @@ import BallCore.CustomItems.ItemRegistry
 import org.bukkit.Server
 import org.bukkit.plugin.java.JavaPlugin
 import BallCore.CustomItems.BlockManager
+import BallCore.UI.Elements._
 
 class WoodCutterListener(using bm: BlockManager, registry: ItemRegistry) extends Listener:
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
@@ -63,9 +58,9 @@ class WoodCutterListener(using bm: BlockManager, registry: ItemRegistry) extends
 
 object Woodcutter:
     val itemGroup = ItemGroup(NamespacedKey("ballcore", "woodcutters"), ItemStack(Material.STONECUTTER))
-    val t1ItemStack = CustomItemStack.make(NamespacedKey("ballcore", "woodcutter_tier1"), Material.STONECUTTER, "&rBasic Woodcutter", "&7Chops wood more efficiently")
-    val t2ItemStack = CustomItemStack.make(NamespacedKey("ballcore", "woodcutter_tier2"), Material.STONECUTTER, "&rImproved Woodcutter", "&7Chops wood even more efficiently")
-    val t3ItemStack = CustomItemStack.make(NamespacedKey("ballcore", "woodcutter_tier3"), Material.STONECUTTER, "&rAdvanced Woodcutter", "&7Chops wood with outstanding efficiency")
+    val t1ItemStack = CustomItemStack.make(NamespacedKey("ballcore", "woodcutter_tier1"), Material.STONECUTTER, txt"Basic Woodcutter", txt"Chops wood more efficiently")
+    val t2ItemStack = CustomItemStack.make(NamespacedKey("ballcore", "woodcutter_tier2"), Material.STONECUTTER, txt"Improved Woodcutter", txt"Chops wood even more efficiently")
+    val t3ItemStack = CustomItemStack.make(NamespacedKey("ballcore", "woodcutter_tier3"), Material.STONECUTTER, txt"Advanced Woodcutter", txt"Chops wood with outstanding efficiency")
 
     val logs = List(
         (List(Material.ACACIA_LOG, Material.ACACIA_WOOD, Material.STRIPPED_ACACIA_LOG, Material.STRIPPED_ACACIA_WOOD), Material.ACACIA_PLANKS),

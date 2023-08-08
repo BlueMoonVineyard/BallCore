@@ -6,7 +6,6 @@ package BallCore.Reinforcements
 
 import BallCore.Groups
 import java.{util => ju}
-import org.bukkit.NamespacedKey
 import java.time.temporal.ChronoUnit
 import scala.math._
 import BallCore.DataStructures.Clock
@@ -35,8 +34,6 @@ def explain(err: ReinforcementError): String =
 class BlockReinforcementManager()(using csm: ChunkStateManager, gsm: Groups.GroupManager, c: Clock):
     private def toOffsets(x: Int, z: Int): (Int, Int, Int, Int) =
         (x / 16, z / 16, x % 16, z % 16)
-    private def fromOffsets(chunkX: Int, chunkZ: Int, offsetX: Int, offsetZ: Int): (Int, Int) =
-        ((chunkX*16) + offsetX, (chunkZ*16) + offsetZ)
     private def hoist[B](either: Either[Groups.GroupError, B]): Either[ReinforcementError, B] =
         either.left.map(ReinforcementGroupError(_))
 

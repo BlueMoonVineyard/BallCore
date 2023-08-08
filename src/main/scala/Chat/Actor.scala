@@ -1,7 +1,6 @@
 package BallCore.Chat
 
 import BallCore.DataStructures.Actor
-import org.bukkit.plugin.Plugin
 import org.bukkit.entity.Player
 import net.kyori.adventure.text.Component
 import BallCore.Groups.GroupID
@@ -9,7 +8,7 @@ import org.bukkit.Bukkit
 import net.kyori.adventure.text.format.NamedTextColor
 import net.kyori.adventure.text.format.TextColor
 import BallCore.Groups.GroupManager
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import net.kyori.adventure.audience.Audience
 import java.util.regex.Pattern
 import net.kyori.adventure.text.TextReplacementConfig
@@ -31,7 +30,7 @@ enum PlayerState:
 	case localChat
 	case groupChat(group: GroupID)
 
-class ChatActor(using p: Plugin, gm: GroupManager) extends Actor[ChatMessage]:
+class ChatActor(using gm: GroupManager) extends Actor[ChatMessage]:
 	import BallCore.UI.ChatElements._
 	var states = Map[Player, PlayerState]().withDefaultValue(PlayerState.globalChat)
 	val globalGrey = TextColor.fromHexString("#686b6f")
@@ -62,22 +61,22 @@ class ChatActor(using p: Plugin, gm: GroupManager) extends Actor[ChatMessage]:
 				val m = preprocess(m_)
 				states(p) match
 					case PlayerState.globalChat =>
-						Bukkit.getServer().sendMessage(txt"[!] ${p.getDisplayName()}: ${m.color(NamedTextColor.WHITE)}".color(globalGrey))
+						Bukkit.getServer().sendMessage(txt"[!] ${p.displayName()}: ${m.color(NamedTextColor.WHITE)}".color(globalGrey))
 					case PlayerState.localChat =>
 						val nearby = Bukkit.getOnlinePlayers().asScala.filter { plr =>
 							plr.getWorld() == p.getWorld()
 						}.filter { plr =>
 							plr.getLocation().distanceSquared(p.getLocation()) < 500 * 500
 						}.asJava
-						Audience.audience(nearby).sendMessage(txt"[Local] ${p.getDisplayName()}: ${m.color(NamedTextColor.WHITE)}".color(localGrey))
+						Audience.audience(nearby).sendMessage(txt"[Local] ${p.displayName()}: ${m.color(NamedTextColor.WHITE)}".color(localGrey))
 					case PlayerState.groupChat(group) =>
-						gm.groupAudience(group).map { (name, aud) =>
-							aud.sendMessage(txt"[${name}] ${p.getDisplayName()}: ${m.color(NamedTextColor.WHITE)}".color(groupGrey))
+						gm.groupAudience(group).foreach { (name, aud) =>
+							aud.sendMessage(txt"[${name}] ${p.displayName()}: ${m.color(NamedTextColor.WHITE)}".color(groupGrey))
 						}
 			case ChatMessage.joined(p) =>
-				Bukkit.getServer().sendMessage(txt"${p.getDisplayName()} has joined the game".color(NamedTextColor.YELLOW))
+				Bukkit.getServer().sendMessage(txt"${p.displayName()} has joined the game".color(NamedTextColor.YELLOW))
 			case ChatMessage.left(p) =>
-				Bukkit.getServer().sendMessage(txt"${p.getDisplayName()} has left the game".color(NamedTextColor.YELLOW))
+				Bukkit.getServer().sendMessage(txt"${p.displayName()} has left the game".color(NamedTextColor.YELLOW))
 			case ChatMessage.chattingInGroup(p, group) =>
 				states += p -> PlayerState.groupChat(group)
 				p.sendMessage(txt"You are now chatting in a group".color(NamedTextColor.GREEN))

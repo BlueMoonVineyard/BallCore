@@ -46,9 +46,9 @@ class SidebarActor(using lib: ScoreboardLibrary, p: Plugin) extends Actor[Sideba
 			case SidebarMsg.playerJoin(who) =>
 				import BallCore.UI.ChatElements._
 				val sidebar = lib.createSidebar()
-				val civ = txt"Civ".style(_.color(TextColor.fromCSSHexString("#da2117")))
-				val cubed = txt"Cubed".style(_.color(TextColor.fromCSSHexString("#93180f")))
-				sidebar.title(txt"${civ}${cubed}".style(_.decorate(TextDecoration.BOLD)))
+				val civ = txt"Civ".style(x => { x.color(TextColor.fromCSSHexString("#da2117")); () })
+				val cubed = txt"Cubed".style(x => { x.color(TextColor.fromCSSHexString("#93180f")); () })
+				sidebar.title(txt"${civ}${cubed}".style(x => { x.decorate(TextDecoration.BOLD); () }))
 				sidebar.addPlayer(who)
 				SidebarLine.values.foreach(line => sidebar.line(line.ordinal, Component.empty()))
 				sidebars(who) = sidebar

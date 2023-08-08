@@ -18,12 +18,11 @@ import BallCore.Storage
 import scalikejdbc.DBSession
 import scalikejdbc._
 import java.util.UUID
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 import scala.concurrent.ExecutionContext
 import BallCore.Folia.EntityExecutionContext
-import scala.concurrent.Future
 import org.bukkit.plugin.Plugin
 import org.bukkit.entity.Entity
 import org.bukkit.event.Listener
@@ -31,11 +30,12 @@ import BallCore.Beacons.CivBeaconManager
 import BallCore.Beacons.BeaconID
 import BallCore.Groups.UserID
 import BallCore.Folia.FireAndForget
+import BallCore.UI.Elements._
 
 object Slimes:
 	val sigilSlime = ItemStack(Material.STICK)
 	sigilSlime.setItemMeta(sigilSlime.getItemMeta().tap(_.setCustomModelData(6)))
-	val slimeEggStack = CustomItemStack.make(NamespacedKey("ballcore", "sigil_slime_egg"), Material.PAPER, "&rSigil Slime Egg")
+	val slimeEggStack = CustomItemStack.make(NamespacedKey("ballcore", "sigil_slime_egg"), Material.PAPER, txt"Sigil Slime Egg")
 	slimeEggStack.setItemMeta(slimeEggStack.getItemMeta().tap(_.setCustomModelData(3)))
 
 	val slimeScale = 1.5
@@ -81,7 +81,7 @@ class SigilSlimeManager(using sql: Storage.SQLManager):
 		)
 		"""
 		.update
-		.apply()
+		.apply(); ()
 
 	def banishedUsers(from: BeaconID): List[UserID] =
 		sql"""
@@ -111,7 +111,7 @@ class SigilSlimeManager(using sql: Storage.SQLManager):
 			InteractionEntityID = ${slime};
 		"""
 		.update
-		.apply()
+		.apply(); ()
 
 	def unbanish(user: UserID, slime: UUID): Unit =
 		sql"""
@@ -123,8 +123,7 @@ class SigilSlimeManager(using sql: Storage.SQLManager):
 			BanishedUserID = ${user};
 		"""
 		.update
-		.apply()
-
+		.apply(); ()
 
 class CustomEntityManager(using sql: Storage.SQLManager):
 	private implicit val session: DBSession = sql.session
@@ -160,7 +159,7 @@ class CustomEntityManager(using sql: Storage.SQLManager):
 		);
 		"""
 		.update
-		.apply()
+		.apply(); ()
 
 	def entitiesOfKind(kind: String): List[EntityIDPair] =
 		sql"""

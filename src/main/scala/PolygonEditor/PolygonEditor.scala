@@ -1,8 +1,6 @@
 package BallCore.PolygonEditor
 
 import org.bukkit.entity.Player
-import scala.concurrent.ExecutionContext
-import BallCore.Folia.EntityExecutionContext
 import org.bukkit.plugin.Plugin
 import scala.concurrent.Future
 import org.bukkit.Location
@@ -10,7 +8,6 @@ import scala.concurrent.Promise
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask
 import org.bukkit.Particle
 import java.{util => ju}
-import java.util.ArrayList
 import java.util.Arrays
 import org.bukkit.Particle.DustOptions
 import org.bukkit.Color
@@ -21,11 +18,8 @@ import org.bukkit.event.player.PlayerInteractEvent
 import scala.collection.concurrent.TrieMap
 import org.bukkit.event.block.Action
 import org.bukkit.inventory.EquipmentSlot
-import org.jetbrains.annotations.Async.Schedule
 import java.util.concurrent.TimeUnit
-import org.locationtech.jts.geom.GeometryFactory 
 import org.locationtech.jts.geom.Coordinate
-import net.kyori.adventure.text.Component
 import org.bukkit.event.player.PlayerMoveEvent
 import org.bukkit.event.player.PlayerQuitEvent
 import BallCore.Beacons.BeaconID
@@ -53,7 +47,7 @@ class EditorListener()(using e: PolygonEditor) extends Listener:
 
 	@EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
 	def look(event: PlayerMoveEvent): Unit =
-		val targetBlock = event.getPlayer().getTargetBlock(30)
+		val targetBlock = event.getPlayer().getTargetBlockExact(30)
 		if targetBlock == null then
 			return
 		val targetLoc = targetBlock.getLocation()
@@ -75,7 +69,7 @@ class PolygonEditor(using p: Plugin, bm: CivBeaconManager):
 	p.getServer().getAsyncScheduler().runAtFixedRate(p, t => render(), 1 * 50, 10 * 50, TimeUnit.MILLISECONDS)
 
 	def leave(player: Player): Unit =
-		playerPolygons.remove(player)
+		val _ = playerPolygons.remove(player)
 
 	def create(player: Player, world: World, beaconID: BeaconID): Unit =
 		import BallCore.UI.ChatElements._
@@ -105,10 +99,10 @@ class PolygonEditor(using p: Plugin, bm: CivBeaconManager):
 				case CreatorAction.drawLine(from, to) =>
 					drawLine(from, to, player, Color.WHITE, 0.5)
 				case CreatorAction.drawSelectionLine(from) =>
-					val to = player.getTargetBlock(100).getLocation()
+					val to = player.getTargetBlockExact(100).getLocation()
 					drawLine(from, to, player, Color.AQUA, 0.5)
 				case CreatorAction.drawFinisherLine(to) =>
-					val from = player.getTargetBlock(100).getLocation()
+					val from = player.getTargetBlockExact(100).getLocation()
 					drawLine(from, to, player, Color.fromRGB(0xA8ABB0), 1.0)
 				case CreatorAction.finished(_) =>
 				case CreatorAction.notifyPlayer(_) =>
@@ -190,7 +184,7 @@ class PolygonEditor(using p: Plugin, bm: CivBeaconManager):
 			case Some(state) =>
 				state
 	def done(player: Player): Unit =
-		playerPolygons.updateWith(player) { state =>
+		val _ = playerPolygons.updateWith(player) { state =>
 			state.flatMap(state => state match
 				case PlayerState.editing(state) =>
 					val (model, actions) = state.update(EditorMsg.done())
@@ -219,7 +213,7 @@ class PolygonEditor(using p: Plugin, bm: CivBeaconManager):
 			clickPromises.remove(player)
 			true
 		else if playerPolygons.contains(player) then
-			playerPolygons.updateWith(player) { state =>
+			val _ = playerPolygons.updateWith(player) { state =>
 				state.flatMap(state => state match
 					case PlayerState.editing(state) =>
 						val (model, actions) = state.update(EditorMsg.rightClick())
@@ -236,7 +230,7 @@ class PolygonEditor(using p: Plugin, bm: CivBeaconManager):
 		if !playerPolygons.contains(player) then
 			return
 
-		playerPolygons.updateWith(player) { state =>
+		val _ = playerPolygons.updateWith(player) { state =>
 			state.flatMap(state => state match
 				case PlayerState.editing(state) =>
 					val (model, actions) = state.update(EditorMsg.look(targetLoc))

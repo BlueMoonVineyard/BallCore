@@ -2,13 +2,10 @@ package BallCore.CraftingStations
 
 import org.bukkit.entity.Player
 import org.bukkit.block.Block
-import java.util.concurrent.LinkedTransferQueue
-import org.bukkit.Bukkit
 import org.bukkit.plugin.Plugin
 import java.util.concurrent.TimeUnit
 import BallCore.Folia.LocationExecutionContext
 import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
 import BallCore.Folia.EntityExecutionContext
 import org.bukkit.block.BlockFace
 import org.bukkit.Material
@@ -32,7 +29,7 @@ class CraftingActor(using p: Plugin) extends Actor[CraftingMessage]:
 	val sides = List(BlockFace.NORTH, BlockFace.SOUTH, BlockFace.WEST, BlockFace.EAST)
 
 	protected def handleInit(): Unit =
-		p.getServer().getAsyncScheduler().runAtFixedRate(p, _ => send(CraftingMessage.tick), 0, 1, TimeUnit.SECONDS)
+		val _ = p.getServer().getAsyncScheduler().runAtFixedRate(p, _ => send(CraftingMessage.tick), 0, 1, TimeUnit.SECONDS)
 	protected def handleShutdown(): Unit =
 		()
 
@@ -69,7 +66,7 @@ class CraftingActor(using p: Plugin) extends Actor[CraftingMessage]:
 	def insertInto(outputs: List[ItemStack], inventory: Inventory, at: Block): Unit =
 		outputs.foreach { output =>
 			if !inventory.addItem(output).isEmpty() then
-				at.getWorld().dropItemNaturally(at.getLocation(), output)
+				val _ = at.getWorld().dropItemNaturally(at.getLocation(), output)
 		}
 
 	def completeJob(player: Player, job: Job): Unit =

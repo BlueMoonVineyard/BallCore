@@ -5,9 +5,8 @@
 package BallCore.Storage
 
 import java.util.UUID
-import scala.reflect.ClassTag
 
-import io.circe._, io.circe.generic.semiauto._
+import io.circe._
 
 trait KeyVal:
     def set[A](player: UUID, key: String, value: A)(using Encoder[A]): Unit

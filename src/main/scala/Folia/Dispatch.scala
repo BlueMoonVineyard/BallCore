@@ -3,7 +3,6 @@ package BallCore.Folia
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.util.Failure
-import scala.util.Success
 
 object Dispatch:
 	def apply[T](body: => T)(implicit executor: ExecutionContext): Future[T] =

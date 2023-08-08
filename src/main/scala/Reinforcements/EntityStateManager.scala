@@ -13,6 +13,7 @@ import BallCore.DataStructures.LRUCache
 import java.util.UUID
 
 class EntityStateManager()(using sql: Storage.SQLManager, csm: ChunkStateManager):
+    val _ = csm
     sql.applyMigration(
         Storage.Migration(
             "Initial EntityStateManager",
@@ -60,7 +61,7 @@ class EntityStateManager()(using sql: Storage.SQLManager, csm: ChunkStateManager
                 """.map(rs => UUID.fromString(rs.string("ReinforcementID"))).single.apply()
                 sql"""
                 DELETE FROM Reinforcements WHERE ID = ${id};
-                """.update.apply()
+                """.update.apply(); ()
             else if value.dirty then
                 val id = sql"""
                 SELECT ReinforcementID FROM BlockReinforcements
@@ -82,14 +83,14 @@ class EntityStateManager()(using sql: Storage.SQLManager, csm: ChunkStateManager
                             (ReinforcementID, EntityID)
                             VALUES
                             (${id}, ${key});
-                        """.update.apply()
+                        """.update.apply(); ()
                     case Some(id) =>
                         sql"""
                         REPLACE INTO Reinforcements
                             (ID, GroupID, Owner, Health, ReinforcementKind, PlacedAt)
                             VALUES
                             (${id}, ${value.group}, ${value.owner}, ${value.health}, ${value.kind.into()}, ${value.placedAt});
-                        """.update.apply()
+                        """.update.apply(); ()
         }
 
     private def load(key: UUID): Unit =
@@ -110,4 +111,4 @@ class EntityStateManager()(using sql: Storage.SQLManager, csm: ChunkStateManager
                 }
                 .single
                 .apply()
-        item.map(cache(key) = _)
+        item.foreach(cache(key) = _)

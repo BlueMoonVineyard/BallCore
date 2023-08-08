@@ -122,7 +122,6 @@ class MiningListener()(using ac: AntiCheeser, as: Acclimation.Storage) extends L
         if !Mining.stoneBlocks.contains(event.getBlock().getType()) then
             return
 
-        val p = event.getPlayer()
         val plr = event.getPlayer().getUniqueId()
         val (lat, long) = Information.latLong(event.getBlock().getX(), event.getBlock().getZ())
         val (plat, plong) = (as.getLatitude(plr), as.getLongitude(plr))
@@ -147,17 +146,20 @@ class MiningListener()(using ac: AntiCheeser, as: Acclimation.Storage) extends L
                     WorldLocation.easts.contains(drops.where)
             }
 
-        possibleDrops.exists { maybe =>
+        possibleDrops.find { maybe =>
             val baseline = maybe.chance * 0.2
             val bonus = maybe.chance * 0.8
 
             val actual = baseline + (bonusRateMultiplier * bonus)
 
             if randomizer.nextDouble() <= actual then
-                val dropAmount = maybe.amount(randomizer.nextInt(maybe.amount.length))
-                val drop = maybe.what.clone().tap(_.setAmount(dropAmount))
-                event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), drop)
                 true
             else
                 false
-        }
+        } match
+              case Some(maybe) =>
+                  val dropAmount = maybe.amount(randomizer.nextInt(maybe.amount.length))
+                  val drop = maybe.what.clone().tap(_.setAmount(dropAmount))
+                  val _ = event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), drop)
+              case _ =>
+                  ()

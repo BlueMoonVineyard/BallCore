@@ -2,13 +2,10 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import java.{util => ju}
 import be.seeseemelk.mockbukkit.MockBukkit
 import org.bukkit.plugin.Plugin
 import be.seeseemelk.mockbukkit.WorldMock
 import org.bukkit.Location
-import org.locationtech.jts.geom.GeometryFactory
-import org.locationtech.jts.util.GeometricShapeFactory
 import BallCore.PolygonEditor._
 
 class PolygonSuite extends munit.FunSuite:
@@ -20,7 +17,6 @@ class PolygonSuite extends munit.FunSuite:
     test("editormodel") {
         import BallCore.PolygonEditor.EditorMsg._
         import BallCore.PolygonEditor.EditorModelState._
-        import BallCore.PolygonEditor.EditorAction._
 
         val world = WorldMock()
 
@@ -52,7 +48,6 @@ class PolygonSuite extends munit.FunSuite:
 
         deletionEM = deletionEM._1.update(look(locs(0)))
         assertEquals(deletionEM._1.state, lookingAt(locs(0)))
-        val beforeDeletion = deletionEM._1.polygon
         deletionEM = deletionEM._1.update(leftClick())
         assert(deletionEM._2.length == 1, deletionEM)
     }

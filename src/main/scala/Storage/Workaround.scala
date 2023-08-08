@@ -7,7 +7,7 @@
 package BallCore.Storage
 
 import java.sql.{ Driver, Connection }
-import org.sqlite.{ JDBC => SQLiteDriver, SQLiteConnection }
+import org.sqlite.{ JDBC => SQLiteDriver }
 import java.util.Properties
 import java.util.logging.Logger
 import java.sql.DriverPropertyInfo

@@ -18,8 +18,8 @@ object Lexorank:
             str.charAt(i)
 
     def rank(prev: String, next: String): String =
-        var prev_ = if prev == "" then minChar.toString else prev
-        var next_ = if next == "" then maxChar.toString else next
+        val prev_ = if prev == "" then minChar.toString else prev
+        val next_ = if next == "" then maxChar.toString else next
 
         var rank = ""
         var i = 0

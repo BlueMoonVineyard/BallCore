@@ -4,9 +4,7 @@
 
 package BallCore.DataStructures
 
-import java.util.Collections.synchronizedMap
-
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.collection.mutable
 
 class LRUCache[K, V](maxEntries: Int, eviction: (K, V) => Unit)

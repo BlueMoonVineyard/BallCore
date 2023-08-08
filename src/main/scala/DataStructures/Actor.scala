@@ -25,7 +25,7 @@ trait Actor[Msg]:
 	private val queue = LinkedTransferQueue[TrueMsg[Msg]]()
 
 	def send(m: Msg): Unit =
-		this.queue.add(TrueMsg.inner(m))
+		val _ = this.queue.add(TrueMsg.inner(m))
 	def startListener()(using cb: ShutdownCallbacks): Unit =
 		Thread.startVirtualThread(() => this.mainLoop())
 		cb.add(this.shutdown)
