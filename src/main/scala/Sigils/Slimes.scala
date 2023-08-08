@@ -198,11 +198,12 @@ class SlimeBehaviours()(using cem: CustomEntityManager, p: Plugin) extends Liste
 								FireAndForget {
 									val players =
 										interaction.getNearbyEntities(10, 3, 10).asScala.flatMap(castOption[Player])
-									val player = players(randomizer.nextInt(players.length))
-									val loc = interaction.getLocation().clone()
-										.setDirection(player.getLocation().clone().subtract(interaction.getLocation()).toVector())
-									interaction.setRotation(loc.getYaw(), 0)
-									Bukkit.getEntity(disp).setRotation(loc.getYaw(), 0)
+									if players.length > 0 then
+										val player = players(randomizer.nextInt(players.length))
+										val loc = interaction.getLocation().clone()
+											.setDirection(player.getLocation().clone().subtract(interaction.getLocation()).toVector())
+										interaction.setRotation(loc.getYaw(), 0)
+										Bukkit.getEntity(disp).setRotation(loc.getYaw(), 0)
 								}
 							case _ =>
 					}
