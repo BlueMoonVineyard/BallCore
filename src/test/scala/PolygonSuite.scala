@@ -4,7 +4,6 @@
 
 import java.{util => ju}
 import be.seeseemelk.mockbukkit.MockBukkit
-import BallCore.PolygonEditor.Editor
 import org.bukkit.plugin.Plugin
 import be.seeseemelk.mockbukkit.WorldMock
 import org.bukkit.Location
@@ -18,31 +17,6 @@ class PolygonSuite extends munit.FunSuite:
     val player = server.addPlayer()
     given Plugin = plugin
 
-    test("editor integration") {
-        val editor = Editor()
-        val world = WorldMock()
-
-        editor.create(player)
-
-        val rect = List(
-            (0, 0),
-            (0, 3),
-            (3, 3),
-            (3, 0),
-        )
-
-        rect.foreach { (x, z) =>
-            val loc = Location(world, x, 0, z)
-            assertEquals(editor.clicked(player, loc), true)
-        }
-
-        val firstCorner = Location(world, 0, 0, 0)
-        val badCorner = Location(world, 4, 0, 2)
-        editor.look(player, firstCorner)
-        editor.clicked(player, firstCorner)
-        editor.look(player, badCorner)
-        editor.clicked(player, firstCorner)
-    }
     test("editormodel") {
         import BallCore.PolygonEditor.EditorMsg._
         import BallCore.PolygonEditor.EditorModelState._
@@ -58,7 +32,7 @@ class PolygonSuite extends munit.FunSuite:
         )
         val locs = rect.map((x, z) => Location(world, x, 0, z))
 
-        val initialEM = EditorModel(locs)
+        val initialEM = EditorModel(null, locs)
 
         var invalidationEM = (initialEM, List[EditorAction]())
 

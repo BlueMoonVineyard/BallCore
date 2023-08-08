@@ -46,7 +46,7 @@ class HeartSuite extends munit.FunSuite {
     ))
 
     assertEquals(hn.updateBeaconPolygon(beaconID, world, validPolygon), Right(()))
-    assert(hn.beaconsContaining(Location(world, 0, 0, 0)).length == 1)
+    assert(hn.beaconContaining(Location(world, 0, 0, 0)).isDefined)
 
     val tooBigPolygon = gf.createPolygon(Array(
       Coordinate(-1000, -1000),
@@ -62,7 +62,7 @@ class HeartSuite extends munit.FunSuite {
         case _ => false
       , res)
     }
-    assert(hn.beaconsContaining(Location(world, 0, 0, 0)).length == 1)
+    assert(hn.beaconContaining(Location(world, 0, 0, 0)).isDefined)
 
     val polygonNotContainingHeart = gf.createPolygon(Array(
       Coordinate(-30, -30),
@@ -78,7 +78,7 @@ class HeartSuite extends munit.FunSuite {
         case _ => false
       , res)
     }
-    assert(hn.beaconsContaining(Location(world, 0, 0, 0)).length == 1)
+    assert(hn.beaconContaining(Location(world, 0, 0, 0)).isDefined)
   }
   test("two-heart beacon") {
     given sql: Storage.SQLManager = Storage.SQLManager(test = Some("hs two-heart beacon"))
