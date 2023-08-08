@@ -22,6 +22,7 @@ import BallCore.CustomItems.CustomItemStack
 import org.bukkit.Server
 import org.bukkit.plugin.java.JavaPlugin
 import BallCore.CustomItems.BlockManager
+import scala.util.chaining._
 
 enum FurnaceTier:
     // tier 0 (vanilla furnace)
@@ -44,41 +45,16 @@ enum FurnaceTier:
     case Three
 
 class FurnaceListener(using bm: BlockManager, registry: ItemRegistry) extends Listener:
-    def spawn(from: OreVariants, tier: OreTier, by: Block): Unit =
-        val loc = by.getLocation().clone().add(0, 1, 0)
-        by.getWorld().dropItem(loc, from.ore(tier))
-        // TODO: deposit into chest
-
-    def check(furnaceTier: FurnaceTier, oreTier: OreTier): Option[(Int, Option[OreTier])] =
-        (furnaceTier, oreTier) match
-            case (FurnaceTier.Zero, OreTier.Raw) =>
-                Some(1, Some(OreTier.Depleted))
-            case (FurnaceTier.Zero, _) =>
-                None
-            case (FurnaceTier.One, OreTier.Raw) =>
-                Some(2, Some(OreTier.Scraps))
-            case (FurnaceTier.One, OreTier.Depleted) =>
-                Some(1, Some(OreTier.Scraps))
-            case (FurnaceTier.One, _) =>
-                None
-            case (FurnaceTier.Two, OreTier.Raw) =>
-                Some(3, Some(OreTier.Dust))
-            case (FurnaceTier.Two, OreTier.Depleted) =>
-                Some(2, Some(OreTier.Dust))
-            case (FurnaceTier.Two, OreTier.Scraps) =>
-                Some(1, Some(OreTier.Dust))
-            case (FurnaceTier.Two, _) =>
-                None
-            case (FurnaceTier.Three, OreTier.Raw) =>
-                Some(4, None)
-            case (FurnaceTier.Three, OreTier.Depleted) =>
-                Some(3, None)
-            case (FurnaceTier.Three, OreTier.Scraps) =>
-                Some(2, None)
-            case (FurnaceTier.Three, OreTier.Dust) =>
-                Some(1, None)
-            case (FurnaceTier.Three, _) =>
-                None
+    def oreSmeltingResult(furnaceTier: FurnaceTier): (Int, OreTier) =
+        furnaceTier match
+            case FurnaceTier.Zero =>
+                (4, OreTier.Nugget)
+            case FurnaceTier.One =>
+                (6, OreTier.Nugget)
+            case FurnaceTier.Two =>
+                (1, OreTier.Ingot)
+            case FurnaceTier.Three =>
+                (12, OreTier.Nugget)
 
     def tier(of: Block): FurnaceTier =
         val furnaceItem = bm.getCustomItem(of)
@@ -93,12 +69,8 @@ class FurnaceListener(using bm: BlockManager, registry: ItemRegistry) extends Li
         if !smeltingItem.isDefined || !smeltingItem.get.isInstanceOf[Ore] then
             return
         val ore = smeltingItem.get.asInstanceOf[Ore]
-        check(tier(event.getBlock()), ore.tier) match
-            case None =>
-                event.setCancelled(true)
-            case Some(num, aux) =>
-                event.getResult().setAmount(num)
-                aux.map { spawn(ore.variants, _, event.getBlock()) }        
+        val (num, kind) = oreSmeltingResult(tier(event.getBlock()))
+        ore.variants.ore(kind).clone().tap(_.setAmount(num)).pipe(event.setResult)
 
 object Furnaces:
     val group = ItemGroup(NamespacedKey("ballcore", "furnaces"), ItemStack(Material.WHITE_CONCRETE))
