@@ -38,9 +38,9 @@ jobs:
       run: sbt hubPlugin/package
     - name: Move jars
       run: |
-        cp ./target/scala-3.3.0-RC3/ballcore_3-0.1.0-SNAPSHOT.jar BallCore.jar
-        cp ./dependency-plugin/target/scala-3.3.0-RC3/BallCoreDependencyPlugin.jar BallCoreDependencyPlugin.jar
-        cp ./hub-plugin/target/scala-3.3.0-RC3/ballcorehub_3-0.1.0-SNAPSHOT.jar BallCoreHub.jar
+        cp ./target/scala-3.3.1-RC1/ballcore_3-0.1.0-SNAPSHOT.jar BallCore.jar
+        cp ./dependency-plugin/target/scala-3.3.1-RC1/BallCoreDependencyPlugin.jar BallCoreDependencyPlugin.jar
+        cp ./hub-plugin/target/scala-3.3.1-RC1/ballcorehub_3-0.1.0-SNAPSHOT.jar BallCoreHub.jar
     - name: Update jars
       uses: andelf/nightly-release@main
       env:
