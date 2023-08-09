@@ -19,7 +19,6 @@ import org.bukkit.event.player.PlayerInteractEvent
 import BallCore.PolygonEditor.PolygonEditor
 import BallCore.Groups.GroupManager
 import BallCore.Groups.Permissions
-import org.bukkit.inventory.EquipmentSlot
 import BallCore.UI.Elements._
 
 object HeartBlock:
@@ -36,18 +35,17 @@ class HeartBlock()(using hn: CivBeaconManager, editor: PolygonEditor, gm: GroupM
         hn.hasHeart(p.getUniqueId())
 
     def onBlockClicked(event: PlayerInteractEvent): Unit =
-        if event.getHand() != EquipmentSlot.HAND then
-            return
         hn.heartAt(event.getClickedBlock().getLocation())
             .map(_._2)
-            .flatMap(beacon => hn.getGroup(beacon).map(group => (beacon, group)))
-            .foreach { (beacon, group) =>
-                gm.checkE(event.getPlayer().getUniqueId(), group, Permissions.ManageClaims) match
-                    case Left(err) =>
-                        event.getPlayer().sendMessage(s"You cannot edit claims because ${err.explain()}")
-                    case Right(_) =>
-                        editor.create(event.getPlayer(), event.getClickedBlock().getWorld(), beacon)
-            }
+            .flatMap(beacon => hn.getGroup(beacon).map(group => (beacon, group))) match
+                case Some((beacon, group)) =>
+                    gm.checkE(event.getPlayer().getUniqueId(), group, Permissions.ManageClaims) match
+                        case Left(err) =>
+                            event.getPlayer().sendMessage(s"You cannot edit claims because ${err.explain()}")
+                        case Right(_) =>
+                            editor.create(event.getPlayer(), event.getClickedBlock().getWorld(), beacon)
+                case None =>
+                    event.getPlayer.sendMessage(s"${ChatColor.LIGHT_PURPLE}You need to bind this beacon to a group in order to edit its claims.")
 
     def onBlockPlace(event: BlockPlaceEvent): Unit =
         if playerHasHeart(event.getPlayer()) then

@@ -53,7 +53,13 @@ class CustomItemListener(using bm: BlockManager, reg: ItemRegistry) extends org.
 
         reg.lookup(event.getItem()) match
             case Some(item) =>
-                event.setCancelled(true)
+                val cancel =
+                    item match
+                        case click: Listeners.ItemUsedOnBlock =>
+                            click.onItemUsed(event)
+                            true
+                        case _ => false
+                event.setCancelled(cancel)
             case None =>
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -65,5 +71,12 @@ class CustomItemListener(using bm: BlockManager, reg: ItemRegistry) extends org.
 
         bm.getCustomItem(event.getClickedBlock()) match
             case Some(item) =>
-                event.setCancelled(true)
+                val cancel =
+                    item match
+                        case click: Listeners.BlockClicked =>
+                            click.onBlockClicked(event)
+                            true
+                        case _ =>
+                            false
+                event.setCancelled(cancel)
             case _ =>
