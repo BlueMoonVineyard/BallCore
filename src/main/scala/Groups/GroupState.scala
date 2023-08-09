@@ -13,7 +13,9 @@ type RoleID = ju.UUID
 type GroupID = ju.UUID
 
 /** the null UUID is used for the role that everyone in the world has, no exceptions */
-lazy val nullUUID = ju.UUID(0, 0)
+lazy val everyoneUUID = ju.UUID(0, 0)
+/** the null UUID is used for the role that everyone in a group has, no exceptions */
+lazy val groupMemberUUID = ju.UUID(0, 1)
 
 enum RuleMode:
     case Allow, Deny
@@ -123,10 +125,7 @@ case class GroupState(
         if owners.contains(user) then
             true
         else
-            val userRoles = (if users.contains(user) then
-                users(user)
-            else
-                List(nullUUID)).toList
+            val userRoles = users.get(user).map(_.toList.appended(groupMemberUUID)).getOrElse(List()).appended(everyoneUUID)
             val userRolesSorted = userRoles.sortBy(roles.indexOf(_))
             val perms = userRolesSorted.view.map { role => permissionsFor(role).get(perm) }
 

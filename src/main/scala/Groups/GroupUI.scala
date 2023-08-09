@@ -64,7 +64,7 @@ class GroupManagementProgram(using gm: GroupManager, cbm: CivBeaconManager) exte
                         Lore(txt"Owner".style(NamedTextColor.GREEN, TextDecoration.BOLD))
                     val roles = group.roles
                         .filter(r => group.users(x.getUniqueId()).contains(r.id))
-                        .filterNot(_.id == nullUUID)
+                        .filterNot(_.id == everyoneUUID)
                     if roles.length > 0 then
                         Lore(txt"")
                         Lore(txt"Roles".style(NamedTextColor.WHITE, TextDecoration.UNDERLINED))
@@ -176,7 +176,7 @@ class RoleManagementProgram(using gm: GroupManager, cbm: CivBeaconManager) exten
         Root(txt"Viewing Role ${role.name} in ${group.metadata.name}", 6) {
             OutlinePane(0, 0, 1, 6) {
                 Button(Material.OAK_DOOR, txt"Go Back".style(NamedTextColor.WHITE), Message.GoBack)()
-                if role.id != nullUUID then
+                if role.id != everyoneUUID then
                     Button(Material.LAVA_BUCKET, txt"Delete Role".style(NamedTextColor.GREEN), Message.DeleteRole)()
             }
             OutlinePane(1, 0, 1, 6, priority = Priority.LOWEST, repeat = true) {

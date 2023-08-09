@@ -208,15 +208,21 @@ class GroupManager()(using sql: Storage.SQLManager):
                 ),
             ),
             RoleState(
-                nullUUID,
-                "Everyone", true,
+                groupMemberUUID,
+                "Group Members", true,
                 Map(
                     (Permissions.Chests, RuleMode.Allow),
                     (Permissions.Doors, RuleMode.Allow),
                     (Permissions.Crops, RuleMode.Allow),
                     (Permissions.Build, RuleMode.Allow),
                     (Permissions.Entities, RuleMode.Allow),
-                ),
+                )
+            ),
+            RoleState(
+                everyoneUUID,
+                "Everyone", true,
+                Map(
+                )
             ),
         )
         sql.localTx { implicit session =>
@@ -228,7 +234,6 @@ class GroupManager()(using sql: Storage.SQLManager):
                 GroupRoles(newGroupID, role.id, role.name, role.hoist, role.permissions, Lexorank.rank(ord, "")).save()
                 ord = Lexorank.rank(ord, "")
             }
-            GroupRoleMemberships(newGroupID, nullUUID, owner).save()
         }
         newGroupID
 
@@ -330,7 +335,7 @@ class GroupManager()(using sql: Storage.SQLManager):
         getAll(group)
             .guard(GroupError.NoPermissions) { _.check(Permissions.ManageRoles, as) }
             .guard(GroupError.RoleNotFound) { _.roles.exists(_.id == role) }
-            .guard(GroupError.CantAssignEveryone) { _ => nullUUID != role }
+            .guard(GroupError.CantAssignEveryone) { _ => everyoneUUID != role && groupMemberUUID != role }
             .guardRoleAboveYours(as, role)
             .map { _ =>
                 sql"DELETE FROM GroupRoles WHERE GroupID = $group AND RoleID = $role".update.apply(); ()
@@ -341,7 +346,7 @@ class GroupManager()(using sql: Storage.SQLManager):
             .guard(GroupError.NoPermissions) { _.check(Permissions.ManageUserRoles, as) }
             .guard(GroupError.RoleNotFound) { _.roles.exists(_.id == role) }
             .guard(GroupError.TargetNotInGroup) { _.users.contains(target) }
-            .guard(GroupError.CantAssignEveryone) { _ => nullUUID != role }
+            .guard(GroupError.CantAssignEveryone) { _ => everyoneUUID != role && groupMemberUUID != role }
             .guardRoleAboveYours(as, role)
             .map { _ =>
                 if has then
