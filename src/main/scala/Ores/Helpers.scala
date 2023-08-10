@@ -30,15 +30,15 @@ enum OreTypes(val num: Int):
     case cobalt extends OreTypes(70)
     case lead extends OreTypes(80)
 
-    case copper extends OreTypes(10)
-    case orichalcum extends OreTypes(20)
-    case hihiirogane extends OreTypes(30)
-    case meteorite extends OreTypes(40)
+    case copper extends OreTypes(110)
+    case orichalcum extends OreTypes(120)
+    case hihiirogane extends OreTypes(130)
+    case meteorite extends OreTypes(140)
 
-    case gold extends OreTypes(10)
-    case sulfur extends OreTypes(20)
-    case palladium extends OreTypes(30)
-    case magnesium extends OreTypes(40)
+    case gold extends OreTypes(210)
+    case sulfur extends OreTypes(220)
+    case palladium extends OreTypes(230)
+    case magnesium extends OreTypes(240)
 
 enum OreTier:
     case Raw
@@ -115,10 +115,10 @@ case class OreVariants(
 object Helpers:
     def factory(id: String, name: String, num: Int, raw: Material, nugget: Material, ingot: Material, block: Material): OreVariants =
         OreVariants(
-            withCustomModelData(CustomItemStack.make(NamespacedKey("ballcore", s"raw_${id}"), raw, txt"&rRaw $name"), num + 3),
-            withCustomModelData(CustomItemStack.make(NamespacedKey("ballcore", s"${id}_nugget"), nugget, txt"&r$name Nugget"), num + 4),
-            withCustomModelData(CustomItemStack.make(NamespacedKey("ballcore", s"${id}_ingot"), ingot, txt"&r$name Ingot"), num + 5),
-            withCustomModelData(CustomItemStack.make(NamespacedKey("ballcore", s"${id}_block"), block, txt"&r$name Block"), num + 6),
+            withCustomModelData(CustomItemStack.make(NamespacedKey("ballcore", s"raw_${id}"), raw, txt"Raw $name"), num + 0),
+            withCustomModelData(CustomItemStack.make(NamespacedKey("ballcore", s"${id}_nugget"), nugget, txt"$name Nugget"), num + 1),
+            withCustomModelData(CustomItemStack.make(NamespacedKey("ballcore", s"${id}_ingot"), ingot, txt"$name Ingot"), num + 2),
+            withCustomModelData(CustomItemStack.make(NamespacedKey("ballcore", s"${id}_block"), block, txt"$name Block"), num + 3),
             name,
             id,
         )
