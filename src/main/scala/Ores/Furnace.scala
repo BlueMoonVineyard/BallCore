@@ -21,6 +21,7 @@ import org.bukkit.plugin.java.JavaPlugin
 import BallCore.CustomItems.BlockManager
 import scala.util.chaining._
 import BallCore.UI.Elements._
+import org.bukkit.block.{Furnace => BFurnace}
 
 enum FurnaceTier:
     // tier 0 (vanilla furnace)
@@ -68,7 +69,25 @@ class FurnaceListener(using bm: BlockManager, registry: ItemRegistry) extends Li
             return
         val ore = smeltingItem.get.asInstanceOf[Ore]
         val (num, kind) = oreSmeltingResult(tier(event.getBlock()))
-        ore.variants.ore(kind).clone().tap(_.setAmount(num)).pipe(event.setResult)
+
+        // WORKAROUND: bukkit code doesn't seem to like custom items all that much
+        event.setCancelled(true)
+        val result = ore.variants.ore(kind).clone().tap(_.setAmount(num))
+        val furnaceState = event.getBlock().getState(false).asInstanceOf[BFurnace]
+        val resultSlot = furnaceState.getInventory().getResult()
+        val newResultSlot =
+            if resultSlot == null then
+                result
+            else if result.isSimilar(resultSlot) then
+                resultSlot.setAmount(resultSlot.getAmount() + result.getAmount())
+                resultSlot
+            else
+                null
+
+        if newResultSlot == null then
+            return
+
+        furnaceState.getInventory().setResult(newResultSlot)
 
 object Furnaces:
     val group = ItemGroup(NamespacedKey("ballcore", "furnaces"), ItemStack(Material.WHITE_CONCRETE))
