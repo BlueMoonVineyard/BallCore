@@ -10,6 +10,7 @@ import org.bukkit.inventory.ItemStack
 import BallCore.CustomItems.CustomItem
 import BallCore.CustomItems.ItemGroup
 import BallCore.UI.Elements._
+import BallCore.Acclimation.Information
 
 object Fruit:
 	val fruits = ItemGroup(NamespacedKey("ballcore", "fruits"), ItemStack(Material.APPLE))
@@ -31,6 +32,23 @@ enum Climate:
 	case warmHumid
 	case coldArid
 	case coldHumid
+
+	def display: String =
+		this match
+			case Climate.warmArid => "warm, arid"
+			case Climate.warmHumid => "warm, humid"
+			case Climate.coldArid => "cold, arid"
+			case Climate.coldHumid => "cold, humid"
+
+object Climate:
+	def climateAt(x: Int, y: Int, z: Int): Climate =
+		val isWet = Information.humidity(x, y, z) >= 0.5
+		val isWarm = Information.temperature(x, y, z) >= 0.5
+		(isWet, isWarm) match
+			case (false, false) => Climate.coldArid
+			case (false, true) => Climate.warmArid
+			case (true, false) => Climate.coldHumid
+			case (true, true) => Climate.warmHumid
 
 // divided by how we're supposed to grow the plant
 enum PlantType:

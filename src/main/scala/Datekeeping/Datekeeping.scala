@@ -57,6 +57,20 @@ enum Month:
     case Aban
     case Sisira
 
+    def season: Season = this match
+        case Nieuwice => Season.winter
+        case Bleibschnee => Season.winter
+        case Coldwane =>Season.winter
+        case Lluvita => Season.spring
+        case Floraison => Season.spring
+        case Caldera => Season.spring
+        case Zha => Season.summer
+        case Dashu => Season.summer
+        case Nurui => Season.summer
+        case Sarada => Season.autumn
+        case Aban => Season.autumn
+        case Sisira => Season.autumn
+
 object Datekeeping:
     // pizza tower release date on steam
     val epoch = truncateLarge(Instant.ofEpochSecond(1674756019), DateUnit.year)

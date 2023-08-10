@@ -7,6 +7,9 @@ import org.bukkit.event.block.BlockPlaceEvent
 import org.bukkit.Material
 import org.bukkit.event.player.PlayerInteractEvent
 import scala.util.chaining._
+import org.bukkit.inventory.EquipmentSlot
+import org.bukkit.Tag
+import org.bukkit.event.block.Action
 
 class CustomPlantListener()(using pbm: PlantBatchManager) extends Listener:
 	@EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
@@ -32,6 +35,10 @@ class CustomPlantListener()(using pbm: PlantBatchManager) extends Listener:
 				pbm.send(PlantMsg.startGrowing(what, event.getBlock()))
 
 	@EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
-	def onDebugRightClick(event: PlayerInteractEvent): Unit =
-		pbm.send(PlantMsg.tickPlants)
+	def inspectPlant(event: PlayerInteractEvent): Unit =
+		if event.getHand() != EquipmentSlot.HAND || event.getAction() != Action.RIGHT_CLICK_BLOCK then
+			return
+		if event.getItem() == null || !Tag.ITEMS_HOES.isTagged(event.getItem().getType()) then
+			return
+		pbm.send(PlantMsg.inspect(event.getClickedBlock(), event.getPlayer()))
 

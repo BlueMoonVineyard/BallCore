@@ -23,9 +23,14 @@ object Information:
 
     def temperature(x: Int, y: Int, z: Int): Double =
         val world = Bukkit.getWorld("world")
-        val temp = world.getBlockAt(x, y, z).getTemperature()
+        val temp = world.getTemperature(x, y, z)
         // coldest is -0.7, hottest is 2.0
         ((temp + 0.7) / 2.7)
+
+    def humidity(x: Int, y: Int, z: Int): Double =
+        val world = Bukkit.getWorld("world")
+        val humidity = world.getHumidity(x, y, z)
+        ((humidity + 1.76) / 3.52)
 
     private def normalize(v: Double, min: Double, max: Double): Double =
         (v - min) / (max - min)

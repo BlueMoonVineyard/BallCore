@@ -20,6 +20,12 @@ import java.time.temporal.ChronoUnit
 import BallCore.Datekeeping.Datekeeping.Periods
 import java.util.concurrent.TimeUnit
 import BallCore.Folia.FireAndForget
+import BallCore.DataStructures.Clock
+import BallCore.Datekeeping.Datekeeping
+import BallCore.Datekeeping.Month
+import org.bukkit.entity.Player
+import BallCore.Folia.LocationExecutionContext
+import scala.concurrent.ExecutionContext
 
 enum PlantMsg:
 	case startGrowing(what: Plant, where: Block)
@@ -27,6 +33,7 @@ enum PlantMsg:
 	case plantsGrewPartially(where: List[Block])
 	case plantsFinishedGrowing(where: List[Block])
 	case tickPlants
+	case inspect(where: Block, player: Player)
 
 case class DBPlantData(
 	val chunkX: Int,
@@ -57,7 +64,7 @@ object DBPlantData:
 			false,
 		)
 
-class PlantBatchManager()(using sql: SQLManager, p: Plugin) extends Actor[PlantMsg]:
+class PlantBatchManager()(using sql: SQLManager, p: Plugin, c: Clock) extends Actor[PlantMsg]:
 	def millisToNextHour(): Long =
 		val nextHour = LocalDateTime.now().plus(1, DateUnit.hour).truncatedTo(DateUnit.hour)
 		LocalDateTime.now().until(nextHour, ChronoUnit.MILLIS)
@@ -170,6 +177,30 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin) extends Actor[PlantM
 					val world = blk.getWorld().getUID()
 					update(cx, cz, world, ox, oz, y) { _.copy(incompleteGrowthAdvancements = 0) }
 				}
+			case PlantMsg.inspect(where, player) =>
+				val (cx, cz, ox, oz) = toOffsets(where.getX(), where.getZ())
+				val y = where.getY()
+				val world = where.getWorld().getUID()
+				given ec: ExecutionContext = LocationExecutionContext(where.getLocation())
+				FireAndForget {
+					get(cx, cz, world).get(ox, oz, y).foreach { plant =>
+						val (x, z) = fromOffsets(plant.chunkX, plant.chunkZ, plant.offsetX, plant.offsetZ)
+						val actualSeason = Datekeeping.time().month.toInt.pipe(Month.fromOrdinal).season
+						val actualClimate = Climate.climateAt(x, plant.yPos, z)
+						val rightSeason = plant.what.growingSeason == actualSeason
+						val rightClimate = plant.what.growingClimate == actualClimate
+
+						(rightSeason, rightClimate) match
+							case (false, false) =>
+								player.sendMessage(s"This plant is neither in the right climate nor season; it grows in ${plant.what.growingClimate.display} climates during ${plant.what.growingSeason}, but it is in a ${actualClimate.display} climate and it is currently ${actualSeason}")
+							case (false, true) =>
+								player.sendMessage(s"This plant is out of season; it grows during ${plant.what.growingSeason} (it is currently ${actualSeason})")
+							case (true, false) =>
+								player.sendMessage(s"This plant is in the wrong climate; it grows in ${plant.what.growingClimate.display} climates (it is in a ${actualClimate.display} climate)")
+							case (true, true) =>
+								player.sendMessage(s"This plant is in the right season and climate!")
+					}
+				}
 			case PlantMsg.tickPlants =>
 				// increment plant ages and their growth ticks if necessary
 				plants.mapValuesInPlace{ (key, map) =>
@@ -177,8 +208,13 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin) extends Actor[PlantM
 						if plant.deleted then
 							plantKey -> plant
 						else
+							val (x, z) = fromOffsets(plant.chunkX, plant.chunkZ, plant.offsetX, plant.offsetZ)
+
+							val rightSeason = plant.what.growingSeason == Datekeeping.time().month.toInt.pipe(Month.fromOrdinal).season
+							val rightClimate = plant.what.growingClimate == Climate.climateAt(x, plant.yPos, z)
+							val timePassed = (plant.ageIngameHours + 1) % plant.what.plant.hours() == 0
 							val incrBy =
-								if (plant.ageIngameHours + 1) % plant.what.plant.hours() == 0 then
+								if rightSeason && rightClimate && timePassed then
 									1
 								else
 									0
