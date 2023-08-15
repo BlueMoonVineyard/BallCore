@@ -23,6 +23,7 @@ object StationMaker:
 				DyeVat.template,
 			),
 			30,
+			1,
 		),
 		Recipe(
 			"Make Glazing Kiln",
@@ -37,6 +38,7 @@ object StationMaker:
 				GlazingKiln.template,
 			),
 			30,
+			1,
 		),
 		Recipe(
 			"Make Kiln",
@@ -50,6 +52,7 @@ object StationMaker:
 				Kiln.template,
 			),
 			30,
+			1,
 		),
 	)
 	val template = CustomItemStack.make(NamespacedKey("ballcore", "station_maker"), Material.CARTOGRAPHY_TABLE, txt"Station Maker", txt"Allows creating improved crafting stations")

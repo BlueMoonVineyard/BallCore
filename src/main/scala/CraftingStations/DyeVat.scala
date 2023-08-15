@@ -29,7 +29,7 @@ object DyeVat:
     )
     val recipes = pairs.map { it =>
         val (dye, wool, name) = it
-        Recipe(name, List((MaterialChoice(dye), 4), (MaterialChoice(Material.WHITE_WOOL), 64)), List(ItemStack(wool, 64)), 10)
+        Recipe(name, List((MaterialChoice(dye), 4), (MaterialChoice(Material.WHITE_WOOL), 64)), List(ItemStack(wool, 64)), 10, 1)
     }
     val template = CustomItemStack.make(NamespacedKey("ballcore", "dye_vat"), Material.CAULDRON, txt"Dye Vat", txt"Dyes more wools with less dyes than normal crafting")
 

@@ -47,7 +47,7 @@ object GlazingKiln:
     )
     val recipes = pairs.map { it =>
         val (dye, terracotta, name) = it
-        Recipe(name, List((MaterialChoice(dye), 4), (MaterialChoice(Material.TERRACOTTA), 64)), List(ItemStack(terracotta, 64)), 10)
+        Recipe(name, List((MaterialChoice(dye), 4), (MaterialChoice(Material.TERRACOTTA), 64)), List(ItemStack(terracotta, 64)), 10, 1)
     }
     val template = CustomItemStack.make(NamespacedKey("ballcore", "glazing_kiln"), Material.SMOKER, txt"Glazing Kiln", txt"Dyes and glazes more terracotta with less dyes than normal crafting")
 

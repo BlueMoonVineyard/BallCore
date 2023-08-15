@@ -29,9 +29,9 @@ object Kiln:
 	)
 	val recipes = pairs.map { (in, out, ratio, name) =>
 		val (mult, div) = ratio
-		Recipe(name, List((MaterialChoice(in), 64)), List(ItemStack(out, (64 * mult) / div)), 10)
+		Recipe(name, List((MaterialChoice(in), 64)), List(ItemStack(out, (64 * mult) / div)), 10, 1)
 	}.appended {
-		Recipe("Smelt Glass", List((MaterialChoice(Material.SAND, Material.RED_SAND, Material.SOUL_SAND), 64)), List(ItemStack(Material.GLASS, 64)), 10)
+		Recipe("Smelt Glass", List((MaterialChoice(Material.SAND, Material.RED_SAND, Material.SOUL_SAND), 64)), List(ItemStack(Material.GLASS, 64)), 10, 1)
 	}
 	val template = CustomItemStack.make(NamespacedKey("ballcore", "kiln"), Material.SMOKER, txt"Kiln", txt"Smelts nonmetals more efficiently than normal smelting")
 

@@ -25,7 +25,7 @@ enum CraftingMessage:
 	case tick
 
 class CraftingActor(using p: Plugin) extends Actor[CraftingMessage]:
-	var jobs = Map[Player, Job]()
+	var jobs = Map[Block, Job]()
 	val sides = List(BlockFace.NORTH, BlockFace.SOUTH, BlockFace.WEST, BlockFace.EAST)
 
 	protected def handleInit(): Unit =
@@ -69,12 +69,14 @@ class CraftingActor(using p: Plugin) extends Actor[CraftingMessage]:
 				val _ = at.getWorld().dropItemNaturally(at.getLocation(), output)
 		}
 
-	def completeJob(player: Player, job: Job): Unit =
-		given ec: ExecutionContext = EntityExecutionContext(player)
+	def completeJob(job: Job): Unit =
 		val workChest = sides.map(face => job.factory.getRelative(face)).find(block => block.getType() == Material.CHEST || block.getType() == Material.TRAPPED_CHEST) match
 			case None =>
-				FireAndForget {
-					notifyFailedJob(player, job, "Chest Missing!")
+				job.workedBy.foreach { player =>
+					given ec: ExecutionContext = EntityExecutionContext(player)
+					FireAndForget {
+						notifyFailedJob(player, job, "Chest Missing!")
+					}
 				}
 				return
 			case Some(value) => value
@@ -86,12 +88,18 @@ class CraftingActor(using p: Plugin) extends Actor[CraftingMessage]:
 		if removeFrom(job.recipe.inputs, inv) then
 			insertInto(job.recipe.outputs, inv, job.factory)
 
-			FireAndForget {
-				notifyFinishedJob(player, job)
+			job.workedBy.foreach { player =>
+				given ec: ExecutionContext = EntityExecutionContext(player)
+				FireAndForget {
+					notifyFinishedJob(player, job)
+				}
 			}
 		else
-			FireAndForget {
-				notifyFailedJob(player, job, "Ingredients Missing!")
+			job.workedBy.foreach { player =>
+				given ec: ExecutionContext = EntityExecutionContext(player)
+				FireAndForget {
+					notifyFailedJob(player, job, "Ingredients Missing!")
+				}
 			}
 
 	def notifyFinishedJob(player: Player, job: Job): Unit =
@@ -133,22 +141,45 @@ class CraftingActor(using p: Plugin) extends Actor[CraftingMessage]:
 
 		player.sendActionBar(component)
 
+	def stopWorking(p: Player): Unit =
+		jobs.find(_._2.workedBy.contains(p)) match
+			case None =>
+			case Some((factory, job)) =>
+				if job.workedBy.length == 1 then
+					jobs = jobs.removed(factory)
+				else
+					jobs = jobs.updated(factory, job.copy(workedBy = job.workedBy.filterNot(_ == p)))
+
 	def handle(m: CraftingMessage): Unit =
 		m match
 			case CraftingMessage.startWorking(p, f, r) =>
-				jobs += (p -> Job(p, f, r, 0))
+				stopWorking(p)
+				jobs.get(f) match
+					case None =>
+						jobs = jobs.updated(f, Job(f, r, 0, List(p)))
+					case Some(job) if job.recipe == r =>
+						jobs = jobs.updated(f, job.copy(workedBy = p :: job.workedBy))
+					case Some(_) =>
+						p.sendMessage("Someone else is already working a different recipe with this workstation!")
 			case CraftingMessage.stopWorking(p) =>
-				jobs -= p
+				stopWorking(p)
 			case CraftingMessage.tick =>
-				jobs = jobs.map { (p, j) => (p, j.copy(currentWork = j.currentWork + 1)) }
-				jobs = jobs.filterNot { (p, j) =>
+				jobs = jobs.map { (b, j) =>
+					(b, if j.workedBy.length >= j.recipe.minimumPlayersRequiredToWork then
+						j.copy(currentWork = j.currentWork + j.workedBy.length)
+					else
+						j)
+				}
+				jobs = jobs.filterNot { (_, j) =>
 					val cond = j.currentWork >= j.recipe.work
 					if cond then
 						given ec: ExecutionContext = LocationExecutionContext(j.factory.getLocation())
-						FireAndForget { completeJob(p, j) }
+						FireAndForget { completeJob(j) }
 					else
-						given ec: ExecutionContext = EntityExecutionContext(p)
-						FireAndForget { notifyInProgressJob(p, j) }
+						j.workedBy.foreach { player =>
+							given ec: ExecutionContext = EntityExecutionContext(player)
+							FireAndForget { notifyInProgressJob(player, j) }
+						}
 					cond
 				}
 		

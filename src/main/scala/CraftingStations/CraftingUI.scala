@@ -76,6 +76,12 @@ class RecipeSelectorProgram(recipes: List[Recipe])(using actor: CraftingActor) e
 						Lore(txt"")
 						val time = txt"${recipe.work} seconds".color(NamedTextColor.GREEN)
 						Lore(txt"Takes ${time} of work".color(NamedTextColor.WHITE))
+						val players =
+							if recipe.minimumPlayersRequiredToWork > 1 then
+								txt"${recipe.minimumPlayersRequiredToWork} players".color(NamedTextColor.GREEN)
+							else
+								txt"${recipe.minimumPlayersRequiredToWork} player".color(NamedTextColor.GREEN)
+						Lore(txt"Requires ${players} working".color(NamedTextColor.WHITE))
 					}
 				}
 			}
