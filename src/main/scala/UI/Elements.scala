@@ -77,7 +77,13 @@ class ChatElements:
             c.decoration(decoration, false)
     extension (s: Seq[Component])
         def mkComponent(separator: Component): Component =
-            s.reduce((a, b) => a.append(separator).append(b))
+            var builder = Component.text()
+            s.zipWithIndex.foreach { (component, idx) =>
+                builder = builder.append(component)
+                if idx != s.length-1 then
+                    builder = builder.append(separator)
+            }
+            builder.asComponent()
 
 
 object ChatElements extends ChatElements

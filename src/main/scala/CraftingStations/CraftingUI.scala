@@ -12,7 +12,6 @@ import org.bukkit.inventory.RecipeChoice.MaterialChoice
 import org.bukkit.inventory.ItemStack
 import net.kyori.adventure.text.format.NamedTextColor
 import net.kyori.adventure.text.format.TextDecoration
-import net.kyori.adventure.text.format.TextDecoration.State
 import com.github.stefvanschie.inventoryframework.gui.`type`.util.Gui
 import net.kyori.adventure.text.Component
 import org.bukkit.Material
@@ -47,7 +46,7 @@ class RecipeSelectorProgram(recipes: List[Recipe])(using actor: CraftingActor) e
 	def choiceToString(input: RecipeChoice): Component =
 		input match
 			case m: MaterialChoice =>
-				m.getChoices().asScala.map(mat => nameOf(ItemStack(mat)).decoration(TextDecoration.BOLD, State.TRUE)).toList.mkComponent(txt" or ")
+				m.getChoices().asScala.map(mat => nameOf(ItemStack(mat)).style(NamedTextColor.GRAY, TextDecoration.BOLD)).toList.mkComponent(txt" or ")
 			case _ =>
 				txt"TODO: ${input}"
 
@@ -64,7 +63,7 @@ class RecipeSelectorProgram(recipes: List[Recipe])(using actor: CraftingActor) e
 					Button(recipe.outputs(0).getType(), txt"${recipe.name}".color(NamedTextColor.GREEN), Message.selectRecipe(idx)) {
 						Lore(txt"Ingredients".style(NamedTextColor.WHITE, TextDecoration.UNDERLINED))
 						recipe.inputs.foreach { (input, amount) =>
-							Lore(txt" - ${txt"${choiceToString(input)}".style(NamedTextColor.GRAY, TextDecoration.BOLD)} × ${amount}".color(NamedTextColor.WHITE))
+							Lore(txt" - ${choiceToString(input)} × ${amount}".color(NamedTextColor.WHITE))
 						}
 						Lore(txt"")
 						Lore(txt"Results".style(NamedTextColor.WHITE, TextDecoration.UNDERLINED))
