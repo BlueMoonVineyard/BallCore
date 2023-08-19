@@ -24,6 +24,7 @@ object CraftingStations:
 		registry.register(GlazingKiln())
 		registry.register(Kiln())
 		registry.register(StationMaker())
+		registry.register(Woodcutter())
 		val smRecipe = ShapedRecipe(NamespacedKey("ballcore", "craft_station_maker"), StationMaker.template)
 		smRecipe.shape(
 			"II",

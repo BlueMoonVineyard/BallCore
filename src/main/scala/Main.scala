@@ -14,7 +14,6 @@ import BallCore.Ores.QuadrantOres
 import BallCore.Ores.CardinalOres
 import BallCore.Ores.Furnace
 import BallCore.Gear.QuadrantGear
-import BallCore.Woodcutter.Woodcutter
 import BallCore.Reinforcements.BlockReinforcementManager
 import BallCore.Reinforcements.ChunkStateManager
 import BallCore.DataStructures.Clock
@@ -77,7 +76,6 @@ final class Main extends JavaPlugin:
         CardinalOres.registerItems()
         Furnace.registerItems()
         Reinforcements.Reinforcements.register()
-        Woodcutter.registerItems()
         CustomItemListener.register()
         CraftingStations.register()
         AcclimationActor.register()
