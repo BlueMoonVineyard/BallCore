@@ -220,21 +220,22 @@ class InvitesListProgram(using gm: GroupManager) extends UIProgram:
         case AcceptInvite(group: GroupID)
         case DenyInvite(group: GroupID)
 
-    override def init(flags: Flags): Model =
-        val invites = gm.invites.getInvitesFor(flags.userID).map { (uid, gid) =>
+    def computeInvites(userID: UserID): List[(UserID, GroupState)] =
+        gm.invites.getInvitesFor(userID).map { (uid, gid) =>
             gm.getGroup(gid).toOption.map((uid, _))
         }.flatten
-        Model(flags.userID, invites, Mode.List)
+    override def init(flags: Flags): Model =
+        Model(flags.userID, computeInvites(flags.userID), Mode.List)
     override def update(msg: Message, model: Model)(using services: UIServices): Future[Model] =
         msg match
             case Message.ClickInvite(user, group) =>
                 model.copy(mode = Mode.ViewingInvite(user, model.invites.find(_._1 == user).get._2))
             case Message.AcceptInvite(group) =>
                 gm.invites.acceptInvite(model.userID, group)
-                model
+                model.copy(mode = Mode.List, invites = computeInvites(model.userID))
             case Message.DenyInvite(group) =>
                 gm.invites.deleteInvite(model.userID, group)
-                model
+                model.copy(mode = Mode.List, invites = computeInvites(model.userID))
     override def view(model: Model): Callback ?=> Gui =
         model.mode match
             case Mode.List => list(model)
