@@ -24,12 +24,12 @@ jobs:
         cache: 'sbt'
     - name: Run tests
       run: sbt coverage test
-    # - name: Coverage report
-    #   run: sbt coverageReport
-    # - name: Upload coverage to Codecov
-    #   uses: codecov/codecov-action@v3
-    #   with:
-    #     fail_ci_if_error: true
+    - name: Coverage report
+      run: sbt coverageReport
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        fail_ci_if_error: false
     - name: Assemble dependency plugin
       run: sbt dependencyPlugin/assembly
     - name: Package main plugin
