@@ -54,6 +54,19 @@ object StationMaker:
 			30,
 			1,
 		),
+		Recipe(
+			"Make Woodcutter",
+			List(
+				(MaterialChoice(Material.STONECUTTER), 1),
+				(MaterialChoice(Material.CHEST), 8),
+				(MaterialChoice(Material.STONE_AXE), 1),
+			),
+			List(
+				Woodcutter.template,
+			),
+			30,
+			1,
+		),
 	)
 	val template = CustomItemStack.make(NamespacedKey("ballcore", "station_maker"), Material.CARTOGRAPHY_TABLE, txt"Station Maker", txt"Allows creating improved crafting stations")
 
