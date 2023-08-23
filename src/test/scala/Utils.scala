@@ -32,7 +32,7 @@ class TestUIServices(assertions: Assertions) extends UIServices:
     override def prompt(prompt: String): Future[String] =
         if promptQueue.isEmpty then
             assertions.assert(false, "program prompted when unexpected")
-            ???
+            throw AssertionError()
         else
             val (ans, wha) = promptQueue.dequeue()
             wha.success(prompt)
@@ -44,7 +44,7 @@ class TestUIServices(assertions: Assertions) extends UIServices:
     override def notify(what: String): Unit =
         if notifyQueue.isEmpty then
             assertions.assert(false, "program notified when unexpected")
-            ???
+            throw AssertionError()
         else
             val wha = notifyQueue.dequeue()
             wha.success(what)

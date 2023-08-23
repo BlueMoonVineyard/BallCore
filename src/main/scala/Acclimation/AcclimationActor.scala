@@ -8,6 +8,9 @@ import java.util.concurrent.TimeUnit
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import BallCore.DataStructures.ShutdownCallbacks
+import org.bukkit.event.Listener
+import org.bukkit.event.EventHandler
+import org.bukkit.event.player.PlayerQuitEvent
 
 enum AcclimationMessage:
 	// ticks every 6 hours
@@ -27,6 +30,12 @@ def lerp(a: Double, b: Double, f: Double): Double =
 object AcclimationActor:
 	def register()(using s: Storage, p: Plugin, hnm: CivBeaconManager, sm: ShutdownCallbacks): Unit =
 		AcclimationActor().startListener()
+		p.getServer().getPluginManager().registerEvents(AcclimationNoter(), p)
+
+class AcclimationNoter()(using s: Storage) extends Listener:
+	@EventHandler()
+	def onPlayerQuit(event: PlayerQuitEvent): Unit =
+		s.setLastSeenLocation(event.getPlayer())
 
 class AcclimationActor(using s: Storage, p: Plugin, hnm: CivBeaconManager) extends Actor[AcclimationMessage]:
 	private def sixHoursMillis = 6 * 60 * 60 * 1000
@@ -45,9 +54,10 @@ class AcclimationActor(using s: Storage, p: Plugin, hnm: CivBeaconManager) exten
 					val uuid = x.getUniqueId()
 					val location =
 						if x.getPlayer() != null then
+							s.setLastSeenLocation(x.getPlayer())
 							x.getPlayer().getLocation()
 						else
-							???
+							s.getLastSeenLocation(uuid)
 
 					val (lat, long) = Information.latLong(location.getX().toFloat, location.getZ().toFloat)
 					val temp = Information.temperature(location.getX().toInt, location.getY().toInt, location.getZ().toInt)
