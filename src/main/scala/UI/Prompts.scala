@@ -19,6 +19,7 @@ import org.bukkit.event.EventPriority
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer
 import net.kyori.adventure.text.Component
 import BallCore.Folia.FireAndForget
+import BallCore.UI.ChatElements._
 
 private case class PromptState(
     promise: Promise[String],
@@ -50,7 +51,7 @@ class Prompts(using plugin: Plugin) extends Listener:
         val state = PromptState(promise)
         FireAndForget {
             player.closeInventory()
-            player.sendMessage(prompt)
+            player.sendServerMessage(txt(prompt))
         }
         prompts(player.getUniqueId()) = state
         promise.future

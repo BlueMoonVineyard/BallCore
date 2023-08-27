@@ -25,6 +25,7 @@ import org.bukkit.event.player.PlayerQuitEvent
 import BallCore.Beacons.BeaconID
 import BallCore.Beacons.CivBeaconManager
 import org.bukkit.World
+import BallCore.UI.ChatElements.sendServerMessage
 
 object PolygonEditor:
 	def register()(using e: PolygonEditor, p: Plugin): Unit =
@@ -75,12 +76,12 @@ class PolygonEditor(using p: Plugin, bm: CivBeaconManager):
 		import BallCore.UI.ChatElements._
 		bm.getPolygonFor(beaconID) match
 			case None =>
-				player.sendMessage(txt"You'll be defining your claim as 4 points")
-				player.sendMessage(txt"Press ${keybind("key.use")} to place Point 1")
+				player.sendServerMessage(txt"You'll be defining your claim as 4 points")
+				player.sendServerMessage(txt"Press ${keybind("key.use")} to place Point 1")
 				playerPolygons(player) = PlayerState.creating(CreatorModel(beaconID, CreatorModelState.definingPointA()), List())
 			case Some(polygon) =>
-				player.sendMessage(txt"Press ${keybind("key.use")} to pick up and to place claim points.")
-				player.sendMessage(txt"Press ${keybind("key.use")} on a midpoint to create a new point from it, and press ${keybind("key.attack")} on a point to delete it.")
+				player.sendServerMessage(txt"Press ${keybind("key.use")} to pick up and to place claim points.")
+				player.sendServerMessage(txt"Press ${keybind("key.use")} on a midpoint to create a new point from it, and press ${keybind("key.attack")} on a point to delete it.")
 				playerPolygons(player) = PlayerState.editing(EditorModel(beaconID, polygon, world))
 
 	def render(): Unit =
@@ -137,7 +138,7 @@ class PolygonEditor(using p: Plugin, bm: CivBeaconManager):
 		val done = actions.filter { action =>
 			action match
 				case EditorAction.notifyPlayer(msg) =>
-					player.sendMessage(msg)
+					player.sendServerMessage(msg)
 					false
 				case _ =>
 					true
@@ -151,7 +152,7 @@ class PolygonEditor(using p: Plugin, bm: CivBeaconManager):
 					)
 					bm.updateBeaconPolygon(model.beaconID, model.polygon.head.getWorld(), jtsPolygon) match
 						case Left(err) =>
-							player.sendMessage(err.explain)
+							player.sendServerMessage(err.explain)
 							None
 						case Right(_) =>
 							Some(())
@@ -167,7 +168,7 @@ class PolygonEditor(using p: Plugin, bm: CivBeaconManager):
 		val done = actions.filter { action =>
 			action match
 				case CreatorAction.notifyPlayer(message) =>
-					player.sendMessage(message)
+					player.sendServerMessage(message)
 					false
 				case _ =>
 					true

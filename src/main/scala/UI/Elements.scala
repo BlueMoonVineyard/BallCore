@@ -22,6 +22,7 @@ import org.bukkit.event.inventory.InventoryClickEvent
 import net.kyori.adventure.text.format.TextDecoration.State
 import org.bukkit.inventory.meta.SkullMeta
 import org.bukkit.OfflinePlayer
+import net.kyori.adventure.audience.Audience
 
 // trait AccumulatorFn:
 
@@ -59,6 +60,10 @@ class ChatElements:
                 it = it.append(Component.text(strings.next()))
             it
 
+    extension (a: Audience)
+        def sendServerMessage(txt: Component): Unit =
+            a.sendMessage(txt.color(Colors.serverMessage))
+
     def txt(of: String): Component =
         Component.text(of)
 
@@ -69,6 +74,7 @@ class ChatElements:
         val red = TextColor.fromHexString("#e93d58")
         val teal = TextColor.fromHexString("#00d485")
         val grellow = TextColor.fromHexString("#b6e521")
+        val serverMessage = TextColor.fromHexString("#6dd3ff")
 
     extension (c: Component)
         def style(color: TextColor, decorations: TextDecoration*): Component =

@@ -18,6 +18,7 @@ import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
 import BallCore.DataStructures.Actor
 import BallCore.Folia.FireAndForget
+import BallCore.UI.ChatElements._
 
 enum CraftingMessage:
 	case startWorking(p: Player, f: Block, r: Recipe)
@@ -160,7 +161,7 @@ class CraftingActor(using p: Plugin) extends Actor[CraftingMessage]:
 					case Some(job) if job.recipe == r =>
 						jobs = jobs.updated(f, job.copy(workedBy = p :: job.workedBy))
 					case Some(_) =>
-						p.sendMessage("Someone else is already working a different recipe with this workstation!")
+						p.sendServerMessage(txt"Someone else is already working a different recipe with this workstation!")
 			case CraftingMessage.stopWorking(p) =>
 				stopWorking(p)
 			case CraftingMessage.tick =>

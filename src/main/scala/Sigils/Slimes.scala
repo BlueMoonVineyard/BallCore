@@ -219,7 +219,7 @@ class SlimeEgg(using cem: CustomEntityManager, ssm: SigilSlimeManager, hnm: CivB
 			hnm.getBeaconFor(event.getPlayer().getUniqueId()) match
 				case None =>
 					import BallCore.UI.ChatElements._
-					event.getPlayer().sendMessage(txt"You must have a Civilization Heart placed to spawn a Sigil Slime!".color(Colors.red))
+					event.getPlayer().sendServerMessage(txt"You must have a Civilization Heart placed to spawn a Sigil Slime!".color(Colors.red))
 					event.setCancelled(true)
 					return
 				case Some(value) =>

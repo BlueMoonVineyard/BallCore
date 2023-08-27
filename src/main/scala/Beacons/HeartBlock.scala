@@ -10,7 +10,6 @@ import org.bukkit.event.block.BlockPlaceEvent
 import org.bukkit.event.block.BlockBreakEvent
 import java.util.UUID
 import org.bukkit.entity.Player
-import org.bukkit.ChatColor
 import BallCore.CustomItems.CustomItemStack
 import BallCore.CustomItems.CustomItem
 import BallCore.CustomItems.Listeners
@@ -41,25 +40,25 @@ class HeartBlock()(using hn: CivBeaconManager, editor: PolygonEditor, gm: GroupM
                 case Some((beacon, group)) =>
                     gm.checkE(event.getPlayer().getUniqueId(), group, Permissions.ManageClaims) match
                         case Left(err) =>
-                            event.getPlayer().sendMessage(s"You cannot edit claims because ${err.explain()}")
+                            event.getPlayer().sendServerMessage(txt"You cannot edit claims because ${err.explain()}")
                         case Right(_) =>
                             editor.create(event.getPlayer(), event.getClickedBlock().getWorld(), beacon)
                 case None =>
-                    event.getPlayer.sendMessage(s"${ChatColor.LIGHT_PURPLE}You need to bind this beacon to a group in order to edit its claims.")
+                    event.getPlayer.sendServerMessage(txt"You need to bind this beacon to a group in order to edit its claims.")
 
     def onBlockPlace(event: BlockPlaceEvent): Unit =
         if playerHasHeart(event.getPlayer()) then
-            event.getPlayer().sendMessage(s"${ChatColor.LIGHT_PURPLE}Your heart is already placed...")
+            event.getPlayer().sendServerMessage(txt"Your heart is already placed...")
             event.setCancelled(true)
             return
         bm.store(event.getBlock(), "owner", event.getPlayer().getUniqueId())
         hn.placeHeart(event.getBlock().getLocation(), event.getPlayer().getUniqueId()) match
             case Some((_, x)) if x == 1 =>
-                event.getPlayer().sendMessage(s"${ChatColor.LIGHT_PURPLE}Your heart is the first block of a new beacon!")
-                event.getPlayer().sendMessage(s"${ChatColor.LIGHT_PURPLE}The beacon will help you adapt to the land here faster, which will get you increased resource drops over time, among other things.")
-                event.getPlayer().sendMessage(s"${ChatColor.LIGHT_PURPLE}Bind a group to this beacon, and you'll unlock the ability to claim land and allow other players to join your beacon!")
+                event.getPlayer().sendServerMessage(txt"Your heart is the first block of a new beacon!")
+                event.getPlayer().sendServerMessage(txt"The beacon will help you adapt to the land here faster, which will get you increased resource drops over time, among other things.")
+                event.getPlayer().sendServerMessage(txt"Bind a group to this beacon, and you'll unlock the ability to claim land and allow other players to join your beacon!")
             case Some((_, x)) =>
-                event.getPlayer().sendMessage(s"${ChatColor.LIGHT_PURPLE}You've joined your heart to a beacon with ${x-1} other players!")
+                event.getPlayer().sendServerMessage(txt"You've joined your heart to a beacon with ${x-1} other players!")
             case None =>
                 ()
 
@@ -67,6 +66,6 @@ class HeartBlock()(using hn: CivBeaconManager, editor: PolygonEditor, gm: GroupM
         val owner = bm.retrieve[UUID](event.getBlock(), "owner").get
         hn.removeHeart(event.getBlock().getLocation(), owner) match
             case Some(_) =>
-                event.getPlayer().sendMessage(s"${ChatColor.LIGHT_PURPLE}You've disconnected from the beacon...")
+                event.getPlayer().sendServerMessage(txt"You've disconnected from the beacon...")
             case None =>
-                event.getPlayer().sendMessage(s"${ChatColor.LIGHT_PURPLE}You've deleted the beacon...")
+                event.getPlayer().sendServerMessage(txt"You've deleted the beacon...")

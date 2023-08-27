@@ -12,6 +12,7 @@ import org.bukkit.entity.Player
 import BallCore.Folia.EntityExecutionContext
 import org.bukkit.plugin.Plugin
 import BallCore.Folia.FireAndForget
+import BallCore.UI.ChatElements._
 
 trait UITransferrer:
     def transferTo(p: UIProgram, f: p.Flags): Unit
@@ -63,7 +64,7 @@ class UIProgramRunner(program: UIProgram, flags: program.Flags, showingTo: Playe
     def prompt(prompt: String): Future[String] =
         prompts.prompt(showingTo, prompt)
     def notify(what: String): Unit =
-        FireAndForget { showingTo.sendMessage(what) }
+        FireAndForget { showingTo.sendServerMessage(txt(what)) }
     def execute(runnable: Runnable): Unit =
         ec.execute(runnable)
     def reportFailure(cause: Throwable): Unit =
