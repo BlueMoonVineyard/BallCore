@@ -42,8 +42,8 @@ enum Climate:
 
 object Climate:
 	def climateAt(x: Int, y: Int, z: Int): Climate =
-		val isWet = Information.humidity(x, y, z) >= 0.5
-		val isWarm = Information.temperature(x, y, z) >= 0.5
+		val isWet = Information.humidity(x, y, z) >= 0.55
+		val isWarm = Information.temperature(x, y, z) >= 0.6
 		(isWet, isWarm) match
 			case (false, false) => Climate.coldArid
 			case (false, true) => Climate.warmArid
