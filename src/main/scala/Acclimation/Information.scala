@@ -30,7 +30,7 @@ object Information:
     def humidity(x: Int, y: Int, z: Int): Double =
         val world = Bukkit.getWorld("world")
         val humidity = world.getHumidity(x, y, z)
-        ((humidity + 1.76) / 3.52)
+        humidity
 
     private def normalize(v: Double, min: Double, max: Double): Double =
         (v - min) / (max - min)
