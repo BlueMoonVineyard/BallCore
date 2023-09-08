@@ -112,8 +112,8 @@ object Elements extends ChatElements:
         Accumulator.run(inner, an.extra).foreach(x => pane.addItem(x))
         an add pane
 
-    def Item(id: Material, amount: Int = 1, displayName: Option[Component] = None)(inner: (LoreAccumulator) ?=> Unit = nil)(using an: ItemAccumulator): Unit =
-        val is = ItemStack(id, amount)
+    def Item(item: ItemStack, displayName: Option[Component])(inner: (LoreAccumulator) ?=> Unit)(using an: ItemAccumulator): Unit =
+        val is = item.clone()
         val im = is.getItemMeta()
 
         displayName match
@@ -127,7 +127,13 @@ object Elements extends ChatElements:
             case _ =>
 
         is.setItemMeta(im)
+
         an add GuiItem(is, ev => ev.setCancelled(true))
+
+    def Item(id: Material, amount: Int = 1, displayName: Option[Component] = None)(inner: (LoreAccumulator) ?=> Unit = nil)(using an: ItemAccumulator): Unit =
+        val is = ItemStack(id, amount)
+
+        Item(is, displayName)(inner)
 
     def Button[Msg](id: Material, displayName: Component, onClick: Msg, amount: Int = 1, highlighted: Boolean = false)(inner: (LoreAccumulator) ?=> Unit = nil)(using an: ItemAccumulator): Unit =
         val is = ItemStack(id, amount)

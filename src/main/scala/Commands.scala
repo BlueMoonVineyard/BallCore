@@ -19,6 +19,7 @@ import BallCore.Plants.PlantBatchManager
 import BallCore.Plants.PlantMsg
 import BallCore.PolygonEditor.PolygonEditor
 import BallCore.Beacons.CivBeaconManager
+import BallCore.Plants.PlantListProgram
 
 class CheatCommand(using registry: ItemRegistry, pbm: PlantBatchManager) extends CommandExecutor:
     override def onCommand(sender: CommandSender, command: Command, label: String, args: Array[String]): Boolean =
@@ -47,6 +48,14 @@ class GroupsCommand(using prompts: UI.Prompts, plugin: Plugin, gm: GroupManager,
         val p = Groups.GroupListProgram()
         val plr = sender.asInstanceOf[Player]
         val runner = UIProgramRunner(p, p.Flags(plr.getUniqueId()), plr)
+        runner.render()
+        return true
+
+class PlantsCommand(using prompts: UI.Prompts, plugin: Plugin) extends CommandExecutor:
+    override def onCommand(sender: CommandSender, command: Command, label: String, args: Array[String]) =
+        val p = PlantListProgram()
+        val plr = sender.asInstanceOf[Player]
+        val runner = UIProgramRunner(p, p.Flags(), plr)
         runner.render()
         return true
 

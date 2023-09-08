@@ -20,7 +20,9 @@ softdepend:
   - Geyser-Spigot
 commands:
   groups:
-    description: Entrypoint for group commands
+    description: View the groups UI
+  plants:
+    description: View the list of plants
   cheat:
     description: Cheats in a custom item
   group:

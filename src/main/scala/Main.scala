@@ -91,6 +91,7 @@ final class Main extends JavaPlugin:
         getCommand("groups").setExecutor(new GroupsCommand)
         getCommand("cheat").setExecutor(CheatCommand())
         getCommand("done").setExecutor(DoneCommand())
+        getCommand("plants").setExecutor(PlantsCommand())
     override def onDisable() =
         import scala.concurrent.ExecutionContext.Implicits.global
         val _ = Await.ready(sm.shutdown(), scala.concurrent.duration.Duration.Inf)
