@@ -23,6 +23,8 @@ import net.kyori.adventure.text.format.TextDecoration.State
 import org.bukkit.inventory.meta.SkullMeta
 import org.bukkit.OfflinePlayer
 import net.kyori.adventure.audience.Audience
+import org.bukkit.inventory.ItemFlag
+import org.bukkit.enchantments.Enchantment
 
 // trait AccumulatorFn:
 
@@ -127,7 +129,7 @@ object Elements extends ChatElements:
         is.setItemMeta(im)
         an add GuiItem(is, ev => ev.setCancelled(true))
 
-    def Button[Msg](id: Material, displayName: Component, onClick: Msg, amount: Int = 1)(inner: (LoreAccumulator) ?=> Unit = nil)(using an: ItemAccumulator): Unit =
+    def Button[Msg](id: Material, displayName: Component, onClick: Msg, amount: Int = 1, highlighted: Boolean = false)(inner: (LoreAccumulator) ?=> Unit = nil)(using an: ItemAccumulator): Unit =
         val is = ItemStack(id, amount)
         val im = is.getItemMeta()
         val baked = an.extra(onClick.asInstanceOf[Object])
@@ -135,6 +137,9 @@ object Elements extends ChatElements:
         im.displayName(displayName.style(x => { x.decorationIfAbsent(TextDecoration.ITALIC, State.FALSE); () }))
         val poki = Box[Option[OfflinePlayer]](None)
         im.lore(Accumulator.run(inner, poki).map(line => line.style(x => { x.decorationIfAbsent(TextDecoration.ITALIC, State.FALSE); () })).asJava)
+        if highlighted then
+            im.addItemFlags(ItemFlag.HIDE_ENCHANTS)
+            val _ = im.addEnchant(Enchantment.DURABILITY, 1, true)
 
         poki.it match
             case Some(x) if im.isInstanceOf[SkullMeta] => im.asInstanceOf[SkullMeta].setOwningPlayer(x)
