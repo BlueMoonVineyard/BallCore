@@ -40,6 +40,7 @@ import BallCore.Sigils.Sigil
 import BallCore.Sigils.CustomEntityManager
 import BallCore.Sigils.SigilSlimeManager
 import BallCore.PolygonEditor.PolygonEditor
+import BallCore.MapCloning.MapCloningListener
 
 final class Main extends JavaPlugin:
     given sql: Storage.SQLManager = new Storage.SQLManager
@@ -81,6 +82,7 @@ final class Main extends JavaPlugin:
         AcclimationActor.register()
         PolygonEditor.register()
         Mining.Mining.register()
+        MapCloningListener.register()
         Sigil.register()
         given pbm: PlantBatchManager = Plants.Plants.register()
         given ac: ChatActor = Chat.Chat.register()
