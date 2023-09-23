@@ -19,6 +19,7 @@ case class BlockKey(
 /** This holds the reinforcement state for a given block in a chunkstate */
 case class ReinforcementState(
     group: Groups.GroupID,
+    subgroup: Groups.SubgroupID,
     owner: Groups.UserID,
     dirty: Boolean,
     deleted: Boolean,

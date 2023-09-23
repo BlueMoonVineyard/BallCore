@@ -40,9 +40,9 @@ class GroupManagementProgram(using gm: GroupManager, cbm: CivBeaconManager) exte
         Root(txt"Viewing ${group.metadata.name}", 6) {
             OutlinePane(0, 0, 1, 6) {
                 Button(Material.PLAYER_HEAD, txt"Members".style(NamedTextColor.GREEN), Message.ViewMembers, highlighted = model.viewing == ViewingWhat.Players)()
-                if group.check(Permissions.ManageRoles, model.userID) then
+                if group.check(Permissions.ManageRoles, model.userID, nullUUID) then
                     Button(Material.WRITABLE_BOOK, txt"Manage Roles".style(NamedTextColor.GREEN), Message.ViewRoles, highlighted = model.viewing == ViewingWhat.Roles)()
-                if group.check(Permissions.InviteUser, model.userID) then
+                if group.check(Permissions.InviteUser, model.userID, nullUUID) then
                     Button(Material.COMPASS, txt"Invite A Member".style(NamedTextColor.GREEN), Message.InviteMember)()
                 if model.canBindToHeart then
                     Button(Material.WHITE_CONCRETE, txt"Bind to Beacon".style(NamedTextColor.GREEN), Message.BindToHeart)()

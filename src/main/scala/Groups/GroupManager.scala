@@ -13,6 +13,7 @@ import io.circe._, io.circe.generic.semiauto._, io.circe.parser._, io.circe.synt
 import net.kyori.adventure.audience.Audience
 import org.bukkit.Bukkit
 import scala.jdk.CollectionConverters._
+import scala.util.chaining._
 
 inline def uuid(from: String) = ju.UUID.fromString(from)
 
@@ -172,6 +173,37 @@ class GroupManager()(using sql: Storage.SQLManager):
             )
         )
     )
+    sql.applyMigration(
+        Storage.Migration(
+            "Add subgroups and subgroup permissions",
+            List(
+                sql"""
+                CREATE TABLE Subgroups (
+                    ParentGroup text NOT NULL,
+                    SubgroupID text NOT NULL,
+                    Name text NOT NULL,
+                    UNIQUE(SubgroupID),
+                    FOREIGN KEY (ParentGroup) REFERENCES GroupStates(ID) ON DELETE CASCADE
+                );
+                """,
+                sql"""
+                CREATE TABLE SubgroupPermissions (
+                    GroupID text NOT NULL,
+                    SubgroupID text NOT NULL,
+                    RoleID text NOT NULL,
+                    Permissions text NOT NULL,
+                    UNIQUE(SubgroupID, RoleID),
+                    FOREIGN KEY (SubgroupID) REFERENCES Subgroups(SubgroupID) ON DELETE CASCADE,
+                    FOREIGN KEY (GroupID, RoleID) REFERENCES GroupRoles(GroupID, RoleID) ON DELETE CASCADE
+                );
+                """,
+            ),
+            List(
+                sql"DROP TABLE SubgroupPermissions;",
+                sql"DROP TABLE Subgroups;",
+            )
+        )
+    )
     implicit val session: DBSession = sql.session
     given gm: GroupManager = this
     val invites = InviteManager()
@@ -252,6 +284,25 @@ class GroupManager()(using sql: Storage.SQLManager):
     private def getGroupMembers(group: GroupID): List[GroupMemberships] =
         sql"SELECT * FROM GroupMemberships WHERE GroupID = ${group}".map(GroupMemberships.apply).list.apply()
 
+    private def getSubgroups(group: GroupID): List[SubgroupState] =
+        sql"SELECT * FROM Subgroups WHERE ParentGroup = ${group}"
+            .map(rs => SubgroupState(rs.string("SubgroupID").pipe(ju.UUID.fromString), rs.string("Name"), Map()))
+            .list
+            .apply()
+            .map { state =>
+                val perms = sql"""
+                SELECT * FROM SubgroupPermissions WHERE SubgroupID = ${state.id}
+                """
+                    .map(rs => rs.string("RoleID").pipe(ju.UUID.fromString) -> decode[Map[Permissions, RuleMode]](rs.string("Permissions")).toOption.get)
+                    .list
+                    .apply()
+                    .toMap
+
+                state.copy(
+                    permissions = perms
+                )
+            }
+
     private def getAll(group: GroupID): Either[GroupError, GroupState] =
         val gs_ = sql"SELECT * FROM GroupStates WHERE ID = ${group}".map(GroupStates.apply).single.apply()
         gs_ match
@@ -277,7 +328,8 @@ class GroupManager()(using sql: Storage.SQLManager):
             },
             users = gm.map { membership =>
                 (membership.userID, grm.filter(_.userID == membership.userID).map(_.roleID).toSet)
-            }.toMap
+            }.toMap,
+            subgroups = getSubgroups(group)
         ))
 
     def promoteToOwner(as: UserID, target: UserID, group: GroupID): Either[GroupError, Unit] =
@@ -305,13 +357,13 @@ class GroupManager()(using sql: Storage.SQLManager):
         sql"UPDATE GroupRoles SET Permissions = ${permissions.asJson.noSpaces} WHERE GroupID = ${groupID} AND RoleID = ${roleID};".update.apply(); ()
     def setRolePermissions(as: UserID, groupID: GroupID, roleID: RoleID, permissions: Map[Permissions, RuleMode]): Either[GroupError, Unit] =
         getAll(groupID)
-            .guard(GroupError.NoPermissions) { _.check(Permissions.ManageRoles, as) }
+            .guard(GroupError.NoPermissions) { _.check(Permissions.ManageRoles, as, nullUUID) }
             .guard(GroupError.RoleNotFound) { _.roles.exists(_.id == roleID) }
             .guardRoleAboveYours(as, roleID)
             .guard(GroupError.MustHavePermission) { gs =>
                 permissions.forall { (perm, mode) =>
                     if mode == RuleMode.Allow then
-                        gs.check(perm, as)
+                        gs.check(perm, as, nullUUID)
                     else
                         true
                 }
@@ -333,7 +385,7 @@ class GroupManager()(using sql: Storage.SQLManager):
 
     def deleteRole(as: UserID, role: RoleID, group: GroupID): Either[GroupError, Unit] =
         getAll(group)
-            .guard(GroupError.NoPermissions) { _.check(Permissions.ManageRoles, as) }
+            .guard(GroupError.NoPermissions) { _.check(Permissions.ManageRoles, as, nullUUID) }
             .guard(GroupError.RoleNotFound) { _.roles.exists(_.id == role) }
             .guard(GroupError.CantAssignEveryone) { _ => everyoneUUID != role && groupMemberUUID != role }
             .guardRoleAboveYours(as, role)
@@ -343,7 +395,7 @@ class GroupManager()(using sql: Storage.SQLManager):
 
     def assignRole(as: UserID, target: UserID, group: GroupID, role: RoleID, has: Boolean): Either[GroupError, Unit] =
         getAll(group)
-            .guard(GroupError.NoPermissions) { _.check(Permissions.ManageUserRoles, as) }
+            .guard(GroupError.NoPermissions) { _.check(Permissions.ManageUserRoles, as, nullUUID) }
             .guard(GroupError.RoleNotFound) { _.roles.exists(_.id == role) }
             .guard(GroupError.TargetNotInGroup) { _.users.contains(target) }
             .guard(GroupError.CantAssignEveryone) { _ => everyoneUUID != role && groupMemberUUID != role }
@@ -389,8 +441,8 @@ class GroupManager()(using sql: Storage.SQLManager):
     def getGroup(groupID: GroupID): Either[GroupError, GroupState] =
         getAll(groupID)
 
-    def check(user: UserID, group: GroupID, permission: Permissions): Either[GroupError, Boolean] =
-        getAll(group).map(_.check(permission, user))
+    def check(user: UserID, group: GroupID, subgroup: SubgroupID, permission: Permissions): Either[GroupError, Boolean] =
+        getAll(group).map(_.check(permission, user, subgroup))
 
-    def checkE(user: UserID, group: GroupID, permission: Permissions): Either[GroupError, Unit] =
-        getAll(group).guard(GroupError.NoPermissions) { _.check(permission, user) }.map { _ => () }
+    def checkE(user: UserID, group: GroupID, subgroup: SubgroupID, permission: Permissions): Either[GroupError, Unit] =
+        getAll(group).guard(GroupError.NoPermissions) { _.check(permission, user, subgroup) }.map { _ => () }

@@ -11,7 +11,10 @@ import org.bukkit.Material
 type UserID = ju.UUID
 type RoleID = ju.UUID
 type GroupID = ju.UUID
+type SubgroupID = ju.UUID
 
+/** null UUID for subgroups */
+lazy val nullUUID = ju.UUID(0, 0)
 /** the null UUID is used for the role that everyone in the world has, no exceptions */
 lazy val everyoneUUID = ju.UUID(0, 0)
 /** the null UUID is used for the role that everyone in a group has, no exceptions */
@@ -101,6 +104,12 @@ implicit val pKeyDecoder: KeyDecoder[Permissions] = new KeyDecoder[Permissions]:
     override def apply(key: String): Option[Permissions] =
         Permissions.values.find(v => v.name == key)
 
+case class SubgroupState(
+    id: SubgroupID,
+    name: String,
+    permissions: Map[RoleID, Map[Permissions, RuleMode]],
+)
+
 case class RoleState(
     id: RoleID,
     name: String,
@@ -117,11 +126,18 @@ case class GroupState(
     owners: List[UserID],
     roles: List[RoleState],
     users: Map[UserID, Set[RoleID]],
+    subgroups: List[SubgroupState],
 ):
+    private def subgroupPermissionsFor(subgroup: SubgroupID, role: RoleID): Map[Permissions, RuleMode] =
+        subgroups.find(_.id == subgroup)
+            .flatMap(_.permissions.get(role))
+            .getOrElse(Map())
     private def permissionsFor(role: RoleID): Map[Permissions, RuleMode] =
-        roles.find { x => x.id == role }.get.permissions
+        roles.find { x => x.id == role }
+            .map(_.permissions)
+            .getOrElse(Map())
 
-    def check(perm: Permissions, user: UserID): Boolean =
+    def check(perm: Permissions, user: UserID, subgroup: SubgroupID): Boolean =
         if owners.contains(user) then
             true
         else
@@ -129,10 +145,14 @@ case class GroupState(
             val userRolesSorted = userRoles.sortBy(roles.indexOf(_))
             val perms = userRolesSorted.view.map { role => permissionsFor(role).get(perm) }
 
+            if subgroup != nullUUID then
+                val subgroupPerms = userRolesSorted.view.map { role => subgroupPermissionsFor(subgroup, role).get(perm) }
+                subgroupPerms.find { x => x.isDefined }.flatten match
+                    case Some(RuleMode.Allow) => return true
+                    case Some(RuleMode.Deny) => return false
+                    case _ =>
+
             perms.find { x => x.isDefined }.flatten match
                 case Some(RuleMode.Allow) => true
                 case Some(RuleMode.Deny) => false
                 case _ => false
-
-implicit val gsDecoder: Decoder[GroupState] = deriveDecoder[GroupState]
-implicit val gsEncoder: Encoder[GroupState] = deriveEncoder[GroupState]

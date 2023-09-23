@@ -37,14 +37,14 @@ class BlockReinforcementManager()(using csm: ChunkStateManager, gsm: Groups.Grou
     private def hoist[B](either: Either[Groups.GroupError, B]): Either[ReinforcementError, B] =
         either.left.map(ReinforcementGroupError(_))
 
-    def reinforce(as: Groups.UserID, group: Groups.UserID, x: Int, y: Int, z: Int, world: WorldID, kind: ReinforcementTypes): Either[ReinforcementError, Unit] =
+    def reinforce(as: Groups.UserID, group: Groups.UserID, subgroup: Groups.SubgroupID, x: Int, y: Int, z: Int, world: WorldID, kind: ReinforcementTypes): Either[ReinforcementError, Unit] =
         val (chunkX, chunkZ, offsetX, offsetZ) = toOffsets(x, z)
         val state = csm.get(ChunkKey(chunkX, chunkZ, world.toString()))
         val bkey = BlockKey(offsetX, offsetZ, y)
         state.blocks.get(bkey).filterNot(_.deleted) match
             case None =>
-                hoist(gsm.checkE(as, group, Groups.Permissions.AddReinforcements)).map { _ =>
-                    state.blocks(bkey) = ReinforcementState(group, as, true, false, kind.hp, kind, c.now())
+                hoist(gsm.checkE(as, group, subgroup, Groups.Permissions.AddReinforcements)).map { _ =>
+                    state.blocks(bkey) = ReinforcementState(group, subgroup, as, true, false, kind.hp, kind, c.now())
                 }
             case Some(value) =>
                 Left(AlreadyExists())
@@ -59,7 +59,7 @@ class BlockReinforcementManager()(using csm: ChunkStateManager, gsm: Groups.Grou
                     state.blocks(bkey) = value.copy(deleted = true)
                     Right(())
                 else
-                    hoist(gsm.checkE(as, value.group, Groups.Permissions.RemoveReinforcements)).map { _ =>
+                    hoist(gsm.checkE(as, value.group, value.subgroup, Groups.Permissions.RemoveReinforcements)).map { _ =>
                         state.blocks(bkey) = value.copy(deleted = true)
                     }
     def break(x: Int, y: Int, z: Int, hardness: Double, world: WorldID): Either[ReinforcementError, ReinforcementState] =

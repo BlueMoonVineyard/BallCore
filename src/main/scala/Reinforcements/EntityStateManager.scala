@@ -96,18 +96,19 @@ class EntityStateManager()(using sql: Storage.SQLManager, csm: ChunkStateManager
     private def load(key: UUID): Unit =
         val item =
             sql"""
-            SELECT GroupID, Owner, Health, ReinforcementKind, PlacedAt FROM EntityReinforcements
+            SELECT GroupID, SubgroupID, Owner, Health, ReinforcementKind, PlacedAt FROM EntityReinforcements
                 LEFT JOIN Reinforcements
                        ON Reinforcements.ID = EntityReinforcements.ReinforcementID
 
                 WHERE EntityID = ${key};
             """
                 .map[ReinforcementState]{ rs =>
-                    val tuple = (rs.string("GroupID"), rs.string("Owner"), rs.int("Health"), rs.string("ReinforcementKind"), rs.date("PlacedAt"))
-                    val (group, owner, health, reinforcementKind, date) = tuple
+                    val tuple = (rs.string("GroupID"), rs.string("SubgroupID"), rs.string("Owner"), rs.int("Health"), rs.string("ReinforcementKind"), rs.date("PlacedAt"))
+                    val (group, subgroup, owner, health, reinforcementKind, date) = tuple
                     val gid = UUID.fromString(group)
+                    val sgid = UUID.fromString(subgroup)
                     val uid = UUID.fromString(owner)
-                    ReinforcementState(gid, uid, false, false, health, ReinforcementTypes.from(reinforcementKind).get, date.toInstant())
+                    ReinforcementState(gid, sgid, uid, false, false, health, ReinforcementTypes.from(reinforcementKind).get, date.toInstant())
                 }
                 .single
                 .apply()

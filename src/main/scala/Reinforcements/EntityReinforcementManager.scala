@@ -14,12 +14,12 @@ class EntityReinforcementManager()(using esm: EntityStateManager, gsm: Groups.Gr
     private def hoist[B](either: Either[Groups.GroupError, B]): Either[ReinforcementError, B] =
         either.left.map(ReinforcementGroupError(_))
 
-    def reinforce(as: Groups.UserID, group: Groups.GroupID, entity: UUID, kind: ReinforcementTypes): Either[ReinforcementError, Unit] =
+    def reinforce(as: Groups.UserID, group: Groups.GroupID, subgroup: Groups.SubgroupID, entity: UUID, kind: ReinforcementTypes): Either[ReinforcementError, Unit] =
         val state = esm.get(entity)
         state match
             case None =>
-                hoist(gsm.checkE(as, group, Groups.Permissions.AddReinforcements)).map { _ =>
-                    esm.set(entity, ReinforcementState(group, as, true, false, kind.hp, kind, c.now()))
+                hoist(gsm.checkE(as, group, subgroup, Groups.Permissions.AddReinforcements)).map { _ =>
+                    esm.set(entity, ReinforcementState(group, subgroup, as, true, false, kind.hp, kind, c.now()))
                 }
             case Some(value) =>
                 Left(AlreadyExists())
@@ -31,7 +31,7 @@ class EntityReinforcementManager()(using esm: EntityStateManager, gsm: Groups.Gr
                     esm.set(entity, value.copy(deleted = true))
                     Right(())
                 else
-                    hoist(gsm.checkE(as, value.group, Groups.Permissions.RemoveReinforcements)).map { _ =>
+                    hoist(gsm.checkE(as, value.group, value.subgroup, Groups.Permissions.RemoveReinforcements)).map { _ =>
                         esm.set(entity, value.copy(deleted = true))
                     }
     def damage(entity: UUID): Either[ReinforcementError, ReinforcementState] =

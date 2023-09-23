@@ -82,6 +82,21 @@ class ChunkStateManager()(using sql: Storage.SQLManager):
             ),
         )
     )
+    sql.applyMigration(
+        Storage.Migration(
+            "Reinforcements have subgroups now",
+            List(
+                sql"""
+                ALTER TABLE Reinforcements ADD COLUMN SubgroupID TEXT NOT NULL DEFAULT ('00000000-0000-0000-0000-000000000000');
+                """
+            ),
+            List(
+                sql"""
+                ALTER TABLE Reinforcements DROP SubgroupID;
+                """
+            ),
+        ),
+    )
 
     private implicit val session: DBSession = sql.session
     private val cache = LRUCache[ChunkKey, ChunkState](1000, evict)
@@ -96,7 +111,7 @@ class ChunkStateManager()(using sql: Storage.SQLManager):
     private def load(key: ChunkKey): Unit =
         val cs = ChunkState(Map())
         sql"""
-        SELECT OffsetX, OffsetZ, Y, GroupID, Owner, Health, ReinforcementKind, PlacedAt FROM BlockReinforcements
+        SELECT OffsetX, OffsetZ, Y, GroupID, SubgroupID, Owner, Health, ReinforcementKind, PlacedAt FROM BlockReinforcements
             LEFT JOIN Reinforcements
                    ON Reinforcements.ID = BlockReinforcements.ReinforcementID
 
@@ -104,14 +119,15 @@ class ChunkStateManager()(using sql: Storage.SQLManager):
               AND ChunkZ = ${key.chunkZ}
               AND World = ${key.world};
         """
-            .map(rs => (rs.int("OffsetX"), rs.int("OffsetZ"), rs.int("Y"), rs.string("GroupID"), rs.string("Owner"), rs.int("Health"), rs.string("ReinforcementKind"), rs.date("PlacedAt")))
+            .map(rs => (rs.int("OffsetX"), rs.int("OffsetZ"), rs.int("Y"), rs.string("GroupID"), rs.string("SubgroupID"), rs.string("Owner"), rs.int("Health"), rs.string("ReinforcementKind"), rs.date("PlacedAt")))
             .list
             .apply()
             .foreach { tuple =>
-                val (offsetX, offsetZ, y, group, owner, health, reinforcementKind, date) = tuple
+                val (offsetX, offsetZ, y, group, subgroup, owner, health, reinforcementKind, date) = tuple
                 val gid = ju.UUID.fromString(group)
+                val sgid = ju.UUID.fromString(subgroup)
                 val uid = ju.UUID.fromString(owner)
-                cs.blocks(BlockKey(offsetX, offsetZ, y)) = ReinforcementState(gid, uid, false, false, health, ReinforcementTypes.from(reinforcementKind).get, date.toInstant())
+                cs.blocks(BlockKey(offsetX, offsetZ, y)) = ReinforcementState(gid, sgid, uid, false, false, health, ReinforcementTypes.from(reinforcementKind).get, date.toInstant())
             }
         cache(key) = cs
 
@@ -162,9 +178,9 @@ class ChunkStateManager()(using sql: Storage.SQLManager):
                     case None =>
                         val id = sql"""
                         INSERT INTO Reinforcements
-                            (GroupID, Owner, Health, ReinforcementKind, PlacedAt)
+                            (GroupID, SubgroupID, Owner, Health, ReinforcementKind, PlacedAt)
                             VALUES
-                            (${value.group}, ${value.owner}, ${value.health}, ${value.kind.into()}, ${value.placedAt})
+                            (${value.group}, ${value.subgroup}, ${value.owner}, ${value.health}, ${value.kind.into()}, ${value.placedAt})
                         RETURNING ID;
                         """.map(rs => ju.UUID.fromString(rs.string("ID"))).single.apply().get
 
@@ -177,9 +193,9 @@ class ChunkStateManager()(using sql: Storage.SQLManager):
                     case Some(id) =>
                         sql"""
                         REPLACE INTO Reinforcements
-                            (ID, GroupID, Owner, Health, ReinforcementKind, PlacedAt)
+                            (ID, GroupID, SubgroupID, Owner, Health, ReinforcementKind, PlacedAt)
                             VALUES
-                            (${id}, ${value.group}, ${value.owner}, ${value.health}, ${value.kind.into()}, ${value.placedAt});
+                            (${id}, ${value.group}, ${value.subgroup}, ${value.owner}, ${value.health}, ${value.kind.into()}, ${value.placedAt});
                         """.update.apply()
             }
         }

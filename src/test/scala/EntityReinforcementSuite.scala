@@ -8,6 +8,7 @@ import BallCore.Reinforcements
 import java.{util => ju}
 import BallCore.DataStructures.Clock
 import BallCore.DataStructures.TestClock
+import BallCore.Groups.nullUUID
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import BallCore.Reinforcements.ReinforcementTypes
@@ -28,16 +29,16 @@ class EntityReinforcementSuite extends munit.FunSuite {
         val gid = gm.createGroup(u1, "test")
         gm.addToGroup(u2, gid)
 
-        val res1 = erm.reinforce(u2, gid, entity, ReinforcementTypes.IronLike)
+        val res1 = erm.reinforce(u2, gid, nullUUID, entity, ReinforcementTypes.IronLike)
         assert(res1 == Left(Reinforcements.ReinforcementGroupError(Groups.GroupError.NoPermissions)), res1)
 
-        val res2 = erm.reinforce(u1, gid, entity, ReinforcementTypes.IronLike)
+        val res2 = erm.reinforce(u1, gid, nullUUID, entity, ReinforcementTypes.IronLike)
         assert(res2 == Right(()), res2)
 
         val rid = gm.roles(gid).getOrElse(List()).find { x => x.name == "Admin" }.get.id
         assert(gm.assignRole(u1, u2, gid, rid, true).isRight)
 
-        val res3 = erm.reinforce(u2, gid, entity, ReinforcementTypes.IronLike)
+        val res3 = erm.reinforce(u2, gid, nullUUID, entity, ReinforcementTypes.IronLike)
         assert(res3 == Left(Reinforcements.AlreadyExists()), res3)
 
         val res4 = erm.unreinforce(u2, entity)
@@ -61,7 +62,7 @@ class EntityReinforcementSuite extends munit.FunSuite {
         val gid = gm.createGroup(u1, "test")
         gm.addToGroup(u2, gid)
 
-        val res1 = erm.reinforce(u1, gid, entity, ReinforcementTypes.IronLike)
+        val res1 = erm.reinforce(u1, gid, nullUUID, entity, ReinforcementTypes.IronLike)
         assert(res1 == Right(()), res1)
 
         val res2 = erm.damage(entity)

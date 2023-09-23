@@ -13,6 +13,7 @@ import java.time.temporal.ChronoUnit
 import BallCore.Reinforcements.ReinforcementError
 import BallCore.Reinforcements.ReinforcementState
 import BallCore.Reinforcements.ReinforcementTypes
+import BallCore.Groups.nullUUID
 
 class ReinforcementSuite extends munit.FunSuite {
     test("basic stuff") {
@@ -29,16 +30,16 @@ class ReinforcementSuite extends munit.FunSuite {
         val gid = gm.createGroup(u1, "test")
         gm.addToGroup(u2, gid)
 
-        val res1 = rm.reinforce(u2, gid, 0, 0, 0, world, ReinforcementTypes.IronLike)
+        val res1 = rm.reinforce(u2, gid, nullUUID, 0, 0, 0, world, ReinforcementTypes.IronLike)
         assert(res1 == Left(Reinforcements.ReinforcementGroupError(Groups.GroupError.NoPermissions)), res1)
 
-        val res2 = rm.reinforce(u1, gid, 0, 0, 0, world, ReinforcementTypes.IronLike)
+        val res2 = rm.reinforce(u1, gid, nullUUID, 0, 0, 0, world, ReinforcementTypes.IronLike)
         assert(res2 == Right(()), res2)
 
         val rid = gm.roles(gid).getOrElse(List()).find { x => x.name == "Admin" }.get.id
         assert(gm.assignRole(u1, u2, gid, rid, true).isRight)
 
-        val res3 = rm.reinforce(u2, gid, 0, 0, 0, world, ReinforcementTypes.IronLike)
+        val res3 = rm.reinforce(u2, gid, nullUUID, 0, 0, 0, world, ReinforcementTypes.IronLike)
         assert(res3 == Left(Reinforcements.AlreadyExists()), res3)
 
         val res4 = rm.unreinforce(u2, 0, 0, 0, world)
@@ -63,7 +64,7 @@ class ReinforcementSuite extends munit.FunSuite {
         val gid = gm.createGroup(u1, "test")
         gm.addToGroup(u2, gid)
 
-        val res1 = rm.reinforce(u1, gid, 0, 0, 0, world, ReinforcementTypes.IronLike)
+        val res1 = rm.reinforce(u1, gid, nullUUID, 0, 0, 0, world, ReinforcementTypes.IronLike)
         assert(res1 == Right(()), res1)
 
         val res2 = rm.break(0, 0, 0, 50.0, world)
@@ -99,7 +100,7 @@ class ReinforcementSuite extends munit.FunSuite {
         val gid = gm.createGroup(u1, "test")
         gm.addToGroup(u2, gid)
 
-        val res1 = rm.reinforce(u1, gid, 0, 0, 0, world, ReinforcementTypes.Stone)
+        val res1 = rm.reinforce(u1, gid, nullUUID, 0, 0, 0, world, ReinforcementTypes.Stone)
         assert(res1 == Right(()), res1)
 
         def break(cond: Either[ReinforcementError, ReinforcementState] => Boolean): Unit =
@@ -112,7 +113,7 @@ class ReinforcementSuite extends munit.FunSuite {
             break(_.isRight)
         break(_.isLeft)
 
-        val res2 = rm.reinforce(u1, gid, 0, 0, 0, world, ReinforcementTypes.Stone)
+        val res2 = rm.reinforce(u1, gid, nullUUID, 0, 0, 0, world, ReinforcementTypes.Stone)
         assert(res2 == Right(()), res2)
 
         // ditto

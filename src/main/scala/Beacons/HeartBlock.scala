@@ -18,6 +18,7 @@ import org.bukkit.event.player.PlayerInteractEvent
 import BallCore.PolygonEditor.PolygonEditor
 import BallCore.Groups.GroupManager
 import BallCore.Groups.Permissions
+import BallCore.Groups.nullUUID
 import BallCore.UI.Elements._
 
 object HeartBlock:
@@ -38,7 +39,7 @@ class HeartBlock()(using hn: CivBeaconManager, editor: PolygonEditor, gm: GroupM
             .map(_._2)
             .flatMap(beacon => hn.getGroup(beacon).map(group => (beacon, group))) match
                 case Some((beacon, group)) =>
-                    gm.checkE(event.getPlayer().getUniqueId(), group, Permissions.ManageClaims) match
+                    gm.checkE(event.getPlayer().getUniqueId(), group, nullUUID, Permissions.ManageClaims) match
                         case Left(err) =>
                             event.getPlayer().sendServerMessage(txt"You cannot edit claims because ${err.explain()}")
                         case Right(_) =>

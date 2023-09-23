@@ -7,6 +7,7 @@ import BallCore.Groups
 import java.{util => ju}
 import BallCore.Groups.Permissions
 import BallCore.Groups.RuleMode
+import BallCore.Groups.nullUUID
 
 class GroupsSuite extends munit.FunSuite:
     test("creating and deleting one-person group") {
@@ -86,10 +87,10 @@ class GroupsSuite extends munit.FunSuite:
 
         val gid = gm.createGroup(ownerID, "woot!")
 
-        val res1 = gm.check(ownerID, gid, Groups.Permissions.ManageUserRoles)
+        val res1 = gm.check(ownerID, gid, nullUUID, Groups.Permissions.ManageUserRoles)
         assert(res1 == Right(true), res1)
 
-        val res2 = gm.check(moderatorID, gid, Groups.Permissions.ManageUserRoles)
+        val res2 = gm.check(moderatorID, gid, nullUUID, Groups.Permissions.ManageUserRoles)
         assert(res2 == Right(false), res2)
 
         val res3 = gm.addToGroup(moderatorID, gid)
@@ -101,13 +102,13 @@ class GroupsSuite extends munit.FunSuite:
         val adminRoleID = actualRoles.find { x => x.name == "Admin" }.get.id
         val modRoleID = actualRoles.find { x => x.name == "Moderator" }.get.id
 
-        val res4 = gm.check(moderatorID, gid, Groups.Permissions.ManageUserRoles)
+        val res4 = gm.check(moderatorID, gid, nullUUID, Groups.Permissions.ManageUserRoles)
         assert(res4 == Right(false), res4)
 
         val res5 = gm.assignRole(ownerID, moderatorID, gid, modRoleID, true)
         assert(res5 == Right(()), res5)
 
-        val res6 = gm.check(moderatorID, gid, Groups.Permissions.ManageUserRoles)
+        val res6 = gm.check(moderatorID, gid, nullUUID, Groups.Permissions.ManageUserRoles)
         assert(res6 == Right(true), res6)
 
         val res7 = gm.assignRole(moderatorID, moderatorID, gid, adminRoleID, true)
@@ -116,10 +117,10 @@ class GroupsSuite extends munit.FunSuite:
         val res8 = gm.assignRole(moderatorID, moderatorID, gid, modRoleID, false)
         assert(res8 == Left(Groups.GroupError.RoleAboveYours), res8)
 
-        val res9 = gm.check(moderatorID, gid, Groups.Permissions.Build)
+        val res9 = gm.check(moderatorID, gid, nullUUID, Groups.Permissions.Build)
         assert(res9 == Right(true), res9)
 
-        val res10 = gm.check(randoID, gid, Groups.Permissions.Build)
+        val res10 = gm.check(randoID, gid, nullUUID, Groups.Permissions.Build)
         assert(res10 == Right(false), res10)
     }
     test("multi-owner groups") {

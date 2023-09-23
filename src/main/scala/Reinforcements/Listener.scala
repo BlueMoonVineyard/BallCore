@@ -41,6 +41,7 @@ import org.bukkit.event.player.PlayerTakeLecternBookEvent
 import BallCore.Beacons.CivBeaconManager
 import BallCore.Groups.GroupError
 import org.bukkit.block.Block
+import BallCore.Groups.nullUUID
 import scala.jdk.CollectionConverters._
 
 object Listener:
@@ -87,10 +88,15 @@ class Listener(using cbm: CivBeaconManager, gm: GroupManager) extends org.bukkit
     //// Stuff that interacts with the RSM; i.e. that mutates block states
     //
 
+    // TODO: consult subgroup at location
+    private def subgroupAt(location: Location) =
+        val _ = location
+        nullUUID
+
     private def checkAt(location: Location, player: Player, permission: Permissions): Either[GroupError, Boolean] =
         cbm.beaconContaining(location)
             .flatMap(cbm.getGroup)
-            .map(group => gm.check(player.getUniqueId(), group, permission))
+            .map(group => gm.check(player.getUniqueId(), group, subgroupAt(location), permission))
             .getOrElse(Right(true))
     private inline def checkAt(location: Block, player: Player, permission: Permissions): Either[GroupError, Boolean] =
         checkAt(BlockAdjustment.adjustBlock(location).getLocation(), player, permission)

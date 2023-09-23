@@ -56,7 +56,7 @@ class EntityListener()(using erm: EntityReinforcementManager, gm: GroupManager) 
         if !ent.isInstanceOf[Player] then
             event.setCancelled(true)
             return
-        gm.check(ent.asInstanceOf[Player].getUniqueId(), reinf.group, Permissions.Entities) match
+        gm.check(ent.asInstanceOf[Player].getUniqueId(), reinf.group, reinf.subgroup, Permissions.Entities) match
             case Right(ok) if ok =>
                 ()
             case _ =>
@@ -70,7 +70,7 @@ class EntityListener()(using erm: EntityReinforcementManager, gm: GroupManager) 
         if rein.isEmpty then
             return
         val reinf = rein.get
-        gm.check(event.getPlayer().getUniqueId(), reinf.group, Permissions.Entities) match
+        gm.check(event.getPlayer().getUniqueId(), reinf.group, reinf.subgroup, Permissions.Entities) match
             case Right(ok) if ok =>
                 ()
             case _ =>
