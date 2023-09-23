@@ -17,9 +17,14 @@ import BallCore.Ores.CardinalOres
 import BallCore.Ores.QuadrantOres
 import scala.util.chaining._
 import org.bukkit.plugin.Plugin
+import org.bukkit.block.Biome
 
 object Mining:
     val stoneBlocks = Set(Material.STONE, Material.DEEPSLATE, Material.TUFF)
+    val oceans = Set(
+        Biome.COLD_OCEAN, Biome.DEEP_COLD_OCEAN, Biome.DEEP_FROZEN_OCEAN, Biome.DEEP_LUKEWARM_OCEAN,
+        Biome.DEEP_OCEAN, Biome.FROZEN_OCEAN, Biome.LUKEWARM_OCEAN, Biome.OCEAN, Biome.WARM_OCEAN,
+    )
     val drops = List(
         // global ores
         Drops(
@@ -124,6 +129,8 @@ class MiningListener()(using ac: AntiCheeser, as: Acclimation.Storage) extends L
         if !ac.blockBroken(event.getBlock()) then
             return
         if !Mining.stoneBlocks.contains(event.getBlock().getType()) then
+            return
+        if Mining.oceans.contains(event.getBlock().getBiome()) then
             return
 
         val plr = event.getPlayer().getUniqueId()
