@@ -225,6 +225,7 @@ class GroupManager()(using sql: Storage.SQLManager):
                     (Permissions.RemoveUser, RuleMode.Allow),
                     (Permissions.UpdateGroupInformation, RuleMode.Allow),
                     (Permissions.ManageClaims, RuleMode.Allow),
+                    (Permissions.ManageSubgroups, RuleMode.Allow),
 
                     (Permissions.AddReinforcements, RuleMode.Allow),
                     (Permissions.RemoveReinforcements, RuleMode.Allow),
@@ -382,6 +383,32 @@ class GroupManager()(using sql: Storage.SQLManager):
                 permissions = role.permissions,
             )
         })
+
+    def createSubgroup(as: UserID, group: GroupID, name: String): Either[GroupError, Unit] =
+        getAll(group)
+            .guard(GroupError.NoPermissions) { _.check(Permissions.ManageSubgroups, as, nullUUID) }
+            .map { group =>
+                sql"""
+                INSERT INTO Subgroups (
+                    ParentGroup, SubgroupID, Name
+                ) VALUES (
+                    ${group}, ${ju.UUID.randomUUID()}, ${name}
+                );
+                """
+                    .update
+                    .apply(); ()
+            }
+
+    def deleteSubgroup(as: UserID, group: GroupID, subgroup: SubgroupID): Either[GroupError, Unit] =
+        getAll(group)
+            .guard(GroupError.NoPermissions) { _.check(Permissions.ManageSubgroups, as, nullUUID) }
+            .map { group =>
+                sql"""
+                DELETE FROM Subgroups WHERE SubgroupID = ${subgroup}
+                """
+                    .update
+                    .apply(); ()
+            }
 
     def deleteRole(as: UserID, role: RoleID, group: GroupID): Either[GroupError, Unit] =
         getAll(group)

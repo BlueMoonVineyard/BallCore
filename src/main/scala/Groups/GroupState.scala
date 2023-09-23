@@ -37,6 +37,7 @@ enum Permissions(val name: String):
     case InviteUser extends Permissions("users.invite")
     case RemoveUser extends Permissions("users.manage.remove")
     case UpdateGroupInformation extends Permissions("group.manage")
+    case ManageSubgroups extends Permissions("subgroups.manage")
     case ManageClaims extends Permissions("claims.manage")
 
     case AddReinforcements extends Permissions("reinforcements.add")
@@ -56,6 +57,7 @@ enum Permissions(val name: String):
             case InviteUser => "Invite Users"
             case RemoveUser => "Remove Users"
             case UpdateGroupInformation => "Modify Group Information"
+            case ManageSubgroups => "Manage Subgroups"
             case ManageClaims => "Manage Claims"
             case AddReinforcements => "Reinforce Blocks/Entities"
             case RemoveReinforcements => "Unreinforce Blocks/Entities"
@@ -79,6 +81,7 @@ enum Permissions(val name: String):
             case Doors => "Allows the user to open reinforced doors"
             case Crops => "Allows the user to plant and harvest crops on reinforced farmland"
             case Entities => "Allows the user to interact with entities"
+            case ManageSubgroups => "Allows users to create, rename, and delete subgroups"
             case ManageClaims => "Allows users to manage the claims of this group's beacons"
 
     def displayItem(): Material =
@@ -96,6 +99,7 @@ enum Permissions(val name: String):
             case Crops => Material.WHEAT
             case Entities => Material.EGG
             case ManageClaims => Material.BEACON
+            case ManageSubgroups => Material.RED_BED
 
 implicit val pKeyEncoder: KeyEncoder[Permissions] = new KeyEncoder[Permissions]:
     override def apply(perm: Permissions): String =
