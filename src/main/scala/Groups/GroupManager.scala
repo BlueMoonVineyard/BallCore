@@ -373,6 +373,29 @@ class GroupManager()(using sql: Storage.SQLManager):
                 sql"UPDATE GroupRoles SET Permissions = ${permissions.asJson.noSpaces} WHERE GroupID = ${groupID} AND RoleID = ${roleID};".update.apply(); ()
             }
 
+    def setSubgroupRolePermissions(as: UserID, groupID: GroupID, subgroupID: SubgroupID, roleID: RoleID, permissions: Map[Permissions, RuleMode]): Either[GroupError, Unit] =
+        getAll(groupID)
+            .guard(GroupError.NoPermissions) { _.check(Permissions.ManageSubgroups, as, subgroupID) }
+            .guard(GroupError.RoleNotFound) { _.roles.exists(_.id == roleID) }
+            .guardRoleAboveYours(as, roleID)
+            .guard(GroupError.MustHavePermission) { gs =>
+                permissions.forall { (perm, mode) =>
+                    if mode == RuleMode.Allow then
+                        gs.check(perm, as, subgroupID)
+                    else
+                        true
+                }
+            }
+            .map { _ =>
+                sql"""
+                REPLACE INTO SubgroupPermissions (
+                    GroupID, SubgroupID, RoleID, Permissions
+                ) VALUES (
+                    ${groupID}, ${subgroupID}, ${roleID}, ${permissions.asJson.noSpaces}
+                );
+                """.update.apply(); ()
+            }
+
     def roles(group: GroupID): Either[GroupError, List[RoleState]] =
         val gr = sql"SELECT * FROM GroupRoles WHERE GroupID = ${group}".map(GroupRoles.apply).list.apply()
         Right(gr.map { role =>
@@ -384,19 +407,40 @@ class GroupManager()(using sql: Storage.SQLManager):
             )
         })
 
-    def createSubgroup(as: UserID, group: GroupID, name: String): Either[GroupError, Unit] =
+    def createRole(as: UserID, group: GroupID, name: String): Either[GroupError, RoleID] =
+        getAll(group)
+            .guard(GroupError.NoPermissions) { _.check(Permissions.ManageRoles, as, nullUUID) }
+            .map { group =>
+                val rid = ju.UUID.randomUUID()
+
+                sql"""
+                INSERT INTO GroupRoles (
+                    GroupID, RoleID, Name, Hoist, Permissions, Ord
+                ) VALUES (
+                    ${group.metadata.id}, ${rid}, ${name}, ${false}, ${Map[Permissions, RuleMode]().asJson.noSpaces}, ${""}
+                );
+                """.update.apply()
+
+                rid
+            }
+
+    def createSubgroup(as: UserID, group: GroupID, name: String): Either[GroupError, SubgroupID] =
         getAll(group)
             .guard(GroupError.NoPermissions) { _.check(Permissions.ManageSubgroups, as, nullUUID) }
             .map { group =>
+                val sgid = ju.UUID.randomUUID()
+
                 sql"""
                 INSERT INTO Subgroups (
                     ParentGroup, SubgroupID, Name
                 ) VALUES (
-                    ${group}, ${ju.UUID.randomUUID()}, ${name}
+                    ${group.metadata.id}, ${sgid}, ${name}
                 );
                 """
                     .update
-                    .apply(); ()
+                    .apply()
+
+                sgid
             }
 
     def deleteSubgroup(as: UserID, group: GroupID, subgroup: SubgroupID): Either[GroupError, Unit] =

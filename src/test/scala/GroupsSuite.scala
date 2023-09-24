@@ -8,6 +8,7 @@ import java.{util => ju}
 import BallCore.Groups.Permissions
 import BallCore.Groups.RuleMode
 import BallCore.Groups.nullUUID
+import BallCore.Groups.everyoneUUID
 
 class GroupsSuite extends munit.FunSuite:
     test("creating and deleting one-person group") {
@@ -148,4 +149,53 @@ class GroupsSuite extends munit.FunSuite:
 
         val res6 = gm.giveUpOwnership(owner2Id, gid)
         assert(res6 == Left(Groups.GroupError.GroupWouldHaveNoOwners), res6)
+    }
+    test("basic subgroups") {
+        given sql: Storage.SQLManager = Storage.SQLManager(test = Some("gs basic subgroups"))
+        val gm = Groups.GroupManager()
+
+        val ownerID = ju.UUID.randomUUID()
+        val gid = gm.createGroup(ownerID, "Pavia")
+        val res0 = gm.createRole(ownerID, gid, "Coast Guard Members")
+        assert(res0.isRight, res0)
+        val rid = res0.getOrElse(???)
+
+        val res1 = gm.createSubgroup(ownerID, gid, "Coast Guard Infrastructure")
+        assert(res1.isRight, res1)
+        val subgroupID = res1.getOrElse(???)
+
+        val normalCitizen = ju.UUID.randomUUID()
+        val res2 = gm.addToGroup(normalCitizen, gid)
+        assert(res2.isRight, res2)
+
+        val militaryCitizen = ju.UUID.randomUUID()
+        val res3 = gm.addToGroup(militaryCitizen, gid)
+        assert(res3.isRight, res3)
+
+        val res4 = gm.assignRole(ownerID, militaryCitizen, gid, rid, true)
+        assert(res4.isRight, res4)
+
+        val res5 = gm.setSubgroupRolePermissions(ownerID, gid, subgroupID, rid, Map(
+            Permissions.Chests -> RuleMode.Allow,
+            Permissions.Doors -> RuleMode.Allow,
+            Permissions.Crops -> RuleMode.Allow,
+            Permissions.Build -> RuleMode.Allow,
+            Permissions.Entities -> RuleMode.Allow,
+        ))
+        assert(res5.isRight, res5)
+
+        val res6 = gm.setSubgroupRolePermissions(ownerID, gid, subgroupID, everyoneUUID, Map(
+            Permissions.Chests -> RuleMode.Deny,
+            Permissions.Doors -> RuleMode.Deny,
+            Permissions.Crops -> RuleMode.Deny,
+            Permissions.Build -> RuleMode.Deny,
+            Permissions.Entities -> RuleMode.Deny,
+        ))
+        assert(res6.isRight, res6)
+
+        val res7 = gm.check(normalCitizen, gid, subgroupID, Permissions.Build)
+        assert(res7 == Right(false), res7)
+
+        val res8 = gm.check(militaryCitizen, gid, subgroupID, Permissions.Build)
+        assert(res8 == Right(true), res8)
     }
