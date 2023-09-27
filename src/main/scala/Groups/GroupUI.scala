@@ -17,6 +17,7 @@ import com.github.stefvanschie.inventoryframework.pane.Pane
 import net.kyori.adventure.text.format.TextDecoration
 import com.github.stefvanschie.inventoryframework.gui.`type`.util.Gui
 import BallCore.Beacons.CivBeaconManager
+import com.destroystokyo.paper.MaterialTags
 
 class GroupManagementProgram(using gm: GroupManager, cbm: CivBeaconManager) extends UIProgram:
     case class Flags(groupID: GroupID, userID: UserID)
@@ -24,13 +25,19 @@ class GroupManagementProgram(using gm: GroupManager, cbm: CivBeaconManager) exte
     enum ViewingWhat:
         case Players
         case Roles
+        case Subgroups
     enum Message:
-        case ViewMembers
-        case ViewRoles
+        case View(what: ViewingWhat)
         case InviteMember
         case BindToHeart
         case ClickRole(role: RoleID)
+        case CreateSubgroup
+        case ClickSubgroup(subgroup: SubgroupID)
 
+    def randomBedFor(obj: Object): Material =
+        val beds = MaterialTags.BEDS.getValues().toArray(Array[Material]())
+        val idx = obj.hashCode().abs % beds.length
+        beds(idx)
     override def init(flags: Flags): Model =
         val group = gm.getGroup(flags.groupID).toOption.get
         val canBindToHeart = cbm.getBeaconFor(flags.userID).map(cbm.beaconSize).map(_ == 1).getOrElse(false)
@@ -39,9 +46,11 @@ class GroupManagementProgram(using gm: GroupManager, cbm: CivBeaconManager) exte
         val group = model.group
         Root(txt"Viewing ${group.metadata.name}", 6) {
             OutlinePane(0, 0, 1, 6) {
-                Button(Material.PLAYER_HEAD, txt"Members".style(NamedTextColor.GREEN), Message.ViewMembers, highlighted = model.viewing == ViewingWhat.Players)()
+                Button(Material.PLAYER_HEAD, txt"Members".style(NamedTextColor.GREEN), Message.View(ViewingWhat.Players), highlighted = model.viewing == ViewingWhat.Players)()
                 if group.check(Permissions.ManageRoles, model.userID, nullUUID) then
-                    Button(Material.WRITABLE_BOOK, txt"Manage Roles".style(NamedTextColor.GREEN), Message.ViewRoles, highlighted = model.viewing == ViewingWhat.Roles)()
+                    Button(Material.WRITABLE_BOOK, txt"Manage Roles".style(NamedTextColor.GREEN), Message.View(ViewingWhat.Roles), highlighted = model.viewing == ViewingWhat.Roles)()
+                if group.check(Permissions.ManageSubgroups, model.userID, nullUUID) then
+                    Button(Material.RED_BED, txt"Manage Subgroups".style(NamedTextColor.GREEN), Message.View(ViewingWhat.Subgroups), highlighted = model.viewing == ViewingWhat.Subgroups)()
                 if group.check(Permissions.InviteUser, model.userID, nullUUID) then
                     Button(Material.COMPASS, txt"Invite A Member".style(NamedTextColor.GREEN), Message.InviteMember)()
                 if model.canBindToHeart then
@@ -53,6 +62,20 @@ class GroupManagementProgram(using gm: GroupManager, cbm: CivBeaconManager) exte
             model.viewing match
                 case ViewingWhat.Players => Players(model)
                 case ViewingWhat.Roles => Roles(model)
+                case ViewingWhat.Subgroups => Subgroups(model)
+        }
+    def Subgroups(model: Model)(using PaneAccumulator): Unit =
+        val group = model.group
+        OutlinePane(2, 0, 7, 5) {
+            group.subgroups.foreach { subgroup =>
+                Button(randomBedFor(subgroup.name), txt"${subgroup.name}".style(NamedTextColor.WHITE), Message.ClickSubgroup(subgroup.id)) {
+                    Lore(txt"")
+                    Lore(txt"Click to edit this subgroup".color(NamedTextColor.GRAY))
+                }
+            }
+        }
+        OutlinePane(2, 5, 7, 1) {
+            Button(Material.WRITABLE_BOOK, txt"Create Subgroup".style(NamedTextColor.GREEN), Message.CreateSubgroup)()
         }
     def Players(model: Model)(using PaneAccumulator): Unit =
         val group = model.group
@@ -94,10 +117,8 @@ class GroupManagementProgram(using gm: GroupManager, cbm: CivBeaconManager) exte
         }
     override def update(msg: Message, model: Model)(using services: UIServices): Future[Model] =
         msg match
-            case Message.ViewMembers =>
-                model.copy(viewing = ViewingWhat.Players)
-            case Message.ViewRoles =>
-                model.copy(viewing = ViewingWhat.Roles)
+            case Message.View(what) =>
+                model.copy(viewing = what)
             case Message.BindToHeart =>
                 cbm.getBeaconFor(model.userID).map { beacon =>
                     cbm.setGroup(beacon, model.group.metadata.id).isRight
@@ -125,12 +146,86 @@ class GroupManagementProgram(using gm: GroupManager, cbm: CivBeaconManager) exte
                     }
             case Message.ClickRole(role) =>
                 val p = RoleManagementProgram()
-                services.transferTo(p, p.Flags(model.group.metadata.id, role, model.userID))
+                services.transferTo(p, p.Flags(model.group.metadata.id, role, model.userID, None))
                 model
+            case Message.ClickSubgroup(subgroup) =>
+                val p = SubgroupManagementProgram()
+                services.transferTo(p, p.Flags(model.group.metadata.id, subgroup, model.userID))
+                model
+            case Message.CreateSubgroup =>
+                services.prompt("What do you want to call the subgroup?")
+                    .map { name =>
+                        gm.createSubgroup(model.userID, model.group.metadata.id, name) match
+                            case Left(err) =>
+                                services.notify(s"Subgroup creation failed because ${err.explain()}")
+                            case Right(_) =>
+                                services.notify(s"Subgroup successfully created")
+                            val group = gm.getGroup(model.group.metadata.id).toOption.get
+                            model.copy(group = group)
+                    }
+
+class SubgroupManagementProgram(using gm: GroupManager, cbm: CivBeaconManager) extends UIProgram:
+    case class Flags(groupID: GroupID, subgroupID: SubgroupID, userID: UserID)
+    case class Model(group: GroupState, subgroup: SubgroupState, userID: UserID)
+    enum Message:
+        case DeleteSubgroup
+        case ClickRole(role: RoleID)
+        case GoBack
+
+    override def init(flags: Flags): Model =
+        val group = gm.getGroup(flags.groupID).toOption.get
+        val subgroup = group.subgroups.find(_.id == flags.subgroupID).get
+        Model(group, subgroup, flags.userID)
+    override def update(msg: Message, model: Model)(using services: UIServices): Future[Model] =
+        msg match
+            case Message.GoBack =>
+                val p = GroupManagementProgram()
+                services.transferTo(p, p.Flags(model.group.metadata.id, model.userID))
+                model
+            case Message.DeleteSubgroup =>
+                gm.deleteSubgroup(model.userID, model.group.metadata.id, model.subgroup.id) match
+                    case Left(err) =>
+                        services.notify(s"You cannot delete that subgroup because ${err.explain()}")
+                        model
+                    case Right(_) =>
+                        val p = GroupManagementProgram()
+                        services.transferTo(p, p.Flags(model.group.metadata.id, model.userID))
+                        model
+            case Message.ClickRole(role) =>
+                val p = RoleManagementProgram()
+                services.transferTo(p, p.Flags(model.group.metadata.id, role, model.userID, Some(model.subgroup.id)))
+                model
+    override def view(model: Model): Callback ?=> Gui =
+        Root(txt"Viewing Subgroup ${model.subgroup.name} in ${model.group.metadata.name}", 6) {
+            OutlinePane(0, 0, 1, 6) {
+                Button(Material.OAK_DOOR, txt"Go Back".style(NamedTextColor.WHITE), Message.GoBack)()
+                Button(Material.LAVA_BUCKET, txt"Delete Subgroup".style(NamedTextColor.GREEN), Message.DeleteSubgroup)()
+            }
+            OutlinePane(1, 0, 1, 6, priority = Priority.LOWEST, repeat = true) {
+                Item(Material.BLACK_STAINED_GLASS_PANE, displayName = Some(txt""))()
+            }
+            OutlinePane(2, 0, 7, 6) {
+                model.group.roles.foreach { x =>
+                    Button(Material.LEATHER_CHESTPLATE, txt"${x.name}".style(NamedTextColor.WHITE), Message.ClickRole(x.id)) {
+                        val permissions = model.subgroup.permissions.getOrElse(x.id, Map())
+                        if permissions.size > 0 then
+                            Lore(txt"")
+                            Lore(txt"Permissions Overrides".style(NamedTextColor.WHITE, TextDecoration.UNDERLINED))
+                            permissions.toList.sortBy(_._1.ordinal).foreach { x =>
+                                val (p, r) = x
+                                if r == RuleMode.Allow then
+                                    Lore(txt"- ✔ ${p.displayName()}".style(NamedTextColor.GREEN))
+                                else
+                                    Lore(txt"- ✖ ${p.displayName()}".style(NamedTextColor.RED))
+                            }
+                    }
+                }
+            }
+        }
 
 class RoleManagementProgram(using gm: GroupManager, cbm: CivBeaconManager) extends UIProgram:
-    case class Flags(groupID: GroupID, roleID: RoleID, userID: UserID)
-    case class Model(group: GroupState, groupID: GroupID, userID: UserID, role: RoleState)
+    case class Flags(groupID: GroupID, roleID: RoleID, userID: UserID, subgroup: Option[SubgroupID])
+    case class Model(group: GroupState, groupID: GroupID, userID: UserID, role: RoleState, subgroup: Option[SubgroupState])
     enum Message:
         case DeleteRole
         case TogglePermission(val perm: Permissions)
@@ -139,7 +234,18 @@ class RoleManagementProgram(using gm: GroupManager, cbm: CivBeaconManager) exten
     override def init(flags: Flags): Model =
         val group = gm.getGroup(flags.groupID).toOption.get
         val role = group.roles.find(_.id == flags.roleID).get
-        Model(group, flags.groupID, flags.userID, role)
+        val subgroup = flags.subgroup.map(id => group.subgroups.find(_.id == id).get)
+        Model(group, flags.groupID, flags.userID, role, subgroup)
+    def back(model: Model)(using services: UIServices): Future[Model] =
+        model.subgroup match
+            case None =>
+                val p = GroupManagementProgram()
+                services.transferTo(p, p.Flags(model.groupID, model.userID))
+                model
+            case Some(subgroup) =>
+                val p = SubgroupManagementProgram()
+                services.transferTo(p, p.Flags(model.groupID, subgroup.id, model.userID))
+                model
     override def update(msg: Message, model: Model)(using services: UIServices): Future[Model] =
         msg match
             case Message.DeleteRole =>
@@ -148,35 +254,53 @@ class RoleManagementProgram(using gm: GroupManager, cbm: CivBeaconManager) exten
                         services.notify(s"You cannot delete that role because ${err.explain()}")
                         model
                     case Right(_) =>
-                        val p = GroupManagementProgram()
-                        services.transferTo(p, p.Flags(model.groupID, model.userID))
-                        model
+                        back(model)
             case Message.TogglePermission(perm) =>
-                val newPerm = model.role.permissions.get(perm) match
+                val permissions = model.subgroup match
+                    case None =>
+                        model.role.permissions
+                    case Some(subgroup) =>
+                        subgroup.permissions.getOrElse(model.role.id, Map())
+
+                val newPerm = permissions.get(perm) match
                     case None => Some(RuleMode.Allow)
                     case Some(RuleMode.Allow) => Some(RuleMode.Deny)
                     case Some(RuleMode.Deny) => None
                 val newPermissions =
                     newPerm match
-                        case None => model.role.permissions.removed(perm)
-                        case Some(mode) => model.role.permissions.updated(perm, mode)
-                gm.setRolePermissions(model.userID, model.groupID, model.role.id, newPermissions) match
-                    case Left(err) =>
-                        services.notify(s"You cannot change that permission because ${err.explain()}")
-                        model
-                    case Right(_) =>
-                        model.copy(role = model.role.copy(permissions = newPermissions))
+                        case None => permissions.removed(perm)
+                        case Some(mode) => permissions.updated(perm, mode)
+
+                model.subgroup match
+                    case None =>
+                        gm.setRolePermissions(model.userID, model.groupID, model.role.id, newPermissions) match
+                            case Left(err) =>
+                                services.notify(s"You cannot change that permission because ${err.explain()}")
+                                model
+                            case Right(_) =>
+                                model.copy(role = model.role.copy(permissions = newPermissions))
+                    case Some(subgroup) =>
+                        gm.setSubgroupRolePermissions(model.userID, model.groupID, subgroup.id, model.role.id, newPermissions) match
+                            case Left(err) =>
+                                services.notify(s"You cannot change that permission in ${subgroup.name} because ${err.explain()}")
+                                model
+                            case Right(_) =>
+                                model.copy(subgroup = Some(subgroup.copy(permissions = subgroup.permissions.updated(model.role.id, newPermissions))))
             case Message.GoBack =>
-                val p = GroupManagementProgram()
-                services.transferTo(p, p.Flags(model.groupID, model.userID))
-                model
+                back(model)
     override def view(model: Model): Callback ?=> Gui =
         val role = model.role
         val group = model.group
-        Root(txt"Viewing Role ${role.name} in ${group.metadata.name}", 6) {
+        val title = model.subgroup match
+            case None =>
+                txt"Viewing Role ${role.name} in ${group.metadata.name}"
+            case Some(subgroup) =>
+                txt"Viewing overrides for ${role.name} in ${subgroup.name} of ${group.metadata.name}"
+
+        Root(title, 6) {
             OutlinePane(0, 0, 1, 6) {
                 Button(Material.OAK_DOOR, txt"Go Back".style(NamedTextColor.WHITE), Message.GoBack)()
-                if role.id != everyoneUUID then
+                if model.subgroup.isEmpty && role.id != everyoneUUID && role.id != groupMemberUUID then
                     Button(Material.LAVA_BUCKET, txt"Delete Role".style(NamedTextColor.GREEN), Message.DeleteRole)()
             }
             OutlinePane(1, 0, 1, 6, priority = Priority.LOWEST, repeat = true) {
@@ -184,8 +308,13 @@ class RoleManagementProgram(using gm: GroupManager, cbm: CivBeaconManager) exten
             }
             OutlinePane(2, 0, 7, 6) {
                 Permissions.values.foreach { x =>
+                    val permissions =
+                        model.subgroup match
+                            case None => role.permissions
+                            case Some(subgroup) => subgroup.permissions.getOrElse(role.id, Map())
+
                     val name =
-                        role.permissions.get(x) match
+                        permissions.get(x) match
                             case None => s"§7* ${x.displayName()}"
                             case Some(RuleMode.Allow) => s"§a✔ ${x.displayName()}"
                             case Some(RuleMode.Deny) => s"§c✖ ${x.displayName()}"
@@ -194,13 +323,20 @@ class RoleManagementProgram(using gm: GroupManager, cbm: CivBeaconManager) exten
                         Lore(txt"${x.displayExplanation()}".color(NamedTextColor.WHITE))
                         Lore(txt"")
 
-                        role.permissions.get(x) match
-                            case None => Lore(txt"This role does not affect this permission".color(NamedTextColor.GRAY))
-                            case Some(RuleMode.Allow) => Lore(txt"This role allows this permission unless overridden by a higher role".color(NamedTextColor.GRAY))
-                            case Some(RuleMode.Deny) => Lore(txt"This role denies this permission unless overridden by a higher role".color(NamedTextColor.GRAY))
+                        model.subgroup match
+                            case None =>
+                                permissions.get(x) match
+                                    case None => Lore(txt"This role does not affect this permission".color(NamedTextColor.GRAY))
+                                    case Some(RuleMode.Allow) => Lore(txt"This role allows this permission unless overridden by a higher role or subgroup permission".color(NamedTextColor.GRAY))
+                                    case Some(RuleMode.Deny) => Lore(txt"This role denies this permission unless overridden by a higher role or subgroup permission".color(NamedTextColor.GRAY))
+                            case Some(subgroup) =>
+                                permissions.get(x) match
+                                    case None => Lore(txt"This role does not affect this permission in ${subgroup.name}".color(NamedTextColor.GRAY))
+                                    case Some(RuleMode.Allow) => Lore(txt"This role allows this permission in ${subgroup.name} unless overridden by a higher role".color(NamedTextColor.GRAY))
+                                    case Some(RuleMode.Deny) => Lore(txt"This role denies this permission in ${subgroup.name} unless overridden by a higher role".color(NamedTextColor.GRAY))
 
                         Lore(txt"")
-                        role.permissions.get(x) match
+                        permissions.get(x) match
                             case None => Lore(txt"Click to toggle ${txt"ignore".color(NamedTextColor.WHITE)}/allow/deny".color(NamedTextColor.GRAY))
                             case Some(RuleMode.Allow) => Lore(txt"Click to toggle ignore/${txt"allow".color(NamedTextColor.WHITE)}/deny".color(NamedTextColor.GRAY))
                             case Some(RuleMode.Deny) => Lore(txt"Click to toggle ignore/allow/${txt"deny".color(NamedTextColor.WHITE)}".color(NamedTextColor.GRAY))
