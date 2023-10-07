@@ -6,11 +6,13 @@ package BallCore.Reinforcements
 
 import BallCore.Storage
 
-import scalikejdbc._
-import scalikejdbc.SQL
-import scalikejdbc.NoExtractor
 import BallCore.DataStructures.LRUCache
 import java.util.UUID
+import skunk.implicits._
+import skunk.codec.all._
+import cats.effect.IO
+import skunk.data.Completion
+import skunk.Session
 
 class EntityStateManager()(using sql: Storage.SQLManager, csm: ChunkStateManager):
     val _ = csm
@@ -20,22 +22,21 @@ class EntityStateManager()(using sql: Storage.SQLManager, csm: ChunkStateManager
             List(
                 sql"""
                 CREATE TABLE EntityReinforcements (
-                    EntityID TEXT NOT NULL,
-                    ReinforcementID TEXT NOT NULL,
+                    EntityID UUID NOT NULL,
+                    ReinforcementID UUID NOT NULL,
                     UNIQUE(EntityID),
                     FOREIGN KEY (ReinforcementID) REFERENCES Reinforcements(ID) ON DELETE CASCADE
                 );
-                """,
+                """.command,
             ),
             List(
                 sql"""
                 DROP TABLE EntityReinforcements;
-                """,
+                """.command,
             ),
         )
     )
 
-    private implicit val session: DBSession = sql.session
     private val cache = LRUCache[UUID, ReinforcementState](1000, evict)
     private val evict = save
 
@@ -52,64 +53,66 @@ class EntityStateManager()(using sql: Storage.SQLManager, csm: ChunkStateManager
     def set(key: UUID, value: ReinforcementState): Unit =
         cache(key) = value
     private def save(key: UUID, value: ReinforcementState): Unit =
-        sql.localTx { implicit session =>
-            if value.deleted then
-                val id = sql"""
-                DELETE FROM EntityReinforcements
-                    WHERE EntityID = ${key}
-                RETURNING ReinforcementID;
-                """.map(rs => UUID.fromString(rs.string("ReinforcementID"))).single.apply()
-                sql"""
-                DELETE FROM Reinforcements WHERE ID = ${id};
-                """.update.apply(); ()
-            else if value.dirty then
-                val id = sql"""
-                SELECT ReinforcementID FROM BlockReinforcements
-                    WHERE EntityID = ${key};
-                """.map(rs => UUID.fromString(rs.string("ReinforcementID"))).single.apply()
-
-                id match
-                    case None =>
-                        val id = sql"""
-                        INSERT INTO Reinforcements
-                            (GroupID, Owner, Health, ReinforcementKind, PlacedAt)
-                            VALUES
-                            (${value.group}, ${value.owner}, ${value.health}, ${value.kind.into()}, ${value.placedAt})
-                        RETURNING ID;
-                        """.map(rs => UUID.fromString(rs.string("ID"))).single.apply().get
-
-                        sql"""
-                        INSERT INTO EntityReinforcements
-                            (ReinforcementID, EntityID)
-                            VALUES
-                            (${id}, ${key});
-                        """.update.apply(); ()
-                    case Some(id) =>
-                        sql"""
-                        REPLACE INTO Reinforcements
-                            (ID, GroupID, Owner, Health, ReinforcementKind, PlacedAt)
-                            VALUES
-                            (${id}, ${value.group}, ${value.owner}, ${value.health}, ${value.kind.into()}, ${value.placedAt});
-                        """.update.apply(); ()
+        sql.useBlocking {
+            sql.txIO { tx =>
+                if value.deleted then
+                    sql.queryOptionIO(sql"""
+                    DELETE FROM EntityReinforcements
+                        WHERE EntityID = $uuid
+                    RETURNING ReinforcementID;
+                    """, uuid, key).flatMap { id =>
+                        id.map { it =>
+                            sql.commandIO(sql"""
+                            DELETE FROM Reinforcements WHERE ID = $uuid;
+                            """, it).map(_ => ())
+                        }.getOrElse(IO.unit)
+                    }
+                else if value.dirty then
+                    for {
+                        id <- sql.queryOptionIO(sql"""
+                              SELECT ReinforcementID FROM EntityReinforcements
+                                  WHERE EntityID = $uuid;
+                              """, uuid, key)
+                        _ <- id match
+                            case Some(id) =>
+                                sql.commandIO(sql"""
+                                UPDATE Reinforcements SET GroupID = $uuid, Owner = $uuid, Health = $int4, ReinforcementKind = $text, PlacedAt = $timestamptz WHERE ID = $uuid;
+                                """, (value.group, value.owner, value.health, value.kind.into(), value.placedAt, id))
+                            case None =>
+                                val newID = UUID.randomUUID()
+                                for {
+                                    _ <- sql.commandIO(sql"""
+                                    INSERT INTO Reinforcements
+                                        (ID, GroupID, Owner, Health, ReinforcementKind, PlacedAt)
+                                    VALUES
+                                        ($uuid, $uuid, $uuid, $int4, $text, $timestamptz)
+                                    """, (newID, value.group, value.owner, value.health, value.kind.into(), value.placedAt))
+                                    _ <- sql.commandIO(sql"""
+                                    INSERT INTO EntityReinforcements
+                                        (ReinforcementID, EntityID)
+                                    VALUES
+                                        ($uuid, $uuid)
+                                    """, (newID, key))
+                                } yield ()
+                    } yield ()
+                else
+                    IO.unit
+            }
         }
 
     private def load(key: UUID): Unit =
         val item =
-            sql"""
+            sql.useBlocking(sql.queryOptionIO(sql"""
             SELECT GroupID, SubgroupID, Owner, Health, ReinforcementKind, PlacedAt FROM EntityReinforcements
                 LEFT JOIN Reinforcements
                        ON Reinforcements.ID = EntityReinforcements.ReinforcementID
 
-                WHERE EntityID = ${key};
-            """
-                .map[ReinforcementState]{ rs =>
-                    val tuple = (rs.string("GroupID"), rs.string("SubgroupID"), rs.string("Owner"), rs.int("Health"), rs.string("ReinforcementKind"), rs.date("PlacedAt"))
-                    val (group, subgroup, owner, health, reinforcementKind, date) = tuple
-                    val gid = UUID.fromString(group)
-                    val sgid = UUID.fromString(subgroup)
-                    val uid = UUID.fromString(owner)
-                    ReinforcementState(gid, sgid, uid, false, false, health, ReinforcementTypes.from(reinforcementKind).get, date.toInstant())
-                }
-                .single
-                .apply()
+                WHERE EntityID = $uuid;
+            """, (uuid *: uuid *: uuid *: int4 *: text *: timestamptz), key).map { opt =>
+                    opt.map { it =>
+                        val (gid, sgid, owner, health, kind, date) = it
+                        ReinforcementState(gid, sgid, owner, false, false, health, ReinforcementTypes.from(kind).get, date)
+                    }
+                })
+
         item.foreach(cache(key) = _)

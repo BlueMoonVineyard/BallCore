@@ -5,8 +5,14 @@
 package BallCore.Groups
 
 import BallCore.Storage
-import scalikejdbc._
 import java.util.UUID
+import skunk.implicits._
+import skunk.codec.all._
+import cats.effect.unsafe.IORuntime
+import cats.effect.IO
+import skunk.Session
+import skunk.data.Completion
+import cats.data.EitherT
 
 class InviteManager()(using sql: Storage.SQLManager, gm: GroupManager):
     sql.applyMigration(
@@ -15,51 +21,45 @@ class InviteManager()(using sql: Storage.SQLManager, gm: GroupManager):
             List(
                 sql"""
                 CREATE TABLE Invites(
-                    Creator TEXT NOT NULL,
-                    Invitee TEXT NOT NULL,
-                    GroupID TEXT NOT NULL,
+                    Creator UUID NOT NULL,
+                    Invitee UUID NOT NULL,
+                    GroupID UUID NOT NULL,
                     UNIQUE(Invitee, GroupID),
                     FOREIGN KEY (GroupID) REFERENCES GroupStates(ID) ON DELETE CASCADE
                 );
-                """
+                """.command
             ),
             List(
                 sql"""
                 DROP TABLE Invites;
-                """
+                """.command
             )
         )
     )
-    implicit val session: DBSession = sql.session
+    given runtime: IORuntime = sql.runtime
 
-    def inviteToGroup(from: UUID, to: UUID, group: GroupID): Unit =
-        sql"""
+    def inviteToGroup(from: UUID, to: UUID, group: GroupID)(using s: Session[IO]): IO[Completion] =
+        sql.commandIO(sql"""
         INSERT INTO Invites (
             Creator, Invitee, GroupID
         ) VALUES (
-            ${from}, ${to}, ${group}
+            $uuid, $uuid, $uuid
         )
-        """
-        .update
-        .apply(); ()
+        """, (from, to, group))
 
-    def getInvitesFor(player: UUID): List[(UUID, GroupID)] =
-        sql"""
-        SELECT * FROM Invites WHERE Invitee = ${player};
-        """
-        .map(rs => (uuid(rs.string("Creator")), uuid(rs.string("GroupID"))))
-        .list
-        .apply()
+    def getInvitesFor(player: UUID)(using s: Session[IO]): IO[List[(UUID, GroupID)]] =
+        sql.queryListIO(sql"""
+        SELECT (Creator, GroupID) FROM Invites WHERE Invitee = $uuid
+        """, (uuid *: uuid), player)
 
-    def deleteInvite(invitee: UserID, group: GroupID): Unit =
-        sql"""
-        DELETE FROM Invites WHERE Invitee = ${invitee} AND GroupID = ${group}
-        """
-        .update
-        .apply(); ()
+    def deleteInvite(invitee: UserID, group: GroupID)(using s: Session[IO]): IO[Completion] =
+        sql.commandIO(sql"""
+        DELETE FROM Invites WHERE Invitee = $uuid AND GroupID = $uuid
+        """, (invitee, group))
 
-    def acceptInvite(invitee: UserID, group: GroupID): Either[GroupError, Unit] =
-        sql.localTx { implicit session =>
-            deleteInvite(invitee, group)
-            gm.addToGroup(invitee, group)
+    def acceptInvite(invitee: UserID, group: GroupID)(using s: Session[IO]): IO[Either[GroupError, Unit]] =
+        s.transaction.use { tx =>
+            EitherT.right(deleteInvite(invitee, group)).flatMap { _ =>
+                gm.addToGroup(invitee, group)
+            }.value
         }

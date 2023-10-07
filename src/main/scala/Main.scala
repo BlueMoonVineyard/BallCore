@@ -41,9 +41,10 @@ import BallCore.Sigils.CustomEntityManager
 import BallCore.Sigils.SigilSlimeManager
 import BallCore.PolygonEditor.PolygonEditor
 import BallCore.MapCloning.MapCloningListener
+import BallCore.HTTP.HTTP
 
 final class Main extends JavaPlugin:
-    given sql: Storage.SQLManager = new Storage.SQLManager
+    given sql: Storage.SQLManager = Storage.SQLManager()
     given keyVal: Storage.SQLKeyVal = new Storage.SQLKeyVal
     given acclimation: Acclimation.Storage = new Acclimation.Storage
     given ballcore: Main = this
@@ -87,6 +88,7 @@ final class Main extends JavaPlugin:
         given pbm: PlantBatchManager = Plants.Plants.register()
         given ac: ChatActor = Chat.Chat.register()
         val chatCommands = ChatCommands()
+        HTTP.register()
         getCommand("group").setExecutor(chatCommands.Group)
         getCommand("global").setExecutor(chatCommands.Global)
         getCommand("local").setExecutor(chatCommands.Local)

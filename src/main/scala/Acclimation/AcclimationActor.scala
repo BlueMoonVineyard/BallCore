@@ -15,6 +15,7 @@ import BallCore.DataStructures.ShutdownCallbacks
 import org.bukkit.event.Listener
 import org.bukkit.event.EventHandler
 import org.bukkit.event.player.PlayerQuitEvent
+import BallCore.Storage.SQLManager
 
 enum AcclimationMessage:
 	// ticks every 6 hours
@@ -32,16 +33,18 @@ def lerp(a: Double, b: Double, f: Double): Double =
 	a * (1.0 - f) + (b * f)
 
 object AcclimationActor:
-	def register()(using s: Storage, p: Plugin, hnm: CivBeaconManager, sm: ShutdownCallbacks): Unit =
+	def register()(using s: Storage, p: Plugin, hnm: CivBeaconManager, sm: ShutdownCallbacks, sql: SQLManager): Unit =
 		AcclimationActor().startListener()
 		p.getServer().getPluginManager().registerEvents(AcclimationNoter(), p)
 
-class AcclimationNoter()(using s: Storage) extends Listener:
+class AcclimationNoter()(using s: Storage, sql: SQLManager) extends Listener:
 	@EventHandler()
 	def onPlayerQuit(event: PlayerQuitEvent): Unit =
-		s.setLastSeenLocation(event.getPlayer())
+		val player = event.getPlayer()
+		val loc = player.getLocation()
+		sql.useFireAndForget(s.setLastSeenLocation(player.getUniqueId(), loc))
 
-class AcclimationActor(using s: Storage, p: Plugin, hnm: CivBeaconManager) extends Actor[AcclimationMessage]:
+class AcclimationActor(using s: Storage, p: Plugin, hnm: CivBeaconManager, sql: SQLManager) extends Actor[AcclimationMessage]:
 	private def sixHoursMillis = 6 * 60 * 60 * 1000
 	private def millisToNextSixthHour(): Long =
 		val nextHour = LocalDateTime.now().plusHours(6).truncatedTo(ChronoUnit.HOURS)
@@ -58,26 +61,34 @@ class AcclimationActor(using s: Storage, p: Plugin, hnm: CivBeaconManager) exten
 					val uuid = x.getUniqueId()
 					val location =
 						if x.getPlayer() != null then
-							s.setLastSeenLocation(x.getPlayer())
+							val player = x.getPlayer()
+							val loc = player.getLocation()
+							sql.useFireAndForget(s.setLastSeenLocation(player.getUniqueId(), loc))
 							x.getPlayer().getLocation()
 						else
-							s.getLastSeenLocation(uuid)
+							sql.useBlocking(s.getLastSeenLocation(uuid))
 
 					val (lat, long) = Information.latLong(location.getX().toFloat, location.getZ().toFloat)
 					val temp = Information.temperature(location.getX().toInt, location.getY().toInt, location.getZ().toInt)
 					val elevation = Information.elevation(location.getY().toInt)
 
 					val adjustFactor =
-						hnm.getBeaconFor(uuid) match
-							case Some(beacon) if hnm.beaconContaining(location) == Some(beacon) =>
+						sql.useBlocking(hnm.getBeaconFor(uuid)) match
+							case Some(beacon) if sql.useBlocking(hnm.beaconContaining(location)) == Some(beacon) =>
 								BoostFactors.boosted
 							case Some(beacon) =>
 								BoostFactors.antiBoosted
 							case None =>
 								BoostFactors.nonBoosted
 
-					s.setLatitude(uuid, lerp(s.getLatitude(uuid), lat, adjustFactor))
-					s.setLongitude(uuid, lerp(s.getLongitude(uuid), long, adjustFactor))
-					s.setTemperature(uuid, lerp(s.getTemperature(uuid), temp, adjustFactor))
-					s.setElevation(uuid, lerp(s.getElevation(uuid), elevation, adjustFactor))
+					sql.useFireAndForget (for {
+						latitude <- s.getLatitude(uuid)
+						_ <- s.setLatitude(uuid, lerp(latitude, lat, adjustFactor))
+						longitude <- s.getLongitude(uuid)
+						_ <- s.setLongitude(uuid, lerp(longitude, long, adjustFactor))
+						temperature <- s.getTemperature(uuid)
+						_ <- s.setTemperature(uuid, lerp(temperature, temp, adjustFactor))
+						currentElevation <- s.getElevation(uuid)
+						_ <- s.setElevation(uuid, lerp(currentElevation, elevation, adjustFactor))
+					} yield ())
 				}

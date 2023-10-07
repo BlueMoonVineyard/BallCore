@@ -12,9 +12,10 @@ import BallCore.CustomItems.ItemRegistry
 import BallCore.CustomItems.BlockManager
 import BallCore.PolygonEditor.PolygonEditor
 import BallCore.Groups.GroupManager
+import BallCore.Storage.SQLManager
 
 object Beacons:
     val group = ItemGroup(NamespacedKey("ballcore", "hearts"), ItemStack(Material.WHITE_CONCRETE))
 
-    def registerItems()(using registry: ItemRegistry, pe: PolygonEditor, gm: GroupManager, bm: BlockManager, hn: CivBeaconManager) =
+    def registerItems()(using registry: ItemRegistry, pe: PolygonEditor, gm: GroupManager, bm: BlockManager, hn: CivBeaconManager, sql: SQLManager) =
         registry.register(new HeartBlock())

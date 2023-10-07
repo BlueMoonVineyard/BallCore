@@ -14,8 +14,9 @@ import org.bukkit.event.Listener
 import org.bukkit.event.vehicle.VehicleDamageEvent
 import org.bukkit.event.vehicle.VehicleEnterEvent
 import org.bukkit.entity.Player
+import BallCore.Storage.SQLManager
 
-class EntityListener()(using erm: EntityReinforcementManager, gm: GroupManager) extends Listener:
+class EntityListener()(using erm: EntityReinforcementManager, gm: GroupManager, sql: SQLManager) extends Listener:
     import BallCore.Reinforcements.Listener._
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
@@ -56,7 +57,7 @@ class EntityListener()(using erm: EntityReinforcementManager, gm: GroupManager) 
         if !ent.isInstanceOf[Player] then
             event.setCancelled(true)
             return
-        gm.check(ent.asInstanceOf[Player].getUniqueId(), reinf.group, reinf.subgroup, Permissions.Entities) match
+        sql.useBlocking(gm.check(ent.asInstanceOf[Player].getUniqueId(), reinf.group, reinf.subgroup, Permissions.Entities).value) match
             case Right(ok) if ok =>
                 ()
             case _ =>
@@ -70,7 +71,7 @@ class EntityListener()(using erm: EntityReinforcementManager, gm: GroupManager) 
         if rein.isEmpty then
             return
         val reinf = rein.get
-        gm.check(event.getPlayer().getUniqueId(), reinf.group, reinf.subgroup, Permissions.Entities) match
+        sql.useBlocking(gm.check(event.getPlayer().getUniqueId(), reinf.group, reinf.subgroup, Permissions.Entities).value) match
             case Right(ok) if ok =>
                 ()
             case _ =>

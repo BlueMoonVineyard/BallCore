@@ -18,6 +18,7 @@ import java.util.regex.Pattern
 import net.kyori.adventure.text.TextReplacementConfig
 import net.kyori.adventure.text.event.ClickEvent
 import net.kyori.adventure.text.format.TextDecoration
+import BallCore.Storage.SQLManager
 
 enum ChatMessage:
 	case send(p: Player, m: Component)
@@ -34,7 +35,7 @@ enum PlayerState:
 	case localChat
 	case groupChat(group: GroupID)
 
-class ChatActor(using gm: GroupManager) extends Actor[ChatMessage]:
+class ChatActor(using gm: GroupManager, sql: SQLManager) extends Actor[ChatMessage]:
 	import BallCore.UI.ChatElements._
 	var states = Map[Player, PlayerState]().withDefaultValue(PlayerState.globalChat)
 	val globalGrey = TextColor.fromHexString("#686b6f")
@@ -74,7 +75,7 @@ class ChatActor(using gm: GroupManager) extends Actor[ChatMessage]:
 						}.asJava
 						Audience.audience(nearby).sendMessage(txt"[Local] ${p.displayName()}: ${m.color(NamedTextColor.WHITE)}".color(localGrey))
 					case PlayerState.groupChat(group) =>
-						gm.groupAudience(group).foreach { (name, aud) =>
+						sql.useBlocking{ gm.groupAudience(group).value }.foreach { (name, aud) =>
 							aud.sendMessage(txt"[${name}] ${p.displayName()}: ${m.color(NamedTextColor.WHITE)}".color(groupGrey))
 						}
 			case ChatMessage.joined(p) =>

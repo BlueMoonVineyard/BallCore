@@ -9,8 +9,9 @@ import java.util.UUID
 import BallCore.DataStructures.Clock
 import java.time.temporal.ChronoUnit
 import scala.math._
+import BallCore.Storage.SQLManager
 
-class EntityReinforcementManager()(using esm: EntityStateManager, gsm: Groups.GroupManager, c: Clock):
+class EntityReinforcementManager()(using esm: EntityStateManager, gsm: Groups.GroupManager, c: Clock, sql: SQLManager):
     private def hoist[B](either: Either[Groups.GroupError, B]): Either[ReinforcementError, B] =
         either.left.map(ReinforcementGroupError(_))
 
@@ -18,7 +19,7 @@ class EntityReinforcementManager()(using esm: EntityStateManager, gsm: Groups.Gr
         val state = esm.get(entity)
         state match
             case None =>
-                hoist(gsm.checkE(as, group, subgroup, Groups.Permissions.AddReinforcements)).map { _ =>
+                hoist(sql.useBlocking(gsm.checkE(as, group, subgroup, Groups.Permissions.AddReinforcements).value)).map { _ =>
                     esm.set(entity, ReinforcementState(group, subgroup, as, true, false, kind.hp, kind, c.now()))
                 }
             case Some(value) =>
@@ -31,7 +32,7 @@ class EntityReinforcementManager()(using esm: EntityStateManager, gsm: Groups.Gr
                     esm.set(entity, value.copy(deleted = true))
                     Right(())
                 else
-                    hoist(gsm.checkE(as, value.group, value.subgroup, Groups.Permissions.RemoveReinforcements)).map { _ =>
+                    hoist(sql.useBlocking(gsm.checkE(as, value.group, value.subgroup, Groups.Permissions.RemoveReinforcements).value)).map { _ =>
                         esm.set(entity, value.copy(deleted = true))
                     }
     def damage(entity: UUID): Either[ReinforcementError, ReinforcementState] =

@@ -12,7 +12,10 @@ import java.util.UUID
 import com.github.plokhotnyuk.rtree2d.core._
 import EuclideanPlane._
 
-import scalikejdbc._
+import skunk.implicits._, BallCore.Storage.SQLManager
+import skunk.codec.all._
+import cats.effect.IO
+import cats.syntax.all._
 import org.locationtech.jts.geom.Polygon
 import java.io.ObjectInputStream
 import org.locationtech.jts.triangulate.DelaunayTriangulationBuilder
@@ -20,12 +23,15 @@ import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.GeometryCollection
 import org.locationtech.jts.geom.Coordinate
 import org.bukkit.World
-import java.io.InputStream
 import java.io.ObjectOutputStream
 import java.io.ByteArrayOutputStream
 import net.kyori.adventure.text.Component
 import java.text.DecimalFormat
 import BallCore.Groups.GroupID
+import skunk.Session
+import java.io.ByteArrayInputStream
+import cats.data.OptionT
+import BallCore.Groups.GroupManager
 
 type OwnerID = UUID
 type HeartID = UUID
@@ -62,54 +68,42 @@ enum PolygonAdjustmentError:
                 }.mkComponent(txt", ")
                 txt"There are hearts not included in this polygon at ${locations}"
 
-class CivBeaconManager()(using sql: Storage.SQLManager):
+class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
     sql.applyMigration(
         Storage.Migration(
             "Initial CivBeaconManager",
             List(
                 sql"""
                 CREATE TABLE CivBeacons (
-                    ID TEXT NOT NULL,
-                    World TEXT NOT NULL,
-                    Polygon BLOB,
-                    PRIMARY KEY(ID)
+                    ID UUID NOT NULL,
+                    World UUID NOT NULL,
+                    PolygonData BYTEA,
+                    GroupID UUID,
+                    PRIMARY KEY(ID),
+                    FOREIGN KEY (GroupID) REFERENCES GroupStates (ID)
                 );
-                """,
+                """.command,
                 sql"""
                 CREATE TABLE Hearts (
-                    X INT NOT NULL,
-                    Y INT NOT NULL,
-                    Z INT NOT NULL,
-                    Owner TEXT NOT NULL,
-                    Beacon TEXT NOT NULL,
+                    X BIGINT NOT NULL,
+                    Y BIGINT NOT NULL,
+                    Z BIGINT NOT NULL,
+                    Owner UUID NOT NULL,
+                    Beacon UUID NOT NULL,
                     UNIQUE(Owner),
                     FOREIGN KEY (Beacon) REFERENCES CivBeacons (ID)
                 );
-                """,
+                """.command,
             ),
             List(
                 sql"""
                 DROP TABLE Hearts;
-                """,
+                """.command,
                 sql"""
                 DROP TABLE CivBeacons;
-                """,
+                """.command,
             ),
         ),
-    )
-    sql.applyMigration(
-        Storage.Migration(
-            "CivBeaconManager: Beacons can be affiliated with groups now",
-            List(
-                sql"""
-                ALTER TABLE CivBeacons ADD COLUMN GroupID TEXT;
-                """,
-            ),
-            List(
-                sql"""
-                """,
-            ),
-        )
     )
 
     case class WorldData(
@@ -117,45 +111,43 @@ class CivBeaconManager()(using sql: Storage.SQLManager):
         var beaconIDsToRTreeEntries: Map[BeaconID, IndexedSeq[RTreeEntry[(Polygon, BeaconID)]]]
     )
 
-    private implicit val session: DBSession = sql.session
     private val triangulator = DelaunayTriangulationBuilder()
     private val geometryFactory = GeometryFactory()
     private var worldData = Map[UUID, WorldData]()
 
-    private def getWorldData(w: World): WorldData =
+    private def getWorldData(w: World)(using Session[IO]): IO[WorldData] =
         if !worldData.contains(w.getUID()) then
-            val rtree = loadHearts(w.getUID())
-            val entries = rtree.entries.groupMap(_.value._2)(identity)
-            worldData += w.getUID() -> WorldData(rtree, entries)
-        worldData(w.getUID())
+            for {
+                rtree <- loadHearts(w.getUID())
+            } yield {
+                val entries = rtree.entries.groupMap(_.value._2)(identity)
+                worldData += w.getUID() -> WorldData(rtree, entries)
+                worldData(w.getUID())
+            }
+        else
+            IO.pure(worldData(w.getUID()))
     def populationToArea(count: Int): Int =
         (30 * 30) * count
-    def getBeaconFor(player: OwnerID): Option[BeaconID] =
-        sql"""
-        SELECT Beacon FROM Hearts WHERE Owner = ${player};
-        """
-        .map(rs => UUID.fromString(rs.string("Beacon")))
-        .single
-        .apply()
-    def setGroup(beacon: BeaconID, group: GroupID): Either[Unit, Unit] =
-        if beaconSize(beacon) != 1 then
-            return Left(())
-        sql"""
-        UPDATE CivBeacons SET GroupID = ${group} WHERE ID = ${beacon}
-        """
-        .update
-        .apply()
-        Right(())
-    def getGroup(beacon: BeaconID): Option[GroupID] =
-        sql"""
-        SELECT GroupID FROM CivBeacons WHERE ID = ${beacon}
-        """
-        .map(rs => rs.string("GroupID"))
-        .single
-        .apply()
-        .map(UUID.fromString)
-    def triangulate(id: BeaconID, polygonBlob: InputStream): IndexedSeq[RTreeEntry[(Polygon, BeaconID)]] =
-        val polygon = ObjectInputStream(polygonBlob)
+    def getBeaconFor(player: OwnerID)(using Session[IO]): IO[Option[BeaconID]] =
+        sql.queryOptionIO(sql"""
+        SELECT Beacon FROM Hearts WHERE Owner = $uuid;
+        """, uuid, player)
+    def setGroup(beacon: BeaconID, group: GroupID)(using Session[IO]): IO[Either[Unit, Unit]] =
+        for {
+            size <- beaconSize(beacon)
+            result <- if size != 1 then
+                IO.pure(Left(()))
+            else
+                sql.commandIO(sql"""
+                UPDATE CivBeacons SET GroupID = $uuid WHERE ID = $uuid;
+                """, (group, beacon)).map(_ => Right(()))
+        } yield result
+    def getGroup(beacon: BeaconID)(using Session[IO]): IO[Option[GroupID]] =
+        sql.queryOptionIO(sql"""
+        SELECT GroupID FROM CivBeacons WHERE ID = $uuid;
+        """, uuid, beacon)
+    def triangulate(id: BeaconID, polygonBlob: Array[Byte]): IndexedSeq[RTreeEntry[(Polygon, BeaconID)]] =
+        val polygon = ObjectInputStream(ByteArrayInputStream(polygonBlob))
             .readObject()
             .asInstanceOf[Polygon]
         triangulator.setSites(polygon)
@@ -174,192 +166,165 @@ class CivBeaconManager()(using sql: Storage.SQLManager):
 
             entry(minmin.getX().toFloat, minmin.getY().toFloat, maxmax.getX().toFloat, maxmax.getY().toFloat, (triangle, id))
         }
-    def recomputeEntryFor(id: BeaconID): IndexedSeq[RTreeEntry[(Polygon, BeaconID)]] =
-        sql"""
+    def recomputeEntryFor(id: BeaconID)(using Session[IO]): IO[IndexedSeq[RTreeEntry[(Polygon, BeaconID)]]] =
+        sql.queryOptionIO(sql"""
         SELECT
-            Polygon
+            PolygonData
         FROM
             CivBeacons
         WHERE
-            ID = ${id}
-        """
-        .map(rs => rs.binaryStream("Polygon"))
-        .single
-        .apply()
-        .map(triangulate(id, _))
-        .getOrElse(IndexedSeq())
-    def getPolygonFor(id: BeaconID): Option[Polygon] =
-        sql"""
+            ID = $uuid AND PolygonData IS NOT NULL;
+        """, bytea, id)
+            .map(_.map(triangulate(id, _)).getOrElse(IndexedSeq()))
+    def getPolygonFor(id: BeaconID)(using Session[IO]): IO[Option[Polygon]] =
+        sql.queryOptionIO(sql"""
         SELECT
-            Polygon
+            PolygonData
         FROM
             CivBeacons
         WHERE
-            ID = ${id}
-        """
-        .map(rs => rs.binaryStream("Polygon"))
-        .single
-        .apply()
-        .flatMap(x => Option(x))
-        .map { bst =>
-            ObjectInputStream(bst)
-                .readObject()
-                .asInstanceOf[Polygon]
-        }
-    def loadHearts(world: UUID): RTree[(Polygon, BeaconID)] =
-        val items = sql"""
+            ID = $uuid AND PolygonData IS NOT NULL;
+        """, bytea, id)
+            .map(_.map { bytes =>
+                ObjectInputStream(ByteArrayInputStream(bytes))
+                    .readObject()
+                    .asInstanceOf[Polygon]
+            })
+    def loadHearts(world: UUID)(using Session[IO]): IO[RTree[(Polygon, BeaconID)]] =
+        sql.queryListIO(sql"""
         SELECT
-            ID, Polygon
+            ID, PolygonData
         FROM
             CivBeacons
         WHERE
-            World = ${world};
-        """
-            .map(rs => (UUID.fromString(rs.string("ID")), rs.binaryStream("Polygon")))
-            .list
-            .apply()
-            .filterNot( (_, polygonBlob) => polygonBlob == null )
-            .flatMap(triangulate)
-        RTree(items)
-    def hasHeart(owner: UUID): Boolean =
-        sql"""SELECT EXISTS( SELECT 1 FROM Hearts WHERE Owner = ${owner} );"""
-            .map(rs => rs.int(1))
-            .single
-            .apply()
-            .map(_ > 0)
-            .getOrElse(false)
-    def heartAt(l: Location): Option[(OwnerID, BeaconID)] =
-        sql"""
+            World = $uuid;
+        """, (uuid *: bytea.opt), world)
+            .map(_.flatMap( (it, bytes) => bytes.map(x => (it, x)) )
+                  .flatMap(triangulate))
+            .map(RTree(_))
+    def hasHeart(owner: UUID)(using Session[IO]): IO[Boolean] =
+        sql.queryUniqueIO(sql"""
+        SELECT EXISTS(SELECT 1 FROM Hearts WHERE Owner = $uuid);
+        """, bool, owner)
+    def heartAt(l: Location)(using Session[IO]): IO[Option[(OwnerID, BeaconID)]] =
+        sql.queryOptionIO(sql"""
         SELECT
-            *
+            Owner, Beacon
         FROM
             Hearts
         INNER JOIN
             CivBeacons
-        ON CivBeacons.ID = Hearts.Beacon AND CivBeacons.World = ${l.getWorld().getUID()}
-        WHERE X = ${l.getBlockX()}
-          AND Y = ${l.getBlockY()}
-          AND Z = ${l.getBlockZ()}
-        """
-            .map(rs => (UUID.fromString(rs.string("Owner")), UUID.fromString(rs.string("Beacon"))))
-            .single
-            .apply()
-    def beaconContaining(l: Location): Option[BeaconID] =
+        ON CivBeacons.ID = Hearts.Beacon AND CivBeacons.World = $uuid
+        WHERE X = $int8
+          AND Y = $int8
+          AND Z = $int8
+        """, (uuid *: uuid), (l.getWorld().getUID(), l.getBlockX(), l.getBlockY(), l.getBlockZ()))
+    def beaconContaining(l: Location)(using Session[IO]): IO[Option[BeaconID]] =
         val lx = l.getX().toFloat
         val ly = l.getZ().toFloat
-        getWorldData(l.getWorld()).beaconRTree.searchAll(lx, ly)
+        getWorldData(l.getWorld()).map { x =>
+            x.beaconRTree.searchAll(lx, ly)
             .filter { entry =>
                 val (polygon, _) = entry.value
                 polygon.covers( geometryFactory.createPoint(Coordinate(l.getX(), l.getZ())) )
             }
             .map(_.value._2)
             .headOption
-    def updateBeaconPolygon(beacon: BeaconID, world: World, polygon: Polygon): Either[PolygonAdjustmentError, Unit] =
-        val hearts =
-            sql"""
-            SELECT
-                X, Y, Z
-            FROM
-                Hearts
-            INNER JOIN
-                CivBeacons
-            ON CivBeacons.ID = Hearts.Beacon AND CivBeacons.World = ${world.getUID()}
-            WHERE
-                CivBeacons.ID = ${beacon}
-            """
-            .map(rs => (rs.int("X"), rs.int("Y"), rs.int("Z")))
-            .list
-            .apply()
+        }
+    def updateBeaconPolygon(beacon: BeaconID, world: World, polygon: Polygon)(using Session[IO]): IO[Either[PolygonAdjustmentError, Unit]] =
+        sql.queryListIO(sql"""
+        SELECT
+            X, Y, Z
+        FROM
+            Hearts
+        INNER JOIN
+            CivBeacons
+        ON CivBeacons.ID = Hearts.Beacon AND CivBeacons.World = $uuid
+        WHERE
+            CivBeacons.ID = $uuid
+        """, (int8 *: int8 *: int8), (world.getUID(), beacon)).flatMap { hearts =>
+            val expectedArea =
+                populationToArea(hearts.length)
+            val actualArea =
+                polygon.getArea()
+            val heartsOutsidePolygon =
+                hearts.filterNot((x, _, z) => polygon.contains( geometryFactory.createPoint(Coordinate(x.toDouble, z.toDouble)) ))
 
-        val expectedArea =
-            populationToArea(hearts.length)
-        val actualArea =
-            polygon.getArea()
-        val heartsOutsidePolygon =
-            hearts.filterNot((x, _, z) => polygon.contains( geometryFactory.createPoint(Coordinate(x, z)) ))
+            if actualArea > expectedArea then
+                IO.pure(Left(PolygonAdjustmentError.polygonTooLarge(expectedArea, actualArea)))
+            else if heartsOutsidePolygon.nonEmpty then
+                IO.pure(Left(PolygonAdjustmentError.heartsNotIncludedInPolygon( heartsOutsidePolygon.map((x, y, z) => Location(world, x.toDouble, y.toDouble, z.toDouble)) )))
+            else
+                val baos = ByteArrayOutputStream()
+                val oos = ObjectOutputStream(baos)
+                oos.writeObject(polygon)
+                val ba = baos.toByteArray()
 
-        if actualArea > expectedArea then
-            Left(PolygonAdjustmentError.polygonTooLarge(expectedArea, actualArea))
-        else if heartsOutsidePolygon.nonEmpty then
-            Left(PolygonAdjustmentError.heartsNotIncludedInPolygon( heartsOutsidePolygon.map((x, y, z) => Location(world, x, y, z)) ))
-        else
-            val baos = ByteArrayOutputStream()
-            val oos = ObjectOutputStream(baos)
-            oos.writeObject(polygon)
-            val ba = baos.toByteArray()
+                sql.commandIO(sql"""
+                UPDATE CivBeacons SET PolygonData = $bytea WHERE ID = $uuid
+                """, (ba, beacon))
+                    .flatMap(_ => recomputeEntryFor(beacon))
+                    .flatMap(x => getWorldData(world).map(x -> _))
+                    .map { (entry, data) =>
+                        data.beaconRTree = RTree.update(data.beaconRTree, data.beaconIDsToRTreeEntries.get(beacon).toSeq.flatten, entry)
+                        data.beaconIDsToRTreeEntries += beacon -> entry
 
-            sql"""
-            UPDATE CivBeacons SET Polygon = ${ba} WHERE ID = ${beacon}
-            """
-            .update
-            .apply()
-
-            val entry = recomputeEntryFor(beacon)
-            val data = getWorldData(world)
-            data.beaconRTree = RTree.update(data.beaconRTree, data.beaconIDsToRTreeEntries.get(beacon).toSeq.flatten, entry)
-            data.beaconIDsToRTreeEntries += beacon -> entry
-
-            Right(())
-    def beaconSize(beacon: BeaconID): Int =
-        sql"""
-        SELECT COUNT(*) FROM Hearts WHERE Beacon = ${beacon}
-        """
-        .map(rs => rs.int(1))
-        .single
-        .apply()
-        .get
-    def placeHeart(l: Location, owner: UUID): Option[(BeaconID, Int)] =
-        if hasHeart(owner) then
-            return None
-
+                        Right(())
+                    }
+        }
+    def beaconSize(beacon: BeaconID)(using Session[IO]): IO[Long] =
+        sql.queryUniqueIO(sql"""
+        SELECT COUNT(*) FROM Hearts WHERE Beacon = $uuid
+        """, int8, beacon)
+    def placeHeart(l: Location, owner: UUID)(using Session[IO]): IO[Either[Unit, (BeaconID, Long)]] =
         val offsets = List((1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1))
-        val beacon = offsets.view.map(offset => {
-                val (x, y, z) = offset
-                heartAt(l.clone().add(x, y, z))
-            })
-            .find(x => x.isDefined)
-            .flatten
-            .map(_._2)
-            .getOrElse {
-                val newID = UUID.randomUUID()
-                sql"""
-                INSERT INTO CivBeacons (
-                    ID, World
-                ) VALUES (
-                    ${newID}, ${l.getWorld().getUID()}
-                );
-                """
-                .update
-                .apply()
-                newID
-            }
-        sql"""
-        INSERT INTO Hearts (
-            X, Y, Z, Owner, Beacon
-        ) VALUES (
-            ${l.getBlockX()}, ${l.getBlockY()}, ${l.getBlockZ()}, ${owner}, ${beacon} 
-        );
-        """
-        .update
-        .apply()
 
-        Some(beacon, beaconSize(beacon))
-    def removeHeart(l: Location, owner: OwnerID): Option[(BeaconID, Int)] =
-        sql"""
-        DELETE FROM Hearts WHERE Owner = ${owner} RETURNING Beacon;
-        """
-            .map(rs => UUID.fromString(rs.string("Beacon")))
-            .single
-            .apply()
+        hasHeart(owner).flatMap { has =>
+            if has then
+                IO.pure(Left(()))
+            else
+                for {
+                    adjacentHearts <- offsets.traverse(offset => {
+                        val (x, y, z) = offset
+                        heartAt(l.clone().add(x, y, z))
+                    })
+                    beaconID <- OptionT.fromOption(adjacentHearts
+                            .find(x => x.isDefined)
+                            .flatten
+                            .map((_, beaconID) => beaconID))
+                            .getOrElseF {
+                                val newID = UUID.randomUUID()
+                                sql.commandIO(sql"""
+                                INSERT INTO CivBeacons (
+                                    ID, World
+                                ) VALUES (
+                                    $uuid, $uuid
+                                );                        
+                                """, (newID, l.getWorld().getUID())).map(_ => newID)
+                            }
+                    _ <- sql.commandIO(sql"""
+                        INSERT INTO Hearts (
+                            X, Y, Z, Owner, Beacon
+                        ) VALUES (
+                            $int8, $int8, $int8, $uuid, $uuid
+                        );
+                        """, (l.getBlockX(), l.getBlockY(), l.getBlockZ(), owner, beaconID))
+                    size <- beaconSize(beaconID)
+                } yield Right(beaconID, size)
+        }
+    def removeHeart(l: Location, owner: OwnerID)(using Session[IO]): IO[Option[(BeaconID, Long)]] =
+        sql.queryUniqueIO(sql"""
+        DELETE FROM Hearts WHERE Owner = $uuid RETURNING Beacon;
+        """, uuid, owner)
             .flatMap { beacon =>
-                val data = getWorldData(l.getWorld())
-
-                val count = beaconSize(beacon)
-                if count == 0 then
-                    sql"""DELETE FROM CivBeacons WHERE ID = ${beacon}""".update.apply()
-                    data.beaconRTree = RTree.update(data.beaconRTree, data.beaconIDsToRTreeEntries.get(beacon).toSeq.flatten, None)
-                    data.beaconIDsToRTreeEntries -= beacon
-                    None
-                else
-                    Some(beacon, count)
+                beaconSize(beacon).flatMap(x => getWorldData(l.getWorld()).map(x -> _)).flatMap { (count, data) =>
+                    if count == 0 then
+                        data.beaconRTree = RTree.update(data.beaconRTree, data.beaconIDsToRTreeEntries.get(beacon).toSeq.flatten, None)
+                        data.beaconIDsToRTreeEntries -= beacon
+                        sql.commandIO(sql"""
+                        DELETE FROM CivBeacons WHERE ID = $uuid
+                        """, beacon).map(_ => None)
+                    else
+                        IO.pure(Some(beacon, count))
+                }
             }

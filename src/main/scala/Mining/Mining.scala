@@ -18,6 +18,7 @@ import BallCore.Ores.QuadrantOres
 import scala.util.chaining._
 import org.bukkit.plugin.Plugin
 import org.bukkit.block.Biome
+import BallCore.Storage.SQLManager
 
 object Mining:
     val stoneBlocks = Set(Material.STONE, Material.DEEPSLATE, Material.TUFF)
@@ -88,7 +89,7 @@ object Mining:
         ores.map((quadrant, ore) => Drops(-16 to 112, 1 to 5, 0.001, ore, WorldLocation.quadrant(quadrant)))
     }
 
-    def register()(using ac: AntiCheeser, as: Acclimation.Storage, p: Plugin): Unit =
+    def register()(using ac: AntiCheeser, as: Acclimation.Storage, p: Plugin, sql: SQLManager): Unit =
         p.getServer().getPluginManager().registerEvents(MiningListener(), p)
 
 case class Drops(
@@ -121,12 +122,12 @@ enum WorldLocation:
     case cardinal(which: Cardinal)
     case everywhere
 
-class MiningListener()(using ac: AntiCheeser, as: Acclimation.Storage) extends Listener:
+class MiningListener()(using ac: AntiCheeser, as: Acclimation.Storage, sql: SQLManager) extends Listener:
     val randomizer = scala.util.Random()
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     def onBreakBlock(event: BlockBreakEvent): Unit =
-        if !ac.blockBroken(event.getBlock()) then
+        if !sql.useBlocking(ac.blockBroken(event.getBlock())) then
             return
         if !Mining.stoneBlocks.contains(event.getBlock().getType()) then
             return
@@ -135,7 +136,7 @@ class MiningListener()(using ac: AntiCheeser, as: Acclimation.Storage) extends L
 
         val plr = event.getPlayer().getUniqueId()
         val (lat, long) = Information.latLong(event.getBlock().getX(), event.getBlock().getZ())
-        val (plat, plong) = (as.getLatitude(plr), as.getLongitude(plr))
+        val (plat, plong) = (sql.useBlocking(as.getLatitude(plr)), sql.useBlocking(as.getLongitude(plr)))
 
         val dlat = Information.similarityNeg(lat, plat)
         val dlong = Information.similarityNeg(long, plong)

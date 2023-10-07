@@ -30,6 +30,7 @@ import BallCore.Beacons.BeaconID
 import BallCore.Beacons.CivBeaconManager
 import org.bukkit.World
 import BallCore.UI.ChatElements.sendServerMessage
+import BallCore.Storage.SQLManager
 
 object PolygonEditor:
 	def register()(using e: PolygonEditor, p: Plugin): Unit =
@@ -67,7 +68,7 @@ enum PlayerState:
 	case editing(state: EditorModel)
 	case creating(state: CreatorModel, actions: List[CreatorAction])
 
-class PolygonEditor(using p: Plugin, bm: CivBeaconManager):
+class PolygonEditor(using p: Plugin, bm: CivBeaconManager, sql: SQLManager):
 	private val clickPromises = TrieMap[Player, Promise[Location]]()
 	private val playerPolygons = TrieMap[Player, PlayerState]()
 
@@ -78,7 +79,7 @@ class PolygonEditor(using p: Plugin, bm: CivBeaconManager):
 
 	def create(player: Player, world: World, beaconID: BeaconID): Unit =
 		import BallCore.UI.ChatElements._
-		bm.getPolygonFor(beaconID) match
+		sql.useBlocking(bm.getPolygonFor(beaconID)) match
 			case None =>
 				player.sendServerMessage(txt"You'll be defining your claim as 4 points")
 				player.sendServerMessage(txt"Press ${keybind("key.use")} to place Point 1")
@@ -154,7 +155,7 @@ class PolygonEditor(using p: Plugin, bm: CivBeaconManager):
 							.map(point => Coordinate(point.getX(), point.getZ(), point.getY()))
 							.toArray
 					)
-					bm.updateBeaconPolygon(model.beaconID, model.polygon.head.getWorld(), jtsPolygon) match
+					sql.useBlocking(bm.updateBeaconPolygon(model.beaconID, model.polygon.head.getWorld(), jtsPolygon)) match
 						case Left(err) =>
 							player.sendServerMessage(err.explain)
 							None

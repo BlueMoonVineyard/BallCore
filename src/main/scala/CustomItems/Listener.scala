@@ -12,12 +12,13 @@ import org.bukkit.plugin.Plugin
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.block.Action
 import org.bukkit.inventory.EquipmentSlot
+import BallCore.Storage.SQLManager
 
 object CustomItemListener:
-    def register()(using bm: BlockManager, reg: ItemRegistry, plugin: Plugin): Unit =
+    def register()(using bm: BlockManager, reg: ItemRegistry, plugin: Plugin, sql: SQLManager): Unit =
         plugin.getServer().getPluginManager().registerEvents(new CustomItemListener, plugin)
 
-class CustomItemListener(using bm: BlockManager, reg: ItemRegistry) extends org.bukkit.event.Listener:
+class CustomItemListener(using bm: BlockManager, reg: ItemRegistry, sql: SQLManager) extends org.bukkit.event.Listener:
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     def onBlockPlace(event: BlockPlaceEvent): Unit =
         reg.lookup(event.getItemInHand()) match
@@ -30,12 +31,12 @@ class CustomItemListener(using bm: BlockManager, reg: ItemRegistry) extends org.
                         case _ => false
                 if cancelled then
                     return
-                bm.setCustomItem(event.getBlockPlaced(), item)
+                sql.useBlocking(bm.setCustomItem(event.getBlockPlaced(), item))
             case _ => ()
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     def onBlockBreak(event: BlockBreakEvent): Unit =
-        bm.getCustomItem(event.getBlock()) match
+        sql.useBlocking(bm.getCustomItem(event.getBlock())) match
             case Some(item) =>
                 val cancelled =
                     item match
@@ -45,7 +46,7 @@ class CustomItemListener(using bm: BlockManager, reg: ItemRegistry) extends org.
                         case _ => false
                 if cancelled then
                     return
-                bm.clearCustomItem(event.getBlock())
+                sql.useBlocking(bm.clearCustomItem(event.getBlock()))
                 event.setDropItems(false)
                 val _ = event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), item.template)
             case _ =>
@@ -73,7 +74,7 @@ class CustomItemListener(using bm: BlockManager, reg: ItemRegistry) extends org.
         if !event.hasBlock() || event.getAction() != Action.RIGHT_CLICK_BLOCK then
             return
 
-        bm.getCustomItem(event.getClickedBlock()) match
+        sql.useBlocking(bm.getCustomItem(event.getClickedBlock())) match
             case Some(item) =>
                 val cancel =
                     item match

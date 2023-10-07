@@ -5,6 +5,55 @@
 import BallCore.UI.{UIProgram, UIServices}
 import scala.concurrent.{Future, Promise, ExecutionContext}
 import munit.Assertions
+import BallCore.Storage.SQLManager
+import cats.effect.kernel.Resource
+import cats.effect.IO
+import skunk.Session
+import skunk.Fragment
+import natchez.Trace.Implicits.noop
+import skunk.util.Origin
+import skunk._
+import skunk.implicits._
+import cats.effect.unsafe.implicits.global
+
+object TestDatabase:
+    def setup(opts: munit.TestOptions): SQLManager =
+        val session: Resource[IO, Session[IO]] = Session.single(
+            host = "localhost",
+            port = 5432,
+            user = "civcubed",
+            database = "civcubed",
+            password = Some("civcubed")
+        )
+        val cleanName = opts.name.replace(" ", "").replace("-", "").replace("'", "")
+        val nameFragment = Fragment(List(Left(cleanName)), Void.codec, Origin.unknown)
+        session.use { s =>
+            s.execute(sql"""
+            CREATE DATABASE $nameFragment;
+            """.command)
+        }.unsafeRunSync()
+        val testSession: Resource[IO, Session[IO]] = Session.single(
+            host = "localhost",
+            port = 5432,
+            user = "civcubed",
+            database = cleanName,
+            password = Some("civcubed")
+        )
+        new SQLManager(testSession, cleanName)
+    def teardown(s: SQLManager): Unit =
+        val session: Resource[IO, Session[IO]] = Session.single(
+            host = "localhost",
+            port = 5432,
+            user = "civcubed",
+            database = "civcubed",
+            password = Some("civcubed")
+        )
+        val nameFragment = Fragment(List(Left(s.database)), Void.codec, Origin.unknown)
+        session.use { s =>
+            s.execute(sql"""
+            DROP DATABASE $nameFragment;
+            """.command)
+        }.unsafeRunSync(); ()
 
 class TestUIServices(assertions: Assertions) extends UIServices:
     val promptQueue = scala.collection.mutable.Queue[(String, Promise[String])]()

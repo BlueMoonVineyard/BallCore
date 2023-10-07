@@ -10,6 +10,7 @@ import java.time.temporal.ChronoUnit
 import scala.math._
 import BallCore.DataStructures.Clock
 import java.util.UUID
+import BallCore.Storage.SQLManager
 
 type WorldID = UUID
 
@@ -31,7 +32,7 @@ def explain(err: ReinforcementError): String =
             "A reinforcement was just broken"
 
 /** The ReinforcementManager implements all of the logic of reinforcement data */
-class BlockReinforcementManager()(using csm: ChunkStateManager, gsm: Groups.GroupManager, c: Clock):
+class BlockReinforcementManager()(using csm: ChunkStateManager, gsm: Groups.GroupManager, c: Clock, sql: SQLManager):
     private def toOffsets(x: Int, z: Int): (Int, Int, Int, Int) =
         (x / 16, z / 16, x % 16, z % 16)
     private def hoist[B](either: Either[Groups.GroupError, B]): Either[ReinforcementError, B] =
@@ -39,18 +40,18 @@ class BlockReinforcementManager()(using csm: ChunkStateManager, gsm: Groups.Grou
 
     def reinforce(as: Groups.UserID, group: Groups.UserID, subgroup: Groups.SubgroupID, x: Int, y: Int, z: Int, world: WorldID, kind: ReinforcementTypes): Either[ReinforcementError, Unit] =
         val (chunkX, chunkZ, offsetX, offsetZ) = toOffsets(x, z)
-        val state = csm.get(ChunkKey(chunkX, chunkZ, world.toString()))
+        val state = csm.get(ChunkKey(chunkX, chunkZ, world))
         val bkey = BlockKey(offsetX, offsetZ, y)
         state.blocks.get(bkey).filterNot(_.deleted) match
             case None =>
-                hoist(gsm.checkE(as, group, subgroup, Groups.Permissions.AddReinforcements)).map { _ =>
+                hoist(sql.useBlocking(gsm.checkE(as, group, subgroup, Groups.Permissions.AddReinforcements).value)).map { _ =>
                     state.blocks(bkey) = ReinforcementState(group, subgroup, as, true, false, kind.hp, kind, c.now())
                 }
             case Some(value) =>
                 Left(AlreadyExists())
     def unreinforce(as: Groups.UserID, x: Int, y: Int, z: Int, world: WorldID): Either[ReinforcementError, Unit] =
         val (chunkX, chunkZ, offsetX, offsetZ) = toOffsets(x, z)
-        val state = csm.get(ChunkKey(chunkX, chunkZ, world.toString()))
+        val state = csm.get(ChunkKey(chunkX, chunkZ, world))
         val bkey = BlockKey(offsetX, offsetZ, y)
         state.blocks.get(bkey).filterNot(_.deleted) match
             case None => Left(DoesntExist())
@@ -59,12 +60,12 @@ class BlockReinforcementManager()(using csm: ChunkStateManager, gsm: Groups.Grou
                     state.blocks(bkey) = value.copy(deleted = true)
                     Right(())
                 else
-                    hoist(gsm.checkE(as, value.group, value.subgroup, Groups.Permissions.RemoveReinforcements)).map { _ =>
+                    hoist(sql.useBlocking(gsm.checkE(as, value.group, value.subgroup, Groups.Permissions.RemoveReinforcements).value)).map { _ =>
                         state.blocks(bkey) = value.copy(deleted = true)
                     }
     def break(x: Int, y: Int, z: Int, hardness: Double, world: WorldID): Either[ReinforcementError, ReinforcementState] =
         val (chunkX, chunkZ, offsetX, offsetZ) = toOffsets(x, z)
-        val state = csm.get(ChunkKey(chunkX, chunkZ, world.toString()))
+        val state = csm.get(ChunkKey(chunkX, chunkZ, world))
         val bkey = BlockKey(offsetX, offsetZ, y)
         state.blocks.get(bkey).filterNot(_.deleted) match
             case None => Left(DoesntExist())
@@ -82,6 +83,6 @@ class BlockReinforcementManager()(using csm: ChunkStateManager, gsm: Groups.Grou
                     Right(newValue)
     def getReinforcement(x: Int, y: Int, z: Int, world: WorldID): Option[ReinforcementState] =
         val (chunkX, chunkZ, offsetX, offsetZ) = toOffsets(x, z)
-        val state = csm.get(ChunkKey(chunkX, chunkZ, world.toString()))
+        val state = csm.get(ChunkKey(chunkX, chunkZ, world))
         val bkey = BlockKey(offsetX, offsetZ, y)
         state.blocks.get(bkey)

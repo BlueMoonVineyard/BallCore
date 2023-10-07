@@ -9,25 +9,26 @@ import java.{util => ju}
 import BallCore.DataStructures.Clock
 import BallCore.DataStructures.TestClock
 import BallCore.Groups.nullUUID
-import java.time.Instant
 import java.time.temporal.ChronoUnit
 import BallCore.Reinforcements.ReinforcementTypes
+import java.time.OffsetDateTime
+import BallCore.Storage.SQLManager
 
 class EntityReinforcementSuite extends munit.FunSuite {
-    test("basic stuff") {
-        given sql: Storage.SQLManager = new Storage.SQLManager(test = Some("ers basic stuff"))
+    val sql = FunFixture[SQLManager](TestDatabase.setup, TestDatabase.teardown)
+    sql.test("entity reinforcements basic stuff") { implicit sql =>
         given gm: Groups.GroupManager = new Groups.GroupManager
         given csm: Reinforcements.ChunkStateManager = new Reinforcements.ChunkStateManager
         given esm: Reinforcements.EntityStateManager = new Reinforcements.EntityStateManager
-        given clock: Clock = new TestClock(Instant.MIN)
+        given clock: Clock = new TestClock(OffsetDateTime.now())
         given erm: Reinforcements.EntityReinforcementManager = new Reinforcements.EntityReinforcementManager
 
         val u1 = ju.UUID.randomUUID()
         val u2 = ju.UUID.randomUUID()
         val entity = ju.UUID.randomUUID()
 
-        val gid = gm.createGroup(u1, "test")
-        gm.addToGroup(u2, gid)
+        val gid = sql.useBlocking(gm.createGroup(u1, "test"))
+        sql.useBlocking(gm.addToGroup(u2, gid).value)
 
         val res1 = erm.reinforce(u2, gid, nullUUID, entity, ReinforcementTypes.IronLike)
         assert(res1 == Left(Reinforcements.ReinforcementGroupError(Groups.GroupError.NoPermissions)), res1)
@@ -35,8 +36,8 @@ class EntityReinforcementSuite extends munit.FunSuite {
         val res2 = erm.reinforce(u1, gid, nullUUID, entity, ReinforcementTypes.IronLike)
         assert(res2 == Right(()), res2)
 
-        val rid = gm.roles(gid).getOrElse(List()).find { x => x.name == "Admin" }.get.id
-        assert(gm.assignRole(u1, u2, gid, rid, true).isRight)
+        val rid = sql.useBlocking(gm.roles(gid).value).getOrElse(List()).find { x => x.name == "Admin" }.get.id
+        assert(sql.useBlocking(gm.assignRole(u1, u2, gid, rid, true).value).isRight)
 
         val res3 = erm.reinforce(u2, gid, nullUUID, entity, ReinforcementTypes.IronLike)
         assert(res3 == Left(Reinforcements.AlreadyExists()), res3)
@@ -47,20 +48,19 @@ class EntityReinforcementSuite extends munit.FunSuite {
         val res5 = erm.unreinforce(u2, entity)
         assert(res5 == Left(Reinforcements.DoesntExist()))
     }
-    test("damaging shenanigans") {
-        given sql: Storage.SQLManager = new Storage.SQLManager(test = Some("ers damaging shenanigans"))
+    sql.test("entity damaging shenanigans") { implicit sql =>
         given gm: Groups.GroupManager = new Groups.GroupManager
         given csm: Reinforcements.ChunkStateManager = new Reinforcements.ChunkStateManager
         given esm: Reinforcements.EntityStateManager = new Reinforcements.EntityStateManager
-        given clock: TestClock = new TestClock(Instant.MIN)
+        given clock: TestClock = new TestClock(OffsetDateTime.now())
         given erm: Reinforcements.EntityReinforcementManager = new Reinforcements.EntityReinforcementManager
 
         val u1 = ju.UUID.randomUUID()
         val u2 = ju.UUID.randomUUID()
         val entity = ju.UUID.randomUUID()
 
-        val gid = gm.createGroup(u1, "test")
-        gm.addToGroup(u2, gid)
+        val gid = sql.useBlocking(gm.createGroup(u1, "test"))
+        sql.useBlocking(gm.addToGroup(u2, gid).value)
 
         val res1 = erm.reinforce(u1, gid, nullUUID, entity, ReinforcementTypes.IronLike)
         assert(res1 == Right(()), res1)

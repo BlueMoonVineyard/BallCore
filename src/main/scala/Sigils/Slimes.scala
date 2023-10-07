@@ -19,8 +19,6 @@ import org.joml.AxisAngle4f
 import org.bukkit.entity.Interaction
 import org.bukkit.inventory.ItemStack
 import BallCore.Storage
-import scalikejdbc.DBSession
-import scalikejdbc._
 import java.util.UUID
 import scala.jdk.CollectionConverters._
 import org.bukkit.Bukkit
@@ -35,6 +33,10 @@ import BallCore.Beacons.BeaconID
 import BallCore.Groups.UserID
 import BallCore.Folia.FireAndForget
 import BallCore.UI.Elements._
+import skunk.implicits._
+import skunk.codec.all._
+import cats.effect.IO
+import skunk.Session
 
 object Slimes:
 	val sigilSlime = ItemStack(Material.STICK)
@@ -50,88 +52,73 @@ object Slimes:
 case class EntityIDPair(val interaction: UUID, val display: UUID)
 
 class SigilSlimeManager(using sql: Storage.SQLManager):
-	private implicit val session: DBSession = sql.session
-
 	sql.applyMigration(
 		Storage.Migration(
 			"Initial Sigil Slime Manager",
 			List(
 				sql"""
 				CREATE TABLE SigilSlimes (
-					BanishedUserID TEXT,
-					BeaconID TEXT NOT NULL,
-					InteractionEntityID TEXT NOT NULL,
+					BanishedUserID UUID,
+					BeaconID UUID NOT NULL,
+					InteractionEntityID UUID NOT NULL,
 					UNIQUE(BanishedUserID, BeaconID),
 					UNIQUE(InteractionEntityID),
 					FOREIGN KEY (BeaconID) REFERENCES Beacons(ID) ON DELETE CASCADE,
 					FOREIGN KEY (InteractionEntityID) REFERENCES CustomEntities(InteractionEntityID) ON DELETE CASCADE
 				);
-				"""
+				""".command
 			),
 			List(
 				sql"""
 				DROP TABLE SigilSlimes;
-				"""
+				""".command
 			)
 		),
 	)
 
-	def addSlime(entity: UUID, beacon: BeaconID): Unit =
-		sql"""
+	def addSlime(entity: UUID, beacon: BeaconID)(using Session[IO]): IO[Unit] =
+		sql.commandIO(sql"""
 		INSERT INTO SigilSlimes (
 			BeaconID, InteractionEntityID
 		) VALUES (
-			${beacon}, ${entity}
+			$uuid, $uuid
 		)
-		"""
-		.update
-		.apply(); ()
+		""", (beacon, entity)).map(_ => ())
 
-	def banishedUsers(from: BeaconID): List[UserID] =
-		sql"""
-		SELECT UserID FROM SigilSlimes WHERE BeaconID = ${from} AND BanishedUserID IS NOT NULL;
-		"""
-		.map(rs => UUID.fromString(rs.string("BanishedUserID")))
-		.list
-		.apply()
+	def banishedUsers(from: BeaconID)(using Session[IO]): IO[List[UserID]] =
+		sql.queryListIO(sql"""
+		SELECT BanishedUserID FROM SigilSlimes WHERE BeaconID = $uuid AND BanishedUserID IS NOT NULL;
+		""", uuid, from)
 
-	def isBanished(user: UserID, from: BeaconID): Boolean =
-		sql"""
+	def isBanished(user: UserID, from: BeaconID)(using Session[IO]): IO[Boolean] =
+		sql.queryUniqueIO(sql"""
 		SELECT EXISTS (
-			SELECT 1 FROM SigilSlimes WHERE BanishedUserID = ${user} AND BeaconID = ${from}
+			SELECT 1 FROM SigilSlimes WHERE BanishedUserID = $uuid AND BeaconID = $uuid
 		);
-		"""
-		.map(rs => rs.boolean(1))
-		.single
-		.apply()
-		.getOrElse(false)
+		""", bool, (user, from))
 
-	def banish(user: UserID, slime: UUID): Unit =
-		sql"""
+	def banish(user: UserID, slime: UUID)(using Session[IO]): IO[Unit] =
+		sql.commandIO(sql"""
 		UPDATE SigilSlimes
 		SET
-			BanishedUserID = ${user}
+			BanishedUserID = $uuid
 		WHERE
-			InteractionEntityID = ${slime};
-		"""
-		.update
-		.apply(); ()
+			InteractionEntityID = $uuid;
+		""", (user, slime)).map(_ => ())
 
-	def unbanish(user: UserID, slime: UUID): Unit =
-		sql"""
+	def unbanish(user: UserID, slime: UUID)(using Session[IO]): IO[Unit] =
+		sql.commandIO(sql"""
 		UPDATE SigilSlimes
 		SET
 			BanishedUserID = NULL
 		WHERE
-			InteractionEntityID = ${slime} AND
-			BanishedUserID = ${user};
-		"""
-		.update
-		.apply(); ()
+			InteractionEntityID = $uuid AND
+			BanishedUserID = $uuid;
+		""", (slime, user)).map(_ => ())
+
+val namespacedKeyCodec = text.imap { str => NamespacedKey.fromString(str) } { it => it.asString() }
 
 class CustomEntityManager(using sql: Storage.SQLManager):
-	private implicit val session: DBSession = sql.session
-
 	sql.applyMigration(
 		Storage.Migration(
 			"Initial Custom Entity Manager",
@@ -139,55 +126,47 @@ class CustomEntityManager(using sql: Storage.SQLManager):
 				sql"""
 				CREATE TABLE CustomEntities (
 					Type TEXT NOT NULL,
-					InteractionEntityID TEXT NOT NULL,
-					DisplayEntityID TEXT NOT NULL,
+					InteractionEntityID UUID NOT NULL,
+					DisplayEntityID UUID NOT NULL,
 					UNIQUE(InteractionEntityID),
 					Unique(DisplayEntityID)
 				);
-				""",
+				""".command,
 			),
 			List(
 				sql"""
 				DROP TABLE CustomEntities;
-				""",
+				""".command,
 			),
 		)
 	)
 
-	def addEntity(interaction: Interaction, display: ItemDisplay, kind: NamespacedKey): Unit =
-		sql"""
+	def addEntity(interaction: Interaction, display: ItemDisplay, kind: NamespacedKey)(using Session[IO]): IO[Unit] =
+		sql.commandIO(sql"""
 		INSERT INTO CustomEntities (
 			Type, InteractionEntityID, DisplayEntityID
 		) VALUES (
-			${kind.asString()}, ${interaction.getUniqueId()}, ${display.getUniqueId()}
+			$namespacedKeyCodec, $uuid, $uuid
 		);
-		"""
-		.update
-		.apply(); ()
+		""", (kind, interaction.getUniqueId(), display.getUniqueId())).map(_ => ())
 
-	def entitiesOfKind(kind: String): List[EntityIDPair] =
-		sql"""
-		SELECT * FROM CustomEntities WHERE kind = ${kind}
-		"""
-		.map(rs => EntityIDPair(rs.string("InteractionEntityID").pipe(UUID.fromString), rs.string("DisplayEntityID").pipe(UUID.fromString)))
-		.list
-		.apply()
+	def entitiesOfKind(kind: String)(using Session[IO]): IO[List[EntityIDPair]] =
+		sql.queryListIO(sql"""
+		SELECT InteractionEntityID, DisplayEntityUUID FROM CustomEntities WHERE kind = $text
+		""", (uuid *: uuid).to[EntityIDPair], kind)
 
-	def entityKind(of: UUID): Option[(NamespacedKey, UUID)] =
-		sql"""
-		SELECT Type, DisplayEntityID FROM CustomEntities WHERE InteractionEntityID = ${of}
-		"""
-		.map(rs => (rs.string("Type").pipe(NamespacedKey.fromString), rs.string("DisplayEntityID").pipe(UUID.fromString)))
-		.single
-		.apply()
+	def entityKind(of: UUID)(using Session[IO]): IO[Option[(NamespacedKey, UUID)]] =
+		sql.queryOptionIO(sql"""
+		SELECT Type, DisplayEntityID FROM CustomEntities WHERE InteractionEntityID = $uuid
+		""", (namespacedKeyCodec *: uuid), of)
 
-	inline def entityKind(of: Interaction): Option[(NamespacedKey, UUID)] =
+	inline def entityKind(of: Interaction)(using Session[IO]): IO[Option[(NamespacedKey, UUID)]] =
 		entityKind(of.getUniqueId())
 
 inline def castOption[T] =
 	(ent: Entity) => if ent.isInstanceOf[T] then Some(ent.asInstanceOf[T]) else None
 
-class SlimeBehaviours()(using cem: CustomEntityManager, p: Plugin) extends Listener:
+class SlimeBehaviours()(using cem: CustomEntityManager, p: Plugin, sql: Storage.SQLManager) extends Listener:
 	val randomizer = scala.util.Random()
 
 	def doSlimeLooks(): Unit =
@@ -195,7 +174,7 @@ class SlimeBehaviours()(using cem: CustomEntityManager, p: Plugin) extends Liste
 			world.getLoadedChunks().foreach { chunk =>
 				p.getServer().getRegionScheduler().run(p, world, chunk.getX(), chunk.getZ(), _ => {
 					chunk.getEntities().flatMap(castOption[Interaction]).foreach { interaction =>
-						cem.entityKind(interaction) match
+						sql.useBlocking(cem.entityKind(interaction)) match
 							case Some((kind, disp)) if kind == Slimes.entityKind =>
 								given ec: ExecutionContext = EntityExecutionContext(interaction)
 								FireAndForget {
@@ -214,13 +193,13 @@ class SlimeBehaviours()(using cem: CustomEntityManager, p: Plugin) extends Liste
 			}
 		}
 
-class SlimeEgg(using cem: CustomEntityManager, ssm: SigilSlimeManager, hnm: CivBeaconManager) extends CustomItem, Listeners.ItemUsedOnBlock:
+class SlimeEgg(using cem: CustomEntityManager, ssm: SigilSlimeManager, hnm: CivBeaconManager, sql: Storage.SQLManager) extends CustomItem, Listeners.ItemUsedOnBlock:
 	def group = Sigil.group
 	def template = Slimes.slimeEggStack
 
 	override def onItemUsed(event: PlayerInteractEvent): Unit =
 		val beacon =
-			hnm.getBeaconFor(event.getPlayer().getUniqueId()) match
+			sql.useBlocking(hnm.getBeaconFor(event.getPlayer().getUniqueId())) match
 				case None =>
 					import BallCore.UI.ChatElements._
 					event.getPlayer().sendServerMessage(txt"You must have a Civilization Heart placed to spawn a Sigil Slime!".color(Colors.red))
@@ -245,5 +224,5 @@ class SlimeEgg(using cem: CustomEntityManager, ssm: SigilSlimeManager, hnm: CivB
 		interaction.setInteractionWidth(Slimes.heightBlocks.toFloat)
 		interaction.setResponsive(true)
 
-		cem.addEntity(interaction, itemDisplay, Slimes.entityKind)
-		ssm.addSlime(interaction.getUniqueId(), beacon)
+		sql.useBlocking(cem.addEntity(interaction, itemDisplay, Slimes.entityKind))
+		sql.useBlocking(ssm.addSlime(interaction.getUniqueId(), beacon))

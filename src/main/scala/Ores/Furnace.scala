@@ -22,6 +22,7 @@ import BallCore.CustomItems.BlockManager
 import scala.util.chaining._
 import BallCore.UI.Elements._
 import org.bukkit.block.{Furnace => BFurnace}
+import BallCore.Storage.SQLManager
 
 enum FurnaceTier:
     // tier 0 (vanilla furnace)
@@ -43,7 +44,7 @@ enum FurnaceTier:
     // dust => 1 ingot
     case Three
 
-class FurnaceListener(using bm: BlockManager, registry: ItemRegistry) extends Listener:
+class FurnaceListener(using bm: BlockManager, registry: ItemRegistry, sql: SQLManager) extends Listener:
     def oreSmeltingResult(furnaceTier: FurnaceTier): (Int, OreTier) =
         furnaceTier match
             case FurnaceTier.Zero =>
@@ -56,7 +57,7 @@ class FurnaceListener(using bm: BlockManager, registry: ItemRegistry) extends Li
                 (12, OreTier.Nugget)
 
     def tier(of: Block): FurnaceTier =
-        val furnaceItem = bm.getCustomItem(of)
+        val furnaceItem = sql.useBlocking(bm.getCustomItem(of))
         if !furnaceItem.isDefined || !furnaceItem.get.isInstanceOf[Furnace] then
             FurnaceTier.Zero
         else
@@ -116,7 +117,7 @@ object Furnace:
 
     val tierThree = List(praecantatioFurnace, auramFurnace, alkimiaFurnace)
 
-    def registerItems()(using bm: BlockManager, registry: ItemRegistry, server: Server, plugin: JavaPlugin): Unit =
+    def registerItems()(using bm: BlockManager, registry: ItemRegistry, server: Server, plugin: JavaPlugin, sql: SQLManager): Unit =
         server.getPluginManager().registerEvents(FurnaceListener(), plugin)
         List((FurnaceTier.One, tierOne), (FurnaceTier.Two, tierTwo), (FurnaceTier.Three, tierThree))
             .foreach { (tier, items) => items.foreach { item => registry.register(Furnace(tier, item)) } }

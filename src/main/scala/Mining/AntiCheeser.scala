@@ -5,12 +5,15 @@
 package BallCore.Mining
 
 import BallCore.Storage.SQLManager
-import scalikejdbc._
-import scalikejdbc.SQL
-import scalikejdbc.NoExtractor
 import BallCore.Storage.Migration
 import org.bukkit.block.Block
 import scala.util.chaining._
+import skunk.implicits._
+import skunk.codec.all._
+import cats.effect.IO
+import cats.syntax.all._
+import skunk.data.Completion
+import skunk.Session
 
 /*
 
@@ -31,23 +34,22 @@ class AntiCheeser()(using sql: SQLManager):
             List(
                 sql"""
                 CREATE TABLE MiningAntiCheeser (
-                    ChunkX INT NOT NULL,
-                    ChunkZ INT NOT NULL,
-                    Y INT NOT NULL,
-                    World TEXT NOT NULL,
-                    Health INT NOT NULL,
+                    ChunkX BIGINT NOT NULL,
+                    ChunkZ BIGINT NOT NULL,
+                    Y BIGINT NOT NULL,
+                    World UUID NOT NULL,
+                    Health INTEGER NOT NULL,
                     UNIQUE(ChunkX, ChunkZ, Y, World)
                 );
-                """,
+                """.command,
             ),
             List(
                 sql"""
                 DROP TABLE MiningAntiCheeser;
-                """,
+                """.command,
             ),
         )
     )
-    private implicit val session: DBSession = sql.session
 
     def countEligibleBlocks(b: Block): Int =
         val cx0 = b.getChunk().getX() << 4
@@ -58,30 +60,21 @@ class AntiCheeser()(using sql: SQLManager):
         } yield b.getWorld().getBlockAt(cx0 + dx, cz0 + dz, b.getY()).getType()
         types.count(kind => Mining.stoneBlocks.contains(kind))
 
-    def blockBroken(b: Block): Boolean =
+    def blockBroken(b: Block)(using Session[IO]): IO[Boolean] =
         val cx = b.getChunk().getX()
         val cz = b.getChunk().getZ()
         val y = b.getY()
         val world = b.getWorld().getUID()
 
-        val health =
-            sql"""
-            SELECT Health FROM MiningAntiCheeser WHERE ChunkX = ${cx} AND ChunkZ = ${cz} AND Y = ${y} AND World = ${world};
-            """
-            .map(rs => rs.int("Health"))
-            .single
-            .apply()
-            .getOrElse(countEligibleBlocks(b))
-            .tap(_ - 1)
-
-        sql"""
-        INSERT OR REPLACE INTO MiningAntiCheeser (
-            Health, ChunkX, ChunkZ, Y, World
-        ) VALUES (
-            ${health.max(0)}, ${cx}, ${cz}, ${y}, ${world}
-        );
-        """
-        .update
-        .apply()
-
-        health >= 0
+        for {
+            health <- sql.queryOptionIO(sql"""
+            SELECT Health FROM MiningAntiCheeser WHERE ChunkX = $int8 AND ChunkZ = $int8 AND Y = $int8 AND World = $uuid
+            """, int4, (cx, cz, y, world)).map(_.getOrElse(countEligibleBlocks(b)).pipe(_ - 1))
+            _ <- sql.commandIO(sql"""
+            INSERT INTO MiningAntiCheeser (
+                Health, ChunkX, ChunkZ, Y, World
+            ) VALUES {
+                $int4, $int8, $int8, $int8, $uuid
+            } ON CONFLICT DO UPDATE SET Health = EXCLUDED.Health;
+            """, (health.max(0), cx, cz, y, world))
+        } yield health >= 0

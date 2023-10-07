@@ -20,6 +20,7 @@ import BallCore.Plants.PlantMsg
 import BallCore.PolygonEditor.PolygonEditor
 import BallCore.Beacons.CivBeaconManager
 import BallCore.Plants.PlantListProgram
+import BallCore.Storage.SQLManager
 
 class CheatCommand(using registry: ItemRegistry, pbm: PlantBatchManager) extends CommandExecutor:
     override def onCommand(sender: CommandSender, command: Command, label: String, args: Array[String]): Boolean =
@@ -43,7 +44,7 @@ class CheatCommand(using registry: ItemRegistry, pbm: PlantBatchManager) extends
                 sender.sendMessage("bad cheating >:(")
         true
 
-class GroupsCommand(using prompts: UI.Prompts, plugin: Plugin, gm: GroupManager, cbm: CivBeaconManager) extends CommandExecutor:
+class GroupsCommand(using prompts: UI.Prompts, plugin: Plugin, gm: GroupManager, cbm: CivBeaconManager, sql: SQLManager) extends CommandExecutor:
     override def onCommand(sender: CommandSender, command: Command, label: String, args: Array[String]) =
         val p = Groups.GroupListProgram()
         val plr = sender.asInstanceOf[Player]
@@ -65,12 +66,12 @@ class DoneCommand(using editor: PolygonEditor) extends CommandExecutor:
         editor.done(plr)
         true
 
-class ChatCommands(using ca: ChatActor, gm: GroupManager):
+class ChatCommands(using ca: ChatActor, gm: GroupManager, sql: SQLManager):
     object Group extends CommandExecutor:
         override def onCommand(sender: CommandSender, command: Command, label: String, args: Array[String]): Boolean =
             val p = sender.asInstanceOf[Player]
             val group = args(0)
-            gm.userGroups(p.getUniqueId()).map(_.find(_.name.toLowerCase().contains(group.toLowerCase()))) match
+            sql.useBlocking{ gm.userGroups(p.getUniqueId()).value }.map(_.find(_.name.toLowerCase().contains(group.toLowerCase()))) match
                 case Left(err) =>
                     p.sendMessage(err.explain())
                 case Right(Some(group)) =>

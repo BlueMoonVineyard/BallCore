@@ -4,10 +4,11 @@
 
 package BallCore.Reinforcements
 
-import java.time.Instant
 import BallCore.Groups
 import scala.collection.mutable.Map
 import io.circe._, io.circe.generic.semiauto._
+import java.time.OffsetDateTime
+import java.util.UUID
 
 /** This keys the reinforcement state for a given block in a chunkstate */
 case class BlockKey(
@@ -25,14 +26,14 @@ case class ReinforcementState(
     deleted: Boolean,
     health: Int,
     kind: ReinforcementTypes,
-    placedAt: Instant,
+    placedAt: OffsetDateTime,
 )
 
 /** This keys ChunkStates in the cache */
 case class ChunkKey(
     chunkX: Int,
     chunkZ: Int,
-    world: String,
+    world: UUID,
 )
 
 /** This holds reinforcement information for a single chunk (the Map is mutable for performance reasons) */

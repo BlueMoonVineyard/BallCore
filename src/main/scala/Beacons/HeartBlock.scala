@@ -20,26 +20,27 @@ import BallCore.Groups.GroupManager
 import BallCore.Groups.Permissions
 import BallCore.Groups.nullUUID
 import BallCore.UI.Elements._
+import BallCore.Storage.SQLManager
 
 object HeartBlock:
     val itemStack = CustomItemStack.make(NamespacedKey("ballcore", "civilization_heart"), Material.WHITE_CONCRETE, txt"Civilization Heart", txt"It beats with the power of a budding civilization...")
     // val tickHandler = RainbowTickHandler(Material.WHITE_CONCRETE, Material.PINK_CONCRETE, Material.RED_CONCRETE, Material.PINK_CONCRETE)
 
-class HeartBlock()(using hn: CivBeaconManager, editor: PolygonEditor, gm: GroupManager, bm: BlockManager)
+class HeartBlock()(using hn: CivBeaconManager, editor: PolygonEditor, gm: GroupManager, bm: BlockManager, sql: SQLManager)
     extends CustomItem, Listeners.BlockPlaced, Listeners.BlockRemoved, Listeners.BlockClicked:
 
     def group = Beacons.group
     def template = HeartBlock.itemStack
 
     def playerHasHeart(p: Player): Boolean =
-        hn.hasHeart(p.getUniqueId())
+        sql.useBlocking(hn.hasHeart(p.getUniqueId()))
 
     def onBlockClicked(event: PlayerInteractEvent): Unit =
-        hn.heartAt(event.getClickedBlock().getLocation())
+        sql.useBlocking(hn.heartAt(event.getClickedBlock().getLocation()))
             .map(_._2)
-            .flatMap(beacon => hn.getGroup(beacon).map(group => (beacon, group))) match
+            .flatMap(beacon => sql.useBlocking(hn.getGroup(beacon)).map(group => (beacon, group))) match
                 case Some((beacon, group)) =>
-                    gm.checkE(event.getPlayer().getUniqueId(), group, nullUUID, Permissions.ManageClaims) match
+                    sql.useBlocking{ gm.checkE(event.getPlayer().getUniqueId(), group, nullUUID, Permissions.ManageClaims).value } match
                         case Left(err) =>
                             event.getPlayer().sendServerMessage(txt"You cannot edit claims because ${err.explain()}")
                         case Right(_) =>
@@ -52,20 +53,20 @@ class HeartBlock()(using hn: CivBeaconManager, editor: PolygonEditor, gm: GroupM
             event.getPlayer().sendServerMessage(txt"Your heart is already placed...")
             event.setCancelled(true)
             return
-        bm.store(event.getBlock(), "owner", event.getPlayer().getUniqueId())
-        hn.placeHeart(event.getBlock().getLocation(), event.getPlayer().getUniqueId()) match
-            case Some((_, x)) if x == 1 =>
+        sql.useBlocking(bm.store(event.getBlock(), "owner", event.getPlayer().getUniqueId()))
+        sql.useBlocking(hn.placeHeart(event.getBlock().getLocation(), event.getPlayer().getUniqueId())) match
+            case Right((_, x)) if x == 1 =>
                 event.getPlayer().sendServerMessage(txt"Your heart is the first block of a new beacon!")
                 event.getPlayer().sendServerMessage(txt"The beacon will help you adapt to the land here faster, which will get you increased resource drops over time, among other things.")
                 event.getPlayer().sendServerMessage(txt"Bind a group to this beacon, and you'll unlock the ability to claim land and allow other players to join your beacon!")
-            case Some((_, x)) =>
+            case Right((_, x)) =>
                 event.getPlayer().sendServerMessage(txt"You've joined your heart to a beacon with ${x-1} other players!")
-            case None =>
+            case Left(_) =>
                 ()
 
     def onBlockRemoved(event: BlockBreakEvent): Unit =
-        val owner = bm.retrieve[UUID](event.getBlock(), "owner").get
-        hn.removeHeart(event.getBlock().getLocation(), owner) match
+        val owner = sql.useBlocking(bm.retrieve[UUID](event.getBlock(), "owner")).get
+        sql.useBlocking(hn.removeHeart(event.getBlock().getLocation(), owner)) match
             case Some(_) =>
                 event.getPlayer().sendServerMessage(txt"You've disconnected from the beacon...")
             case None =>

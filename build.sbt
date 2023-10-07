@@ -2,9 +2,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-val scala3Version = "3.3.1-RC1"
+val scala3Version = "3.3.1"
 val circeVersion = "0.14.1"
 val scoreBoardLibraryVersion = "2.0.0-RC9"
+val AkkaVersion = "2.7.0"
+val AkkaHttpVersion = "10.5.2"
 
 lazy val dependencyPlugin = project
   .in(file("dependency-plugin"))
@@ -19,9 +21,10 @@ lazy val dependencyPlugin = project
     resolvers += "paper-repo" at "https://repo.papermc.io/repository/maven-public/",
     resolvers += "codemc-repo" at "https://repo.codemc.io/repository/maven-public/",
     resolvers += "jitpack.io" at "https://jitpack.io/",
+    resolvers += "akka" at "https://repo.akka.io/maven",
 
     libraryDependencies += "org.spigotmc" % "spigot-api" % "1.19-R0.1-SNAPSHOT" % "provided", // intransitive()
-    libraryDependencies += "dev.folia" % "folia-api" % "1.19.4-R0.1-SNAPSHOT" % "provided", // intransitive()
+    libraryDependencies += "dev.folia" % "folia-api" % "1.20.1-R0.1-SNAPSHOT" % "provided", // intransitive()
     libraryDependencies += "com.github.plokhotnyuk.rtree2d" %% "rtree2d-core" % "0.11.12",
     libraryDependencies += "org.scalikejdbc" %% "scalikejdbc" % "4.0.0",
     libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "2.1.0",
@@ -31,6 +34,12 @@ lazy val dependencyPlugin = project
     libraryDependencies += "com.github.megavexnetwork.scoreboard-library" % "scoreboard-library-implementation" % scoreBoardLibraryVersion,
     libraryDependencies += "com.github.megavexnetwork.scoreboard-library" % "scoreboard-library-v1_20_R1" % scoreBoardLibraryVersion,
     libraryDependencies += "com.github.retrooper.packetevents" % "spigot" % "2.0.0-SNAPSHOT" % "provided",
+    libraryDependencies += "org.typelevel" %% "cats-effect" % "3.5.2",
+    libraryDependencies += "org.typelevel" %% "cats-core" % "2.9.0",
+    libraryDependencies += "org.typelevel" %% "cats-free" % "2.9.0",
+    libraryDependencies += "org.typelevel" %% "cats-effect-cps" % "0.4.0",
+    libraryDependencies += "org.tpolecat" %% "skunk-core" % "0.6.0",
+    libraryDependencies += "org.tpolecat" %% "skunk-circe" % "0.6.0",
 
     // currently vendored in lib for a bugfix
     // libraryDependencies += "com.github.stefvanschie.inventoryframework" % "IF" % "0.10.8",
@@ -39,6 +48,12 @@ lazy val dependencyPlugin = project
       "io.circe" %% "circe-generic",
       "io.circe" %% "circe-parser"
     ).map(_ % circeVersion),
+
+    libraryDependencies ++= Seq(
+      "com.typesafe.akka" %% "akka-actor-typed" % AkkaVersion,
+      "com.typesafe.akka" %% "akka-stream" % AkkaVersion,
+      "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
+    ),
   )
 
 lazy val actualPlugin = project

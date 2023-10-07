@@ -9,193 +9,189 @@ import BallCore.Groups.Permissions
 import BallCore.Groups.RuleMode
 import BallCore.Groups.nullUUID
 import BallCore.Groups.everyoneUUID
+import BallCore.Storage.SQLManager
 
 class GroupsSuite extends munit.FunSuite:
-    test("creating and deleting one-person group") {
-        given sql: Storage.SQLManager = Storage.SQLManager(test = Some("gs creating and deleting one-person group"))
+    val sql = FunFixture[SQLManager](TestDatabase.setup, TestDatabase.teardown)
+    sql.test("creating and deleting one-person group") { implicit sql =>
         val gm = Groups.GroupManager()
         val ownerID = ju.UUID.randomUUID()
         val notOwnerID = ju.UUID.randomUUID()
 
-        val gid = gm.createGroup(ownerID, "woot")
+        val gid = sql.useBlocking(gm.createGroup(ownerID, "woot"))
 
-        val res1 = gm.deleteGroup(notOwnerID, gid)
+        val res1 = sql.useBlocking(gm.deleteGroup(notOwnerID, gid).value)
         assert(res1 == Left(Groups.GroupError.MustBeOwner), res1)
 
-        val res2 = gm.deleteGroup(ownerID, gid)
+        val res2 = sql.useBlocking(gm.deleteGroup(ownerID, gid).value)
         assert(res2 == Right(()), res2)
     }
-    test("people can't modify their own permissions") {
-        given sql: Storage.SQLManager = Storage.SQLManager(test = Some("people can't modify their own permissions"))
+    sql.test("people can't modify their own permissions") { implicit sql =>
         val gm = Groups.GroupManager()
         val ownerID = ju.UUID.randomUUID()
         val memberID = ju.UUID.randomUUID()
 
-        val gid = gm.createGroup(ownerID, "woot!")
+        val gid = sql.useBlocking(gm.createGroup(ownerID, "woot!"))
 
-        val roles = gm.roles(gid)
+        val roles = sql.useBlocking(gm.roles(gid).value)
         assert(roles.isRight, roles)
         val actualRoles = roles.getOrElse(List())
         val modRoleID = actualRoles.find { x => x.name == "Moderator" }.get.id
 
-        gm.sudoSetRolePermissions(gid, modRoleID, Map(
+        sql.useBlocking(gm.sudoSetRolePermissions(gid, modRoleID, Map(
             Permissions.ManageRoles -> RuleMode.Allow,
             Permissions.RemoveUser -> RuleMode.Allow,
-        ))
+        )))
 
-        assertEquals(gm.addToGroup(memberID, gid), Right(()))
-        assertEquals(gm.assignRole(ownerID, memberID, gid, modRoleID, true), Right(()))
+        assertEquals(sql.useBlocking(gm.addToGroup(memberID, gid).value), Right(()))
+        assertEquals(sql.useBlocking(gm.assignRole(ownerID, memberID, gid, modRoleID, true).value), Right(()))
 
-        assertEquals(gm.setRolePermissions(memberID, gid, modRoleID, Map(
+        assertEquals(sql.useBlocking(gm.setRolePermissions(memberID, gid, modRoleID, Map(
             Permissions.InviteUser -> RuleMode.Allow,
-        )), Left(Groups.GroupError.RoleAboveYours))
+        )).value), Left(Groups.GroupError.RoleAboveYours))
     }
-    test("people can't give out permissions they don't have") {
-        given sql: Storage.SQLManager = Storage.SQLManager(test = Some("gs people can't give out permissions they don't have"))
+    sql.test("people can't give out permissions they don't have") { implicit sql =>
         val gm = Groups.GroupManager()
         val ownerID = ju.UUID.randomUUID()
         val memberID = ju.UUID.randomUUID()
 
-        val gid = gm.createGroup(ownerID, "woot!")
+        val gid = sql.useBlocking(gm.createGroup(ownerID, "woot!"))
 
-        val roles = gm.roles(gid)
+        val roles = sql.useBlocking(gm.roles(gid).value)
         assert(roles.isRight, roles)
         val actualRoles = roles.getOrElse(List())
         val modRoleID = actualRoles.find { x => x.name == "Moderator" }.get.id
         val everyoneID = actualRoles.find { x => x.name == "Everyone" }.get.id
 
-        gm.sudoSetRolePermissions(gid, modRoleID, Map(
+        sql.useBlocking(gm.sudoSetRolePermissions(gid, modRoleID, Map(
             Permissions.ManageRoles -> RuleMode.Allow,
             Permissions.RemoveUser -> RuleMode.Allow,
-        ))
+        )))
 
-        assertEquals(gm.addToGroup(memberID, gid), Right(()))
-        assertEquals(gm.assignRole(ownerID, memberID, gid, modRoleID, true), Right(()))
+        assertEquals(sql.useBlocking(gm.addToGroup(memberID, gid).value), Right(()))
+        assertEquals(sql.useBlocking(gm.assignRole(ownerID, memberID, gid, modRoleID, true).value), Right(()))
 
-        assertEquals(gm.setRolePermissions(memberID, gid, everyoneID, Map(
+        assertEquals(sql.useBlocking(gm.setRolePermissions(memberID, gid, everyoneID, Map(
             Permissions.InviteUser -> RuleMode.Allow,
-        )), Left(Groups.GroupError.MustHavePermission))
-        assertEquals(gm.setRolePermissions(memberID, gid, everyoneID, Map(
+        )).value), Left(Groups.GroupError.MustHavePermission))
+        assertEquals(sql.useBlocking(gm.setRolePermissions(memberID, gid, everyoneID, Map(
             Permissions.RemoveUser -> RuleMode.Allow,
-        )), Right(()))
+        )).value), Right(()))
     }
-    test("basic permissions and role management") {
-        given sql: Storage.SQLManager = Storage.SQLManager(test = Some("gs basic permissions and role management"))
+    sql.test("basic permissions and role management") { implicit sql =>
         val gm = Groups.GroupManager()
         val ownerID = ju.UUID.randomUUID()
         val moderatorID = ju.UUID.randomUUID()
         val randoID = ju.UUID.randomUUID()
 
-        val gid = gm.createGroup(ownerID, "woot!")
+        val gid = sql.useBlocking(gm.createGroup(ownerID, "woot!"))
 
-        val res1 = gm.check(ownerID, gid, nullUUID, Groups.Permissions.ManageUserRoles)
+        val res1 = sql.useBlocking(gm.check(ownerID, gid, nullUUID, Groups.Permissions.ManageUserRoles).value)
         assert(res1 == Right(true), res1)
 
-        val res2 = gm.check(moderatorID, gid, nullUUID, Groups.Permissions.ManageUserRoles)
+        val res2 = sql.useBlocking(gm.check(moderatorID, gid, nullUUID, Groups.Permissions.ManageUserRoles).value)
         assert(res2 == Right(false), res2)
 
-        val res3 = gm.addToGroup(moderatorID, gid)
+        val res3 = sql.useBlocking(gm.addToGroup(moderatorID, gid).value)
         assert(res3 == Right(()), res3)
 
-        val roles = gm.roles(gid)
+        val roles = sql.useBlocking(gm.roles(gid).value)
         assert(roles.isRight, roles)
         val actualRoles = roles.getOrElse(List())
         val adminRoleID = actualRoles.find { x => x.name == "Admin" }.get.id
         val modRoleID = actualRoles.find { x => x.name == "Moderator" }.get.id
 
-        val res4 = gm.check(moderatorID, gid, nullUUID, Groups.Permissions.ManageUserRoles)
+        val res4 = sql.useBlocking(gm.check(moderatorID, gid, nullUUID, Groups.Permissions.ManageUserRoles).value)
         assert(res4 == Right(false), res4)
 
-        val res5 = gm.assignRole(ownerID, moderatorID, gid, modRoleID, true)
+        val res5 = sql.useBlocking(gm.assignRole(ownerID, moderatorID, gid, modRoleID, true).value)
         assert(res5 == Right(()), res5)
 
-        val res6 = gm.check(moderatorID, gid, nullUUID, Groups.Permissions.ManageUserRoles)
+        val res6 = sql.useBlocking(gm.check(moderatorID, gid, nullUUID, Groups.Permissions.ManageUserRoles).value)
         assert(res6 == Right(true), res6)
 
-        val res7 = gm.assignRole(moderatorID, moderatorID, gid, adminRoleID, true)
+        val res7 = sql.useBlocking(gm.assignRole(moderatorID, moderatorID, gid, adminRoleID, true).value)
         assert(res7 == Left(Groups.GroupError.RoleAboveYours), res7)
 
-        val res8 = gm.assignRole(moderatorID, moderatorID, gid, modRoleID, false)
+        val res8 = sql.useBlocking(gm.assignRole(moderatorID, moderatorID, gid, modRoleID, false).value)
         assert(res8 == Left(Groups.GroupError.RoleAboveYours), res8)
 
-        val res9 = gm.check(moderatorID, gid, nullUUID, Groups.Permissions.Build)
+        val res9 = sql.useBlocking(gm.check(moderatorID, gid, nullUUID, Groups.Permissions.Build).value)
         assert(res9 == Right(true), res9)
 
-        val res10 = gm.check(randoID, gid, nullUUID, Groups.Permissions.Build)
+        val res10 = sql.useBlocking(gm.check(randoID, gid, nullUUID, Groups.Permissions.Build).value)
         assert(res10 == Right(false), res10)
     }
-    test("multi-owner groups") {
-        given sql: Storage.SQLManager = Storage.SQLManager(test = Some("gs multi-owner groups"))
+    sql.test("multi-owner groups") { implicit sql =>
         val gm = Groups.GroupManager()
 
         val owner1Id = ju.UUID.randomUUID()
-        val gid = gm.createGroup(owner1Id, "woot")
+        val gid = sql.useBlocking(gm.createGroup(owner1Id, "woot"))
 
         val owner2Id = ju.UUID.randomUUID()
-        val res1 = gm.promoteToOwner(owner2Id, owner1Id, gid)
+        val res1 = sql.useBlocking(gm.promoteToOwner(owner2Id, owner1Id, gid).value)
         assert(res1 == Left(Groups.GroupError.MustBeOwner), res1)
 
-        val res2 = gm.promoteToOwner(owner1Id, owner2Id, gid)
+        val res2 = sql.useBlocking(gm.promoteToOwner(owner1Id, owner2Id, gid).value)
         assert(res2 == Left(Groups.GroupError.TargetNotInGroup), res2)
 
-        val res3 = gm.addToGroup(owner2Id, gid)
+        val res3 = sql.useBlocking(gm.addToGroup(owner2Id, gid).value)
         assert(res3 == Right(()), res3)
 
-        val res4 = gm.promoteToOwner(owner1Id, owner2Id, gid)
+        val res4 = sql.useBlocking(gm.promoteToOwner(owner1Id, owner2Id, gid).value)
         assert(res4 == Right(()), res4)
 
-        val res5 = gm.giveUpOwnership(owner1Id, gid)
+        val res5 = sql.useBlocking(gm.giveUpOwnership(owner1Id, gid).value)
         assert(res5 == Right(()), res5)
 
-        val res6 = gm.giveUpOwnership(owner2Id, gid)
+        val res6 = sql.useBlocking(gm.giveUpOwnership(owner2Id, gid).value)
         assert(res6 == Left(Groups.GroupError.GroupWouldHaveNoOwners), res6)
     }
-    test("basic subgroups") {
-        given sql: Storage.SQLManager = Storage.SQLManager(test = Some("gs basic subgroups"))
+    sql.test("basic subgroups") { implicit sql =>
         val gm = Groups.GroupManager()
 
         val ownerID = ju.UUID.randomUUID()
-        val gid = gm.createGroup(ownerID, "Pavia")
-        val res0 = gm.createRole(ownerID, gid, "Coast Guard Members")
+        val gid = sql.useBlocking(gm.createGroup(ownerID, "Pavia"))
+        val res0 = sql.useBlocking(gm.createRole(ownerID, gid, "Coast Guard Members").value)
         assert(res0.isRight, res0)
         val rid = res0.getOrElse(???)
 
-        val res1 = gm.createSubgroup(ownerID, gid, "Coast Guard Infrastructure")
+        val res1 = sql.useBlocking(gm.createSubgroup(ownerID, gid, "Coast Guard Infrastructure").value)
         assert(res1.isRight, res1)
         val subgroupID = res1.getOrElse(???)
 
         val normalCitizen = ju.UUID.randomUUID()
-        val res2 = gm.addToGroup(normalCitizen, gid)
+        val res2 = sql.useBlocking(gm.addToGroup(normalCitizen, gid).value)
         assert(res2.isRight, res2)
 
         val militaryCitizen = ju.UUID.randomUUID()
-        val res3 = gm.addToGroup(militaryCitizen, gid)
+        val res3 = sql.useBlocking(gm.addToGroup(militaryCitizen, gid).value)
         assert(res3.isRight, res3)
 
-        val res4 = gm.assignRole(ownerID, militaryCitizen, gid, rid, true)
+        val res4 = sql.useBlocking(gm.assignRole(ownerID, militaryCitizen, gid, rid, true).value)
         assert(res4.isRight, res4)
 
-        val res5 = gm.setSubgroupRolePermissions(ownerID, gid, subgroupID, rid, Map(
+        val res5 = sql.useBlocking(gm.setSubgroupRolePermissions(ownerID, gid, subgroupID, rid, Map(
             Permissions.Chests -> RuleMode.Allow,
             Permissions.Doors -> RuleMode.Allow,
             Permissions.Crops -> RuleMode.Allow,
             Permissions.Build -> RuleMode.Allow,
             Permissions.Entities -> RuleMode.Allow,
-        ))
+        )).value)
         assert(res5.isRight, res5)
 
-        val res6 = gm.setSubgroupRolePermissions(ownerID, gid, subgroupID, everyoneUUID, Map(
+        val res6 = sql.useBlocking(gm.setSubgroupRolePermissions(ownerID, gid, subgroupID, everyoneUUID, Map(
             Permissions.Chests -> RuleMode.Deny,
             Permissions.Doors -> RuleMode.Deny,
             Permissions.Crops -> RuleMode.Deny,
             Permissions.Build -> RuleMode.Deny,
             Permissions.Entities -> RuleMode.Deny,
-        ))
+        )).value)
         assert(res6.isRight, res6)
 
-        val res7 = gm.check(normalCitizen, gid, subgroupID, Permissions.Build)
+        val res7 = sql.useBlocking(gm.check(normalCitizen, gid, subgroupID, Permissions.Build).value)
         assert(res7 == Right(false), res7)
 
-        val res8 = gm.check(militaryCitizen, gid, subgroupID, Permissions.Build)
+        val res8 = sql.useBlocking(gm.check(militaryCitizen, gid, subgroupID, Permissions.Build).value)
         assert(res8 == Right(true), res8)
     }

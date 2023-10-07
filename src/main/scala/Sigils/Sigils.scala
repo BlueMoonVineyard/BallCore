@@ -29,6 +29,7 @@ import net.kyori.adventure.text.format.TextDecoration
 import java.util.concurrent.TimeUnit
 import org.bukkit.inventory.ShapelessRecipe
 import BallCore.UI.Elements._
+import BallCore.Storage.SQLManager
 
 object Sigil:
     enum CustomModelData(val num: Int):
@@ -41,7 +42,7 @@ object Sigil:
 
     val persistenceKeyPlayer = NamespacedKey("ballcore", "sigil_bound_player_uuid")
 
-    def register()(using registry: ItemRegistry, p: Plugin, cb: ShutdownCallbacks, hmn: CivBeaconManager, ssm: SigilSlimeManager, cem: CustomEntityManager): Unit =
+    def register()(using registry: ItemRegistry, p: Plugin, cb: ShutdownCallbacks, hmn: CivBeaconManager, ssm: SigilSlimeManager, cem: CustomEntityManager, sql: SQLManager): Unit =
         registry.register(Sigil())
         registry.register(SlimeEgg())
         given da: DamageActor = DamageActor()

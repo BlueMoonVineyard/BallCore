@@ -43,6 +43,7 @@ import BallCore.Groups.GroupError
 import org.bukkit.block.Block
 import BallCore.Groups.nullUUID
 import scala.jdk.CollectionConverters._
+import BallCore.Storage.SQLManager
 
 object Listener:
     def centered(at: Location): Location =
@@ -72,7 +73,7 @@ object Listener:
             case ReinforcementTypes.IronLike => (Particle.END_ROD, 200, 0.0, 0.13)
         at.getWorld().spawnParticle(pType, centered(at), pCount, pOffset, pOffset, pOffset, pSpeed, null)
 
-class Listener(using cbm: CivBeaconManager, gm: GroupManager) extends org.bukkit.event.Listener:
+class Listener(using cbm: CivBeaconManager, gm: GroupManager, sql: SQLManager) extends org.bukkit.event.Listener:
     import Listener._
 
     def reinforcementFromItem(is: ItemStack): Option[ReinforcementTypes] =
@@ -94,9 +95,9 @@ class Listener(using cbm: CivBeaconManager, gm: GroupManager) extends org.bukkit
         nullUUID
 
     private def checkAt(location: Location, player: Player, permission: Permissions): Either[GroupError, Boolean] =
-        cbm.beaconContaining(location)
-            .flatMap(cbm.getGroup)
-            .map(group => gm.check(player.getUniqueId(), group, subgroupAt(location), permission))
+        sql.useBlocking(cbm.beaconContaining(location))
+            .flatMap(id => sql.useBlocking(cbm.getGroup(id)))
+            .map(group => sql.useBlocking(gm.check(player.getUniqueId(), group, subgroupAt(location), permission).value))
             .getOrElse(Right(true))
     private inline def checkAt(location: Block, player: Player, permission: Permissions): Either[GroupError, Boolean] =
         checkAt(BlockAdjustment.adjustBlock(location).getLocation(), player, permission)
@@ -324,12 +325,20 @@ class Listener(using cbm: CivBeaconManager, gm: GroupManager) extends org.bukkit
     //// Stuff that enforces reinforcements in the face of non-permissions; i.e. stuff like preventing water from killing reinforced blocks
     //
 
+    def locationsAreCoveredByTheSameBeacon(l: Location, r: Location): Boolean =
+        sql.useBlocking {
+            for {
+                lBeacon <- cbm.beaconContaining(l)
+                rBeacon <- cbm.beaconContaining(r)
+            } yield lBeacon == rBeacon
+        }
+
     // prevent pistons from pushing blocks
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     def preventPistonPush(event: BlockPistonExtendEvent): Unit =
         val piston = event.getBlock().getLocation()
         if event.getBlocks().asScala.exists { x =>
-            if cbm.beaconContaining(piston) != cbm.beaconContaining(x.getLocation()) then
+            if !locationsAreCoveredByTheSameBeacon(piston, x.getLocation()) then
                 true
             else
                 false
@@ -340,7 +349,7 @@ class Listener(using cbm: CivBeaconManager, gm: GroupManager) extends org.bukkit
     def preventPistonPull(event: BlockPistonRetractEvent): Unit =
         val piston = event.getBlock().getLocation()
         if event.getBlocks().asScala.exists { x =>
-            if cbm.beaconContaining(piston) != cbm.beaconContaining(x.getLocation()) then
+            if !locationsAreCoveredByTheSameBeacon(piston, x.getLocation()) then
                 true
             else
                 false
@@ -354,7 +363,7 @@ class Listener(using cbm: CivBeaconManager, gm: GroupManager) extends org.bukkit
     // prevent zombies from killing doors
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     def preventZombies(event: EntityChangeBlockEvent): Unit =
-        if cbm.beaconContaining(event.getBlock().getLocation()).isDefined then
+        if sql.useBlocking(cbm.beaconContaining(event.getBlock().getLocation())).isDefined then
             event.setCancelled(true)
 
     // prevent reinforced blocks from falling
@@ -362,7 +371,7 @@ class Listener(using cbm: CivBeaconManager, gm: GroupManager) extends org.bukkit
     def preventFallingReinforcement(event: EntitySpawnEvent): Unit =
         if event.getEntityType() != EntityType.FALLING_BLOCK then
             return
-        if cbm.beaconContaining(event.getLocation().getBlock().getLocation()).isDefined then
+        if sql.useBlocking(cbm.beaconContaining(event.getLocation().getBlock().getLocation())).isDefined then
             event.getEntity().setGravity(false)
             event.setCancelled(true)
 
@@ -371,7 +380,7 @@ class Listener(using cbm: CivBeaconManager, gm: GroupManager) extends org.bukkit
     def preventLiquidWashAway(event: BlockFromToEvent): Unit =
         if event.getToBlock().getY() < event.getToBlock().getWorld().getMinHeight() then
             return
-        if cbm.beaconContaining(event.getBlock().getLocation()).isDefined then
+        if sql.useBlocking(cbm.beaconContaining(event.getBlock().getLocation())).isDefined then
             event.setCancelled(true)
 
     // prevent plants from breaking reinforced blocks
@@ -379,7 +388,7 @@ class Listener(using cbm: CivBeaconManager, gm: GroupManager) extends org.bukkit
     def preventPlantGrowth(event: StructureGrowEvent): Unit =
         if event.getBlocks().asScala.exists { x =>
             val loc = x.getBlock().getLocation()
-            if cbm.beaconContaining(loc) != cbm.beaconContaining(event.getLocation()) then
+            if !locationsAreCoveredByTheSameBeacon(loc, event.getLocation()) then
                 true
             else
                 false
@@ -392,5 +401,5 @@ class Listener(using cbm: CivBeaconManager, gm: GroupManager) extends org.bukkit
         while it.hasNext() do
             val block = it.next()
             val loc = BlockAdjustment.adjustBlock(block)
-            if cbm.beaconContaining(loc.getLocation()).isDefined then
+            if sql.useBlocking(cbm.beaconContaining(loc.getLocation())).isDefined then
                 it.remove()

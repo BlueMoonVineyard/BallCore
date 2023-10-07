@@ -7,82 +7,67 @@ package BallCore.Groups
 import BallCore.Storage
 import BallCore.DataStructures.Lexorank
 import BallCore.Groups.Extensions._
-import scalikejdbc._
+import skunk.implicits._, BallCore.Storage.SQLManager
+import skunk.codec.all._
+import skunk.circe.codec.all._
 import java.{util => ju}
-import io.circe._, io.circe.generic.semiauto._, io.circe.parser._, io.circe.syntax._
+import io.circe._, io.circe.generic.semiauto._, io.circe.syntax._
 import net.kyori.adventure.audience.Audience
 import org.bukkit.Bukkit
 import scala.jdk.CollectionConverters._
-import scala.util.chaining._
-
-inline def uuid(from: String) = ju.UUID.fromString(from)
+import cats.effect.IO
+import cats.syntax.all._
+import cats.data.EitherT
+import cats.effect.unsafe.IORuntime
+import skunk.data.Completion
+import skunk.Session
 
 case class GroupStates(id: ju.UUID, name: String):
-    def save()(implicit session: DBSession): Unit =
-        sql"REPLACE INTO GroupStates (ID, Name) VALUES (${id}, ${name});".update.apply(); ()
-object GroupStates:
-    def apply(ws: WrappedResultSet): GroupStates =
-        GroupStates(uuid(ws.string("ID")), ws.string("Name"))
+    def save()(using sql: SQLManager)(using Session[IO]): IO[Unit] =
+        sql.commandIO(sql"""
+        INSERT INTO GroupStates (ID, Name) VALUES ($uuid, $text) ON CONFLICT (ID) DO UPDATE SET Name = EXCLUDED.Name;
+        """, (id, name)).map(_ => ())
 
 given Decoder[GroupStates] = deriveDecoder[GroupStates]
 given Encoder[GroupStates] = deriveEncoder[GroupStates]
 
 case class GroupMemberships(groupID: ju.UUID, userID: ju.UUID):
-    def save()(implicit session: DBSession): Unit =
-        sql"REPLACE INTO GroupMemberships (GroupID, UserID) VALUES (${groupID}, ${userID});".update.apply(); ()
-object GroupMemberships:
-    def apply(ws: WrappedResultSet): GroupMemberships =
-        GroupMemberships(uuid(ws.string("GroupID")), uuid(ws.string("UserID")))
+    def save()(using sql: SQLManager)(using Session[IO]): IO[Unit] =
+        sql.commandIO(sql"""
+        INSERT INTO GroupMemberships (GroupID, UserID) VALUES ($uuid, $uuid);
+        """, (groupID, userID)).map(_ => ())
 
 case class GroupRoles(groupID: ju.UUID, roleID: ju.UUID, name: String, hoist: Boolean, permissions: Map[Permissions, RuleMode], ord: String):
-    def save()(implicit session: DBSession): Unit =
-        sql"""
-        REPLACE INTO GroupRoles
+    def save()(using sql: SQLManager)(using Session[IO]): IO[Unit] =
+        sql.commandIO(sql"""
+        INSERT INTO GroupRoles
             (GroupID, RoleID, Name, Hoist, Permissions, Ord)
         VALUES
-            (${groupID}, ${roleID}, ${name}, ${hoist}, ${permissions.asJson.noSpaces}, ${ord});
-        """.update.apply(); ()
-object GroupRoles:
-    def apply(ws: WrappedResultSet): GroupRoles =
-        GroupRoles(
-            groupID = uuid(ws.string("GroupID")),
-            roleID = uuid(ws.string("RoleID")),
-            name = ws.string("Name"),
-            hoist = ws.boolean("Hoist"),
-            permissions = decode[Map[Permissions, RuleMode]](ws.string("Permissions")).toOption.get,
-            ord = ws.string("Ord")
-        )
+            ($uuid, $uuid, $text, $bool, $jsonb, $text)
+        ON CONFLICT (GroupID, RoleID) DO UPDATE SET
+            Name = EXCLUDED.Name,
+            Hoist = EXCLUDED.Hoist,
+            Permissions = EXCLUDED.Permissions,
+            Ord = EXCLUDED.Ord;
+        """, (groupID, roleID, name, hoist, permissions.asJson, ord)).map(_ => ())
 
 case class GroupRoleMemberships(groupID: ju.UUID, roleID: ju.UUID, userID: ju.UUID):
-    def save()(implicit session: DBSession): Unit =
-        sql"""
-        REPLACE INTO GroupRoleMemberships
+    def save()(using sql: SQLManager)(using Session[IO]): IO[Unit] =
+        sql.commandIO(sql"""
+        INSERT INTO GroupRoleMemberships
             (GroupID, RoleID, UserID)
         VALUES
-            ($groupID, $roleID, $userID);
-        """.update.apply(); ()
-object GroupRoleMemberships:
-    def apply(ws: WrappedResultSet): GroupRoleMemberships =
-        GroupRoleMemberships(
-            groupID = uuid(ws.string("GroupID")),
-            roleID = uuid(ws.string("RoleID")),
-            userID = uuid(ws.string("UserID")),
-        )
+            ($uuid, $uuid, $uuid);
+        """, (groupID, roleID, userID)).map(_ => ())
 
 case class GroupOwnerships(groupID: ju.UUID, userID: ju.UUID):
-    def save()(implicit session: DBSession): Unit =
-        sql"""
-        REPLACE INTO GroupOwnerships
+    def save()(using sql: SQLManager)(using Session[IO]): IO[Unit] =
+        sql.commandIO(sql"""
+        INSERT INTO GroupOwnerships
             (GroupID, UserID)
         VALUES
-            ($groupID, $userID);
-        """.update.apply(); ()
-object GroupOwnerships:
-    def apply(ws: WrappedResultSet): GroupOwnerships =
-        GroupOwnerships(
-            groupID = uuid(ws.string("GroupID")),
-            userID = uuid(ws.string("UserID")),
-        )
+            ($uuid, $uuid);
+        """, (groupID, userID)).map(_ => ())
 
 enum GroupError:
     case MustBeOwner
@@ -121,55 +106,55 @@ class GroupManager()(using sql: Storage.SQLManager):
             List(
                 sql"""
                 CREATE TABLE GroupStates (
-                    ID text PRIMARY KEY,
-                    Name text NOT NULL
+                    ID UUID PRIMARY KEY,
+                    Name TEXT NOT NULL
                 );
-                """,
+                """.command,
                 sql"""
                 CREATE TABLE GroupMemberships (
-                    GroupID text NOT NULL,
-                    UserID text NOT NULL,
+                    GroupID UUID NOT NULL,
+                    UserID UUID NOT NULL,
                     UNIQUE(GroupID, UserID),
                     FOREIGN KEY (GroupID) REFERENCES GroupStates(ID) ON DELETE CASCADE
                 );
-                """,
+                """.command,
                 sql"""
                 CREATE TABLE GroupRoles (
-                    GroupID text NOT NULL,
-                    RoleID text NOT NULL,
-                    Name text NOT NULL,
-                    Hoist boolean NOT NULL,
-                    Permissions text NOT NULL,
-                    Ord text NOT NULL,
+                    GroupID UUID NOT NULL,
+                    RoleID UUID NOT NULL,
+                    Name TEXT NOT NULL,
+                    Hoist BOOLEAN NOT NULL,
+                    Permissions JSONB NOT NULL,
+                    Ord TEXT NOT NULL,
                     UNIQUE(GroupID, RoleID),
                     FOREIGN KEY (GroupID) REFERENCES GroupStates(ID) ON DELETE CASCADE
                 );
-                """,
+                """.command,
                 sql"""
                 CREATE TABLE GroupRoleMemberships (
-                    GroupID text NOT NULL,
-                    UserID text NOT NULL,
-                    RoleID text NOT NULL,
+                    GroupID UUID NOT NULL,
+                    UserID UUID NOT NULL,
+                    RoleID UUID NOT NULL,
                     UNIQUE(GroupID, RoleID, UserID),
                     FOREIGN KEY (GroupID) REFERENCES GroupStates(ID) ON DELETE CASCADE,
                     FOREIGN KEY (GroupID, UserID) REFERENCES GroupMemberships(GroupID, UserID) ON DELETE CASCADE
                 );
-                """,
+                """.command,
                 sql"""
                 CREATE TABLE GroupOwnerships (
-                    GroupID text NOT NULL,
-                    UserID text NOT NULL,
+                    GroupID UUID NOT NULL,
+                    UserID UUID NOT NULL,
                     UNIQUE(GroupID, UserID),
                     FOREIGN KEY (GroupID, UserID) REFERENCES GroupMemberships(GroupID, UserID) ON DELETE CASCADE
                 );
-                """
+                """.command,
             ),
             List(
-                sql"DROP TABLE GroupOwnerships;",
-                sql"DROP TABLE GroupRoleMemberships;",
-                sql"DROP TABLE GroupRoles;",
-                sql"DROP TABLE GroupMemberships;",
-                sql"DROP TABLE GroupStates;",
+                sql"DROP TABLE GroupOwnerships;".command,
+                sql"DROP TABLE GroupRoleMemberships;".command,
+                sql"DROP TABLE GroupRoles;".command,
+                sql"DROP TABLE GroupMemberships;".command,
+                sql"DROP TABLE GroupStates;".command,
             )
         )
     )
@@ -179,32 +164,33 @@ class GroupManager()(using sql: Storage.SQLManager):
             List(
                 sql"""
                 CREATE TABLE Subgroups (
-                    ParentGroup text NOT NULL,
-                    SubgroupID text NOT NULL,
-                    Name text NOT NULL,
+                    ParentGroup UUID NOT NULL,
+                    SubgroupID UUID NOT NULL,
+                    Name TEXT NOT NULL,
                     UNIQUE(SubgroupID),
                     FOREIGN KEY (ParentGroup) REFERENCES GroupStates(ID) ON DELETE CASCADE
                 );
-                """,
+                """.command,
                 sql"""
                 CREATE TABLE SubgroupPermissions (
-                    GroupID text NOT NULL,
-                    SubgroupID text NOT NULL,
-                    RoleID text NOT NULL,
-                    Permissions text NOT NULL,
+                    GroupID UUID NOT NULL,
+                    SubgroupID UUID NOT NULL,
+                    RoleID UUID NOT NULL,
+                    Permissions JSONB NOT NULL,
                     UNIQUE(SubgroupID, RoleID),
                     FOREIGN KEY (SubgroupID) REFERENCES Subgroups(SubgroupID) ON DELETE CASCADE,
                     FOREIGN KEY (GroupID, RoleID) REFERENCES GroupRoles(GroupID, RoleID) ON DELETE CASCADE
                 );
-                """,
+                """.command,
             ),
             List(
-                sql"DROP TABLE SubgroupPermissions;",
-                sql"DROP TABLE Subgroups;",
+                sql"DROP TABLE SubgroupPermissions;".command,
+                sql"DROP TABLE Subgroups;".command,
             )
         )
     )
-    implicit val session: DBSession = sql.session
+
+    given runtime: IORuntime = sql.runtime
     given gm: GroupManager = this
     val invites = InviteManager()
 
@@ -212,7 +198,7 @@ class GroupManager()(using sql: Storage.SQLManager):
     //     gsm.get(group) match
     //         case Some(value) => Right(value)
     //         case None => Left(GroupError.GroupNotFound)
-    def createGroup(owner: UserID, name: String): GroupID =
+    def createGroup(owner: UserID, name: String)(using Session[IO]): IO[GroupID] =
         val newGroupID = ju.UUID.randomUUID()
         val roles: List[RoleState] = List(
             RoleState(
@@ -258,105 +244,124 @@ class GroupManager()(using sql: Storage.SQLManager):
                 )
             ),
         )
-        sql.localTx { implicit session =>
-            GroupStates(newGroupID, name).save()
-            GroupMemberships(newGroupID, owner).save()
-            GroupOwnerships(newGroupID, owner).save()
+        sql.txIO { tx =>
             var ord = ""
-            roles.foreach { role =>
-                GroupRoles(newGroupID, role.id, role.name, role.hoist, role.permissions, Lexorank.rank(ord, "")).save()
-                ord = Lexorank.rank(ord, "")
-            }
+            for {
+                _ <- GroupStates(newGroupID, name).save()
+                _ <- GroupMemberships(newGroupID, owner).save()
+                _ <- GroupOwnerships(newGroupID, owner).save()
+                _ <- roles.traverse { role =>
+                    ord = Lexorank.rank(ord, "")
+                    GroupRoles(newGroupID, role.id, role.name, role.hoist, role.permissions, ord).save()
+                }
+            } yield newGroupID
         }
-        newGroupID
 
-    def deleteGroup(as: UserID, group: GroupID): Either[GroupError, Unit] =
-        val owners = getGroupOwners(group)
-        Right(())
-            .guard(GroupError.MustBeOwner) { _ => owners.view.map(_.userID).contains(as) }
-            .guard(GroupError.MustBeOnlyOwner) { _ => owners.length == 1 }
-            .map { _ =>
-                sql"DELETE FROM GroupStates WHERE ID = ${group};".update.apply(); ()
+    def deleteGroup(as: UserID, group: GroupID)(using s: Session[IO]): EitherT[IO, GroupError, Unit] =
+        EitherT.right(getGroupOwners(group))
+            .guard(GroupError.MustBeOwner) { _.view.map(_.userID).contains(as) }
+            .guard(GroupError.MustBeOwner) { _.view.map(_.userID).contains(as) }
+            .guard(GroupError.MustBeOnlyOwner) { _.length == 1 }
+            .flatMap { _ =>
+                EitherT.right(sql.commandIO(sql"DELETE FROM GroupStates WHERE ID = $uuid;", group))
+            }
+            .map(_ => ())
+
+    private def getGroupOwners(group: GroupID)(using s: Session[IO]): IO[List[GroupOwnerships]] =
+        sql.queryListIO(sql"SELECT GroupID, UserID FROM GroupOwnerships WHERE GroupID = $uuid;", (uuid *: uuid).to[GroupOwnerships], group)
+
+    private def getGroupMembers(group: GroupID)(using s: Session[IO]): IO[List[GroupMemberships]] =
+        sql.queryListIO(sql"SELECT GroupID, UserID FROM GroupMemberships WHERE GroupID = $uuid;", (uuid *: uuid).to[GroupMemberships], group)
+
+    private def getSubgroups(group: GroupID)(using Session[IO]): IO[List[SubgroupState]] =
+        sql.queryListIO(sql"""
+        SELECT SubgroupID, Name FROM Subgroups WHERE ParentGroup = $uuid
+        """, (uuid *: text), group)
+            .flatMap { it =>
+                it.traverse { (tuple) =>
+                    val (sgid, name) = tuple
+
+                    sql.queryListIO(sql"""
+                    SELECT RoleID, Permissions FROM SubgroupPermissions WHERE SubgroupID = $uuid
+                    """, (uuid *: jsonb[Map[Permissions, RuleMode]]), sgid).map { roles =>
+                        SubgroupState(sgid, name, roles.toMap)
+                    }
+                }
             }
 
-    private def getGroupOwners(group: GroupID): List[GroupOwnerships] =
-        sql"SELECT * FROM GroupOwnerships WHERE GroupID = ${group}".map(GroupOwnerships.apply).list.apply()
+    private def groupStateIO(group: GroupID)(using s: Session[IO]): EitherT[IO, GroupError, GroupStates] =
+        EitherT.fromOptionF(sql.queryOptionIO(sql"""
+        SELECT ID, Name FROM GroupStates WHERE ID = $uuid;
+        """, (uuid *: text).to[GroupStates], (group)), GroupError.GroupNotFound)
 
-    private def getGroupMembers(group: GroupID): List[GroupMemberships] =
-        sql"SELECT * FROM GroupMemberships WHERE GroupID = ${group}".map(GroupMemberships.apply).list.apply()
-
-    private def getSubgroups(group: GroupID): List[SubgroupState] =
-        sql"SELECT * FROM Subgroups WHERE ParentGroup = ${group}"
-            .map(rs => SubgroupState(rs.string("SubgroupID").pipe(ju.UUID.fromString), rs.string("Name"), Map()))
-            .list
-            .apply()
-            .map { state =>
-                val perms = sql"""
-                SELECT * FROM SubgroupPermissions WHERE SubgroupID = ${state.id}
-                """
-                    .map(rs => rs.string("RoleID").pipe(ju.UUID.fromString) -> decode[Map[Permissions, RuleMode]](rs.string("Permissions")).toOption.get)
-                    .list
-                    .apply()
-                    .toMap
-
-                state.copy(
-                    permissions = perms
-                )
+    private def rolesIO(group: GroupID)(using s: Session[IO]): IO[List[RoleState]] =
+        sql.queryListIO(sql"""
+        SELECT GroupID, RoleID, Name, Hoist, Permissions, Ord FROM GroupRoles WHERE GroupID = $uuid;
+        """, (uuid *: uuid *: text *: bool *: jsonb[Map[Permissions, RuleMode]] *: text).to[GroupRoles], group)
+            .map { list =>
+                list.map { role =>
+                    RoleState(
+                        id = role.roleID,
+                        name = role.name,
+                        hoist = role.hoist,
+                        permissions = role.permissions,
+                    )
+                }
             }
 
-    private def getAll(group: GroupID): Either[GroupError, GroupState] =
-        val gs_ = sql"SELECT * FROM GroupStates WHERE ID = ${group}".map(GroupStates.apply).single.apply()
-        gs_ match
-            case None => return Left(GroupError.GroupNotFound)
-            case Some(_) => ()
-        val gs = gs_.get
-
-        val gm = sql"SELECT * FROM GroupMemberships WHERE GroupID = ${group}".map(GroupMemberships.apply).list.apply()
-        val gr = sql"SELECT * FROM GroupRoles WHERE GroupID = ${group} ORDER BY Ord".map(GroupRoles.apply).list.apply()
-        val grm = sql"SELECT * FROM GroupRoleMemberships WHERE GroupID = ${group}".map(GroupRoleMemberships.apply).list.apply()
-        val gro = sql"SELECT * FROM GroupOwnerships WHERE GroupID = ${group}".map(GroupOwnerships.apply).list.apply()
-
-        Right(GroupState(
+    private def getAll(group: GroupID)(using s: Session[IO]): EitherT[IO, GroupError, GroupState] =
+        for {
+            gs <- groupStateIO(group)
+            gm <- EitherT.right(sql.queryListIO(sql"""
+                SELECT GroupID, UserID FROM GroupMemberships WHERE GroupID = $uuid;
+                """, (uuid *: uuid).to[GroupMemberships], group))
+            gr <- EitherT.right(rolesIO(group))
+            grm <- EitherT.right(sql.queryListIO(sql"""
+                SELECT GroupID, RoleID, UserID FROM GroupRoleMemberships WHERE GroupID = $uuid;
+                """, (uuid *: uuid *: uuid).to[GroupRoleMemberships], group))
+            gro <- EitherT.right(sql.queryListIO(sql"""
+                SELECT GroupID, UserID FROM GroupOwnerships WHERE GroupID = $uuid;
+                """, (uuid *: uuid).to[GroupOwnerships], group))
+            subgroups <- EitherT.right(getSubgroups(group))
+        } yield GroupState(
             metadata = gs,
             owners = gro.map(_.userID),
-            roles = gr.map { role =>
-                RoleState(
-                    id = role.roleID,
-                    name = role.name,
-                    hoist = role.hoist,
-                    permissions = role.permissions,
-                )
-            },
+            roles = gr,
             users = gm.map { membership =>
                 (membership.userID, grm.filter(_.userID == membership.userID).map(_.roleID).toSet)
             }.toMap,
-            subgroups = getSubgroups(group)
-        ))
+            subgroups = subgroups
+        )
 
-    def promoteToOwner(as: UserID, target: UserID, group: GroupID): Either[GroupError, Unit] =
-        val owners = getGroupOwners(group)
-        val members = getGroupMembers(group)
-        Right(())
-            .guard(GroupError.MustBeOwner) { _ => owners.view.map(_.userID).contains(as) }
-            .guard(GroupError.TargetNotInGroup) { _ => members.view.map(_.userID).contains(target) }
-            .guard(GroupError.TargetIsAlreadyOwner) { _ => !owners.view.map(_.userID).contains(target) }
-            .map { _ =>
-                sql"INSERT INTO GroupOwnerships (GroupID, UserID) VALUES ($group, $target);".update.apply(); ()
+    def promoteToOwner(as: UserID, target: UserID, group: GroupID)(using s: Session[IO]): EitherT[IO, GroupError, Unit] =
+        (for {
+            owners <- EitherT.right(getGroupOwners(group))
+            members <- EitherT.right(getGroupMembers(group))
+        } yield (owners, members))
+            .guard(GroupError.MustBeOwner) { _._1.view.map(_.userID).contains(as) }
+            .guard(GroupError.TargetNotInGroup) { _._2.view.map(_.userID).contains(target) }
+            .guard(GroupError.TargetIsAlreadyOwner) { !_._1.view.map(_.userID).contains(target) }
+            .flatMap { _ =>
+                EitherT.right(sql.commandIO(sql"""
+                INSERT INTO GroupOwnerships (GroupID, UserID) VALUES ($uuid, $uuid);
+                """, (group, target)).map(_ => ()))
             }
 
-    def giveUpOwnership(as: UserID, group: GroupID): Either[GroupError, Unit] =
-        val owners = getGroupOwners(group)
-
-        Right(owners.map(_.userID))
-            .guard(GroupError.MustBeOwner) { _.contains(as) }
+    def giveUpOwnership(as: UserID, group: GroupID)(using s: Session[IO]): EitherT[IO, GroupError, Unit] =
+        EitherT.right(getGroupOwners(group))
+            .guard(GroupError.MustBeOwner) { _.exists(_.userID == as) }
             .guard(GroupError.GroupWouldHaveNoOwners) { _.length > 1 }
-            .map { _ =>
-                sql"DELETE FROM GroupOwnerships WHERE GroupID = $group AND UserID = $as;".update.apply(); ()
+            .flatMap { _ =>
+                EitherT.right(sql.commandIO(sql"""
+                DELETE FROM GroupOwnerships WHERE GroupID = $uuid AND UserID = $uuid
+                """, (group, as)).map(_ => ()))
             }
 
-    def sudoSetRolePermissions(groupID: GroupID, roleID: RoleID, permissions: Map[Permissions, RuleMode]): Unit =
-        sql"UPDATE GroupRoles SET Permissions = ${permissions.asJson.noSpaces} WHERE GroupID = ${groupID} AND RoleID = ${roleID};".update.apply(); ()
-    def setRolePermissions(as: UserID, groupID: GroupID, roleID: RoleID, permissions: Map[Permissions, RuleMode]): Either[GroupError, Unit] =
+    def sudoSetRolePermissions(groupID: GroupID, roleID: RoleID, permissions: Map[Permissions, RuleMode])(using s: Session[IO]): IO[Completion] =
+        sql.commandIO(sql"""
+        UPDATE GroupRoles SET Permissions = $jsonb WHERE GroupID = $uuid AND RoleID = $uuid
+        """, (permissions.asJson, groupID, roleID))
+    def setRolePermissions(as: UserID, groupID: GroupID, roleID: RoleID, permissions: Map[Permissions, RuleMode])(using s: Session[IO]): EitherT[IO, GroupError, Unit] =
         getAll(groupID)
             .guard(GroupError.NoPermissions) { _.check(Permissions.ManageRoles, as, nullUUID) }
             .guard(GroupError.RoleNotFound) { _.roles.exists(_.id == roleID) }
@@ -369,11 +374,11 @@ class GroupManager()(using sql: Storage.SQLManager):
                         true
                 }
             }
-            .map { _ =>
-                sql"UPDATE GroupRoles SET Permissions = ${permissions.asJson.noSpaces} WHERE GroupID = ${groupID} AND RoleID = ${roleID};".update.apply(); ()
+            .flatMap { _ =>
+                EitherT.right(sudoSetRolePermissions(groupID, roleID, permissions).map(_ => ()))
             }
 
-    def setSubgroupRolePermissions(as: UserID, groupID: GroupID, subgroupID: SubgroupID, roleID: RoleID, permissions: Map[Permissions, RuleMode]): Either[GroupError, Unit] =
+    def setSubgroupRolePermissions(as: UserID, groupID: GroupID, subgroupID: SubgroupID, roleID: RoleID, permissions: Map[Permissions, RuleMode])(using s: Session[IO]): EitherT[IO, GroupError, Unit] =
         getAll(groupID)
             .guard(GroupError.NoPermissions) { _.check(Permissions.ManageSubgroups, as, subgroupID) }
             .guard(GroupError.RoleNotFound) { _.roles.exists(_.id == roleID) }
@@ -386,134 +391,127 @@ class GroupManager()(using sql: Storage.SQLManager):
                         true
                 }
             }
-            .map { _ =>
-                sql"""
-                REPLACE INTO SubgroupPermissions (
+            .flatMap { _ =>
+                EitherT.right(sql.commandIO(sql"""
+                INSERT INTO SubgroupPermissions (
                     GroupID, SubgroupID, RoleID, Permissions
                 ) VALUES (
-                    ${groupID}, ${subgroupID}, ${roleID}, ${permissions.asJson.noSpaces}
-                );
-                """.update.apply(); ()
+                    $uuid, $uuid, $uuid, $jsonb
+                ) ON CONFLICT (SubgroupID, RoleID) DO UPDATE SET
+                    Permissions = EXCLUDED.Permissions;
+                """, (groupID, subgroupID, roleID, permissions.asJson)).map(_ => ()))
             }
 
-    def roles(group: GroupID): Either[GroupError, List[RoleState]] =
-        val gr = sql"SELECT * FROM GroupRoles WHERE GroupID = ${group}".map(GroupRoles.apply).list.apply()
-        Right(gr.map { role =>
-            RoleState(
-                id = role.roleID,
-                name = role.name,
-                hoist = role.hoist,
-                permissions = role.permissions,
-            )
-        })
+    def roles(group: GroupID)(using s: Session[IO]): EitherT[IO, GroupError, List[RoleState]] =
+        for {
+            gs <- groupStateIO(group)
+            roles <- EitherT.right(rolesIO(group))
+        } yield roles
 
-    def createRole(as: UserID, group: GroupID, name: String): Either[GroupError, RoleID] =
+    def createRole(as: UserID, group: GroupID, name: String)(using s: Session[IO]): EitherT[IO, GroupError, RoleID] =
         getAll(group)
             .guard(GroupError.NoPermissions) { _.check(Permissions.ManageRoles, as, nullUUID) }
-            .map { group =>
+            .flatMap { group =>
                 val rid = ju.UUID.randomUUID()
 
-                sql"""
+                EitherT.right(sql.commandIO(sql"""
                 INSERT INTO GroupRoles (
                     GroupID, RoleID, Name, Hoist, Permissions, Ord
                 ) VALUES (
-                    ${group.metadata.id}, ${rid}, ${name}, ${false}, ${Map[Permissions, RuleMode]().asJson.noSpaces}, ${""}
+                    $uuid, $uuid, $text, $bool, $jsonb, $text
                 );
-                """.update.apply()
-
-                rid
+                """, (group.metadata.id, rid, name, false, Map[Permissions, RuleMode]().asJson, "")).map(_ => rid))
             }
 
-    def createSubgroup(as: UserID, group: GroupID, name: String): Either[GroupError, SubgroupID] =
+    def createSubgroup(as: UserID, group: GroupID, name: String)(using s: Session[IO]): EitherT[IO, GroupError, SubgroupID] =
         getAll(group)
             .guard(GroupError.NoPermissions) { _.check(Permissions.ManageSubgroups, as, nullUUID) }
-            .map { group =>
+            .flatMap { group =>
                 val sgid = ju.UUID.randomUUID()
 
-                sql"""
+                EitherT.right(sql.commandIO(sql"""
                 INSERT INTO Subgroups (
                     ParentGroup, SubgroupID, Name
                 ) VALUES (
-                    ${group.metadata.id}, ${sgid}, ${name}
+                    $uuid, $uuid, $text
                 );
-                """
-                    .update
-                    .apply()
-
-                sgid
+                """, (group.metadata.id, sgid, name)).map(_ => sgid))
             }
 
-    def deleteSubgroup(as: UserID, group: GroupID, subgroup: SubgroupID): Either[GroupError, Unit] =
+    def deleteSubgroup(as: UserID, group: GroupID, subgroup: SubgroupID)(using s: Session[IO]): EitherT[IO, GroupError, Unit] =
         getAll(group)
             .guard(GroupError.NoPermissions) { _.check(Permissions.ManageSubgroups, as, nullUUID) }
-            .map { group =>
-                sql"""
-                DELETE FROM Subgroups WHERE SubgroupID = ${subgroup}
-                """
-                    .update
-                    .apply(); ()
+            .flatMap { group =>
+                EitherT.right(sql.commandIO(sql"""
+                DELETE FROM Subgroups WHERE SubgroupID = $uuid;
+                """, subgroup).map(_ => ()))
             }
 
-    def deleteRole(as: UserID, role: RoleID, group: GroupID): Either[GroupError, Unit] =
+    def deleteRole(as: UserID, role: RoleID, group: GroupID)(using s: Session[IO]): EitherT[IO, GroupError, Unit] =
         getAll(group)
             .guard(GroupError.NoPermissions) { _.check(Permissions.ManageRoles, as, nullUUID) }
             .guard(GroupError.RoleNotFound) { _.roles.exists(_.id == role) }
             .guard(GroupError.CantAssignEveryone) { _ => everyoneUUID != role && groupMemberUUID != role }
             .guardRoleAboveYours(as, role)
-            .map { _ =>
-                sql"DELETE FROM GroupRoles WHERE GroupID = $group AND RoleID = $role".update.apply(); ()
+            .flatMap { _ =>
+                EitherT.right(sql.commandIO(sql"""
+                DELETE FROM GroupRoles WHERE GroupID = $uuid AND RoleID = $uuid;
+                """, (group, role)).map(_ => ()))
             }
 
-    def assignRole(as: UserID, target: UserID, group: GroupID, role: RoleID, has: Boolean): Either[GroupError, Unit] =
+    def assignRole(as: UserID, target: UserID, group: GroupID, role: RoleID, has: Boolean)(using s: Session[IO]): EitherT[IO, GroupError, Unit] =
         getAll(group)
             .guard(GroupError.NoPermissions) { _.check(Permissions.ManageUserRoles, as, nullUUID) }
             .guard(GroupError.RoleNotFound) { _.roles.exists(_.id == role) }
             .guard(GroupError.TargetNotInGroup) { _.users.contains(target) }
             .guard(GroupError.CantAssignEveryone) { _ => everyoneUUID != role && groupMemberUUID != role }
             .guardRoleAboveYours(as, role)
-            .map { _ =>
-                if has then
-                    sql"REPLACE INTO GroupRoleMemberships (GroupID, RoleID, UserID) VALUES ($group, $role, $target);".update.apply(); ()
-                else
-                    sql"DELETE FROM GroupRoleMemberships WHERE GroupID = $group AND RoleID = $role AND UserID = $target".update.apply(); ()
+            .flatMap { _ =>
+                EitherT.right(
+                    if has then
+                        sql.commandIO(sql"""
+                        INSERT INTO GroupRoleMemberships (GroupID, RoleID, UserID) VALUES ($uuid, $uuid, $uuid);
+                        """, (group, role, target))
+                    else
+                        sql.commandIO(sql"""
+                        DELETE FROM GroupRoleMemberships WHERE GroupID = $uuid AND RoleID = $uuid AND UserID = $uuid;
+                        """, (group, role, target))
+                ).map(_ => ())
             }
 
     // TODO: invites/passwords
-    def addToGroup(user: UserID, group: GroupID): Either[GroupError, Unit] =
-        val members = getGroupMembers(group)
-        Right(())
-            .guard(GroupError.AlreadyInGroup) { _ => !members.view.map(_.userID).contains(user) }
-            .map { _ =>
-                sql"INSERT INTO GroupMemberships (GroupID, UserID) VALUES ($group, $user);".update.apply(); ()
+    def addToGroup(user: UserID, group: GroupID)(using s: Session[IO]): EitherT[IO, GroupError, Unit] =
+        EitherT.right(getGroupMembers(group))
+            .guard(GroupError.AlreadyInGroup) { members => !members.view.map(_.userID).contains(user) }
+            .flatMap { _ =>
+                EitherT.right(sql.commandIO(sql"""
+                INSERT INTO GroupMemberships (GroupID, UserID) VALUES ($uuid, $uuid);
+                """, (group, user)).map(_ => ()))
             }
 
-    def groupAudience(groupID: GroupID): Either[GroupError, (String, Audience)] =
-        val gs =
-            sql"SELECT * FROM GroupStates WHERE ID = ${groupID}".map(GroupStates.apply).single.apply() match
-                case None => return Left(GroupError.GroupNotFound)
-                case Some(it) => it
+    def groupAudience(groupID: GroupID)(using s: Session[IO]): EitherT[IO, GroupError, (String, Audience)] =
+        for {
+            gs <- groupStateIO(groupID)
+            members <- EitherT.right(getGroupMembers(groupID).map(_.map(_.userID)))
+        } yield (gs.name, Audience.audience(Bukkit.getServer().getOnlinePlayers().asScala.filter(plr => members.contains(plr.getUniqueId())).asJava))
 
-        val members = getGroupMembers(groupID).map(_.userID)
-        val onlineMembers = Bukkit.getServer().getOnlinePlayers().asScala.filter(plr => members.contains(plr.getUniqueId()))
-        Right((gs.name, Audience.audience(onlineMembers.asJava)))
-
-    def userGroups(userID: UserID): Either[GroupError, List[GroupStates]] =
-        Right(sql"""
+    def userGroups(userID: UserID)(using s: Session[IO]): EitherT[IO, GroupError, List[GroupStates]] =
+        EitherT.right(sql.queryListIO(sql"""
         SELECT
             GroupStates.*
         FROM
             GroupStates, GroupMemberships
         WHERE
-            GroupMemberships.UserID = $userID
+            GroupMemberships.UserID = $uuid
             AND GroupStates.ID = GroupMemberships.GroupID;
-        """.map(GroupStates.apply).list.apply())
+        """, (uuid *: text).to[GroupStates], userID))
 
     /// relatively heavy function, call once and cache only if you need to frequently consult permissions
-    def getGroup(groupID: GroupID): Either[GroupError, GroupState] =
+    def getGroup(groupID: GroupID)(using s: Session[IO]): EitherT[IO, GroupError, GroupState] =
         getAll(groupID)
 
-    def check(user: UserID, group: GroupID, subgroup: SubgroupID, permission: Permissions): Either[GroupError, Boolean] =
+    def check(user: UserID, group: GroupID, subgroup: SubgroupID, permission: Permissions)(using s: Session[IO]): EitherT[IO, GroupError, Boolean] =
         getAll(group).map(_.check(permission, user, subgroup))
 
-    def checkE(user: UserID, group: GroupID, subgroup: SubgroupID, permission: Permissions): Either[GroupError, Unit] =
+    def checkE(user: UserID, group: GroupID, subgroup: SubgroupID, permission: Permissions)(using s: Session[IO]): EitherT[IO, GroupError, Unit] =
         getAll(group).guard(GroupError.NoPermissions) { _.check(permission, user, subgroup) }.map { _ => () }

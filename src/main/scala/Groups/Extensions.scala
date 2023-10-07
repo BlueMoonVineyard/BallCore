@@ -4,26 +4,29 @@
 
 package BallCore.Groups
 
+import cats.data.EitherT
+import cats.Monad
+
 object Extensions:
-    extension [A, B](e: Either[A, B])
-        def guard(onFalse: A)(cond: B => Boolean): Either[A, B] =
+    extension [F[_]: Monad, A, B](e: EitherT[F, A, B])
+        def guard(onFalse: A)(cond: B => Boolean): EitherT[F, A, B] =
             e.flatMap { data =>
                 if cond(data) then
-                    Right(data)
+                    EitherT.fromEither(Right(data))
                 else
-                    Left(onFalse)
+                    EitherT.fromEither(Left(onFalse))
             }
-    extension (e: Either[GroupError, GroupState])
-        def guardRoleAboveYours(as: UserID, role: RoleID): Either[GroupError, GroupState] =
+    extension [F[_]: Monad](e: EitherT[F, GroupError, GroupState])
+        def guardRoleAboveYours(as: UserID, role: RoleID): EitherT[F, GroupError, GroupState] =
             e.flatMap { state =>
                 if state.owners.contains(as) then
-                    Right(state)
+                    EitherT.fromEither(Right(state))
                 else
                     val myRoles = state.users(as)
                     val highestRoleIdx = state.roles.indexOf(state.roles.filter(r => myRoles.contains(r.id))(0))
                     val targetRoleIdx = state.roles.indexWhere(_.id == role)
                     if targetRoleIdx <= highestRoleIdx then
-                        Left(GroupError.RoleAboveYours)
+                        EitherT.fromEither(Left(GroupError.RoleAboveYours))
                     else
-                        Right(state)
+                        EitherT.fromEither(Right(state))
             }

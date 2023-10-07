@@ -18,8 +18,9 @@ import net.kyori.adventure.text.format.TextDecoration
 import com.github.stefvanschie.inventoryframework.gui.`type`.util.Gui
 import BallCore.Beacons.CivBeaconManager
 import com.destroystokyo.paper.MaterialTags
+import BallCore.Storage.SQLManager
 
-class GroupManagementProgram(using gm: GroupManager, cbm: CivBeaconManager) extends UIProgram:
+class GroupManagementProgram(using gm: GroupManager, cbm: CivBeaconManager, sql: SQLManager) extends UIProgram:
     case class Flags(groupID: GroupID, userID: UserID)
     case class Model(group: GroupState, userID: UserID, viewing: ViewingWhat, canBindToHeart: Boolean)
     enum ViewingWhat:
@@ -38,10 +39,14 @@ class GroupManagementProgram(using gm: GroupManager, cbm: CivBeaconManager) exte
         val beds = MaterialTags.BEDS.getValues().toArray(Array[Material]())
         val idx = obj.hashCode().abs % beds.length
         beds(idx)
+    def canBindToHeart(self: UserID): Boolean =
+        sql.useBlocking(cbm.getBeaconFor(self))
+            .map( beaconID => sql.useBlocking(cbm.beaconSize(beaconID)) )
+            .map( _ == 1 )
+            .getOrElse(false)
     override def init(flags: Flags): Model =
-        val group = gm.getGroup(flags.groupID).toOption.get
-        val canBindToHeart = cbm.getBeaconFor(flags.userID).map(cbm.beaconSize).map(_ == 1).getOrElse(false)
-        Model(group, flags.userID, ViewingWhat.Players, canBindToHeart)
+        val group = sql.useBlocking(gm.getGroup(flags.groupID).value).toOption.get
+        Model(group, flags.userID, ViewingWhat.Players, canBindToHeart(flags.userID))
     override def view(model: Model): Callback ?=> Gui =
         val group = model.group
         Root(txt"Viewing ${group.metadata.name}", 6) {
@@ -120,8 +125,8 @@ class GroupManagementProgram(using gm: GroupManager, cbm: CivBeaconManager) exte
             case Message.View(what) =>
                 model.copy(viewing = what)
             case Message.BindToHeart =>
-                cbm.getBeaconFor(model.userID).map { beacon =>
-                    cbm.setGroup(beacon, model.group.metadata.id).isRight
+                sql.useBlocking(cbm.getBeaconFor(model.userID)).map { beacon =>
+                    sql.useBlocking(cbm.setGroup(beacon, model.group.metadata.id)).isRight
                 } match
                     case None =>
                         services.notify(s"You don't have a Civilization Beacon to bind ${model.group.metadata.name} to!")
@@ -130,7 +135,7 @@ class GroupManagementProgram(using gm: GroupManager, cbm: CivBeaconManager) exte
                             services.notify(s"Bound ${model.group.metadata.name} to your Civilization Beacon!")
                         else
                             services.notify(s"Failed to bind ${model.group.metadata.name} to your Civilization Beacon!")
-                    model.copy(canBindToHeart = cbm.getBeaconFor(model.userID).map(cbm.beaconSize).map(_ == 1).getOrElse(false))
+                    model.copy(canBindToHeart = canBindToHeart(model.userID))
             case Message.InviteMember =>
                 services.prompt("Who do you want to invite?")
                     .map { username =>
@@ -140,7 +145,7 @@ class GroupManagementProgram(using gm: GroupManager, cbm: CivBeaconManager) exte
                             case Some(plr) if model.group.users.contains(plr.getUniqueId()) =>
                                 services.notify(s"${plr.getName()} is already in ${model.group.metadata.name}!")
                             case Some(plr) =>
-                                gm.invites.inviteToGroup(model.userID, plr.getUniqueId(), model.group.metadata.id)
+                                sql.useBlocking(gm.invites.inviteToGroup(model.userID, plr.getUniqueId(), model.group.metadata.id))
                                 services.notify(s"Invited ${plr.getName()} to ${model.group.metadata.name}!")
                         model
                     }
@@ -155,16 +160,16 @@ class GroupManagementProgram(using gm: GroupManager, cbm: CivBeaconManager) exte
             case Message.CreateSubgroup =>
                 services.prompt("What do you want to call the subgroup?")
                     .map { name =>
-                        gm.createSubgroup(model.userID, model.group.metadata.id, name) match
+                        sql.useBlocking(gm.createSubgroup(model.userID, model.group.metadata.id, name).value) match
                             case Left(err) =>
                                 services.notify(s"Subgroup creation failed because ${err.explain()}")
                             case Right(_) =>
                                 services.notify(s"Subgroup successfully created")
-                            val group = gm.getGroup(model.group.metadata.id).toOption.get
+                            val group = sql.useBlocking(gm.getGroup(model.group.metadata.id).value).toOption.get
                             model.copy(group = group)
                     }
 
-class SubgroupManagementProgram(using gm: GroupManager, cbm: CivBeaconManager) extends UIProgram:
+class SubgroupManagementProgram(using gm: GroupManager, cbm: CivBeaconManager, sql: SQLManager) extends UIProgram:
     case class Flags(groupID: GroupID, subgroupID: SubgroupID, userID: UserID)
     case class Model(group: GroupState, subgroup: SubgroupState, userID: UserID)
     enum Message:
@@ -173,7 +178,7 @@ class SubgroupManagementProgram(using gm: GroupManager, cbm: CivBeaconManager) e
         case GoBack
 
     override def init(flags: Flags): Model =
-        val group = gm.getGroup(flags.groupID).toOption.get
+        val group = sql.useBlocking(gm.getGroup(flags.groupID).value).toOption.get
         val subgroup = group.subgroups.find(_.id == flags.subgroupID).get
         Model(group, subgroup, flags.userID)
     override def update(msg: Message, model: Model)(using services: UIServices): Future[Model] =
@@ -183,7 +188,7 @@ class SubgroupManagementProgram(using gm: GroupManager, cbm: CivBeaconManager) e
                 services.transferTo(p, p.Flags(model.group.metadata.id, model.userID))
                 model
             case Message.DeleteSubgroup =>
-                gm.deleteSubgroup(model.userID, model.group.metadata.id, model.subgroup.id) match
+                sql.useBlocking(gm.deleteSubgroup(model.userID, model.group.metadata.id, model.subgroup.id).value) match
                     case Left(err) =>
                         services.notify(s"You cannot delete that subgroup because ${err.explain()}")
                         model
@@ -223,7 +228,7 @@ class SubgroupManagementProgram(using gm: GroupManager, cbm: CivBeaconManager) e
             }
         }
 
-class RoleManagementProgram(using gm: GroupManager, cbm: CivBeaconManager) extends UIProgram:
+class RoleManagementProgram(using gm: GroupManager, cbm: CivBeaconManager, sql: SQLManager) extends UIProgram:
     case class Flags(groupID: GroupID, roleID: RoleID, userID: UserID, subgroup: Option[SubgroupID])
     case class Model(group: GroupState, groupID: GroupID, userID: UserID, role: RoleState, subgroup: Option[SubgroupState])
     enum Message:
@@ -232,7 +237,7 @@ class RoleManagementProgram(using gm: GroupManager, cbm: CivBeaconManager) exten
         case GoBack
 
     override def init(flags: Flags): Model =
-        val group = gm.getGroup(flags.groupID).toOption.get
+        val group = sql.useBlocking(gm.getGroup(flags.groupID).value).toOption.get
         val role = group.roles.find(_.id == flags.roleID).get
         val subgroup = flags.subgroup.map(id => group.subgroups.find(_.id == id).get)
         Model(group, flags.groupID, flags.userID, role, subgroup)
@@ -249,7 +254,7 @@ class RoleManagementProgram(using gm: GroupManager, cbm: CivBeaconManager) exten
     override def update(msg: Message, model: Model)(using services: UIServices): Future[Model] =
         msg match
             case Message.DeleteRole =>
-                gm.deleteRole(model.userID, model.role.id, model.groupID) match
+                sql.useBlocking(gm.deleteRole(model.userID, model.role.id, model.groupID).value) match
                     case Left(err) =>
                         services.notify(s"You cannot delete that role because ${err.explain()}")
                         model
@@ -273,14 +278,14 @@ class RoleManagementProgram(using gm: GroupManager, cbm: CivBeaconManager) exten
 
                 model.subgroup match
                     case None =>
-                        gm.setRolePermissions(model.userID, model.groupID, model.role.id, newPermissions) match
+                        sql.useBlocking(gm.setRolePermissions(model.userID, model.groupID, model.role.id, newPermissions).value) match
                             case Left(err) =>
                                 services.notify(s"You cannot change that permission because ${err.explain()}")
                                 model
                             case Right(_) =>
                                 model.copy(role = model.role.copy(permissions = newPermissions))
                     case Some(subgroup) =>
-                        gm.setSubgroupRolePermissions(model.userID, model.groupID, subgroup.id, model.role.id, newPermissions) match
+                        sql.useBlocking(gm.setSubgroupRolePermissions(model.userID, model.groupID, subgroup.id, model.role.id, newPermissions).value) match
                             case Left(err) =>
                                 services.notify(s"You cannot change that permission in ${subgroup.name} because ${err.explain()}")
                                 model
@@ -345,7 +350,7 @@ class RoleManagementProgram(using gm: GroupManager, cbm: CivBeaconManager) exten
             }
         }
 
-class InvitesListProgram(using gm: GroupManager) extends UIProgram:
+class InvitesListProgram(using gm: GroupManager, sql: SQLManager) extends UIProgram:
     case class Flags(userID: UserID)
     enum Mode:
         case List
@@ -357,8 +362,8 @@ class InvitesListProgram(using gm: GroupManager) extends UIProgram:
         case DenyInvite(group: GroupID)
 
     def computeInvites(userID: UserID): List[(UserID, GroupState)] =
-        gm.invites.getInvitesFor(userID).map { (uid, gid) =>
-            gm.getGroup(gid).toOption.map((uid, _))
+        sql.useBlocking(gm.invites.getInvitesFor(userID)).map { (uid, gid) =>
+            sql.useBlocking(gm.getGroup(gid).value).toOption.map((uid, _))
         }.flatten
     override def init(flags: Flags): Model =
         Model(flags.userID, computeInvites(flags.userID), Mode.List)
@@ -367,10 +372,10 @@ class InvitesListProgram(using gm: GroupManager) extends UIProgram:
             case Message.ClickInvite(user, group) =>
                 model.copy(mode = Mode.ViewingInvite(user, model.invites.find(_._1 == user).get._2))
             case Message.AcceptInvite(group) =>
-                gm.invites.acceptInvite(model.userID, group)
+                sql.useBlocking(gm.invites.acceptInvite(model.userID, group))
                 model.copy(mode = Mode.List, invites = computeInvites(model.userID))
             case Message.DenyInvite(group) =>
-                gm.invites.deleteInvite(model.userID, group)
+                sql.useBlocking(gm.invites.deleteInvite(model.userID, group))
                 model.copy(mode = Mode.List, invites = computeInvites(model.userID))
     override def view(model: Model): Callback ?=> Gui =
         model.mode match
@@ -406,7 +411,7 @@ class InvitesListProgram(using gm: GroupManager) extends UIProgram:
             }
         }
 
-class GroupListProgram(using gm: GroupManager, cbm: CivBeaconManager) extends UIProgram:
+class GroupListProgram(using gm: GroupManager, cbm: CivBeaconManager, sql: SQLManager) extends UIProgram:
     case class Flags(userID: UserID)
     case class Model(userID: UserID, groups: List[GroupStates])
     enum Message:
@@ -415,7 +420,7 @@ class GroupListProgram(using gm: GroupManager, cbm: CivBeaconManager) extends UI
         case Invites
 
     override def init(flags: Flags): Model =
-        Model(flags.userID, gm.userGroups(flags.userID).toOption.get)
+        Model(flags.userID, sql.useBlocking{gm.userGroups(flags.userID).value}.toOption.get)
 
     override def update(msg: Message, model: Model)(using services: UIServices): Future[Model] =
         msg match
@@ -430,8 +435,8 @@ class GroupListProgram(using gm: GroupManager, cbm: CivBeaconManager) extends UI
             case Message.CreateGroup =>
                 val answer = services.prompt("What do you want to call the group?")
                 answer.map { result =>
-                    gm.createGroup(model.userID, result)
-                    model.copy(groups = gm.userGroups(model.userID).toOption.get)
+                    sql.useBlocking(gm.createGroup(model.userID, result))
+                    model.copy(groups = sql.useBlocking(gm.userGroups(model.userID).value).toOption.get)
                 }
 
     override def view(model: Model): Callback ?=> Gui =

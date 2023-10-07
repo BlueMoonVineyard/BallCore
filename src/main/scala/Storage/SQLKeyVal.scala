@@ -5,8 +5,13 @@
 package BallCore.Storage
 
 import java.util.UUID
-import scalikejdbc._
-import io.circe._, io.circe.parser._, io.circe.syntax._
+// import skunk._
+import skunk.implicits._
+import skunk.codec.all._
+import skunk.circe.codec.all._
+import io.circe._, io.circe.syntax._
+import cats.effect.IO
+import skunk.Session
 
 class SQLKeyVal()(using sql: SQLManager) extends KeyVal:
     sql.applyMigration(
@@ -15,51 +20,53 @@ class SQLKeyVal()(using sql: SQLManager) extends KeyVal:
             List(
                 sql"""
                 CREATE TABLE PlayerKeyValue (
-                    Player string,
-                    Key string,
-                    Value string,
+                    Player UUID,
+                    Key TEXT,
+                    Value JSONB,
                     UNIQUE(Player, Key)
                 );
-                """,
+                """.command,
                 sql"""
                 CREATE TABLE GlobalKeyValue (
-                    Superkey string,
-                    Key string,
-                    Value string,
+                    Superkey TEXT,
+                    Key TEXT,
+                    Value JSONB,
                     UNIQUE(Superkey, Key)
                 );
-                """
+                """.command
             ),
             List(
                 sql"""
                 DROP TABLE GlobalKeyValue;
-                """,
+                """.command,
                 sql"""
                 DROP TABLE PlayerKeyValue;
-                """
+                """.command
             )
         )
     )
 
-    implicit val session: DBSession = sql.session
-
-    override def set[A](player: UUID, key: String, value: A)(using Encoder[A]): Unit =
-        sql"INSERT OR REPLACE INTO PlayerKeyValue (Player, Key, Value) VALUES (${player}, ${key}, ${value.asJson.noSpaces})".update.apply(); ()
-    override def get[A](player: UUID, key: String)(using Decoder[A]): Option[A] =
-        sql"SELECT Value from PlayerKeyValue WHERE Player = ${player} AND Key = ${key}"
-            .map(rs => rs.string(1))
-            .single
-            .apply()
-            .flatMap(x => decode[A](x).toOption)
-    override def remove(player: UUID, key: String): Unit =
-        sql"DELETE FROM PlayerKeyValue WHERE Player = ${player} AND Key = ${key}".update.apply(); ()
-    override def set[A](superkey: String, key: String, value: A)(using Encoder[A]): Unit =
-        sql"INSERT OR REPLACE INTO GlobalKeyValue (Superkey, Key, Value) VALUES (${superkey}, ${key}, ${value.asJson.noSpaces})".update.apply(); ()
-    override def get[A](superkey: String, key: String)(using Decoder[A]): Option[A] =
-        sql"SELECT Value from GlobalKeyValue WHERE Superkey = ${superkey} AND Key = ${key}"
-            .map(rs => rs.string(1))
-            .single
-            .apply()
-            .flatMap(x => decode[A](x).toOption)
-    override def remove(superkey: String, key: String): Unit =
-        sql"DELETE FROM GlobalKeyValue WHERE Superkey = ${superkey} AND Key = ${key}".update.apply(); ()
+    override def set[A](player: UUID, key: String, value: A)(using Encoder[A], Decoder[A], Session[IO]): IO[Unit] =
+        sql.commandIO(sql"""
+        INSERT INTO PlayerKeyValue (Player, Key, Value) VALUES ($uuid, $text, $jsonb) ON CONFLICT DO UPDATE SET Value = EXCLUDED.Value;
+        """, (player, key, value.asJson)).map(_ => ())
+    override def get[A](player: UUID, key: String)(using Encoder[A], Decoder[A], Session[IO]): IO[Option[A]] =
+        sql.queryOptionIO(sql"""
+        SELECT Value FROM PlayerKeyValue WHERE Player = $uuid AND KEY = $text
+        """, jsonb, (player, key))
+    override def remove(player: UUID, key: String)(using Session[IO]): IO[Unit] =
+        sql.commandIO(sql"""
+        DELETE FROM PlayerKeyValue WHERE Player = $uuid AND Key = $text
+        """, (player, key)).map(_ => ())
+    override def set[A](superkey: String, key: String, value: A)(using Encoder[A], Decoder[A], Session[IO]): IO[Unit] =
+        sql.commandIO(sql"""
+        INSERT INTO GlobalKeyValue (Superkey, Key, Value) VALUES ($text, $text, $jsonb) ON CONFLICT DO UPDATE SET Value = EXCLUDED.Value;
+        """, (superkey, key, value.asJson)).map(_ => ())
+    override def get[A](superkey: String, key: String)(using Encoder[A], Decoder[A], Session[IO]): IO[Option[A]] =
+        sql.queryOptionIO(sql"""
+        SELECT Value FROM PlayerKeyValue WHERE Superkey = $text AND KEY = $text
+        """, jsonb, (superkey, key))
+    override def remove(superkey: String, key: String)(using Session[IO]): IO[Unit] =
+        sql.commandIO(sql"""
+        DELETE FROM GlobalKeyValue WHERE Superkey = $text AND KEY = $text
+        """, (superkey, key)).map(_ => ())

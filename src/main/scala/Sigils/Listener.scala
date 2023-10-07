@@ -27,6 +27,7 @@ import scala.jdk.CollectionConverters._
 import BallCore.CustomItems.ItemRegistry
 import BallCore.Folia.EntityExecutionContext
 import BallCore.Folia.FireAndForget
+import BallCore.Storage.SQLManager
 
 enum DamageMessage:
 	case damage(from: UUID, against: UUID, damage: Double)
@@ -95,10 +96,10 @@ class DamageListener(using da: DamageActor) extends Listener:
 			return
 		da.damage(damager, player, e.getDamage())
 
-class SigilListener(using ssm: SigilSlimeManager, hnm: CivBeaconManager, da: DamageActor, ir: ItemRegistry, p: Plugin) extends Listener:
+class SigilListener(using ssm: SigilSlimeManager, hnm: CivBeaconManager, da: DamageActor, ir: ItemRegistry, p: Plugin, sql: SQLManager) extends Listener:
 	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
 	def onPlayerMove(event: PlayerMoveEvent): Unit =
-		val banished = hnm.beaconContaining(event.getTo()).exists { gid => ssm.isBanished(event.getPlayer().getUniqueId(), gid) }
+		val banished = sql.useBlocking(hnm.beaconContaining(event.getTo())).exists { gid => sql.useBlocking(ssm.isBanished(event.getPlayer().getUniqueId(), gid)) }
 		if banished then
 			event.setCancelled(true)
 

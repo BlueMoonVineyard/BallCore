@@ -16,6 +16,8 @@ import BallCore.Sidebar.SidebarLine
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask
 import java.util.function.Consumer
 import org.bukkit.Bukkit
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 
 case class GameDate(
     val year: Long, // 12*31*24*60 minutes
@@ -89,13 +91,13 @@ object Datekeeping:
         val month = day multipliedBy 31
         val year = month multipliedBy 12
 
-    def truncateLarge(instant: Instant, truncatedTo: TemporalUnit): Instant =
+    def truncateLarge(instant: Instant, truncatedTo: TemporalUnit): OffsetDateTime =
         val dur = truncatedTo.getDuration().toNanos()
         val nanos = instant.getNano()
         val seconds = instant.getEpochSecond()
         val nod = (seconds * 1000000000) + nanos
         val result = Math.floorDiv(nod, dur) * dur
-        instant.plusNanos(result - nod)
+        OffsetDateTime.ofInstant(instant.plusNanos(result - nod), ZoneOffset.UTC)
 
     def time()(using clock: Clock): GameDate =
         // the only thing in IRL units
