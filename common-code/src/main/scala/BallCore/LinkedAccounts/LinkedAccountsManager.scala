@@ -48,7 +48,7 @@ class LinkedAccountsManager()(using sql: SQLManager):
 	)
 
 	def generateLinkCode(): String =
-		Random.alphanumeric.take(6).mkString
+		Random.alphanumeric.take(6).mkString.toLowerCase()
 
 	def isAlreadyLinked(discordID: String): Boolean =
 		sql.useBlocking(sql.queryUniqueIO(sql"""
@@ -116,7 +116,7 @@ class LinkedAccountsManager()(using sql: SQLManager):
 	def finishLinkProcessFromDiscord(linkCode: String, discordID: String): Either[LinkedAccountError, Unit] =
 		sql.useBlocking(sql.queryOptionIO(sql"""
 		SELECT MinecraftUUID FROM PendingDiscordLinkages WHERE LinkCode = $text
-		""", uuid.opt, linkCode)) match
+		""", uuid.opt, linkCode.toLowerCase())) match
 			case None =>
 				Left(LinkedAccountError.linkCodeDoesNotExist)
 			case Some(None) =>
@@ -127,7 +127,7 @@ class LinkedAccountsManager()(using sql: SQLManager):
 	def finishLinkProcessFromMinecraft(linkCode: String, mcuuid: UUID): Either[LinkedAccountError, Unit] =
 		sql.useBlocking(sql.queryOptionIO(sql"""
 		SELECT DiscordID FROM PendingDiscordLinkages WHERE LinkCode = $text
-		""", text.opt, linkCode)) match
+		""", text.opt, linkCode.toLowerCase())) match
 			case None =>
 				Left(LinkedAccountError.linkCodeDoesNotExist)
 			case Some(None) =>

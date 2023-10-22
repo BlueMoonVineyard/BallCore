@@ -115,7 +115,7 @@ object VerifyCommand:
                     case Left(err) =>
                         player.sendServerMessage(txt(explain(err)))
                     case Right(linkCode) =>
-                        player.sendServerMessage(txt"Your link code is ${txt(linkCode).color(Colors.yellow).decorate(TextDecoration.BOLD)}. Use /link on Discord to link your Minecraft account to your Discord account.")
+                        player.sendServerMessage(txt"Your link code is ${txt(linkCode.toUpperCase()).color(Colors.yellow).decorate(TextDecoration.BOLD)}. Use /link on Discord to link your Minecraft account to your Discord account.")
 
                 Command.SINGLE_SUCCESS
             }
