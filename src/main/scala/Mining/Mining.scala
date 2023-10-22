@@ -31,14 +31,14 @@ object Mining:
         Drops(
             0 to 320,
             2 to 8,
-            0.005,
+            0.02,
             ItemStack(Material.COAL),
             WorldLocation.everywhere,
         ),
         Drops(
             -64 to 16,
             1 to 4,
-            0.005125,
+            0.0205,
             ItemStack(Material.REDSTONE),
             WorldLocation.everywhere,
         ),
@@ -50,7 +50,7 @@ object Mining:
             Cardinal.east -> CardinalOres.ItemStacks.cobalt.raw,
             Cardinal.west -> CardinalOres.ItemStacks.lead.raw,
         )
-        ores.map((cardinal, ore) => Drops(0 to 320, 1 to 4, 0.001, ore, WorldLocation.cardinal(cardinal)))
+        ores.map((cardinal, ore) => Drops(0 to 320, 1 to 4, 0.004, ore, WorldLocation.cardinal(cardinal)))
     }.concat {
         // blue cardinal ores
         val ores = List(
@@ -59,7 +59,7 @@ object Mining:
             Cardinal.east -> CardinalOres.ItemStacks.plutonium,
             Cardinal.west -> CardinalOres.ItemStacks.emerald,
         )
-        ores.map((cardinal, ore) => Drops(-64 to 16, 1 to 3, 0.00027135, ore, WorldLocation.cardinal(cardinal)))
+        ores.map((cardinal, ore) => Drops(-64 to 16, 1 to 3, 0.0010854, ore, WorldLocation.cardinal(cardinal)))
     }.concat {
         // white quadrant ores
         val ores = List(
@@ -68,7 +68,7 @@ object Mining:
             Quadrant.northwest -> QuadrantOres.ItemStacks.aluminum.raw,
             Quadrant.northeast -> QuadrantOres.ItemStacks.zinc.raw,
         )
-        ores.map((quadrant, ore) => Drops(-64 to 320, 1 to 4, 0.0035, ore, WorldLocation.quadrant(quadrant)))
+        ores.map((quadrant, ore) => Drops(-64 to 320, 1 to 4, 0.014, ore, WorldLocation.quadrant(quadrant)))
     }.concat {
         // yellow quadrant ores
         val ores = List(
@@ -77,7 +77,7 @@ object Mining:
             Quadrant.northwest -> QuadrantOres.ItemStacks.palladium.raw,
             Quadrant.northeast -> QuadrantOres.ItemStacks.magnesium.raw,
         )
-        ores.map((quadrant, ore) => Drops(-64 to 32, 1 to 4, 0.0007185, ore, WorldLocation.quadrant(quadrant)))
+        ores.map((quadrant, ore) => Drops(-64 to 32, 1 to 4, 0.002874, ore, WorldLocation.quadrant(quadrant)))
     }.concat {
         // red quadrant ores
         val ores = List(
@@ -86,7 +86,7 @@ object Mining:
             Quadrant.northwest -> QuadrantOres.ItemStacks.hihiirogane.raw,
             Quadrant.northeast -> QuadrantOres.ItemStacks.meteorite.raw,
         )
-        ores.map((quadrant, ore) => Drops(-16 to 112, 1 to 5, 0.001, ore, WorldLocation.quadrant(quadrant)))
+        ores.map((quadrant, ore) => Drops(-16 to 112, 1 to 5, 0.02, ore, WorldLocation.quadrant(quadrant)))
     }
 
     def register()(using ac: AntiCheeser, as: Acclimation.Storage, p: Plugin, sql: SQLManager): Unit =
@@ -127,7 +127,10 @@ class MiningListener()(using ac: AntiCheeser, as: Acclimation.Storage, sql: SQLM
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     def onBreakBlock(event: BlockBreakEvent): Unit =
-        if !sql.useBlocking(ac.blockBroken(event.getBlock())) then
+        val it1 = sql.useBlocking(ac.blockBrokenPartA(event.getBlock()))
+        val it2 = ac.blockBrokenPartB(event.getBlock(), it1)
+        val it3 = sql.useBlocking(ac.blockBrokenPartC(event.getBlock(), it2))
+        if !it3 then
             return
         if !Mining.stoneBlocks.contains(event.getBlock().getType()) then
             return
@@ -142,7 +145,7 @@ class MiningListener()(using ac: AntiCheeser, as: Acclimation.Storage, sql: SQLM
         val dlong = Information.similarityNeg(long, plong)
 
         // multiplier of the bonus on top of baseline rate
-        val bonusRateMultiplier = math.sqrt((dlat*dlat) + (dlong*dlong))
+        val bonusRateMultiplier = (dlat+dlong)/2.0
 
         // figure out what could possibly drop
         val possibleDrops = Mining.drops.filter(_.yLevels.contains(event.getBlock().getY()))

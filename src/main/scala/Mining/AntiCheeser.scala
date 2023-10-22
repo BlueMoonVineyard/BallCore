@@ -7,7 +7,6 @@ package BallCore.Mining
 import BallCore.Storage.SQLManager
 import BallCore.Storage.Migration
 import org.bukkit.block.Block
-import scala.util.chaining._
 import skunk.implicits._
 import skunk.codec.all._
 import cats.effect.IO
@@ -57,24 +56,34 @@ class AntiCheeser()(using sql: SQLManager):
         val types = for {
             dx <- 0 to 15
             dz <- 0 to 15
-        } yield b.getWorld().getBlockAt(cx0 + dx, cz0 + dz, b.getY()).getType()
+        } yield b.getWorld().getBlockAt(cx0 + dx, b.getY(), cz0 + dz).getType()
         types.count(kind => Mining.stoneBlocks.contains(kind))
 
-    def blockBroken(b: Block)(using Session[IO]): IO[Boolean] =
+    def blockBrokenPartA(b: Block)(using Session[IO]): IO[Option[Int]] =
         val cx = b.getChunk().getX()
         val cz = b.getChunk().getZ()
         val y = b.getY()
         val world = b.getWorld().getUID()
+        sql.queryOptionIO(sql"""
+        SELECT Health FROM MiningAntiCheeser WHERE ChunkX = $int8 AND ChunkZ = $int8 AND Y = $int8 AND World = $uuid
+        """, int4, (cx, cz, y, world))
+
+    def blockBrokenPartB(b: Block, it: Option[Int]): Int =
+        it.getOrElse(countEligibleBlocks(b))
+
+    def blockBrokenPartC(b: Block, it: Int)(using Session[IO]): IO[Boolean] =
+        val cx = b.getChunk().getX()
+        val cz = b.getChunk().getZ()
+        val y = b.getY()
+        val world = b.getWorld().getUID()
+        val health = it - 1
 
         for {
-            health <- sql.queryOptionIO(sql"""
-            SELECT Health FROM MiningAntiCheeser WHERE ChunkX = $int8 AND ChunkZ = $int8 AND Y = $int8 AND World = $uuid
-            """, int4, (cx, cz, y, world)).map(_.getOrElse(countEligibleBlocks(b)).pipe(_ - 1))
             _ <- sql.commandIO(sql"""
             INSERT INTO MiningAntiCheeser (
                 Health, ChunkX, ChunkZ, Y, World
-            ) VALUES {
+            ) VALUES (
                 $int4, $int8, $int8, $int8, $uuid
-            } ON CONFLICT (ChunkX, ChunkZ, Y, World) DO UPDATE SET Health = EXCLUDED.Health;
+            ) ON CONFLICT (ChunkX, ChunkZ, Y, World) DO UPDATE SET Health = EXCLUDED.Health;
             """, (health.max(0), cx, cz, y, world))
         } yield health >= 0
