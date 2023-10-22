@@ -35,6 +35,8 @@ import akka.actor.BootstrapSetup
 import java.nio.file.Files
 import com.mojang.brigadier.builder.RequiredArgumentBuilder
 import com.mojang.brigadier.arguments.StringArgumentType
+import net.kyori.adventure.text.event.ClickEvent
+import net.kyori.adventure.text.event.HoverEvent
 
 class HTTP(apiKey: String)(using lam: LinkedAccountsManager):
     def intoResponse(r: Either[LinkedAccountError, String]) =
@@ -115,7 +117,8 @@ object VerifyCommand:
                     case Left(err) =>
                         player.sendServerMessage(txt(explain(err)))
                     case Right(linkCode) =>
-                        player.sendServerMessage(txt"Your link code is ${txt(linkCode.toUpperCase()).color(Colors.yellow).decorate(TextDecoration.BOLD)}. Use ${txt("/link-code use").decorate(TextDecoration.UNDERLINED)} on Discord to link your Minecraft account to your Discord account.")
+                        val link = txt("/link-code use").color(Colors.teal).decorate(TextDecoration.UNDERLINED).clickEvent(ClickEvent.copyToClipboard(s"/link-code use code:${linkCode}")).hoverEvent(HoverEvent.showText(txt"/link-code use code:${linkCode}"))
+                        player.sendServerMessage(txt"Your link code is ${txt(linkCode.toUpperCase()).color(Colors.yellow).decorate(TextDecoration.BOLD)}. Use ${link} (click to copy the command) on Discord to link your Minecraft account to your Discord account.")
 
                 Command.SINGLE_SUCCESS
             }
