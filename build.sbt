@@ -7,6 +7,7 @@ val circeVersion = "0.14.1"
 val scoreBoardLibraryVersion = "2.0.0-RC9"
 val AkkaVersion = "2.7.0"
 val AkkaHttpVersion = "10.5.2"
+val foliaVersion = "1.20.1-R0.1-SNAPSHOT"
 
 lazy val dependencyPlugin = project
   .in(file("dependency-plugin"))
@@ -23,8 +24,7 @@ lazy val dependencyPlugin = project
     resolvers += "jitpack.io" at "https://jitpack.io/",
     resolvers += "akka" at "https://repo.akka.io/maven",
 
-    libraryDependencies += "org.spigotmc" % "spigot-api" % "1.19-R0.1-SNAPSHOT" % "provided", // intransitive()
-    libraryDependencies += "dev.folia" % "folia-api" % "1.20.1-R0.1-SNAPSHOT" % "provided", // intransitive()
+    libraryDependencies += "dev.folia" % "folia-api" % foliaVersion % "provided", // intransitive()
     libraryDependencies += "com.velocitypowered" % "velocity-api" % "3.2.0-SNAPSHOT" % "provided",
     libraryDependencies += "com.github.plokhotnyuk.rtree2d" %% "rtree2d-core" % "0.11.12",
     libraryDependencies += "org.scalikejdbc" %% "scalikejdbc" % "4.0.0",
@@ -68,7 +68,7 @@ lazy val commonCode = project
 
     libraryDependencies += "org.scalameta" %% "munit" % "0.7.29" % Test,
 
-    libraryDependencies += "dev.folia" % "folia-api" % "1.19.4-R0.1-SNAPSHOT" % "provided",
+    libraryDependencies += "dev.folia" % "folia-api" % foliaVersion % "provided",
     libraryDependencies += "com.velocitypowered" % "velocity-api" % "3.2.0-SNAPSHOT" % "provided",
 
     Test / fork := true,
@@ -89,7 +89,7 @@ lazy val actualPlugin = project
     libraryDependencies += "com.github.seeseemelk" % "MockBukkit-v1.20" % "3.18.0" % Test,
 
     libraryDependencies += "org.locationtech.jts" % "jts-core" % "1.16.1" % "provided",
-    libraryDependencies += "dev.folia" % "folia-api" % "1.19.4-R0.1-SNAPSHOT" % "provided", // intransitive()
+    libraryDependencies += "dev.folia" % "folia-api" % foliaVersion % "provided", // intransitive()
 
     Test / fork := true,
     Test / run / javaOptions += "--enable-preview",
@@ -108,7 +108,7 @@ lazy val hubPlugin = project
     libraryDependencies += "org.scalameta" %% "munit" % "0.7.29" % Test,
     libraryDependencies += "com.github.seeseemelk" % "MockBukkit-v1.19" % "2.29.0" % Test,
 
-    libraryDependencies += "dev.folia" % "folia-api" % "1.19.4-R0.1-SNAPSHOT" % "provided", // intransitive()
+    libraryDependencies += "dev.folia" % "folia-api" % foliaVersion % "provided", // intransitive()
 
     Test / fork := true,
     Test / run / javaOptions += "--enable-preview",
