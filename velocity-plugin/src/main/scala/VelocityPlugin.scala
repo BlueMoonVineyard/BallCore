@@ -22,7 +22,7 @@ import com.velocitypowered.api.event.proxy.ProxyShutdownEvent
 import scala.concurrent.Future
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
-import ninja.leaping.configurate.yaml.YAMLConfigurationLoader
+import org.spongepowered.configurate.yaml.YamlConfigurationLoader
 import scala.util.Try
 import java.security.SecureRandom
 import java.util.Base64
@@ -142,19 +142,19 @@ final class VelocityPlugin(server: ProxyServer, logger: Logger, dataDirectory: P
     var shutdownHTTP: () => Future[Unit] = null
 
     def onProxyInitialize(event: ProxyInitializeEvent): Unit =
-        val loader = YAMLConfigurationLoader.builder()
-            .setPath(dataDirectory.resolve("config.yaml"))
+        val loader = YamlConfigurationLoader.builder()
+            .path(dataDirectory.resolve("config.yaml"))
             .build()
         Files.createDirectories(dataDirectory)
 
         val config = Try(loader.load()).get
-        val apiKeyNode = config.getNode("secrets", "api-key")
+        val apiKeyNode = config.node("secrets", "api-key")
         val apiKey = Option(apiKeyNode.getString()).getOrElse {
             val prng = SecureRandom()
             val bytes = new Array[Byte](64)
             prng.nextBytes(bytes)
             val str = Base64.getEncoder().encodeToString(bytes)
-            apiKeyNode.setValue(str)
+            apiKeyNode.set(str)
             loader.save(config)
             str
         }

@@ -40,6 +40,7 @@ lazy val dependencyPlugin = project
     libraryDependencies += "com.github.megavexnetwork.scoreboard-library" % "scoreboard-library-implementation" % scoreBoardLibraryVersion,
     libraryDependencies += "com.github.megavexnetwork.scoreboard-library" % "scoreboard-library-v1_20_R1" % scoreBoardLibraryVersion,
     libraryDependencies += "com.github.retrooper.packetevents" % "spigot" % "2.0.0-SNAPSHOT" % "provided",
+    libraryDependencies += "org.spongepowered" % "configurate-core" % "4.1.2",
     libraryDependencies += "org.spongepowered" % "configurate-yaml" % "4.1.2",
     libraryDependencies += "org.typelevel" %% "cats-effect" % "3.5.2",
     libraryDependencies += "org.typelevel" %% "cats-core" % "2.9.0",
