@@ -138,7 +138,7 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin, c: Clock) extends Ac
 				(ChunkX, ChunkZ, World, OffsetX, OffsetZ, Y, Kind, AgeIngameHours, IncompleteGrowthAdvancements)
 			VALUES
 				($int4, $int4, $uuid, $int4, $int4, $int4, $plantKindCodec, $int4, $int4)
-			ON CONFLICT DO UPDATE SET
+			ON CONFLICT (ChunkX, ChunkZ, World, OffsetX, OffsetZ, Y) DO UPDATE SET
 				Kind = EXCLUDED.Kind, AgeIngameHours = EXCLUDED.AgeIngameHours, IncompleteGrowthAdvancements = EXCLUDED.IncompleteGrowthAdvancements;
 			""", (value.inner.chunkX, value.inner.chunkZ, value.inner.world, value.inner.offsetX, value.inner.offsetZ, value.inner.yPos, value.inner.what, value.inner.ageIngameHours, value.inner.incompleteGrowthAdvancements)).map(_ => ())
 	private def get(cx: Int, cz: Int, w: UUID): Map[(Int, Int, Int), Dirty[DBPlantData]] =

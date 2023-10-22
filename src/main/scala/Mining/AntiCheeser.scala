@@ -75,6 +75,6 @@ class AntiCheeser()(using sql: SQLManager):
                 Health, ChunkX, ChunkZ, Y, World
             ) VALUES {
                 $int4, $int8, $int8, $int8, $uuid
-            } ON CONFLICT DO UPDATE SET Health = EXCLUDED.Health;
+            } ON CONFLICT (ChunkX, ChunkZ, Y, World) DO UPDATE SET Health = EXCLUDED.Health;
             """, (health.max(0), cx, cz, y, world))
         } yield health >= 0
