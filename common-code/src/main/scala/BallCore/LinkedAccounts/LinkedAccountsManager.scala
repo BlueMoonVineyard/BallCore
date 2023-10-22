@@ -1,4 +1,4 @@
-package BallCore.HTTP
+package BallCore.LinkedAccounts
 
 import BallCore.Storage.SQLManager
 import BallCore.Storage.Migration
@@ -7,8 +7,11 @@ import skunk.codec.all._
 import scala.util.Random
 import skunk.SqlState
 import java.util.UUID
+import cats.effect.IO
+import skunk.Session
 
 enum LinkedAccountError:
+	case accountAlreadyLinked
 	case linkCodeDoesNotExist
 	case linkCodeWasNotStartedFromMinecraft
 	case linkCodeWasNotStartedFromDiscord
@@ -47,10 +50,23 @@ class LinkedAccountsManager()(using sql: SQLManager):
 	def generateLinkCode(): String =
 		Random.alphanumeric.take(6).mkString
 
-	def startLinkProcessFromDiscord(user: String): String =
+	def isAlreadyLinked(discordID: String): Boolean =
+		sql.useBlocking(sql.queryUniqueIO(sql"""
+		SELECT EXISTS(SELECT 1 FROM DiscordLinkages WHERE DiscordID = $text);
+		""", bool, discordID))
+
+	def isAlreadyLinked(mcuuid: UUID): Boolean =
+		sql.useBlocking(sql.queryUniqueIO(sql"""
+		SELECT EXISTS(SELECT 1 FROM DiscordLinkages WHERE MinecraftUUID = $uuid);
+		""", bool, mcuuid))
+
+	def startLinkProcessFromDiscord(user: String): Either[LinkedAccountError, String] =
 		val code = generateLinkCode()
 
-		sql.useBlocking(sql.commandIO(sql"""
+		if isAlreadyLinked(user) then
+			return Left(LinkedAccountError.accountAlreadyLinked)
+
+		Right(sql.useBlocking(sql.commandIO(sql"""
 		INSERT INTO PendingDiscordLinkages (
 			DiscordID, LinkCode
 		) VALUES (
@@ -61,12 +77,15 @@ class LinkedAccountsManager()(using sql: SQLManager):
 				sql.queryUniqueIO(sql"""
 				SELECT LinkCode FROM PendingDiscordLinkages WHERE DiscordID = $text
 				""", text, user)
-		})
+		}))
 
-	def startLinkProcessFromMinecraft(user: UUID): String =
+	def startLinkProcessFromMinecraft(user: UUID): Either[LinkedAccountError, String] =
 		val code = generateLinkCode()
 
-		sql.useBlocking(sql.commandIO(sql"""
+		if isAlreadyLinked(user) then
+			return Left(LinkedAccountError.accountAlreadyLinked)
+
+		Right(sql.useBlocking(sql.commandIO(sql"""
 		INSERT INTO PendingDiscordLinkages (
 			MinecraftUUID, LinkCode
 		) VALUES (
@@ -77,46 +96,41 @@ class LinkedAccountsManager()(using sql: SQLManager):
 				sql.queryUniqueIO(sql"""
 				SELECT LinkCode FROM PendingDiscordLinkages WHERE MinecraftUUID = $uuid
 				""", text, user)
-		})
+		}))
 
-	def finishLinkProcessFromDiscord(user: String): Either[LinkedAccountError, Unit] =
+	private def insertLinkage(discordID: String, mcuuid: UUID)(using Session[IO]): IO[Either[LinkedAccountError, Unit]] =
+		sql.txIO { tx =>
+			sql.commandIO(sql"""
+			DELETE FROM PendingDiscordLinkages WHERE MinecraftUUID = $uuid OR DiscordID = $text;
+			""", (mcuuid, discordID)).flatMap { _ =>
+			sql.commandIO(sql"""
+			INSERT INTO DiscordLinkages (MinecraftUUID, DiscordID) VALUES ($uuid, $text);
+			""", (mcuuid, discordID))
+			}.recoverWith {
+				case SqlState.UniqueViolation(_) => IO.pure(Left(LinkedAccountError.accountAlreadyLinked))
+			}.map { _ =>
+			Right(())
+			}
+		}
+
+	def finishLinkProcessFromDiscord(linkCode: String, discordID: String): Either[LinkedAccountError, Unit] =
 		sql.useBlocking(sql.queryOptionIO(sql"""
 		SELECT MinecraftUUID FROM PendingDiscordLinkages WHERE LinkCode = $text
-		""", uuid.opt, user)) match
+		""", uuid.opt, linkCode)) match
 			case None =>
 				Left(LinkedAccountError.linkCodeDoesNotExist)
 			case Some(None) =>
 				Left(LinkedAccountError.linkCodeWasNotStartedFromMinecraft)
 			case Some(Some(mcuuid)) =>
-				sql.useBlocking(sql.txIO { tx =>
-					sql.commandIO(sql"""
-					DELETE FROM PendingDiscordLinkages WHERE MinecraftUUID = $uuid OR DiscordID = $text;
-					""", (mcuuid, user)).flatMap { _ =>
-					sql.commandIO(sql"""
-					INSERT INTO DiscordLinkages (MinecraftUUID, DiscordID) VALUES ($uuid, $text);
-					""", (mcuuid, user))
-					}.map { _ =>
-					Right(())
-					}
-				})
+				sql.useBlocking(insertLinkage(discordID, mcuuid))
 
-	def finishLinkProcessFromMinecraft(user: UUID): Either[LinkedAccountError, Unit] =
+	def finishLinkProcessFromMinecraft(linkCode: String, mcuuid: UUID): Either[LinkedAccountError, Unit] =
 		sql.useBlocking(sql.queryOptionIO(sql"""
-		SELECT DiscordID FROM PendingDiscordLinkages WHERE LinkCode = $uuid
-		""", text.opt, user)) match
+		SELECT DiscordID FROM PendingDiscordLinkages WHERE LinkCode = $text
+		""", text.opt, linkCode)) match
 			case None =>
 				Left(LinkedAccountError.linkCodeDoesNotExist)
 			case Some(None) =>
 				Left(LinkedAccountError.linkCodeWasNotStartedFromDiscord)
 			case Some(Some(discordID)) =>
-				sql.useBlocking(sql.txIO { tx =>
-					sql.commandIO(sql"""
-					DELETE FROM PendingDiscordLinkages WHERE MinecraftUUID = $uuid OR DiscordID = $text;
-					""", (user, discordID)).flatMap { _ =>
-					sql.commandIO(sql"""
-					INSERT INTO DiscordLinkages (MinecraftUUID, DiscordID) VALUES ($uuid, $text);
-					""", (user, discordID))
-					}.map { _ =>
-					Right(())
-					}
-				})
+				sql.useBlocking(insertLinkage(discordID, mcuuid))

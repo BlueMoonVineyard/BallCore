@@ -15,6 +15,11 @@ lazy val dependencyPlugin = project
     name := "BallCoreDependencyPlugin",
     version := "0.1.0-SNAPSHOT",
     assembly / assemblyJarName := "BallCoreDependencyPlugin.jar",
+    assembly / assemblyMergeStrategy := {
+      case PathList("META-INF", xs @ _*) => MergeStrategy.discard
+      case PathList(ps @ _*) if ps.endsWith(".conf") => MergeStrategy.concat
+      case x => (assembly / assemblyMergeStrategy).value(x)
+    },
 
     scalaVersion := scala3Version,
 
@@ -35,6 +40,7 @@ lazy val dependencyPlugin = project
     libraryDependencies += "com.github.megavexnetwork.scoreboard-library" % "scoreboard-library-implementation" % scoreBoardLibraryVersion,
     libraryDependencies += "com.github.megavexnetwork.scoreboard-library" % "scoreboard-library-v1_20_R1" % scoreBoardLibraryVersion,
     libraryDependencies += "com.github.retrooper.packetevents" % "spigot" % "2.0.0-SNAPSHOT" % "provided",
+    libraryDependencies += "org.spongepowered" % "configurate-yaml" % "4.1.2",
     libraryDependencies += "org.typelevel" %% "cats-effect" % "3.5.2",
     libraryDependencies += "org.typelevel" %% "cats-core" % "2.9.0",
     libraryDependencies += "org.typelevel" %% "cats-free" % "2.9.0",
@@ -69,6 +75,24 @@ lazy val commonCode = project
     libraryDependencies += "org.scalameta" %% "munit" % "0.7.29" % Test,
 
     libraryDependencies += "dev.folia" % "folia-api" % foliaVersion % "provided",
+    libraryDependencies += "com.velocitypowered" % "velocity-api" % "3.2.0-SNAPSHOT" % "provided",
+
+    Test / fork := true,
+    Test / run / javaOptions += "--enable-preview",
+  )
+
+lazy val velocityPlugin = project
+  .in(file("velocity-plugin"))
+  .dependsOn(dependencyPlugin)
+  .dependsOn(commonCode)
+  .settings(
+    name := "BallCoreVelocity",
+    version := "0.1.0-SNAPSHOT",
+
+    scalaVersion := scala3Version,
+
+    libraryDependencies += "org.scalameta" %% "munit" % "0.7.29" % Test,
+
     libraryDependencies += "com.velocitypowered" % "velocity-api" % "3.2.0-SNAPSHOT" % "provided",
 
     Test / fork := true,

@@ -1,0 +1,19 @@
+{
+	"id": "ballcorevelocityplugin",
+	"name": "BallCore Velocity Plugin",
+	"version": "0.0.1",
+	"description": "CivCubed velocity plugin",
+	"url": "https://civcubed.net",
+	"authors": [
+		"Janet Blackquill"
+	],
+	"dependencies": [
+		{
+			"id": "ballcoredependencyplugin"
+		},
+		{
+			"id": "ballcorecommoncode"
+		}
+	],
+	"main": "BallCoreVelocityPlugin.VelocityBootstrap"
+}

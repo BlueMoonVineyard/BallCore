@@ -14,17 +14,14 @@ import com.github.stefvanschie.inventoryframework.pane.{OutlinePane => IFOutline
 import com.github.stefvanschie.inventoryframework.gui.GuiItem
 import org.bukkit.Material
 import org.bukkit.inventory.ItemStack
-import net.kyori.adventure.text.ComponentLike
-import net.kyori.adventure.text.format.TextColor
 import net.kyori.adventure.text.format.TextDecoration
-import net.kyori.adventure.text.format.Style
 import org.bukkit.event.inventory.InventoryClickEvent
 import net.kyori.adventure.text.format.TextDecoration.State
 import org.bukkit.inventory.meta.SkullMeta
 import org.bukkit.OfflinePlayer
-import net.kyori.adventure.audience.Audience
 import org.bukkit.inventory.ItemFlag
 import org.bukkit.enchantments.Enchantment
+import BallCore.TextComponents
 
 // trait AccumulatorFn:
 
@@ -49,54 +46,9 @@ type PaneAccumulator = Accumulator[Pane, Object => InventoryClickEvent => Unit]
 type ItemAccumulator = Accumulator[GuiItem, Object => InventoryClickEvent => Unit]
 type LoreAccumulator = Accumulator[Component, Box[Option[OfflinePlayer]]]
 
-class ChatElements:
-    extension (sc: StringContext)
-        def txt(args: Any*): Component =
-            val strings = sc.parts.iterator
-            var it = Component.text(strings.next())
-            val expressions = args.iterator
-            while strings.hasNext do
-                expressions.next() match
-                    case c: ComponentLike => it = it.append(c)
-                    case obj => it = it.append(Component.text(obj.toString()))
-                it = it.append(Component.text(strings.next()))
-            it
+object ChatElements extends TextComponents
 
-    extension (a: Audience)
-        def sendServerMessage(txt: Component): Unit =
-            a.sendMessage(txt.color(Colors.serverMessage))
-
-    def txt(of: String): Component =
-        Component.text(of)
-
-    def keybind(of: String): Component =
-        Component.keybind(of)
-
-    object Colors:
-        val red = TextColor.fromHexString("#e93d58")
-        val teal = TextColor.fromHexString("#00d485")
-        val grellow = TextColor.fromHexString("#b6e521")
-        val serverMessage = TextColor.fromHexString("#6dd3ff")
-
-    extension (c: Component)
-        def style(color: TextColor, decorations: TextDecoration*): Component =
-            c.style(Style.style(color, decorations: _*))
-        def not(decoration: TextDecoration): Component =
-            c.decoration(decoration, false)
-    extension (s: Seq[Component])
-        def mkComponent(separator: Component): Component =
-            var builder = Component.text()
-            s.zipWithIndex.foreach { (component, idx) =>
-                builder = builder.append(component)
-                if idx != s.length-1 then
-                    builder = builder.append(separator)
-            }
-            builder.asComponent()
-
-
-object ChatElements extends ChatElements
-
-object Elements extends ChatElements:
+object Elements extends TextComponents:
     def nil[T, E]: (Accumulator[T, E]) ?=> Unit = {
 
     }

@@ -56,12 +56,15 @@ jobs:
       run: sbt actualPlugin/package
     - name: Package hub plugin
       run: sbt hubPlugin/package
+    - name: Package velocity plugin
+      run: sbt velocityPlugin/package
     - name: Move jars
       run: |
         cp ./target/scala-3.3.1/ballcore_3-0.1.0-SNAPSHOT.jar BallCore.jar
         cp ./dependency-plugin/target/scala-3.3.1/BallCoreDependencyPlugin.jar BallCoreDependencyPlugin.jar
         cp ./hub-plugin/target/scala-3.3.1/ballcorehub_3-0.1.0-SNAPSHOT.jar BallCoreHub.jar
         cp ./common-code/target/scala-3.3.1/ballcorecommoncode_3-0.1.0-SNAPSHOT.jar BallCoreCommonCode.jar
+        cp ./velocity-plugin/target/scala-3.3.1/ballcorevelocity_3-0.1.0-SNAPSHOT.jar BallCoreVelocityPlugin.jar
     - name: Update jars
       uses: andelf/nightly-release@main
       env:
@@ -75,3 +78,4 @@ jobs:
           ./BallCore.jar
           ./BallCoreHub.jar
           ./BallCoreCommonCode.jar
+          ./BallCoreVelocityPlugin.jar
