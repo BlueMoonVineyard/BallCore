@@ -59,6 +59,7 @@ jobs:
         cp ./target/scala-3.3.1/ballcore_3-0.1.0-SNAPSHOT.jar BallCore.jar
         cp ./dependency-plugin/target/scala-3.3.1/BallCoreDependencyPlugin.jar BallCoreDependencyPlugin.jar
         cp ./hub-plugin/target/scala-3.3.1/ballcorehub_3-0.1.0-SNAPSHOT.jar BallCoreHub.jar
+        cp ./common-code/target/scala-3.3.1/ballcorecommoncode_3-0.1.0-SNAPSHOT.jar BallCoreCommonCode.jar
     - name: Update jars
       uses: andelf/nightly-release@main
       env:
@@ -71,3 +72,4 @@ jobs:
           ./BallCoreDependencyPlugin.jar
           ./BallCore.jar
           ./BallCoreHub.jar
+          ./BallCoreCommonCode.jar

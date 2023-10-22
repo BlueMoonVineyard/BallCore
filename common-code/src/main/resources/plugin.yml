@@ -1,14 +1,13 @@
 # SPDX-FileCopyrightText: 2023 Janet Blackquill <uhhadd@gmail.com>
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
-name: BallCoreHub
+name: BallCoreCommonCode
 version: 0.1
-main: BallCoreHub.Main
-description: Hub plugin of CivBalls
+main: BallCore.CommonCode.BukkitPlugin
+description: Common code plugin of CivBalls
 authors: [Janet Blackquill]
 website: https://github.com/BlueMoonVineyard/BallCore
 api-version: 1.13
 folia-supported: true
 depend:
 - BallCoreDependencyPlugin
-- BallCoreCommonCode

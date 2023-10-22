@@ -1,0 +1,12 @@
+{
+	"id": "ballcoredependencyplugin",
+	"name": "BallCore Dependency Plugin",
+	"version": "0.0.1",
+	"description": "CivCubed dependency plugin",
+	"url": "https://civcubed.net",
+	"authors": [
+		"Janet Blackquill"
+	],
+	"dependencies": [],
+	"main": "BallCoreDependencyPlugin.VelocityMain"
+}

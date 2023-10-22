@@ -1,0 +1,12 @@
+{
+	"id": "ballcorecommoncode",
+	"name": "BallCore Common Code",
+	"version": "0.0.1",
+	"description": "CivCubed common code plugin",
+	"url": "https://civcubed.net",
+	"authors": [
+		"Janet Blackquill"
+	],
+	"dependencies": ["ballcoredependencyplugin"],
+	"main": "BallCore.CommonCode.VelocityPlugin"
+}

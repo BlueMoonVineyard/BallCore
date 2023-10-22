@@ -25,6 +25,7 @@ lazy val dependencyPlugin = project
 
     libraryDependencies += "org.spigotmc" % "spigot-api" % "1.19-R0.1-SNAPSHOT" % "provided", // intransitive()
     libraryDependencies += "dev.folia" % "folia-api" % "1.20.1-R0.1-SNAPSHOT" % "provided", // intransitive()
+    libraryDependencies += "com.velocitypowered" % "velocity-api" % "3.2.0-SNAPSHOT" % "provided",
     libraryDependencies += "com.github.plokhotnyuk.rtree2d" %% "rtree2d-core" % "0.11.12",
     libraryDependencies += "org.scalikejdbc" %% "scalikejdbc" % "4.0.0",
     libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "2.1.0",
@@ -56,9 +57,28 @@ lazy val dependencyPlugin = project
     ),
   )
 
+lazy val commonCode = project
+  .in(file("common-code"))
+  .dependsOn(dependencyPlugin)
+  .settings(
+    name := "BallCoreCommonCode",
+    version := "0.1.0-SNAPSHOT",
+
+    scalaVersion := scala3Version,
+
+    libraryDependencies += "org.scalameta" %% "munit" % "0.7.29" % Test,
+
+    libraryDependencies += "dev.folia" % "folia-api" % "1.19.4-R0.1-SNAPSHOT" % "provided",
+    libraryDependencies += "com.velocitypowered" % "velocity-api" % "3.2.0-SNAPSHOT" % "provided",
+
+    Test / fork := true,
+    Test / run / javaOptions += "--enable-preview",
+  )
+
 lazy val actualPlugin = project
   .in(file("."))
   .dependsOn(dependencyPlugin)
+  .dependsOn(commonCode)
   .settings(
     name := "BallCore",
     version := "0.1.0-SNAPSHOT",
@@ -78,6 +98,7 @@ lazy val actualPlugin = project
 lazy val hubPlugin = project
   .in(file("hub-plugin"))
   .dependsOn(dependencyPlugin)
+  .dependsOn(commonCode)
   .settings(
     name := "BallCoreHub",
     version := "0.1.0-SNAPSHOT",
