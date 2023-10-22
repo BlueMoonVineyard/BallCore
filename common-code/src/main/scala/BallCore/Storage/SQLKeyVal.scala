@@ -63,7 +63,7 @@ class SQLKeyVal()(using sql: SQLManager) extends KeyVal:
         """, (superkey, key, value.asJson)).map(_ => ())
     override def get[A](superkey: String, key: String)(using Encoder[A], Decoder[A], Session[IO]): IO[Option[A]] =
         sql.queryOptionIO(sql"""
-        SELECT Value FROM PlayerKeyValue WHERE Superkey = $text AND KEY = $text
+        SELECT Value FROM GlobalKeyValue WHERE Superkey = $text AND KEY = $text
         """, jsonb, (superkey, key))
     override def remove(superkey: String, key: String)(using Session[IO]): IO[Unit] =
         sql.commandIO(sql"""
