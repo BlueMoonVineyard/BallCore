@@ -23,11 +23,35 @@ import net.kyori.adventure.text.format.NamedTextColor
 import BallCore.DataStructures.Actor
 import BallCore.Folia.FireAndForget
 import BallCore.UI.ChatElements._
+import BallCore.CraftingStations.WorkChestUtils.findWorkChest
+import org.bukkit.block.DoubleChest
 
 enum CraftingMessage:
 	case startWorking(p: Player, f: Block, r: Recipe)
 	case stopWorking(p: Player)
 	case tick
+
+object WorkChestUtils:
+	val sides = List(BlockFace.NORTH, BlockFace.SOUTH, BlockFace.WEST, BlockFace.EAST, BlockFace.UP)
+	def findWorkChest(nearby: Block): Option[(Block, Inventory)] =
+		sides.map(face => nearby.getRelative(face))
+			 .find(block => block.getType() == Material.CHEST || block.getType() == Material.TRAPPED_CHEST)
+			 .flatMap { chest =>
+			 	chest.getState() match
+			 		case double: DoubleChest => Some((chest, double.getInventory()))
+			 		case single: Chest => Some((chest, single.getInventory()))
+			 		case _ => None
+			 }
+
+	def insertInto(outputs: List[ItemStack], inventory: Inventory, at: Block): Unit =
+		outputs.foreach { output =>
+			if !inventory.addItem(output).isEmpty() then
+				val _ = at.getWorld().dropItemNaturally(at.getLocation(), output)
+		}
+
+	def ensureLoaded(b: Block): Unit =
+		// ensure any double chests across chunk seams are loaded
+		sides.foreach(face => b.getRelative(face))
 
 class CraftingActor(using p: Plugin) extends Actor[CraftingMessage]:
 	var jobs = Map[Block, Job]()
@@ -68,14 +92,8 @@ class CraftingActor(using p: Plugin) extends Actor[CraftingMessage]:
 		}
 		rezept.forall(_._2 <= 0)
 
-	def insertInto(outputs: List[ItemStack], inventory: Inventory, at: Block): Unit =
-		outputs.foreach { output =>
-			if !inventory.addItem(output).isEmpty() then
-				val _ = at.getWorld().dropItemNaturally(at.getLocation(), output)
-		}
-
 	def completeJob(job: Job): Unit =
-		val workChest = sides.map(face => job.factory.getRelative(face)).find(block => block.getType() == Material.CHEST || block.getType() == Material.TRAPPED_CHEST) match
+		val (workChest, inventory) = WorkChestUtils.findWorkChest(job.factory) match
 			case None =>
 				job.workedBy.foreach { player =>
 					given ec: ExecutionContext = EntityExecutionContext(player)
@@ -87,11 +105,9 @@ class CraftingActor(using p: Plugin) extends Actor[CraftingMessage]:
 			case Some(value) => value
 
 		ensureLoaded(workChest)
-		val chest = workChest.getState().asInstanceOf[Chest]
-		val inv = chest.getBlockInventory()
 
-		if removeFrom(job.recipe.inputs, inv) then
-			insertInto(job.recipe.outputs, inv, job.factory)
+		if removeFrom(job.recipe.inputs, inventory) then
+			WorkChestUtils.insertInto(job.recipe.outputs, inventory, job.factory)
 
 			job.workedBy.foreach { player =>
 				given ec: ExecutionContext = EntityExecutionContext(player)

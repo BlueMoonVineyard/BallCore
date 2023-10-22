@@ -23,6 +23,7 @@ import scala.util.chaining._
 import BallCore.UI.Elements._
 import org.bukkit.block.{Furnace => BFurnace}
 import BallCore.Storage.SQLManager
+import BallCore.CraftingStations.WorkChestUtils
 
 enum FurnaceTier:
     // tier 0 (vanilla furnace)
@@ -45,6 +46,14 @@ enum FurnaceTier:
     case Three
 
 class FurnaceListener(using bm: BlockManager, registry: ItemRegistry, sql: SQLManager) extends Listener:
+    def spawn(it: ItemStack, by: Block): Unit =
+        val loc = by.getLocation().clone().add(0, 1, 0)
+        WorkChestUtils.findWorkChest(by) match
+            case None =>
+                by.getWorld().dropItem(loc, it); ()
+            case Some((chest, inv)) =>
+                WorkChestUtils.insertInto(List(it), inv, chest)
+
     def oreSmeltingResult(furnaceTier: FurnaceTier): (Int, OreTier) =
         furnaceTier match
             case FurnaceTier.Zero =>
@@ -54,14 +63,15 @@ class FurnaceListener(using bm: BlockManager, registry: ItemRegistry, sql: SQLMa
             case FurnaceTier.Two =>
                 (1, OreTier.Ingot)
             case FurnaceTier.Three =>
-                (12, OreTier.Nugget)
+                (2, OreTier.Ingot)
 
     def tier(of: Block): FurnaceTier =
         val furnaceItem = sql.useBlocking(bm.getCustomItem(of))
-        if !furnaceItem.isDefined || !furnaceItem.get.isInstanceOf[Furnace] then
-            FurnaceTier.Zero
-        else
-            furnaceItem.asInstanceOf[Furnace].tier
+        furnaceItem match
+            case Some(furnace) if furnaceItem.get.isInstanceOf[Furnace] =>
+                furnaceItem.get.asInstanceOf[Furnace].tier
+            case _ =>
+                FurnaceTier.Zero
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     def onItemSmelt(event: FurnaceSmeltEvent): Unit =
@@ -74,21 +84,11 @@ class FurnaceListener(using bm: BlockManager, registry: ItemRegistry, sql: SQLMa
         // WORKAROUND: bukkit code doesn't seem to like custom items all that much
         event.setCancelled(true)
         val result = ore.variants.ore(kind).clone().tap(_.setAmount(num))
+        spawn(result, event.getBlock())
+
         val furnaceState = event.getBlock().getState(false).asInstanceOf[BFurnace]
-        val resultSlot = furnaceState.getInventory().getResult()
-        val newResultSlot =
-            if resultSlot == null then
-                result
-            else if result.isSimilar(resultSlot) then
-                resultSlot.setAmount(resultSlot.getAmount() + result.getAmount())
-                resultSlot
-            else
-                null
-
-        if newResultSlot == null then
-            return
-
-        furnaceState.getInventory().setResult(newResultSlot)
+        val inputSlot = furnaceState.getInventory().getSmelting().tap(x => x.setAmount(x.getAmount() - 1))
+        furnaceState.getInventory().setSmelting(inputSlot)
 
 object Furnaces:
     val group = ItemGroup(NamespacedKey("ballcore", "furnaces"), ItemStack(Material.WHITE_CONCRETE))
