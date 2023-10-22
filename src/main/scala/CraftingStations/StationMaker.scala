@@ -71,6 +71,19 @@ object StationMaker:
 			30,
 			1,
 		),
+		Recipe(
+			"Make Concrete Mixer",
+			List(
+				(MaterialChoice(Material.DECORATED_POT), 1),
+				(MaterialChoice(Material.SAND), 64),
+				(MaterialChoice(Material.GRAVEL), 64),
+			),
+			List(
+				ConcreteMixer.template,
+			),
+			30,
+			1,
+		),
 	)
 	val template = CustomItemStack.make(NamespacedKey("ballcore", "station_maker"), Material.CARTOGRAPHY_TABLE, txt"Station Maker", txt"Allows creating improved crafting stations")
 
