@@ -47,7 +47,7 @@ class SQLKeyVal()(using sql: SQLManager) extends KeyVal:
 
     override def set[A](player: UUID, key: String, value: A)(using Encoder[A], Decoder[A], Session[IO]): IO[Unit] =
         sql.commandIO(sql"""
-        INSERT INTO PlayerKeyValue (Player, Key, Value) VALUES ($uuid, $text, $jsonb) ON CONFLICT DO UPDATE SET Value = EXCLUDED.Value;
+        INSERT INTO PlayerKeyValue (Player, Key, Value) VALUES ($uuid, $text, $jsonb) ON CONFLICT (Player, Key) DO UPDATE SET Value = EXCLUDED.Value;
         """, (player, key, value.asJson)).map(_ => ())
     override def get[A](player: UUID, key: String)(using Encoder[A], Decoder[A], Session[IO]): IO[Option[A]] =
         sql.queryOptionIO(sql"""
@@ -59,7 +59,7 @@ class SQLKeyVal()(using sql: SQLManager) extends KeyVal:
         """, (player, key)).map(_ => ())
     override def set[A](superkey: String, key: String, value: A)(using Encoder[A], Decoder[A], Session[IO]): IO[Unit] =
         sql.commandIO(sql"""
-        INSERT INTO GlobalKeyValue (Superkey, Key, Value) VALUES ($text, $text, $jsonb) ON CONFLICT DO UPDATE SET Value = EXCLUDED.Value;
+        INSERT INTO GlobalKeyValue (Superkey, Key, Value) VALUES ($text, $text, $jsonb) ON CONFLICT (Superkey, Key) DO UPDATE SET Value = EXCLUDED.Value;
         """, (superkey, key, value.asJson)).map(_ => ())
     override def get[A](superkey: String, key: String)(using Encoder[A], Decoder[A], Session[IO]): IO[Option[A]] =
         sql.queryOptionIO(sql"""
