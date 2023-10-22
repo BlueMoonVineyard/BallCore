@@ -50,6 +50,8 @@ jobs:
         fail_ci_if_error: false
     - name: Assemble dependency plugin
       run: sbt dependencyPlugin/assembly
+    - name: Package common code plugin
+      run: sbt commonCode/package
     - name: Package main plugin
       run: sbt actualPlugin/package
     - name: Package hub plugin
