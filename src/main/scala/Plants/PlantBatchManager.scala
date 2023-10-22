@@ -81,7 +81,7 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin, c: Clock) extends Ac
 				CREATE TABLE Plants (
 					ChunkX INTEGER NOT NULL,
 					ChunkZ INTEGER NOT NULL,
-					World TEXT NOT NULL,
+					World UUID NOT NULL,
 					OffsetX INTEGER NOT NULL,
 					OffsetZ INTEGER NOT NULL,
 					Y INTEGER NOT NULL,
@@ -114,7 +114,7 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin, c: Clock) extends Ac
 	private def load()(using Session[IO]): IO[Unit] =
 		for {
 			plants <- sql.queryListIO(sql"""
-			SELECT (ChunkX, ChunkZ, World, OffsetX, OffsetZ, Y, Kind, AgeIngameHours, IncompleteGrowthAdvancements) FROM Plants
+			SELECT ChunkX, ChunkZ, World, OffsetX, OffsetZ, Y, Kind, AgeIngameHours, IncompleteGrowthAdvancements FROM Plants
 			""", (int4 *: int4 *: uuid *: int4 *: int4 *: int4 *: plantKindCodec *: int4 *: int4).to[DBPlantData], skunk.Void)
 		} yield {
 			plants.foreach { pd =>

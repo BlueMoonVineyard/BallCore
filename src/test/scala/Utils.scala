@@ -23,7 +23,7 @@ object TestDatabase:
             port = 5432,
             user = "civcubed",
             database = "civcubed",
-            password = Some("civcubed")
+            password = Some("shitty password")
         )
         val cleanName = opts.name.replace(" ", "").replace("-", "").replace("'", "")
         val nameFragment = Fragment(List(Left(cleanName)), Void.codec, Origin.unknown)
@@ -37,7 +37,7 @@ object TestDatabase:
             port = 5432,
             user = "civcubed",
             database = cleanName,
-            password = Some("civcubed")
+            password = Some("shitty password")
         )
         new SQLManager(testSession, cleanName)
     def teardown(s: SQLManager): Unit =
@@ -46,7 +46,7 @@ object TestDatabase:
             port = 5432,
             user = "civcubed",
             database = "civcubed",
-            password = Some("civcubed")
+            password = Some("shitty password")
         )
         val nameFragment = Fragment(List(Left(s.database)), Void.codec, Origin.unknown)
         session.use { s =>

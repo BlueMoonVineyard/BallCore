@@ -22,7 +22,7 @@ jobs:
       postgres:
         image: postgres
         env:
-          POSTGRES_PASSWORD: civcubed
+          POSTGRES_PASSWORD: "shitty password"
           POSTGRES_DB: civcubed
           POSTGRES_USER: civcubed
         options: >-

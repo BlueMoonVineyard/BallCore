@@ -41,7 +41,7 @@ import BallCore.Sigils.CustomEntityManager
 import BallCore.Sigils.SigilSlimeManager
 import BallCore.PolygonEditor.PolygonEditor
 import BallCore.MapCloning.MapCloningListener
-import BallCore.HTTP.HTTP
+// import BallCore.HTTP.HTTP
 
 final class Main extends JavaPlugin:
     given sql: Storage.SQLManager = Storage.SQLManager()
@@ -65,7 +65,7 @@ final class Main extends JavaPlugin:
     given cem: CustomEntityManager = CustomEntityManager()
     given bam: SigilSlimeManager = SigilSlimeManager()
     given editor: PolygonEditor = new PolygonEditor()
-    
+
     override def onEnable() =
         given lib: ScoreboardLibrary = ScoreboardLibrary.loadScoreboardLibrary(this)
         given sid: SidebarActor = SidebarActor()
@@ -88,7 +88,7 @@ final class Main extends JavaPlugin:
         given pbm: PlantBatchManager = Plants.Plants.register()
         given ac: ChatActor = Chat.Chat.register()
         val chatCommands = ChatCommands()
-        HTTP.register()
+        // HTTP.register()
         getCommand("group").setExecutor(chatCommands.Group)
         getCommand("global").setExecutor(chatCommands.Global)
         getCommand("local").setExecutor(chatCommands.Local)

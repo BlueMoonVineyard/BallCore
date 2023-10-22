@@ -51,7 +51,7 @@ object Slimes:
 
 case class EntityIDPair(val interaction: UUID, val display: UUID)
 
-class SigilSlimeManager(using sql: Storage.SQLManager):
+class SigilSlimeManager(using sql: Storage.SQLManager, cbm: CivBeaconManager, ccm: CustomEntityManager):
 	sql.applyMigration(
 		Storage.Migration(
 			"Initial Sigil Slime Manager",
@@ -63,7 +63,7 @@ class SigilSlimeManager(using sql: Storage.SQLManager):
 					InteractionEntityID UUID NOT NULL,
 					UNIQUE(BanishedUserID, BeaconID),
 					UNIQUE(InteractionEntityID),
-					FOREIGN KEY (BeaconID) REFERENCES Beacons(ID) ON DELETE CASCADE,
+					FOREIGN KEY (BeaconID) REFERENCES CivBeacons(ID) ON DELETE CASCADE,
 					FOREIGN KEY (InteractionEntityID) REFERENCES CustomEntities(InteractionEntityID) ON DELETE CASCADE
 				);
 				""".command
@@ -75,6 +75,8 @@ class SigilSlimeManager(using sql: Storage.SQLManager):
 			)
 		),
 	)
+	val _ = cbm
+	val _ = ccm
 
 	def addSlime(entity: UUID, beacon: BeaconID)(using Session[IO]): IO[Unit] =
 		sql.commandIO(sql"""

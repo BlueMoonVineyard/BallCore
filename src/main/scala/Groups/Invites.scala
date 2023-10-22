@@ -49,7 +49,7 @@ class InviteManager()(using sql: Storage.SQLManager, gm: GroupManager):
 
     def getInvitesFor(player: UUID)(using s: Session[IO]): IO[List[(UUID, GroupID)]] =
         sql.queryListIO(sql"""
-        SELECT (Creator, GroupID) FROM Invites WHERE Invitee = $uuid
+        SELECT Creator, GroupID FROM Invites WHERE Invitee = $uuid
         """, (uuid *: uuid), player)
 
     def deleteInvite(invitee: UserID, group: GroupID)(using s: Session[IO]): IO[Completion] =

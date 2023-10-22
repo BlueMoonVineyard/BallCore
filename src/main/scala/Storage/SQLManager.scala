@@ -28,7 +28,7 @@ object SQLManager:
             port = 5432,
             user = "civcubed",
             database = "civcubed",
-            password = Some("civcubed")
+            password = Some("shitty password")
         )
         new SQLManager(session, "civcubed")
 
