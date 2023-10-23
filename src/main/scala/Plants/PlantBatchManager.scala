@@ -34,6 +34,9 @@ import org.bukkit.entity.Player
 import BallCore.Folia.LocationExecutionContext
 import scala.concurrent.ExecutionContext
 import BallCore.UI.ChatElements._
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.duration._
 
 enum PlantMsg:
 	case startGrowing(what: Plant, where: Block)
@@ -210,9 +213,10 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin, c: Clock) extends Ac
 							plantKey -> plant
 						else
 							val (x, z) = fromOffsets(plant.inner.chunkX, plant.inner.chunkZ, plant.inner.offsetX, plant.inner.offsetZ)
+							given ec: ExecutionContext = ChunkExecutionContext(plant.inner.chunkX, plant.inner.chunkZ, Bukkit.getWorld(plant.inner.world))
 
 							val rightSeason = plant.inner.what.growingSeason == Datekeeping.time().month.toInt.pipe(Month.fromOrdinal).season
-							val rightClimate = plant.inner.what.growingClimate == Climate.climateAt(x, plant.inner.yPos, z)
+							val rightClimate = plant.inner.what.growingClimate == Await.result(Future { Climate.climateAt(x, plant.inner.yPos, z) }, 1.seconds)
 							val timePassed = (plant.inner.ageIngameHours + 1) % plant.inner.what.plant.hours() == 0
 							val incrBy =
 								if rightSeason && rightClimate && timePassed then
