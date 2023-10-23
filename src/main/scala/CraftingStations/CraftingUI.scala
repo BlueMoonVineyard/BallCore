@@ -19,6 +19,7 @@ import net.kyori.adventure.text.format.TextDecoration
 import com.github.stefvanschie.inventoryframework.gui.`type`.util.Gui
 import net.kyori.adventure.text.Component
 import org.bukkit.Material
+import org.bukkit.inventory.RecipeChoice.ExactChoice
 
 class RecipeSelectorProgram(recipes: List[Recipe])(using actor: CraftingActor) extends UIProgram:
 	import io.circe.generic.auto._
@@ -51,6 +52,8 @@ class RecipeSelectorProgram(recipes: List[Recipe])(using actor: CraftingActor) e
 		input match
 			case m: MaterialChoice =>
 				m.getChoices().asScala.map(mat => nameOf(ItemStack(mat)).style(NamedTextColor.GRAY, TextDecoration.BOLD)).toList.mkComponent(txt" or ")
+			case e: ExactChoice =>
+				e.getChoices().asScala.map(it => nameOf(it).style(NamedTextColor.GRAY, TextDecoration.BOLD)).toList.mkComponent(txt" or ")
 			case _ =>
 				txt"TODO: ${input}"
 

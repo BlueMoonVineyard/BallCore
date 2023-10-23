@@ -35,6 +35,10 @@ object QuadrantOres:
         val magnesium = goldLike("magnesium", "Magnesium", OreTypes.magnesium.num)
         val meteorite = copperLike("meteorite", "Meteorite", OreTypes.meteorite.num)
 
+        val ironLikes = List(iron, tin, aluminum, zinc)
+        val goldLikes = List(gold, sulfur, palladium, magnesium)
+        val copperLikes = List(copper, orichalcum, hihiirogane, meteorite)
+
     val group = ItemGroup(NamespacedKey("ballcore", "quadrant_ores"), ItemStack(Material.IRON_INGOT))
 
     def registerItems()(using plugin: ItemRegistry, server: Server): Unit =
