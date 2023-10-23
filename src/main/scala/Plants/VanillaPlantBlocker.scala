@@ -15,6 +15,8 @@ import org.bukkit.block.data.`type`.Dispenser
 import scala.util.chaining._
 import org.bukkit.event.block.BlockGrowEvent
 import org.bukkit.event.world.StructureGrowEvent
+import org.bukkit.event.block.BlockBreakEvent
+import scala.util.Random
 
 object VanillaPlantBlocker:
 	val bonemealables = Set(
@@ -80,3 +82,21 @@ class VanillaPlantBlocker() extends Listener:
 
 		if VanillaPlantBlocker.bonemealables.contains(target.getType()) then
 			event.setCancelled(true)
+
+	@EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+	def onHarvest(event: BlockBreakEvent): Unit =
+		if !(event.getBlock().getType() == Material.GRASS || event.getBlock().getType() == Material.TALL_GRASS) then
+			return
+
+		if event.getPlayer().getInventory().getItemInMainHand() == Material.SHEARS then
+			return
+
+		if !(Random.nextDouble() < 0.125) then
+			return
+
+		val loc = event.getBlock()
+		val climate = Climate.climateAt(loc.getX(), loc.getY(), loc.getZ())
+		val possiblePlants = Plant.values.filter(_.growingClimate == climate)
+		val chosenPlant = possiblePlants(Random.nextInt(possiblePlants.length))
+
+		loc.getWorld().dropItemNaturally(loc.getLocation(), chosenPlant.plant.representativeItem()); ()
