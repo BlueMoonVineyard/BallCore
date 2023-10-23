@@ -7,7 +7,8 @@ package BallCore.Acclimation
 import org.bukkit.Bukkit
 
 object Information:
-    val WorldRadiusBlocks = 2000
+    val WorldRadiusBlocks = 2000.0
+    val ExclusionZoneSize = 200.0
     val SeaLevel = 67
 
     // -1.0 to 1.0, returns 0.0 to 1.0, with 1.0 being the same point and
@@ -17,6 +18,12 @@ object Information:
         val adjustedB = (b + 1.0) / 2.0
 
         1.0 - (adjustedA - adjustedB).abs
+
+    // 0.0 to 1.0, being 0.0 the closer you are to 0 on any one of the xz axes
+    // and being 1.0 the further away you are from 0 on any one of the xz axes
+    // its like a sort of trench thing
+    def exclusionZoneFactor(x: Double, z: Double): (Double) =
+        ((x*x) / (ExclusionZoneSize*ExclusionZoneSize)).min(1) * ((z*z) / (ExclusionZoneSize*ExclusionZoneSize)).min(1)
 
     def latLong(x: Double, z: Double): (Double, Double) =
         (z / WorldRadiusBlocks, x / WorldRadiusBlocks)

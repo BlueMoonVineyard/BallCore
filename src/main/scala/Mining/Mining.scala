@@ -140,6 +140,7 @@ class MiningListener()(using ac: AntiCheeser, as: Acclimation.Storage, sql: SQLM
         val plr = event.getPlayer().getUniqueId()
         val (lat, long) = Information.latLong(event.getBlock().getX(), event.getBlock().getZ())
         val (plat, plong) = (sql.useBlocking(as.getLatitude(plr)), sql.useBlocking(as.getLongitude(plr)))
+        val ezf = Information.exclusionZoneFactor(event.getBlock().getX(), event.getBlock().getZ())
 
         val dlat = Information.similarityNeg(lat, plat)
         val dlong = Information.similarityNeg(long, plong)
@@ -165,7 +166,7 @@ class MiningListener()(using ac: AntiCheeser, as: Acclimation.Storage, sql: SQLM
             val baseline = maybe.chance * 0.2
             val bonus = maybe.chance * 0.8
 
-            val actual = baseline + (bonusRateMultiplier * bonus)
+            val actual = (baseline + (bonusRateMultiplier * bonus)) * ezf
 
             if randomizer.nextDouble() <= actual then
                 true
