@@ -127,7 +127,12 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
         else
             IO.pure(worldData(w.getUID()))
     def populationToArea(count: Int): Int =
-        (30 * 30) * count
+        if count == 1 then
+            (32 * 32) * count
+        else if count < 10 then
+            ((32 * 32) * 2 * count) - 1024
+        else
+            ((32 * 32) * count) + 9*1024
     def getBeaconFor(player: OwnerID)(using Session[IO]): IO[Option[BeaconID]] =
         sql.queryOptionIO(sql"""
         SELECT Beacon FROM Hearts WHERE Owner = $uuid;
