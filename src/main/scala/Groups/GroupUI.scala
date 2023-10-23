@@ -19,8 +19,10 @@ import com.github.stefvanschie.inventoryframework.gui.`type`.util.Gui
 import BallCore.Beacons.CivBeaconManager
 import com.destroystokyo.paper.MaterialTags
 import BallCore.Storage.SQLManager
+import BallCore.PolyhedraEditor.PolyhedraEditor
+import BallCore.Folia.FireAndForget
 
-class GroupManagementProgram(using gm: GroupManager, cbm: CivBeaconManager, sql: SQLManager) extends UIProgram:
+class GroupManagementProgram(using gm: GroupManager, cbm: CivBeaconManager, sql: SQLManager, editor: PolyhedraEditor) extends UIProgram:
     case class Flags(groupID: GroupID, userID: UserID)
     case class Model(group: GroupState, userID: UserID, viewing: ViewingWhat, canBindToHeart: Boolean)
     enum ViewingWhat:
@@ -169,12 +171,13 @@ class GroupManagementProgram(using gm: GroupManager, cbm: CivBeaconManager, sql:
                             model.copy(group = group)
                     }
 
-class SubgroupManagementProgram(using gm: GroupManager, cbm: CivBeaconManager, sql: SQLManager) extends UIProgram:
+class SubgroupManagementProgram(using gm: GroupManager, cbm: CivBeaconManager, sql: SQLManager, editor: PolyhedraEditor) extends UIProgram:
     case class Flags(groupID: GroupID, subgroupID: SubgroupID, userID: UserID)
     case class Model(group: GroupState, subgroup: SubgroupState, userID: UserID)
     enum Message:
         case DeleteSubgroup
         case ClickRole(role: RoleID)
+        case EditClaims
         case GoBack
 
     override def init(flags: Flags): Model =
@@ -200,11 +203,17 @@ class SubgroupManagementProgram(using gm: GroupManager, cbm: CivBeaconManager, s
                 val p = RoleManagementProgram()
                 services.transferTo(p, p.Flags(model.group.metadata.id, role, model.userID, Some(model.subgroup.id)))
                 model
+            case Message.EditClaims =>
+                val player = Bukkit.getPlayer(model.userID)
+                FireAndForget { editor.create(player, player.getWorld(), model.group.metadata.id, model.subgroup.id) }
+                services.quit()
+                model
     override def view(model: Model): Callback ?=> Gui =
         Root(txt"Viewing Subgroup ${model.subgroup.name} in ${model.group.metadata.name}", 6) {
             OutlinePane(0, 0, 1, 6) {
                 Button(Material.OAK_DOOR, txt"Go Back".style(NamedTextColor.WHITE), Message.GoBack)()
                 Button(Material.LAVA_BUCKET, txt"Delete Subgroup".style(NamedTextColor.GREEN), Message.DeleteSubgroup)()
+                Button(Material.SPYGLASS, txt"Edit Claims".style(NamedTextColor.GREEN), Message.EditClaims)()
             }
             OutlinePane(1, 0, 1, 6, priority = Priority.LOWEST, repeat = true) {
                 Item(Material.BLACK_STAINED_GLASS_PANE, displayName = Some(txt""))()
@@ -228,7 +237,7 @@ class SubgroupManagementProgram(using gm: GroupManager, cbm: CivBeaconManager, s
             }
         }
 
-class RoleManagementProgram(using gm: GroupManager, cbm: CivBeaconManager, sql: SQLManager) extends UIProgram:
+class RoleManagementProgram(using gm: GroupManager, cbm: CivBeaconManager, sql: SQLManager, editor: PolyhedraEditor) extends UIProgram:
     case class Flags(groupID: GroupID, roleID: RoleID, userID: UserID, subgroup: Option[SubgroupID])
     case class Model(group: GroupState, groupID: GroupID, userID: UserID, role: RoleState, subgroup: Option[SubgroupState])
     enum Message:
@@ -411,7 +420,7 @@ class InvitesListProgram(using gm: GroupManager, sql: SQLManager) extends UIProg
             }
         }
 
-class GroupListProgram(using gm: GroupManager, cbm: CivBeaconManager, sql: SQLManager) extends UIProgram:
+class GroupListProgram(using gm: GroupManager, cbm: CivBeaconManager, sql: SQLManager, editor: PolyhedraEditor) extends UIProgram:
     case class Flags(userID: UserID)
     case class Model(userID: UserID, groups: List[GroupStates])
     enum Message:

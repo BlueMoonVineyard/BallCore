@@ -41,7 +41,7 @@ import BallCore.Sigils.CustomEntityManager
 import BallCore.Sigils.SigilSlimeManager
 import BallCore.PolygonEditor.PolygonEditor
 import BallCore.MapCloning.MapCloningListener
-// import BallCore.HTTP.HTTP
+import BallCore.PolyhedraEditor.PolyhedraEditor
 
 final class Main extends JavaPlugin:
     given sql: Storage.SQLManager = Storage.SQLManager()
@@ -65,6 +65,7 @@ final class Main extends JavaPlugin:
     given cem: CustomEntityManager = CustomEntityManager()
     given bam: SigilSlimeManager = SigilSlimeManager()
     given editor: PolygonEditor = new PolygonEditor()
+    given editor3D: PolyhedraEditor = new PolyhedraEditor()
 
     override def onEnable() =
         given lib: ScoreboardLibrary = ScoreboardLibrary.loadScoreboardLibrary(this)
@@ -81,6 +82,7 @@ final class Main extends JavaPlugin:
         CustomItemListener.register()
         CraftingStations.register()
         AcclimationActor.register()
+        PolyhedraEditor.register()
         PolygonEditor.register()
         Mining.Mining.register()
         MapCloningListener.register()

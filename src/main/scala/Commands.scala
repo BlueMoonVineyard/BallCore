@@ -21,6 +21,7 @@ import BallCore.PolygonEditor.PolygonEditor
 import BallCore.Beacons.CivBeaconManager
 import BallCore.Plants.PlantListProgram
 import BallCore.Storage.SQLManager
+import BallCore.PolyhedraEditor.PolyhedraEditor
 
 class CheatCommand(using registry: ItemRegistry, pbm: PlantBatchManager) extends CommandExecutor:
     override def onCommand(sender: CommandSender, command: Command, label: String, args: Array[String]): Boolean =
@@ -44,7 +45,7 @@ class CheatCommand(using registry: ItemRegistry, pbm: PlantBatchManager) extends
                 sender.sendMessage("bad cheating >:(")
         true
 
-class GroupsCommand(using prompts: UI.Prompts, plugin: Plugin, gm: GroupManager, cbm: CivBeaconManager, sql: SQLManager) extends CommandExecutor:
+class GroupsCommand(using prompts: UI.Prompts, plugin: Plugin, gm: GroupManager, cbm: CivBeaconManager, sql: SQLManager, e: PolyhedraEditor) extends CommandExecutor:
     override def onCommand(sender: CommandSender, command: Command, label: String, args: Array[String]) =
         val p = Groups.GroupListProgram()
         val plr = sender.asInstanceOf[Player]
@@ -60,10 +61,11 @@ class PlantsCommand(using prompts: UI.Prompts, plugin: Plugin) extends CommandEx
         runner.render()
         return true
 
-class DoneCommand(using editor: PolygonEditor) extends CommandExecutor:
+class DoneCommand(using editor: PolygonEditor, polyhedraEditor: PolyhedraEditor) extends CommandExecutor:
     override def onCommand(sender: CommandSender, command: Command, label: String, args: Array[String]) =
         val plr = sender.asInstanceOf[Player]
         editor.done(plr)
+        polyhedraEditor.done(plr)
         true
 
 class ChatCommands(using ca: ChatActor, gm: GroupManager, sql: SQLManager):

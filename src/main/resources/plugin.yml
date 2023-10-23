@@ -31,6 +31,8 @@ commands:
     aliases: [g]
   global:
     description: Changes your chat channel to global chat
+  polyhedra:
+    description: "TODO: polyhedra editor"
   local:
     description: Changes your chat channel to local chat
   done:

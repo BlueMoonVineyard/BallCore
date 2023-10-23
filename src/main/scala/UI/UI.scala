@@ -16,6 +16,7 @@ import BallCore.UI.ChatElements._
 
 trait UITransferrer:
     def transferTo(p: UIProgram, f: p.Flags): Unit
+    def quit(): Unit
 
 trait UIPrompts:
     def prompt(prompt: String): Future[String]
@@ -57,6 +58,9 @@ class UIProgramRunner(program: UIProgram, flags: program.Flags, showingTo: Playe
             if !transferred then
                 render()
         }
+    def quit(): Unit =
+        transferred = true
+        showingTo.closeInventory()
     def transferTo(newProgram: UIProgram, newFlags: newProgram.Flags): Unit =
         transferred = true
         val newUI = UIProgramRunner(newProgram, newFlags, showingTo)

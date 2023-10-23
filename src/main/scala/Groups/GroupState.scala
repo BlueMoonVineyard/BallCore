@@ -114,6 +114,31 @@ case class SubgroupState(
     permissions: Map[RoleID, Map[Permissions, RuleMode]],
 )
 
+case class Position(
+    x: Int,
+    y: Int,
+    z: Int,
+    world: ju.UUID,
+)
+
+implicit val pDecoder: Decoder[Position] = deriveDecoder[Position]
+implicit val pEncoder: Encoder[Position] = deriveEncoder[Position]
+
+case class Volume(
+    cornerA: Position,
+    cornerB: Position,
+)
+
+implicit val vDecoder: Decoder[Volume] = deriveDecoder[Volume]
+implicit val vEncoder: Encoder[Volume] = deriveEncoder[Volume]
+
+case class Subclaims(
+    volumes: List[Volume],
+)
+
+implicit val scDecoder: Decoder[Subclaims] = deriveDecoder[Subclaims]
+implicit val scEncoder: Encoder[Subclaims] = deriveEncoder[Subclaims]
+
 case class RoleState(
     id: RoleID,
     name: String,

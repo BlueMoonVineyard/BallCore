@@ -189,6 +189,28 @@ class GroupManager()(using sql: Storage.SQLManager):
             )
         )
     )
+    sql.applyMigration(
+        Storage.Migration(
+            "Add subgroup claims",
+            List(
+                sql"""
+                CREATE TABLE SubgroupClaims (
+                    GroupID UUID NOT NULL,
+                    SubgroupID UUID NOT NULL,
+                    Claims JSONB NOT NULL,
+                    UNIQUE(SubgroupID),
+                    FOREIGN KEY (GroupID) REFERENCES GroupStates(ID) ON DELETE CASCADE,
+                    FOREIGN KEY (SubgroupID) REFERENCES Subgroups(SubgroupID) ON DELETE CASCADE
+                );
+                """.command
+            ),
+            List(
+                sql"""
+                DROP TABLE SubgroupClaims;
+                """.command
+            )
+        )
+    )
 
     given runtime: IORuntime = sql.runtime
     given gm: GroupManager = this
@@ -506,7 +528,28 @@ class GroupManager()(using sql: Storage.SQLManager):
             AND GroupStates.ID = GroupMemberships.GroupID;
         """, (uuid *: text).to[GroupStates], userID))
 
+    def setSubclaims(as: UserID, group: GroupID, subgroup: SubgroupID, claims: Subclaims)(using s: Session[IO]): IO[Either[GroupError, Unit]] =
+        getAll(group)
+            .guard(GroupError.NoPermissions) { _.check(Permissions.ManageClaims, as, subgroup) }
+            .flatMap { _ =>
+                EitherT.right(sql.commandIO(sql"""
+                INSERT INTO SubgroupClaims (
+                    GroupID, SubgroupID, Claims
+                ) VALUES (
+                    $uuid, $uuid, $jsonb
+                ) ON CONFLICT (SubgroupID) DO UPDATE SET Claims = EXCLUDED.Claims;
+                """, (group, subgroup, claims.asJson)))
+            }.map(_ => ())
+            .value
+
     /// relatively heavy function, call once and cache only if you need to frequently consult permissions
+    def getSubclaims(groupID: GroupID)(using s: Session[IO]): IO[Either[GroupError, Map[SubgroupID, Subclaims]]] =
+        EitherT.right(sql.queryListIO(sql"""
+        SELECT SubgroupID, Claims FROM SubgroupClaims WHERE GroupID = $uuid;
+        """, (uuid *: jsonb[Subclaims]), groupID))
+            .map { x => x.toMap }
+            .value
+
     def getGroup(groupID: GroupID)(using s: Session[IO]): EitherT[IO, GroupError, GroupState] =
         getAll(groupID)
 
