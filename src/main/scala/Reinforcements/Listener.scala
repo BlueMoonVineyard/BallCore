@@ -44,6 +44,7 @@ import org.bukkit.block.Block
 import BallCore.Groups.nullUUID
 import scala.jdk.CollectionConverters._
 import BallCore.Storage.SQLManager
+import org.bukkit.block.Sign
 
 object Listener:
     def centered(at: Location): Location =
@@ -140,8 +141,13 @@ class Listener(using cbm: CivBeaconManager, gm: GroupManager, sql: SQLManager) e
                 case _ =>
                     // TODO: notify of permission denied
                     event.setCancelled(true)
-        else
-            ()
+        else if loc.getState().isInstanceOf[Sign] then
+            checkAt(event.getClickedBlock(), event.getPlayer(), Permissions.Signs) match
+                case Right(ok) if ok =>
+                    ()
+                case _ =>
+                    // TODO: notify of permission denied
+                    event.setCancelled(true)
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     def preventHarvestingCaveVines(event: PlayerHarvestBlockEvent): Unit =

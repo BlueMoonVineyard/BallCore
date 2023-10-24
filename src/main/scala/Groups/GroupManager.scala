@@ -257,6 +257,7 @@ class GroupManager()(using sql: Storage.SQLManager):
                     (Permissions.Crops, RuleMode.Allow),
                     (Permissions.Build, RuleMode.Allow),
                     (Permissions.Entities, RuleMode.Allow),
+                    (Permissions.Signs, RuleMode.Allow),
                 )
             ),
             RoleState(

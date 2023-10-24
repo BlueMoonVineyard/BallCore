@@ -48,6 +48,7 @@ enum Permissions(val name: String):
     case Chests extends Permissions("chests")
     case Doors extends Permissions("doors")
     case Crops extends Permissions("crops")
+    case Signs extends Permissions("signs")
 
     case Entities extends Permissions("entities")
 
@@ -66,6 +67,7 @@ enum Permissions(val name: String):
             case Chests => "Use Chests"
             case Doors => "Use Doors"
             case Crops => "Use Crops"
+            case Signs => "Edit Signs"
             case Entities => "Interact with Entities"
 
     def displayExplanation(): String =
@@ -81,6 +83,7 @@ enum Permissions(val name: String):
             case Chests => "Allows the user to open reinforced chests"
             case Doors => "Allows the user to open reinforced doors"
             case Crops => "Allows the user to plant and harvest crops on reinforced farmland"
+            case Signs => "Allows users to edit signs (hanging and not)"
             case Entities => "Allows the user to interact with entities"
             case ManageSubgroups => "Allows users to create, rename, and delete subgroups"
             case ManageClaims => "Allows users to manage the claims of this group's beacons"
@@ -98,6 +101,7 @@ enum Permissions(val name: String):
             case Chests => Material.CHEST
             case Doors => Material.OAK_DOOR
             case Crops => Material.WHEAT
+            case Signs => Material.OAK_SIGN
             case Entities => Material.EGG
             case ManageClaims => Material.BEACON
             case ManageSubgroups => Material.RED_BED
