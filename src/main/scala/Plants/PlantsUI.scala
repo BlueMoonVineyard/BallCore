@@ -27,6 +27,10 @@ class PlantListProgram extends UIProgram:
     val winterColor = TextColor.fromHexString("#ffffff")
     val winter = txt"Winter".color(winterColor)
 
+    val allColor = TextColor.fromHexString("#926ee4")
+    val allYear = txt"all seasons".color(allColor)
+    val allClimates = txt"all".color(allColor)
+
     val coldColor = TextColor.fromHexString("#8adcff")
     val cold = txt("cold").color(coldColor)
     val warmColor = TextColor.fromHexString("#ff8999")
@@ -49,24 +53,27 @@ class PlantListProgram extends UIProgram:
                 Plant.values.foreach { plant =>
                     
                     Item(plant.plant.representativeItem(), Some(plant.name.color(plant.growingSeason match
-                        case Season.spring => springColor 
-                        case Season.summer => summerColor 
-                        case Season.autumn => autumnColor
-                        case Season.winter => winterColor
+                        case GrowingSeason.specific(Season.spring) => springColor 
+                        case GrowingSeason.specific(Season.summer) => summerColor 
+                        case GrowingSeason.specific(Season.autumn) => autumnColor
+                        case GrowingSeason.specific(Season.winter) => winterColor
+                        case GrowingSeason.allYear => allColor
                     ))) {
                         Lore(txt"Grows during ${
                             plant.growingSeason match
-                                case Season.spring => spring
-                                case Season.summer => summer
-                                case Season.autumn => autumn
-                                case Season.winter => winter
+                                case GrowingSeason.specific(Season.spring) => spring
+                                case GrowingSeason.specific(Season.summer) => summer
+                                case GrowingSeason.specific(Season.autumn) => autumn
+                                case GrowingSeason.specific(Season.winter) => winter
+                                case GrowingSeason.allYear => allYear
                         }".color(NamedTextColor.GRAY))
                         Lore(txt"Grows in ${
                             plant.growingClimate match
-                                case Climate.warmArid => warmArid
-                                case Climate.warmHumid => warmHumid
-                                case Climate.coldArid => coldArid
-                                case Climate.coldHumid => coldHumid
+                                case GrowingClimate.specific(Climate.warmArid) => warmArid
+                                case GrowingClimate.specific(Climate.warmHumid) => warmHumid
+                                case GrowingClimate.specific(Climate.coldArid) => coldArid
+                                case GrowingClimate.specific(Climate.coldHumid) => coldHumid
+                                case GrowingClimate.allClimates => allClimates
                         } climates".color(NamedTextColor.GRAY))
                         plant.plant match
                             case PlantType.ageable(_, hoursBetweenStages) =>

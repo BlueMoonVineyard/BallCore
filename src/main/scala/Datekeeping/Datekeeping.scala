@@ -33,6 +33,13 @@ enum Season:
     case autumn
     case winter
 
+    def display: String =
+        this match
+            case Season.spring => "spring"
+            case Season.summer => "summer"
+            case Season.autumn => "autumn"
+            case Season.winter => "winter"
+
 enum DateUnit(val width: Duration) extends TemporalUnit:
     case minute extends DateUnit(Datekeeping.Periods.minute)
     case hour extends DateUnit(Datekeeping.Periods.hour)

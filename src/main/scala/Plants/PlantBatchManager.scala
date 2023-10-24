@@ -191,14 +191,14 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin, c: Clock) extends Ac
 						val (x, z) = fromOffsets(plant.inner.chunkX, plant.inner.chunkZ, plant.inner.offsetX, plant.inner.offsetZ)
 						val actualSeason = Datekeeping.time().month.toInt.pipe(Month.fromOrdinal).season
 						val actualClimate = Climate.climateAt(x, plant.inner.yPos, z)
-						val rightSeason = plant.inner.what.growingSeason == actualSeason
-						val rightClimate = plant.inner.what.growingClimate == actualClimate
+						val rightSeason = plant.inner.what.growingSeason growsWithin actualSeason
+						val rightClimate = plant.inner.what.growingClimate growsWithin actualClimate
 
 						(rightSeason, rightClimate) match
 							case (false, false) =>
-								player.sendServerMessage(txt"This plant is neither in the right climate nor season; it grows in ${plant.inner.what.growingClimate.display} climates during ${plant.inner.what.growingSeason}, but it is in a ${actualClimate.display} climate and it is currently ${actualSeason}")
+								player.sendServerMessage(txt"This plant is neither in the right climate nor season; it grows in ${plant.inner.what.growingClimate.display} climates during ${plant.inner.what.growingSeason.display}, but it is in a ${actualClimate.display} climate and it is currently ${actualSeason.display}")
 							case (false, true) =>
-								player.sendServerMessage(txt"This plant is out of season; it grows during ${plant.inner.what.growingSeason} (it is currently ${actualSeason})")
+								player.sendServerMessage(txt"This plant is out of season; it grows during ${plant.inner.what.growingSeason.display} (it is currently ${actualSeason.display})")
 							case (true, false) =>
 								player.sendServerMessage(txt"This plant is in the wrong climate; it grows in ${plant.inner.what.growingClimate.display} climates (it is in a ${actualClimate.display} climate)")
 							case (true, true) =>
@@ -215,8 +215,8 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin, c: Clock) extends Ac
 							val (x, z) = fromOffsets(plant.inner.chunkX, plant.inner.chunkZ, plant.inner.offsetX, plant.inner.offsetZ)
 							given ec: ExecutionContext = ChunkExecutionContext(plant.inner.chunkX, plant.inner.chunkZ, Bukkit.getWorld(plant.inner.world))
 
-							val rightSeason = plant.inner.what.growingSeason == Datekeeping.time().month.toInt.pipe(Month.fromOrdinal).season
-							val rightClimate = plant.inner.what.growingClimate == Await.result(Future { Climate.climateAt(x, plant.inner.yPos, z) }, 1.seconds)
+							val rightSeason = plant.inner.what.growingSeason growsWithin Datekeeping.time().month.toInt.pipe(Month.fromOrdinal).season
+							val rightClimate = plant.inner.what.growingClimate growsWithin Await.result(Future { Climate.climateAt(x, plant.inner.yPos, z) }, 1.seconds)
 							val timePassed = (plant.inner.ageIngameHours + 1) % plant.inner.what.plant.hours() == 0
 							val incrBy =
 								if rightSeason && rightClimate && timePassed then
