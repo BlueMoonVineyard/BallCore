@@ -29,8 +29,10 @@ import org.bukkit.event.player.PlayerQuitEvent
 import BallCore.Beacons.BeaconID
 import BallCore.Beacons.CivBeaconManager
 import org.bukkit.World
-import BallCore.UI.ChatElements.sendServerMessage
 import BallCore.Storage.SQLManager
+import BallCore.TextComponents._
+import net.kyori.adventure.text.format.NamedTextColor
+import net.kyori.adventure.text.format.TextDecoration
 
 object PolygonEditor:
 	def register()(using e: PolygonEditor, p: Plugin): Unit =
@@ -85,8 +87,8 @@ class PolygonEditor(using p: Plugin, bm: CivBeaconManager, sql: SQLManager):
 				player.sendServerMessage(txt"Press ${keybind("key.use")} to place Point 1")
 				playerPolygons(player) = PlayerState.creating(CreatorModel(beaconID, CreatorModelState.definingPointA()), List())
 			case Some(polygon) =>
-				player.sendServerMessage(txt"Press ${keybind("key.use")} to pick up and to place claim points.")
-				player.sendServerMessage(txt"Press ${keybind("key.use")} on a midpoint to create a new point from it, and press ${keybind("key.attack")} on a point to delete it.")
+				// player.sendServerMessage(txt"Press ${keybind("key.use")} to pick up and to place claim points.")
+				// player.sendServerMessage(txt"Press ${keybind("key.use")} on a midpoint to create a new point from it, and press ${keybind("key.attack")} on a point to delete it.")
 				playerPolygons(player) = PlayerState.editing(EditorModel(beaconID, polygon, world))
 
 	def render(): Unit =
@@ -113,6 +115,16 @@ class PolygonEditor(using p: Plugin, bm: CivBeaconManager, sql: SQLManager):
 				case CreatorAction.finished(_) =>
 				case CreatorAction.notifyPlayer(_) =>
 		}
+		model.state match
+			case CreatorModelState.definingPointA() =>
+				player.sendActionBar(txt"${keybind("key.use").style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Place Point 1")
+			case CreatorModelState.definingPointB(pointA) =>
+				player.sendActionBar(txt"${keybind("key.use").style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Place Point 2")
+			case CreatorModelState.definingPointC(pointA, pointB) =>
+				player.sendActionBar(txt"${keybind("key.use").style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Place Point 3")
+			case CreatorModelState.definingPointD(pointA, pointB, pointC) =>
+				player.sendActionBar(txt"${keybind("key.use").style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Place Point 4")
+		
 	def renderEditor(player: Player, model: EditorModel): Unit =
 		import EditorModelState._
 
@@ -139,6 +151,14 @@ class PolygonEditor(using p: Plugin, bm: CivBeaconManager, sql: SQLManager):
 					Color.LIME
 			drawLine(point, point.clone().add(0, 2, 0), player, colour, 0.5)
 		}
+		model.state match
+			case idle() =>
+				player.sendActionBar(txt"${txt("/done").style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Save and stop editing")
+			case lookingAt(loc) =>
+				player.sendActionBar(txt"${keybind("key.use").style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Start dragging this point  |  ${keybind("key.attack").style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Delete this point")
+			case editingPoint(idx, valid) =>
+				player.sendActionBar(txt"${keybind("key.use").style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Stop dragging this point")
+		
 	def handleEditor(player: Player, model: EditorModel, actions: List[EditorAction]): Option[PlayerState] =
 		val done = actions.filter { action =>
 			action match

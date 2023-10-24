@@ -40,12 +40,12 @@ case class CreatorModel(
 		(state, msg) match
 			case (definingPointA(), click(pointA)) =>
 				this.copy(state = definingPointB(pointA))
-				-> List(drawSelectionLine(pointA), notifyPlayer(txt"Press ${keybind("key.use")} to place Point 2"))
+				-> List(drawSelectionLine(pointA))
 			case (definingPointB(pointA), click(pointB)) =>
 				this.copy(state = definingPointC(pointA, pointB))
-				-> List(drawLine(pointA, pointB), drawSelectionLine(pointB), notifyPlayer(txt"Press ${keybind("key.use")} to place Point 3"))
+				-> List(drawLine(pointA, pointB), drawSelectionLine(pointB))
 			case (definingPointC(pointA, pointB), click(pointC)) =>
 				this.copy(state = definingPointD(pointA, pointB, pointC))
-				-> List(drawLine(pointA, pointB), drawLine(pointB, pointC), drawSelectionLine(pointC), drawFinisherLine(pointA), notifyPlayer(txt"Press ${keybind("key.use")} to place Point 4"))
+				-> List(drawLine(pointA, pointB), drawLine(pointB, pointC), drawSelectionLine(pointC), drawFinisherLine(pointA))
 			case (definingPointD(pointA, pointB, pointC), click(pointD)) =>
 				this -> List(finished(List(pointA, pointB, pointC, pointD)))
