@@ -84,11 +84,9 @@ class PolygonEditor(using p: Plugin, bm: CivBeaconManager, sql: SQLManager):
 		sql.useBlocking(bm.getPolygonFor(beaconID)) match
 			case None =>
 				player.sendServerMessage(txt"You'll be defining your claim as 4 points")
-				player.sendServerMessage(txt"Press ${keybind("key.use")} to place Point 1")
 				playerPolygons(player) = PlayerState.creating(CreatorModel(beaconID, CreatorModelState.definingPointA()), List())
 			case Some(polygon) =>
-				// player.sendServerMessage(txt"Press ${keybind("key.use")} to pick up and to place claim points.")
-				// player.sendServerMessage(txt"Press ${keybind("key.use")} on a midpoint to create a new point from it, and press ${keybind("key.attack")} on a point to delete it.")
+				player.sendServerMessage(txt"You've started editing your claims")
 				playerPolygons(player) = PlayerState.editing(EditorModel(beaconID, polygon, world))
 
 	def render(): Unit =
