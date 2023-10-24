@@ -137,6 +137,10 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
         sql.queryOptionIO(sql"""
         SELECT Beacon FROM Hearts WHERE Owner = $uuid;
         """, uuid, player)
+    def getBeaconLocationFor(player: OwnerID)(using Session[IO]): IO[Option[(Long, Long, Long)]] =
+        sql.queryOptionIO(sql"""
+        SELECT X, Y, Z FROM Hearts WHERE Owner = $uuid;
+        """, (int8 *: int8 *: int8), player)
     def setGroup(beacon: BeaconID, group: GroupID)(using Session[IO]): IO[Either[Unit, Unit]] =
         for {
             size <- beaconSize(beacon)

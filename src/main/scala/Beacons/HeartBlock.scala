@@ -32,8 +32,8 @@ class HeartBlock()(using hn: CivBeaconManager, editor: PolygonEditor, gm: GroupM
     def group = Beacons.group
     def template = HeartBlock.itemStack
 
-    def playerHasHeart(p: Player): Boolean =
-        sql.useBlocking(hn.hasHeart(p.getUniqueId()))
+    def playerHeartCoords(p: Player): Option[(Long, Long, Long)] =
+        sql.useBlocking(hn.getBeaconLocationFor(p.getUniqueId()))
 
     def onBlockClicked(event: PlayerInteractEvent): Unit =
         sql.useBlocking(hn.heartAt(event.getClickedBlock().getLocation()))
@@ -49,10 +49,13 @@ class HeartBlock()(using hn: CivBeaconManager, editor: PolygonEditor, gm: GroupM
                     event.getPlayer.sendServerMessage(txt"You need to bind this beacon to a group in order to edit its claims.")
 
     def onBlockPlace(event: BlockPlaceEvent): Unit =
-        if playerHasHeart(event.getPlayer()) then
-            event.getPlayer().sendServerMessage(txt"Your heart is already placed...")
-            event.setCancelled(true)
-            return
+        playerHeartCoords(event.getPlayer()) match
+            case None =>
+            case Some((x, y, z)) =>
+                event.getPlayer().sendServerMessage(txt"Your heart is already placed at [${x}, ${y}, ${z}]...")
+                event.setCancelled(true)
+                return
+
         sql.useBlocking(bm.store(event.getBlock(), "owner", event.getPlayer().getUniqueId()))
         sql.useBlocking(hn.placeHeart(event.getBlock().getLocation(), event.getPlayer().getUniqueId())) match
             case Right((_, x)) if x == 1 =>
