@@ -40,6 +40,10 @@ class TextComponents:
             }
             builder.asComponent()
 
+    extension (o: Any)
+        def toComponent: Component =
+            Component.text(o.toString())
+
     object Colors:
         val red = TextColor.fromHexString("#e93d58")
         val teal = TextColor.fromHexString("#00d485")

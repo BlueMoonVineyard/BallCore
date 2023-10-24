@@ -28,7 +28,8 @@ class Storage()(using kvs: KeyVal):
             x match
                 case Some((x, y, z, world)) =>
                     Location(Bukkit.getWorld(world), x, y, z)
-                case None => Bukkit.getOfflinePlayer(player).getBedSpawnLocation()
+                case None =>
+                    Option(Bukkit.getOfflinePlayer(player).getBedSpawnLocation()).getOrElse(Location(Bukkit.getWorld("world"), 0, 0, 0))
         }
 
     def setLastSeenLocation(player: UUID, to: Location)(using Session[IO]): IO[Unit] =

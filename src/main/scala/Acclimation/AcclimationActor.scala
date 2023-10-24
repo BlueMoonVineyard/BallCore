@@ -16,6 +16,11 @@ import org.bukkit.event.Listener
 import org.bukkit.event.EventHandler
 import org.bukkit.event.player.PlayerQuitEvent
 import BallCore.Storage.SQLManager
+import scala.concurrent.ExecutionContext
+import BallCore.Folia.LocationExecutionContext
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.duration._
 
 enum AcclimationMessage:
 	// ticks every 6 hours
@@ -33,9 +38,11 @@ def lerp(a: Double, b: Double, f: Double): Double =
 	a * (1.0 - f) + (b * f)
 
 object AcclimationActor:
-	def register()(using s: Storage, p: Plugin, hnm: CivBeaconManager, sm: ShutdownCallbacks, sql: SQLManager): Unit =
-		AcclimationActor().startListener()
+	def register()(using s: Storage, p: Plugin, hnm: CivBeaconManager, sm: ShutdownCallbacks, sql: SQLManager): AcclimationActor =
+		val a = AcclimationActor()
+		a.startListener()
 		p.getServer().getPluginManager().registerEvents(AcclimationNoter(), p)
+		a
 
 class AcclimationNoter()(using s: Storage, sql: SQLManager) extends Listener:
 	@EventHandler()
@@ -51,6 +58,7 @@ class AcclimationActor(using s: Storage, p: Plugin, hnm: CivBeaconManager, sql: 
 		LocalDateTime.now().until(nextHour, ChronoUnit.MILLIS)
 
 	protected def handleInit(): Unit =
+		p.getLogger().info(s"acclimation actor is starting up, there are ${millisToNextSixthHour()}ms to the next sixth hour, and we'll repeat every ${sixHoursMillis} milliseconds")
 		val _ = p.getServer().getAsyncScheduler().runAtFixedRate(p, _ => send(AcclimationMessage.tick), millisToNextSixthHour(), sixHoursMillis, TimeUnit.MILLISECONDS)
 	protected def handleShutdown(): Unit =
 		()
@@ -68,8 +76,10 @@ class AcclimationActor(using s: Storage, p: Plugin, hnm: CivBeaconManager, sql: 
 						else
 							sql.useBlocking(s.getLastSeenLocation(uuid))
 
+					given ec: ExecutionContext = LocationExecutionContext(location)
+
 					val (lat, long) = Information.latLong(location.getX().toFloat, location.getZ().toFloat)
-					val temp = Information.temperature(location.getX().toInt, location.getY().toInt, location.getZ().toInt)
+					val temp = Await.result(Future { Information.temperature(location.getX().toInt, location.getY().toInt, location.getZ().toInt) }, 1.seconds)
 					val elevation = Information.elevation(location.getY().toInt)
 
 					val adjustFactor =

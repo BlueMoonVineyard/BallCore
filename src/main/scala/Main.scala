@@ -81,7 +81,7 @@ final class Main extends JavaPlugin:
         Reinforcements.Reinforcements.register()
         CustomItemListener.register()
         CraftingStations.register()
-        AcclimationActor.register()
+        given aa: AcclimationActor = AcclimationActor.register()
         PolyhedraEditor.register()
         PolygonEditor.register()
         Mining.Mining.register()
