@@ -97,3 +97,5 @@ class TestUIServices(assertions: Assertions) extends UIServices:
         else
             val wha = notifyQueue.dequeue()
             wha.success(what)
+    override def quit(): Unit =
+        ???
