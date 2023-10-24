@@ -7,12 +7,18 @@ package BallCore.CustomItems
 import org.bukkit.NamespacedKey
 import org.bukkit.inventory.ItemStack
 import org.bukkit.persistence.PersistentDataType
+import org.bukkit.inventory.Recipe
+import org.bukkit.Server
+import org.bukkit.inventory.CookingRecipe
+import org.bukkit.inventory.ShapedRecipe
+import org.bukkit.inventory.ShapelessRecipe
 
 object BasicItemRegistry:
     val persistenceKeyID = NamespacedKey("ballcore", "basic_item_registry_id")
 
-class BasicItemRegistry extends ItemRegistry:
+class BasicItemRegistry(using s: Server) extends ItemRegistry:
     var itemMap = Map[NamespacedKey, CustomItem]()
+    var recipeList = List[NamespacedKey]()
     def register(item: CustomItem): Unit =
         itemMap += item.id -> item
     def lookup(from: ItemStack): Option[CustomItem] =
@@ -25,3 +31,12 @@ class BasicItemRegistry extends ItemRegistry:
             .flatMap(itemMap.get)
     def lookup(from: NamespacedKey): Option[CustomItem] =
         itemMap.get(from)
+    def addRecipe(recipe: Recipe): Unit =
+        if !s.addRecipe(recipe) then
+            throw new Exception(s"failed to register ${recipe}")
+        recipeList = getKey(recipe) :: recipeList
+    def recipes(): List[NamespacedKey] =
+        recipeList
+    private def getKey(recipe: Recipe): NamespacedKey =
+        recipe match
+            case s: (ShapedRecipe | ShapelessRecipe | CookingRecipe[_]) => s.getKey()

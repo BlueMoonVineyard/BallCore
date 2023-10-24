@@ -9,6 +9,7 @@ import org.bukkit.NamespacedKey
 import org.bukkit.event.block.BlockPlaceEvent
 import org.bukkit.event.block.BlockBreakEvent
 import org.bukkit.event.player.PlayerInteractEvent
+import org.bukkit.inventory.Recipe
 
 object Listeners:
     trait BlockPlaced:
@@ -33,3 +34,5 @@ trait ItemRegistry:
     def register(item: CustomItem): Unit
     def lookup(from: NamespacedKey): Option[CustomItem]
     def lookup(from: ItemStack): Option[CustomItem]
+    def addRecipe(it: Recipe): Unit
+    def recipes(): List[NamespacedKey]

@@ -56,7 +56,7 @@ object Sigil:
         sigilRecipe.addIngredient(Material.HONEYCOMB)
         sigilRecipe.addIngredient(Material.REDSTONE_BLOCK)
         sigilRecipe.addIngredient(Material.COAL_BLOCK)
-        val _ = p.getServer().addRecipe(sigilRecipe)
+        registry.addRecipe(sigilRecipe)
 
 class Sigil extends CustomItem:
     import UI.ChatElements._

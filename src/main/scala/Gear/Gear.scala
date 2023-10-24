@@ -15,7 +15,6 @@ import BallCore.CustomItems.ItemGroup
 import BallCore.CustomItems.ItemRegistry
 import BallCore.CustomItems.CustomItemStack
 import BallCore.CustomItems.PlainCustomItem
-import org.bukkit.Server
 import BallCore.UI.Elements._
 
 enum ToolSet(
@@ -50,7 +49,7 @@ object Gear:
         val meta = s.getItemMeta()
         meta.addItemFlags(ItemFlag.HIDE_ENCHANTS)
         val _ = s.setItemMeta(meta)
-    def pickaxe(base: ToolSet, ore: ItemStack, name: String, id: String, enchants: (Enchantment, Int)*)(using registry: ItemRegistry, server: Server): Unit =
+    def pickaxe(base: ToolSet, ore: ItemStack, name: String, id: String, enchants: (Enchantment, Int)*)(using registry: ItemRegistry): Unit =
         val is = CustomItemStack.make(NamespacedKey("ballcore", s"${id}_pickaxe"), base.pick, txt"${name} Pickaxe")
         hide(is)
         enchants.foreach { is.addUnsafeEnchantment(_, _) }
@@ -65,8 +64,8 @@ object Gear:
         )
         recipe.setIngredient('I', ExactChoice(ore))
         recipe.setIngredient('S', Material.STICK)
-        val _ = server.addRecipe(recipe)
-    def axe(base: ToolSet, ore: ItemStack, name: String, id: String, enchants: (Enchantment, Int)*)(using registry: ItemRegistry, server: Server): Unit =
+        registry.addRecipe(recipe)
+    def axe(base: ToolSet, ore: ItemStack, name: String, id: String, enchants: (Enchantment, Int)*)(using registry: ItemRegistry): Unit =
         val is = CustomItemStack.make(NamespacedKey("ballcore", s"${id}_axe"), base.axe, txt"${name} Axe")
         hide(is)
         enchants.foreach { is.addUnsafeEnchantment(_, _) }
@@ -81,8 +80,8 @@ object Gear:
         )
         recipe.setIngredient('I', ExactChoice(ore))
         recipe.setIngredient('S', Material.STICK)
-        val _ = server.addRecipe(recipe)
-    def shovel(base: ToolSet, ore: ItemStack, name: String, id: String, enchants: (Enchantment, Int)*)(using registry: ItemRegistry, server: Server): Unit =
+        registry.addRecipe(recipe)
+    def shovel(base: ToolSet, ore: ItemStack, name: String, id: String, enchants: (Enchantment, Int)*)(using registry: ItemRegistry): Unit =
         val is = CustomItemStack.make(NamespacedKey("ballcore", s"${id}_shovel"), base.shovel, txt"${name} Shovel")
         hide(is)
         enchants.foreach { is.addUnsafeEnchantment(_, _) }
@@ -97,8 +96,8 @@ object Gear:
         )
         recipe.setIngredient('I', ExactChoice(ore))
         recipe.setIngredient('S', Material.STICK)
-        val _ = server.addRecipe(recipe)
-    def hoe(base: ToolSet, ore: ItemStack, name: String, id: String, enchants: (Enchantment, Int)*)(using registry: ItemRegistry, server: Server): Unit =
+        registry.addRecipe(recipe)
+    def hoe(base: ToolSet, ore: ItemStack, name: String, id: String, enchants: (Enchantment, Int)*)(using registry: ItemRegistry): Unit =
         val is = CustomItemStack.make(NamespacedKey("ballcore", s"${id}_hoe"), base.hoe, txt"${name} Hoe")
         hide(is)
         enchants.foreach { is.addUnsafeEnchantment(_, _) }
@@ -113,13 +112,13 @@ object Gear:
         )
         recipe.setIngredient('I', ExactChoice(ore))
         recipe.setIngredient('S', Material.STICK)
-        val _ = server.addRecipe(recipe)
-    def tools(base: ToolSet, ore: ItemStack, name: String, id: String, enchants: (Enchantment, Int)*)(using registry: ItemRegistry, server: Server): Unit =
+        registry.addRecipe(recipe)
+    def tools(base: ToolSet, ore: ItemStack, name: String, id: String, enchants: (Enchantment, Int)*)(using registry: ItemRegistry): Unit =
         pickaxe(base, ore, name, id, enchants: _*)
         axe(base, ore, name, id, enchants: _*)
         shovel(base, ore, name, id, enchants: _*)
         hoe(base, ore, name, id, enchants: _*)
-    def sword(base: ToolSet, ore: ItemStack, name: String, id: String, enchants: (Enchantment, Int)*)(using registry: ItemRegistry, server: Server): Unit =
+    def sword(base: ToolSet, ore: ItemStack, name: String, id: String, enchants: (Enchantment, Int)*)(using registry: ItemRegistry): Unit =
         val is = CustomItemStack.make(NamespacedKey("ballcore", s"${id}_sword"), base.sword, txt"${name} Sword")
         hide(is)
         enchants.foreach { is.addUnsafeEnchantment(_, _) }
@@ -134,8 +133,8 @@ object Gear:
         )
         recipe.setIngredient('I', ExactChoice(ore))
         recipe.setIngredient('S', Material.STICK)
-        val _ = server.addRecipe(recipe)
-    def helmet(base: ToolSet, ore: ItemStack, name: String, id: String, enchants: (Enchantment, Int)*)(using registry: ItemRegistry, server: Server): Unit =
+        registry.addRecipe(recipe)
+    def helmet(base: ToolSet, ore: ItemStack, name: String, id: String, enchants: (Enchantment, Int)*)(using registry: ItemRegistry): Unit =
         val is = CustomItemStack.make(NamespacedKey("ballcore", s"${id}_helmet"), base.helmet, txt"${name} Helmet")
         hide(is)
         enchants.foreach { is.addUnsafeEnchantment(_, _) }
@@ -148,8 +147,8 @@ object Gear:
             "I I",
         )
         recipe.setIngredient('I', ExactChoice(ore))
-        val _ = server.addRecipe(recipe)
-    def chestplate(base: ToolSet, ore: ItemStack, name: String, id: String, enchants: (Enchantment, Int)*)(using registry: ItemRegistry, server: Server): Unit =
+        registry.addRecipe(recipe)
+    def chestplate(base: ToolSet, ore: ItemStack, name: String, id: String, enchants: (Enchantment, Int)*)(using registry: ItemRegistry): Unit =
         val is = CustomItemStack.make(NamespacedKey("ballcore", s"${id}_chestplate"), base.chestplate, txt"${name} Chestplate")
         hide(is)
         enchants.foreach { is.addUnsafeEnchantment(_, _) }
@@ -163,8 +162,8 @@ object Gear:
             "III",
         )
         recipe.setIngredient('I', ExactChoice(ore))
-        val _ = server.addRecipe(recipe)
-    def leggings(base: ToolSet, ore: ItemStack, name: String, id: String, enchants: (Enchantment, Int)*)(using registry: ItemRegistry, server: Server): Unit =
+        registry.addRecipe(recipe)
+    def leggings(base: ToolSet, ore: ItemStack, name: String, id: String, enchants: (Enchantment, Int)*)(using registry: ItemRegistry): Unit =
         val is = CustomItemStack.make(NamespacedKey("ballcore", s"${id}_leggings"), base.leggings, txt"${name} Leggings")
         hide(is)
         enchants.foreach { is.addUnsafeEnchantment(_, _) }
@@ -178,8 +177,8 @@ object Gear:
             "I I",
         )
         recipe.setIngredient('I', ExactChoice(ore))
-        val _ = server.addRecipe(recipe)
-    def boots(base: ToolSet, ore: ItemStack, name: String, id: String, enchants: (Enchantment, Int)*)(using registry: ItemRegistry, server: Server): Unit =
+        registry.addRecipe(recipe)
+    def boots(base: ToolSet, ore: ItemStack, name: String, id: String, enchants: (Enchantment, Int)*)(using registry: ItemRegistry): Unit =
         val is = CustomItemStack.make(NamespacedKey("ballcore", s"${id}_boots"), base.boots, txt"${name} Boots")
         hide(is)
         enchants.foreach { is.addUnsafeEnchantment(_, _) }
@@ -192,8 +191,8 @@ object Gear:
             "I I",
         )
         recipe.setIngredient('I', ExactChoice(ore))
-        val _ = server.addRecipe(recipe)
-    def armor(base: ToolSet, ore: ItemStack, name: String, id: String, enchants: (Enchantment, Int)*)(using registry: ItemRegistry, server: Server): Unit =
+        registry.addRecipe(recipe)
+    def armor(base: ToolSet, ore: ItemStack, name: String, id: String, enchants: (Enchantment, Int)*)(using registry: ItemRegistry): Unit =
         helmet(base, ore, name, id, enchants: _*)
         chestplate(base, ore, name, id, enchants: _*)
         leggings(base, ore, name, id, enchants: _*)

@@ -13,12 +13,18 @@ import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.block.Action
 import org.bukkit.inventory.EquipmentSlot
 import BallCore.Storage.SQLManager
+import org.bukkit.event.player.PlayerJoinEvent
+import scala.jdk.CollectionConverters._
 
 object CustomItemListener:
     def register()(using bm: BlockManager, reg: ItemRegistry, plugin: Plugin, sql: SQLManager): Unit =
         plugin.getServer().getPluginManager().registerEvents(new CustomItemListener, plugin)
 
 class CustomItemListener(using bm: BlockManager, reg: ItemRegistry, sql: SQLManager) extends org.bukkit.event.Listener:
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    def onPlayerJoin(event: PlayerJoinEvent): Unit =
+        event.getPlayer().discoverRecipes(reg.recipes().asJava); ()
+
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     def onBlockPlace(event: BlockPlaceEvent): Unit =
         reg.lookup(event.getItemInHand()) match

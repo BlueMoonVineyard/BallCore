@@ -81,10 +81,10 @@ case class OreVariants(
 
         val recipeTicks = 100
         val rawRecipe = FurnaceRecipe(recipeKey(raw), initialYield, ExactChoice(raw), 0.0f, recipeTicks)
-        val _ = serv.addRecipe(rawRecipe)
+        registry.addRecipe(rawRecipe)
 
         val rawRecipeB = BlastingRecipe(blastKey(raw), initialYield, ExactChoice(raw), 0.0f, recipeTicks)
-        val _ = serv.addRecipe(rawRecipeB)
+        registry.addRecipe(rawRecipeB)
 
         val blockRecipe = ShapedRecipe(blockKey(block), block)
         blockRecipe.shape(
@@ -93,11 +93,11 @@ case class OreVariants(
             "III",
         )
         blockRecipe.setIngredient('I', ExactChoice(ingot))
-        val _ = serv.addRecipe(blockRecipe)
+        registry.addRecipe(blockRecipe)
 
         val ingotFromBlockRecipe = ShapelessRecipe(ingotFromBlockKey(ingot), ingot.clone().tap(_.setAmount(9)))
         ingotFromBlockRecipe.addIngredient(ExactChoice(block))
-        val _ = serv.addRecipe(ingotFromBlockRecipe)
+        registry.addRecipe(ingotFromBlockRecipe)
 
         val ingotFromNuggetRecipe = ShapedRecipe(ingotFromNuggetKey(ingot), ingot)
         ingotFromNuggetRecipe.shape(
@@ -106,11 +106,11 @@ case class OreVariants(
             "NNN",
         )
         ingotFromNuggetRecipe.setIngredient('N', ExactChoice(nugget))
-        val _ = serv.addRecipe(ingotFromNuggetRecipe)
+        registry.addRecipe(ingotFromNuggetRecipe)
 
         val nuggetRecipe = ShapelessRecipe(nuggetKey(nugget), nugget.clone().tap(_.setAmount(9)))
         nuggetRecipe.addIngredient(ExactChoice(ingot))
-        val _ = serv.addRecipe(nuggetRecipe)
+        registry.addRecipe(nuggetRecipe)
 
 object Helpers:
     def factory(id: String, name: String, num: Int, raw: Material, nugget: Material, ingot: Material, block: Material): OreVariants =

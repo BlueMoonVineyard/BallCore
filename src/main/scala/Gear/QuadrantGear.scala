@@ -6,7 +6,6 @@ package BallCore.Gear
 
 import org.bukkit.enchantments.Enchantment
 import BallCore.CustomItems.ItemRegistry
-import org.bukkit.Server
 
 object QuadrantGear:
     import BallCore.Ores.QuadrantOres
@@ -14,7 +13,7 @@ object QuadrantGear:
     import ToolSet._
     import Gear._
 
-    def registerItems()(using registry: ItemRegistry, server: Server): Unit =
+    def registerItems()(using registry: ItemRegistry): Unit =
         tools(Iron, iron.ingot, iron.name, iron.id, (Enchantment.DURABILITY, 1))
         sword(Iron, iron.ingot, iron.name, iron.id, (Enchantment.DURABILITY, 1), (Enchantment.DAMAGE_ALL, 1))
         armor(Iron, iron.ingot, iron.name, iron.id, (Enchantment.DURABILITY, 1))
