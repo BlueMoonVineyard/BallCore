@@ -89,15 +89,13 @@ class Listener(using cbm: CivBeaconManager, gm: GroupManager, sql: SQLManager) e
     //// Stuff that interacts with the RSM; i.e. that mutates block states
     //
 
-    // TODO: consult subgroup at location
-    private def subgroupAt(location: Location) =
-        val _ = location
-        nullUUID
-
     private def checkAt(location: Location, player: Player, permission: Permissions): Either[GroupError, Boolean] =
         sql.useBlocking(cbm.beaconContaining(location))
             .flatMap(id => sql.useBlocking(cbm.getGroup(id)))
-            .map(group => sql.useBlocking(gm.check(player.getUniqueId(), group, subgroupAt(location), permission).value))
+            .map(group => {
+                val sgid = sql.useBlocking(gm.getSubclaims(group)).getOrElse(Map()).find(_._2.contains(location)).map(_._1).getOrElse(nullUUID)
+                sql.useBlocking(gm.check(player.getUniqueId(), group, sgid, permission).value)
+            })
             .getOrElse(Right(true))
     private inline def checkAt(location: Block, player: Player, permission: Permissions): Either[GroupError, Boolean] =
         checkAt(BlockAdjustment.adjustBlock(location).getLocation(), player, permission)
@@ -128,23 +126,22 @@ class Listener(using cbm: CivBeaconManager, gm: GroupManager, sql: SQLManager) e
         if !event.hasBlock() || event.getAction() != Action.RIGHT_CLICK_BLOCK then
             return
         val loc = BlockAdjustment.adjustBlock(event.getClickedBlock())
-        loc.getState() match
-            case _: Container =>
-                checkAt(event.getClickedBlock(), event.getPlayer(), Permissions.Chests) match
-                    case Right(ok) if ok =>
-                        ()
-                    case _ =>
-                        // TODO: notify of permission denied
-                        event.setCancelled(true)
-            case _: Openable =>
-                checkAt(event.getClickedBlock(), event.getPlayer(), Permissions.Doors) match
-                    case Right(ok) if ok =>
-                        ()
-                    case _ =>
-                        // TODO: notify of permission denied
-                        event.setCancelled(true)
-            case _ =>
-                ()
+        if loc.getState().isInstanceOf[Container] then
+            checkAt(event.getClickedBlock(), event.getPlayer(), Permissions.Chests) match
+                case Right(ok) if ok =>
+                    ()
+                case _ =>
+                    // TODO: notify of permission denied
+                    event.setCancelled(true)
+        else if loc.getBlockData().isInstanceOf[Openable] then
+            checkAt(event.getClickedBlock(), event.getPlayer(), Permissions.Doors) match
+                case Right(ok) if ok =>
+                    ()
+                case _ =>
+                    // TODO: notify of permission denied
+                    event.setCancelled(true)
+        else
+            ()
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     def preventHarvestingCaveVines(event: PlayerHarvestBlockEvent): Unit =

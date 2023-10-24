@@ -7,6 +7,7 @@ package BallCore.Groups
 import java.{util => ju}
 import io.circe._, io.circe.generic.semiauto._
 import org.bukkit.Material
+import org.bukkit.Location
 
 type UserID = ju.UUID
 type RoleID = ju.UUID
@@ -127,14 +128,37 @@ implicit val pEncoder: Encoder[Position] = deriveEncoder[Position]
 case class Volume(
     cornerA: Position,
     cornerB: Position,
-)
+):
+    private def cornerALocation(): Position =
+        cornerA
+
+    private def cornerBLocation(): Position =
+        cornerB.copy(x = cornerB.x + 1, y = cornerB.y + 1, z = cornerB.z + 1)
+
+    private def check1D(target: Double, a1: Double, a2: Double): Boolean =
+        if !(a1 <= a2) then
+            throw IllegalArgumentException("a1 must be lower than a2")
+
+        if a1 <= target && target <= a2 then
+            true
+        else
+            false
+    def contains(target: Location): Boolean =
+        val ca = cornerALocation()
+        val cb = cornerBLocation()
+
+        check1D(target.getX(), ca.x, cb.x) &&
+        check1D(target.getY(), ca.y, cb.y) &&
+        check1D(target.getZ(), ca.z, cb.z)
 
 implicit val vDecoder: Decoder[Volume] = deriveDecoder[Volume]
 implicit val vEncoder: Encoder[Volume] = deriveEncoder[Volume]
 
 case class Subclaims(
     volumes: List[Volume],
-)
+):
+    def contains(target: Location): Boolean =
+        volumes.exists(_.contains(target))
 
 implicit val scDecoder: Decoder[Subclaims] = deriveDecoder[Subclaims]
 implicit val scEncoder: Encoder[Subclaims] = deriveEncoder[Subclaims]
