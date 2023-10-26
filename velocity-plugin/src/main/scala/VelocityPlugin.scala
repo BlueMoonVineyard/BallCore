@@ -37,6 +37,7 @@ import com.mojang.brigadier.builder.RequiredArgumentBuilder
 import com.mojang.brigadier.arguments.StringArgumentType
 import net.kyori.adventure.text.event.ClickEvent
 import net.kyori.adventure.text.event.HoverEvent
+import BallCore.Storage.Config
 
 class HTTP(apiKey: String)(using lam: LinkedAccountsManager):
     def intoResponse(r: Either[LinkedAccountError, String]) =
@@ -162,7 +163,13 @@ final class VelocityPlugin(server: ProxyServer, logger: Logger, dataDirectory: P
             str
         }
 
-        given sql: SQLManager = SQLManager()
+        val databaseConfig = Config.from(config.node("database")) match
+            case Left(err) =>
+                throw Exception(s"failed to read config because ${err}")
+            case Right(value) =>
+                value
+
+        given sql: SQLManager = SQLManager(databaseConfig)
         given lam: LinkedAccountsManager = LinkedAccountsManager()
         shutdownHTTP = HTTP(apiKey).register()
 
