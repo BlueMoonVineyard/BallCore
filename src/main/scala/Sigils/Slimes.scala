@@ -199,7 +199,7 @@ class SlimeEgg(using cem: CustomEntityManager, ssm: SigilSlimeManager, hnm: CivB
 	def group = Sigil.group
 	def template = Slimes.slimeEggStack
 
-	override def onItemUsed(event: PlayerInteractEvent): Unit =
+	override def onItemUsedOnBlock(event: PlayerInteractEvent): Unit =
 		val beacon =
 			sql.useBlocking(hnm.getBeaconFor(event.getPlayer().getUniqueId())) match
 				case None =>

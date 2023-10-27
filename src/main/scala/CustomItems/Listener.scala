@@ -58,7 +58,7 @@ class CustomItemListener(using bm: BlockManager, reg: ItemRegistry, sql: SQLMana
             case _ =>
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    def onInteractItem(event: PlayerInteractEvent): Unit =
+    def onInteractItemBlock(event: PlayerInteractEvent): Unit =
         if !event.hasItem() || event.getAction() != Action.RIGHT_CLICK_BLOCK then
             return
 
@@ -67,6 +67,22 @@ class CustomItemListener(using bm: BlockManager, reg: ItemRegistry, sql: SQLMana
                 val cancel =
                     item match
                         case click: Listeners.ItemUsedOnBlock =>
+                            click.onItemUsedOnBlock(event)
+                            true
+                        case _ => false
+                event.setCancelled(cancel)
+            case None =>
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    def onInteractItem(event: PlayerInteractEvent): Unit =
+        if !event.hasItem() || !(event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) then
+            return
+
+        reg.lookup(event.getItem()) match
+            case Some(item) =>
+                val cancel =
+                    item match
+                        case click: Listeners.ItemUsed =>
                             click.onItemUsed(event)
                             true
                         case _ => false

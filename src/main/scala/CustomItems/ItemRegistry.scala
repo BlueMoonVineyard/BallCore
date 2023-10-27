@@ -10,6 +10,8 @@ import org.bukkit.event.block.BlockPlaceEvent
 import org.bukkit.event.block.BlockBreakEvent
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.inventory.Recipe
+import org.bukkit.Material
+import net.kyori.adventure.text.Component
 
 object Listeners:
     trait BlockPlaced:
@@ -19,6 +21,8 @@ object Listeners:
     trait BlockClicked:
         def onBlockClicked(event: PlayerInteractEvent): Unit
     trait ItemUsedOnBlock:
+        def onItemUsedOnBlock(event: PlayerInteractEvent): Unit
+    trait ItemUsed:
         def onItemUsed(event: PlayerInteractEvent): Unit
 
 trait CustomItem:
@@ -36,3 +40,15 @@ trait ItemRegistry:
     def lookup(from: ItemStack): Option[CustomItem]
     def addRecipe(it: Recipe): Unit
     def recipes(): List[NamespacedKey]
+
+enum CustomMaterial:
+    case custom(named: String)
+    case vanilla(named: Material)
+
+    def displayName()(using r: ItemRegistry): Component =
+        this match
+            case custom(named) =>
+                r.lookup(NamespacedKey.fromString(named)).map(_.template.displayName()).getOrElse(Component.text(s"Invalid item ${named}"))
+            case vanilla(named) =>
+                ItemStack(named).displayName()
+        

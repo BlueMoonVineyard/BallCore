@@ -26,12 +26,14 @@ class CustomItemStack(
     )
 
 object CustomItemStack:
+    def loreify(a: Component): Component =
+        a.style(x => { x.decorationIfAbsent(TextDecoration.ITALIC, State.FALSE).colorIfAbsent(NamedTextColor.GRAY); () })
     def make(itemID: NamespacedKey, stack: Material, name: Component, lore: Component*): CustomItemStack =
         val is = ItemStack(stack)
         is.setItemMeta(
             is.getItemMeta()
                 .tap(_.displayName(name.style(x => { x.decorationIfAbsent(TextDecoration.ITALIC, State.FALSE).colorIfAbsent(NamedTextColor.WHITE); () })))
-                .tap(_.lore(lore.map(_.style(x => { x.decorationIfAbsent(TextDecoration.ITALIC, State.FALSE).colorIfAbsent(NamedTextColor.GRAY); () })).asJava))
+                .tap(_.lore(lore.map(loreify).asJava))
         )
         CustomItemStack(itemID, is)
 

@@ -45,6 +45,7 @@ import org.spongepowered.configurate.yaml.YamlConfigurationLoader
 import java.nio.file.Files
 import scala.util.Try
 import BallCore.Storage.Config
+import BallCore.Shops.Order
 
 final class Main extends JavaPlugin:
     given sm: ShutdownCallbacks = ShutdownCallbacks()
@@ -105,6 +106,7 @@ final class Main extends JavaPlugin:
         given pbm: PlantBatchManager = Plants.Plants.register()
         given chatActor: ChatActor = Chat.Chat.register()
         val chatCommands = ChatCommands()
+        Order.register()
         // HTTP.register()
         getCommand("group").setExecutor(chatCommands.Group)
         getCommand("global").setExecutor(chatCommands.Global)
