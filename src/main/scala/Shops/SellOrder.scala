@@ -23,6 +23,10 @@ import net.kyori.adventure.text.Component
 import scala.jdk.CollectionConverters._
 import BallCore.CustomItems.ItemRegistry
 
+object SellOrderDescription:
+    def enumerateFrom(inv: Iterator[ItemStack]): Iterator[SellOrderDescription] =
+        inv.filterNot(_ == null).flatMap(x => SellOrderItemDescription.deserialize(x.getItemMeta().getPersistentDataContainer()).into())
+
 case class SellOrderDescription(
     val selling: (ItemStack, Int),
     val price: (CustomMaterial, Int),

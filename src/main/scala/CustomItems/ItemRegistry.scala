@@ -20,6 +20,8 @@ object Listeners:
         def onBlockRemoved(event: BlockBreakEvent): Unit
     trait BlockClicked:
         def onBlockClicked(event: PlayerInteractEvent): Unit
+    trait BlockLeftClicked:
+        def onBlockLeftClicked(event: PlayerInteractEvent): Unit
     trait ItemUsedOnBlock:
         def onItemUsedOnBlock(event: PlayerInteractEvent): Unit
     trait ItemUsed:

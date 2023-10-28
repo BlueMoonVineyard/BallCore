@@ -12,5 +12,6 @@ object Order:
     val sellOrderCMD = 5
 
     def register()(using registry: ItemRegistry): Unit =
-    	registry.register(BuyOrder())
-    	registry.register(SellOrder())
+        registry.register(BuyOrder())
+        registry.register(SellOrder())
+        registry.register(ShopChest())
