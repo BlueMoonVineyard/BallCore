@@ -23,14 +23,106 @@ import net.kyori.adventure.text.Component
 import scala.jdk.CollectionConverters._
 import BallCore.CustomItems.ItemRegistry
 
+def countPayment(of: Iterator[ItemStack], isValidPayment: ItemStack => Boolean): (Int, List[ItemStack]) =
+    of.filterNot(_ == null).foldLeft((0, Nil: List[ItemStack])) { (tuple, item) =>
+        val (sum, items) = tuple
+        if isValidPayment(item) then
+            (sum + item.getAmount(), item :: items)
+        else
+            (sum, items)
+    }
+
+def countReceive(of: Iterator[ItemStack], payment: ItemStack): (Int, List[ItemStack]) =
+    of.foldLeft((0, Nil: List[ItemStack])) { (tuple, item) =>
+        val (sum, items) = tuple
+        if item == null then
+            (sum + payment.getMaxStackSize(), item :: items)
+        else if item.isSimilar(payment) then
+            (sum + (item.getMaxStackSize() - item.getAmount()), item :: items)
+        else
+            (sum, items)
+    }
+
+def deduct(from: List[ItemStack], amount: Int): Unit =
+    val remaining = from.foldLeft(amount) { (unpaid, item) =>
+        if unpaid > 0 then
+            if item.getAmount() >= unpaid then
+                val amount = item.getAmount()
+                item.setAmount(amount - unpaid)
+                unpaid - amount
+            else
+                val amount = item.getAmount()
+                item.setAmount(0)
+                unpaid - amount
+        else
+            unpaid
+    }
+    assert(remaining <= 0)
+
 object SellOrderDescription:
+    def debugEnumerateFrom(inv: Iterator[ItemStack]): Iterator[SellOrderItemDescription] =
+        inv.filterNot(_ == null).map(x => SellOrderItemDescription.deserialize(x.getItemMeta().getPersistentDataContainer()))
     def enumerateFrom(inv: Iterator[ItemStack]): Iterator[SellOrderDescription] =
         inv.filterNot(_ == null).flatMap(x => SellOrderItemDescription.deserialize(x.getItemMeta().getPersistentDataContainer()).into())
+
+enum ExchangeError:
+    case buyerCantAfford(has: Int, needed: Int)
+    case buyerCantReceive
+    case sellerCantAfford(has: Int, needed: Int)
+    case sellerCantReceive
+    case unknownPrice
 
 case class SellOrderDescription(
     val selling: (ItemStack, Int),
     val price: (CustomMaterial, Int),
-)
+):
+    extension (i: ItemStack)
+        def normalized: ItemStack =
+            i.clone().tap(_.setAmount(1))
+
+    def countPossibleExchanges(inv: Iterator[ItemStack]): Int =
+        val counted = scala.collection.mutable.Map[ItemStack, Int]()
+        inv.filterNot(_ == null).foreach { itemStack =>
+            val key = itemStack.normalized
+            counted(key) = counted.getOrElseUpdate(key, 0) + itemStack.getAmount()
+        }
+        counted.getOrElse(selling._1.normalized, 0) / selling._2
+
+    def perform(buyerPay: Iterator[ItemStack], buyerReceive: Iterator[ItemStack], buyerInsert: ((ItemStack, Int)) => Unit, sellerPay: Iterator[ItemStack], sellerReceive: Iterator[ItemStack], sellerInsert: ((ItemStack, Int)) => Unit)(using ItemRegistry): Either[ExchangeError, Unit] =
+        val (buyerCount, buyerItems) = countPayment(buyerPay, price._1.matches)
+        if buyerCount < price._2 then
+            return Left(ExchangeError.buyerCantAfford(buyerCount, price._2))
+
+        val (buyerFreeCount, buyerFreeItems) = countReceive(buyerReceive, selling._1)
+        if buyerFreeCount < selling._2 then
+            return Left(ExchangeError.buyerCantReceive)
+
+        val (sellerCount, sellerItems) = countPayment(sellerPay, selling._1.isSimilar)
+        if sellerCount < selling._2 then
+            return Left(ExchangeError.sellerCantAfford(sellerCount, selling._2))
+
+        val paymentTemplate = price._1.template() match
+            case Some(it) => it
+            case None => return Left(ExchangeError.unknownPrice)
+        val (sellerFreeCount, sellerFreeItems) = countReceive(sellerReceive, paymentTemplate)
+        if sellerFreeCount < price._2 then
+            return Left(ExchangeError.sellerCantReceive)
+
+        // we've confirmed that we can do the deed
+
+        // deduct payment from buyer
+        deduct(buyerItems, price._2)
+
+        // deduct product from seller
+        deduct(sellerItems, selling._2)
+
+        // insert product into buyer
+        buyerInsert(selling)
+
+        // insert product into seller
+        sellerInsert((paymentTemplate, price._2))
+
+        Right(())
 
 object SellOrderItemDescription:
     def deserialize(from: PersistentDataContainer): SellOrderItemDescription =

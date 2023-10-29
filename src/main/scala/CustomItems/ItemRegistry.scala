@@ -43,14 +43,26 @@ trait ItemRegistry:
     def addRecipe(it: Recipe): Unit
     def recipes(): List[NamespacedKey]
 
+@SerialVersionUID(1000L)
 enum CustomMaterial:
     case custom(named: String)
     case vanilla(named: Material)
 
+    def template()(using r: ItemRegistry): Option[ItemStack] =
+        this match
+            case custom(named) =>
+                r.lookup(NamespacedKey.fromString(named)).map(_.template)
+            case vanilla(named) =>
+                Some(ItemStack(named))
     def displayName()(using r: ItemRegistry): Component =
         this match
             case custom(named) =>
                 r.lookup(NamespacedKey.fromString(named)).map(_.template.displayName()).getOrElse(Component.text(s"Invalid item ${named}"))
             case vanilla(named) =>
                 ItemStack(named).displayName()
-        
+    def matches(other: ItemStack)(using r: ItemRegistry): Boolean =
+        this match
+            case custom(named) =>
+                r.lookup(NamespacedKey.fromString(named)).map(_.template.isSimilar(other)).getOrElse(false)
+            case vanilla(named) =>
+                other.getType() == named
