@@ -70,6 +70,20 @@ enum Month:
     case Aban
     case Sisira
 
+    def displayName: String = this match
+        case Nieuwice => "Early Winter"
+        case Bleibschnee => "Mid Winter"
+        case Coldwane => "Late Winter"
+        case Lluvita => "Early Spring"
+        case Floraison => "Mid Spring"
+        case Caldera => "Late Spring"
+        case Zha => "Early Summer"
+        case Dashu => "Mid Summer"
+        case Nurui => "Late Summer"
+        case Sarada => "Early Autumn"
+        case Aban => "Mid Autumn"
+        case Sisira => "Late Autumn"
+
     def season: Season = this match
         case Nieuwice => Season.winter
         case Bleibschnee => Season.winter
@@ -134,7 +148,7 @@ object Datekeeping:
                     case 2 => "nd"
                     case 3 => "rd"
                     case _ => "th")
-            sid.setAll(SidebarLine.date, Some(txt" ${suffixed} of ${monat}, ${date.year}"))
+            sid.setAll(SidebarLine.date, Some(txt" ${suffixed} of ${monat.displayName}, ${date.year}"))
             sid.setAll(SidebarLine.time, Some(txt" ${date.hour}:${date.minute.toString.reverse.padTo(2, '0').reverse}"))
             p.getServer().getGlobalRegionScheduler().execute(p, () => {
                 val minute = (date.hour*60 + date.minute)*16.6666
