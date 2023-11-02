@@ -69,6 +69,10 @@ case class GroupOwnerships(groupID: ju.UUID, userID: ju.UUID):
             ($uuid, $uuid);
         """, (groupID, userID)).map(_ => ())
 
+object GroupError:
+    given Encoder[GroupError] = deriveEncoder[GroupError]
+    given Decoder[GroupError] = deriveDecoder[GroupError]
+
 enum GroupError:
     case MustBeOwner
     case MustBeOnlyOwner

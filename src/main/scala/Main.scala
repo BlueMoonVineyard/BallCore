@@ -46,6 +46,7 @@ import java.nio.file.Files
 import scala.util.Try
 import BallCore.Storage.Config
 import BallCore.Shops.Order
+import BallCore.PluginMessaging.Messaging
 
 final class Main extends JavaPlugin:
     given sm: ShutdownCallbacks = ShutdownCallbacks()
@@ -115,6 +116,7 @@ final class Main extends JavaPlugin:
         getCommand("cheat").setExecutor(CheatCommand())
         getCommand("done").setExecutor(DoneCommand())
         getCommand("plants").setExecutor(PlantsCommand())
+        Messaging.register()
     override def onDisable() =
         import scala.concurrent.ExecutionContext.Implicits.global
         val _ = Await.ready(sm.shutdown(), scala.concurrent.duration.Duration.Inf)
