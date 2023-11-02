@@ -12,6 +12,7 @@ import org.bukkit.Server
 import org.bukkit.inventory.CookingRecipe
 import org.bukkit.inventory.ShapedRecipe
 import org.bukkit.inventory.ShapelessRecipe
+import org.bukkit.inventory.StonecuttingRecipe
 
 object BasicItemRegistry:
     val persistenceKeyID = NamespacedKey("ballcore", "basic_item_registry_id")
@@ -39,4 +40,4 @@ class BasicItemRegistry(using s: Server) extends ItemRegistry:
         recipeList
     private def getKey(recipe: Recipe): NamespacedKey =
         recipe match
-            case s: (ShapedRecipe | ShapelessRecipe | CookingRecipe[_]) => s.getKey()
+            case s: (ShapedRecipe | ShapelessRecipe | CookingRecipe[_] | StonecuttingRecipe) => s.getKey()
