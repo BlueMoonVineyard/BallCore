@@ -18,7 +18,7 @@ object CardinalOres:
 
     object ItemStacks:
         // north
-        val silver = ironLike("silver", "Silver", OreTypes.silver.num)
+        val sulfur = ironLike("sulfur", "Sulfur", OreTypes.sulfur.num)
         val sapphire = CustomItemStack.make(NamespacedKey("ballcore", "sapphire"), Material.LAPIS_LAZULI, txt"Sapphire")
 
         // south
@@ -35,7 +35,7 @@ object CardinalOres:
 
     val group = ItemGroup(NamespacedKey("ballcore", "cardinal_ores"), ItemStack(Material.IRON_INGOT))
     def registerItems()(using registry: ItemRegistry, server: Server): Unit =
-        register(group, ItemStacks.silver)
+        register(group, ItemStacks.sulfur)
         register(group, ItemStacks.sapphire)
 
         register(group, ItemStacks.sillicon)

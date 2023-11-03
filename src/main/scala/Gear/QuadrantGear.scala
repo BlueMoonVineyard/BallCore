@@ -30,9 +30,9 @@ object QuadrantGear:
         sword(Iron, tin.ingot, tin.name, tin.id, (Enchantment.KNOCKBACK, 1), (Enchantment.DURABILITY, 1))
         armor(Iron, tin.ingot, tin.name, tin.id, (Enchantment.THORNS, 1))
 
-        tools(Gold, sulfur.ingot, sulfur.name, sulfur.id, (Enchantment.DIG_SPEED, 2), (Enchantment.DURABILITY, 4))
-        sword(Gold, sulfur.ingot, sulfur.name, sulfur.id, (Enchantment.KNOCKBACK, 2), (Enchantment.DURABILITY, 4))
-        armor(Gold, sulfur.ingot, sulfur.name, sulfur.id, (Enchantment.THORNS, 2), (Enchantment.DURABILITY, 4))
+        tools(Gold, silver.ingot, silver.name, silver.id, (Enchantment.DIG_SPEED, 2), (Enchantment.DURABILITY, 4))
+        sword(Gold, silver.ingot, silver.name, silver.id, (Enchantment.KNOCKBACK, 2), (Enchantment.DURABILITY, 4))
+        armor(Gold, silver.ingot, silver.name, silver.id, (Enchantment.THORNS, 2), (Enchantment.DURABILITY, 4))
 
         tools(Iron, orichalcum.ingot, orichalcum.name, orichalcum.id, (Enchantment.SILK_TOUCH, 1))
         sword(Iron, orichalcum.ingot, orichalcum.name, orichalcum.id, (Enchantment.LOOT_BONUS_MOBS, 2))

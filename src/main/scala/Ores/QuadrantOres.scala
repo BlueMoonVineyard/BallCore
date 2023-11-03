@@ -18,12 +18,12 @@ object QuadrantOres:
         // +, + base ores
         val iron = ironLike("iron", "Iron", OreTypes.iron.num)
         val gold = goldLike("gold", "Gold", OreTypes.gold.num)
-        val copper = copperLike("copper", "Copper", OreTypes.copper.num)
+        val orichalcum = copperLike("orichalcum", "Orichalcum", OreTypes.orichalcum.num)
 
         // +, - base ores
         val tin = ironLike("tin", "Tin", OreTypes.tin.num)
-        val sulfur = goldLike("sulfur", "Sulfur", OreTypes.sulfur.num)
-        val orichalcum = copperLike("orichalcum", "Orichalcum", OreTypes.orichalcum.num)
+        val silver = goldLike("silver", "Silver", OreTypes.sulfur.num)
+        val copper = copperLike("copper", "Copper", OreTypes.copper.num)
 
         // -, - base ores
         val aluminum = ironLike("aluminum", "Aluminum", OreTypes.aluminum.num)
@@ -36,7 +36,7 @@ object QuadrantOres:
         val meteorite = copperLike("meteorite", "Meteorite", OreTypes.meteorite.num)
 
         val ironLikes = List(iron, tin, aluminum, zinc)
-        val goldLikes = List(gold, sulfur, palladium, magnesium)
+        val goldLikes = List(gold, silver, palladium, magnesium)
         val copperLikes = List(copper, orichalcum, hihiirogane, meteorite)
 
     val group = ItemGroup(NamespacedKey("ballcore", "quadrant_ores"), ItemStack(Material.IRON_INGOT))
@@ -46,7 +46,7 @@ object QuadrantOres:
         register(group, ItemStacks.gold)
         register(group, ItemStacks.copper)
         register(group, ItemStacks.tin)
-        register(group, ItemStacks.sulfur)
+        register(group, ItemStacks.silver)
         register(group, ItemStacks.orichalcum)
         register(group, ItemStacks.aluminum)
         register(group, ItemStacks.palladium)

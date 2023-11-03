@@ -45,7 +45,7 @@ object Mining:
     ).concat {
         // black cardinal ores
         val ores = List(
-            Cardinal.north -> CardinalOres.ItemStacks.silver.raw,
+            Cardinal.north -> CardinalOres.ItemStacks.sulfur.raw,
             Cardinal.south -> CardinalOres.ItemStacks.sillicon.raw,
             Cardinal.east -> CardinalOres.ItemStacks.cobalt.raw,
             Cardinal.west -> CardinalOres.ItemStacks.lead.raw,
@@ -73,7 +73,7 @@ object Mining:
         // yellow quadrant ores
         val ores = List(
             Quadrant.southeast -> QuadrantOres.ItemStacks.gold.raw,
-            Quadrant.southwest -> QuadrantOres.ItemStacks.sulfur.raw,
+            Quadrant.southwest -> QuadrantOres.ItemStacks.silver.raw,
             Quadrant.northwest -> QuadrantOres.ItemStacks.palladium.raw,
             Quadrant.northeast -> QuadrantOres.ItemStacks.magnesium.raw,
         )
