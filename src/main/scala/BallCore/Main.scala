@@ -38,6 +38,7 @@ import dev.jorel.commandapi.{CommandAPI, CommandAPIBukkitConfig}
 import java.nio.file.Files
 import scala.concurrent.{Await, ExecutionContext}
 import scala.util.Try
+import BallCore.Sigils.SlimePillarManager
 import BallCore.Reinforcements.BustThroughTracker
 
 final class Main extends JavaPlugin:
@@ -95,7 +96,7 @@ final class Main extends JavaPlugin:
         given cem: CustomEntityManager = CustomEntityManager()
 
         given bam: SigilSlimeManager = SigilSlimeManager()
-
+        given spm: SlimePillarManager = SlimePillarManager()
         given editor: PolygonEditor = new PolygonEditor()
 
         given editor3D: PolyhedraEditor = new PolyhedraEditor()
