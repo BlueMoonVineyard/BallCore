@@ -49,7 +49,7 @@ object Slimes:
 
 	val entityKind = NamespacedKey("ballcore", "sigil_slime")
 
-case class EntityIDPair(val interaction: UUID, val display: UUID)
+case class EntityIDPair(interaction: UUID, display: UUID)
 
 class SigilSlimeManager(using sql: Storage.SQLManager, cbm: CivBeaconManager, ccm: CustomEntityManager):
 	sql.applyMigration(

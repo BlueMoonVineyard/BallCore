@@ -38,6 +38,6 @@ object CustomItemStack:
         CustomItemStack(itemID, is)
 
 case class ItemGroup(
-    val key: NamespacedKey,
-    val gui: ItemStack,
+    key: NamespacedKey,
+    gui: ItemStack,
 )

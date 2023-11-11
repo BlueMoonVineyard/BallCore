@@ -20,11 +20,11 @@ import java.time.OffsetDateTime
 import java.time.ZoneOffset
 
 case class GameDate(
-    val year: Long, // 12*31*24*60 minutes
-    val month: Long, // 31*24*60 minutes
-    val day: Long, // 24*60 minutes
-    val hour: Long, // 60 minutes
-    val minute: Long,
+    year: Long, // 12*31*24*60 minutes
+    month: Long, // 31*24*60 minutes
+    day: Long, // 24*60 minutes
+    hour: Long, // 60 minutes
+    minute: Long,
 )
 
 enum Season:

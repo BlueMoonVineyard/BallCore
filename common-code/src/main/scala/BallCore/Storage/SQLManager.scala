@@ -24,11 +24,11 @@ case class Migration(name: String, apply: List[Command[Void]], reverse: List[Com
 case class MigrationFailure(which: String, num: Int, why: SQLException) extends Exception(s"$which failed at the ${num+1}-th fragment", why)
 
 case class Config(
-    val host: String,
-    val port: Int,
-    val user: String,
-    val database: String,
-    val password: String,
+    host: String,
+    port: Int,
+    user: String,
+    database: String,
+    password: String,
 )
 
 enum ConfigError:

@@ -73,8 +73,8 @@ enum ExchangeError:
     case unknownPrice
 
 case class SellOrderDescription(
-    val selling: (ItemStack, Int),
-    val price: (CustomMaterial, Int),
+    selling: (ItemStack, Int),
+    price: (CustomMaterial, Int),
 ):
     extension (i: ItemStack)
         def normalized: ItemStack =
@@ -137,8 +137,8 @@ object SellOrderItemDescription:
         SellOrderItemDescription(selling, price)
 
 case class SellOrderItemDescription(
-    val selling: Option[(ItemStack, Int)],
-    val price: Option[(CustomMaterial, Int)],
+    selling: Option[(ItemStack, Int)],
+    price: Option[(CustomMaterial, Int)],
 ):
     def into(): Option[SellOrderDescription] =
         for {

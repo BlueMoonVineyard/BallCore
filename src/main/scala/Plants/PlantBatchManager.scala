@@ -47,20 +47,20 @@ enum PlantMsg:
 	case inspect(where: Block, player: Player)
 
 case class DBPlantData(
-	val chunkX: Int,
-	val chunkZ: Int,
-	val world: UUID,
-	val offsetX: Int,
-	val offsetZ: Int,
-	val yPos: Int,
-	val what: Plant,
-	val ageIngameHours: Int,
-	val incompleteGrowthAdvancements: Int,
+	chunkX: Int,
+	chunkZ: Int,
+	world: UUID,
+	offsetX: Int,
+	offsetZ: Int,
+	yPos: Int,
+	what: Plant,
+	ageIngameHours: Int,
+	incompleteGrowthAdvancements: Int,
 )
 case class Dirty[A] (
-	val inner: A,
-	val dirty: Boolean,
-	val deleted: Boolean,
+	inner: A,
+	dirty: Boolean,
+	deleted: Boolean,
 )
 
 val plantKindCodec = text.imap { str => Plant.valueOf(str) } { it => it.toString() }

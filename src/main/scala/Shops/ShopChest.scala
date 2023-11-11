@@ -25,7 +25,7 @@ class ShopChest(using ItemRegistry) extends CustomItem, Listeners.BlockLeftClick
     def template = ShopChest.template
 
     case class PurchasingState(
-        val index: Int,
+        index: Int,
     )
 
     val states = TrieMap[UUID, PurchasingState]()
