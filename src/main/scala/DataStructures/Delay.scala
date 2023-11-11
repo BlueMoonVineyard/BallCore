@@ -18,10 +18,6 @@ object Delay:
         val task =
             new TimerTask:
                 def run(): Unit =
-                    ctx.execute(
-                        new Runnable:
-                            def run(): Unit =
-                                prom.complete(Try(()))
-                    )
+                    ctx.execute(() => prom.complete(Try(())))
         timer.schedule(task, delay.toMillis)
         prom.future
