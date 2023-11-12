@@ -27,6 +27,7 @@ local.sbt
 metals.sbt
 
 # IDEA
-.idea
-.idea_modules
+/.idea/*
+/.idea_modules/*
 /.worksheet/
+!/.idea/codeStyles

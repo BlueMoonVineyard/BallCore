@@ -4,27 +4,30 @@
 
 package BallCore.Reinforcements
 
-import BallCore.Storage
 import BallCore.DataStructures.LRUCache
+import BallCore.Storage
+import cats.effect.IO
+import cats.syntax.all.*
+import skunk.*
+import skunk.codec.all.*
+import skunk.implicits.*
 
+import java.util.UUID
 import scala.collection.mutable.Map
 
-import skunk._
-import skunk.implicits._
-import cats.effect.IO
-import skunk.codec.all._
-import cats.syntax.all._
-import java.util.UUID
+val reinforcementKindCodec = text.imap { str =>
+  ReinforcementTypes.from(str).get
+} { it => it.into() }
 
-val reinforcementKindCodec = text.imap { str => ReinforcementTypes.from(str).get } { it => it.into() }
-
-/** The ChunkStateManager is responsible for managing the loading and saving of chunkstates to a SQL database */
+/** The ChunkStateManager is responsible for managing the loading and saving of
+ * chunkstates to a SQL database
+ */
 class ChunkStateManager()(using sql: Storage.SQLManager):
-    sql.applyMigration(
-        Storage.Migration(
-            "Initial ChunkStateManager",
-            List(
-                sql"""
+  sql.applyMigration(
+    Storage.Migration(
+      "Initial ChunkStateManager",
+      List(
+        sql"""
                 CREATE TABLE Reinforcements (
                     ID UUID PRIMARY KEY,
                     GroupID UUID NOT NULL,
@@ -37,7 +40,7 @@ class ChunkStateManager()(using sql: Storage.SQLManager):
                     FOREIGN KEY (SubgroupID) REFERENCES Subgroups(SubgroupID)
                 );
                 """.command,
-                sql"""
+        sql"""
                 CREATE TABLE BlockReinforcements (
                     ChunkX INTEGER NOT NULL,
                     ChunkZ INTEGER NOT NULL,
@@ -49,30 +52,32 @@ class ChunkStateManager()(using sql: Storage.SQLManager):
                     UNIQUE(ChunkX, ChunkZ, World, OffsetX, OffsetZ, Y),
                     FOREIGN KEY (ReinforcementID) REFERENCES Reinforcements(ID) ON DELETE CASCADE
                 );
-                """.command,
-            ),
-            List(
-                sql"""
+                """.command
+      ),
+      List(
+        sql"""
                 DROP TABLE BlockReinforcements;
                 """.command,
-                sql"""
+        sql"""
                 DROP TABLE Reinforcements;
-                """.command,
-            ),
-        )
+                """.command
+      )
     )
+  )
 
-    private val cache = LRUCache[ChunkKey, ChunkState](1000, evict)
+  private val cache = LRUCache[ChunkKey, ChunkState](1000, evict)
 
-    def evictAll(): Unit =
-        sql.useBlocking(cache.toList.traverse { (x, y) => set(x, y) })
-        cache.clear()
+  def evictAll(): Unit =
+    sql.useBlocking(cache.toList.traverse { (x, y) => set(x, y) })
+    cache.clear()
 
-    private def evict(key: ChunkKey, value: ChunkState): Unit =
-        sql.useBlocking(set(key, value))
+  private def evict(key: ChunkKey, value: ChunkState): Unit =
+    sql.useBlocking(set(key, value))
 
-    private def load(key: ChunkKey)(using Session[IO]): IO[Unit] =
-        sql.queryListIO(sql"""
+  private def load(key: ChunkKey)(using Session[IO]): IO[Unit] =
+    sql
+      .queryListIO(
+        sql"""
         SELECT OffsetX, OffsetZ, Y, GroupID, SubgroupID, Owner, Health, ReinforcementKind, PlacedAt FROM BlockReinforcements
             LEFT JOIN Reinforcements
                 ON Reinforcements.ID = BlockReinforcements.ReinforcementID
@@ -80,33 +85,58 @@ class ChunkStateManager()(using sql: Storage.SQLManager):
             WHERE ChunkX = $int4
               AND ChunkZ = $int4
               AND World = $uuid
-        """, (int4 *: int4 *: int4 *: uuid *: uuid *: uuid *: int4 *: reinforcementKindCodec *: timestamptz), (key.chunkX, key.chunkZ, key.world))
-            .flatMap { items => IO {
-                val cs = ChunkState(Map())
-                items.foreach { tuple =>
-                    val (offsetX, offsetZ, y, group, subgroup, owner, health, reinforcementKind, date) = tuple
-                    cs.blocks(BlockKey(offsetX, offsetZ, y)) = ReinforcementState(group, subgroup, owner, false, false, health, reinforcementKind, date)
-                }
-                cache(key) = cs
-            }}        
+        """,
+        (int4 *: int4 *: int4 *: uuid *: uuid *: uuid *: int4 *: reinforcementKindCodec *: timestamptz),
+        (key.chunkX, key.chunkZ, key.world)
+      )
+      .flatMap { items =>
+        IO {
+          val cs = ChunkState(Map())
+          items.foreach { tuple =>
+            val (
+              offsetX,
+              offsetZ,
+              y,
+              group,
+              subgroup,
+              owner,
+              health,
+              reinforcementKind,
+              date
+              ) = tuple
+            cs.blocks(BlockKey(offsetX, offsetZ, y)) = ReinforcementState(
+              group,
+              subgroup,
+              owner,
+              false,
+              false,
+              health,
+              reinforcementKind,
+              date
+            )
+          }
+          cache(key) = cs
+        }
+      }
 
-    def get(key: ChunkKey): ChunkState =
-        if !cache.contains(key) then
-            sql.useBlocking(load(key))
-        cache(key)
-        
+  def get(key: ChunkKey): ChunkState =
+    if !cache.contains(key) then sql.useBlocking(load(key))
+    cache(key)
 
-    def set(key: ChunkKey, value: ChunkState)(using Session[IO]): IO[Unit] =
-        val cx = key.chunkX
-        val cz = key.chunkZ
-        val cw = key.world
-        val _ = (cx, cz, cw)
+  def set(key: ChunkKey, value: ChunkState)(using Session[IO]): IO[Unit] =
+    val cx = key.chunkX
+    val cz = key.chunkZ
+    val cw = key.world
+    val _ = (cx, cz, cw)
 
-        sql.txIO { tx =>
-            value.blocks.toList.traverse_ { tuple =>
-                val (key, item) = tuple
-                if item.deleted then
-                    sql.queryOptionIO(sql"""
+    sql.txIO { tx =>
+      value.blocks.toList
+        .traverse_ { tuple =>
+          val (key, item) = tuple
+          if item.deleted then
+            sql
+              .queryOptionIO(
+                sql"""
                     DELETE FROM BlockReinforcements
                         WHERE ChunkX = $int4
                           AND ChunkZ = $int4
@@ -115,17 +145,27 @@ class ChunkStateManager()(using sql: Storage.SQLManager):
                           AND OffsetZ = $int4
                           AND Y = $int4
                     RETURNING ReinforcementID;
-                    """, uuid, (cx, cz, cw, key.offsetX, key.offsetZ, key.y)).flatMap { id =>
-                        id match
-                            case None => IO.unit
-                            case Some(it) =>
-                                sql.commandIO(sql"""
+                    """,
+                uuid,
+                (cx, cz, cw, key.offsetX, key.offsetZ, key.y)
+              )
+              .flatMap { id =>
+                id match
+                  case None => IO.unit
+                  case Some(it) =>
+                    sql
+                      .commandIO(
+                        sql"""
                                 DELETE FROM Reinforcements WHERE ID = $uuid
-                                """, it).map(_ => ())
-                    }
-                else if item.dirty && !item.deleted then
-                    for {
-                        id <- sql.queryOptionIO(sql"""
+                                """,
+                        it
+                      )
+                      .map(_ => ())
+              }
+          else if item.dirty && !item.deleted then
+            for {
+              id <- sql.queryOptionIO(
+                sql"""
                         SELECT ReinforcementID FROM BlockReinforcements
                             WHERE ChunkX = $int4
                               AND ChunkZ = $int4
@@ -133,39 +173,65 @@ class ChunkStateManager()(using sql: Storage.SQLManager):
                               AND OffsetX = $int4
                               AND OffsetZ = $int4
                               AND Y = $int4;
-                        """, uuid, (cx, cz, cw, key.offsetX, key.offsetZ, key.y))
+                        """,
+                uuid,
+                (cx, cz, cw, key.offsetX, key.offsetZ, key.y)
+              )
 
-                        _ <- id match
-                            case Some(id) =>
-                                sql.commandIO(sql"""
+              _ <- id match
+                case Some(id) =>
+                  sql.commandIO(
+                    sql"""
                                 UPDATE Reinforcements SET GroupID = $uuid, Owner = $uuid, Health = $int4, ReinforcementKind = $reinforcementKindCodec, PlacedAt = $timestamptz WHERE ID = $uuid;
-                                """, (item.group, item.owner, item.health, item.kind, item.placedAt, id))
-                            case None =>
-                                val newID = UUID.randomUUID()
-                                for {
-                                    _ <- sql.commandIO(sql"""
+                                """,
+                    (
+                      item.group,
+                      item.owner,
+                      item.health,
+                      item.kind,
+                      item.placedAt,
+                      id
+                    )
+                  )
+                case None =>
+                  val newID = UUID.randomUUID()
+                  for {
+                    _ <- sql.commandIO(
+                      sql"""
                                     INSERT INTO Reinforcements
                                         (ID, GroupID, Owner, Health, ReinforcementKind, PlacedAt)
                                     VALUES
                                         ($uuid, $uuid, $uuid, $int4, $reinforcementKindCodec, $timestamptz)
-                                    """, (newID, item.group, item.owner, item.health, item.kind, item.placedAt))
-                                    _ <- sql.commandIO(sql"""
+                                    """,
+                      (
+                        newID,
+                        item.group,
+                        item.owner,
+                        item.health,
+                        item.kind,
+                        item.placedAt
+                      )
+                    )
+                    _ <- sql.commandIO(
+                      sql"""
                                     INSERT INTO BlockReinforcements
                                         (ReinforcementID, ChunkX, ChunkZ, World, OffsetX, OffsetZ, Y)
                                     VALUES
                                         ($uuid, $int4, $int4, $uuid, $int4, $int4, $int4)
-                                    """, (newID, cx, cz, cw, key.offsetX, key.offsetZ, key.y))
-                                } yield ()
-                    } yield ()
-                else
-                    IO.unit
-            }.flatMap { _ => IO {
-                value.blocks.filterInPlace( (key, value) => !value.deleted )
-                value.blocks.mapValuesInPlace ( (key, value) =>
-                    if value.dirty then
-                        value.copy(dirty = false)
-                    else
-                        value
-                )
-            }}
+                                    """,
+                      (newID, cx, cz, cw, key.offsetX, key.offsetZ, key.y)
+                    )
+                  } yield ()
+            } yield ()
+          else IO.unit
         }
+        .flatMap { _ =>
+          IO {
+            value.blocks.filterInPlace((key, value) => !value.deleted)
+            value.blocks.mapValuesInPlace((key, value) =>
+              if value.dirty then value.copy(dirty = false)
+              else value
+            )
+          }
+        }
+    }

@@ -4,18 +4,25 @@
 
 package BallCore.Beacons
 
-import org.bukkit.NamespacedKey
-import org.bukkit.inventory.ItemStack
-import org.bukkit.Material
-import BallCore.CustomItems.ItemGroup
-import BallCore.CustomItems.ItemRegistry
-import BallCore.CustomItems.BlockManager
-import BallCore.PolygonEditor.PolygonEditor
+import BallCore.CustomItems.{BlockManager, ItemGroup, ItemRegistry}
 import BallCore.Groups.GroupManager
+import BallCore.PolygonEditor.PolygonEditor
 import BallCore.Storage.SQLManager
+import org.bukkit.inventory.ItemStack
+import org.bukkit.{Material, NamespacedKey}
 
 object Beacons:
-    val group = ItemGroup(NamespacedKey("ballcore", "hearts"), ItemStack(Material.WHITE_CONCRETE))
+  val group = ItemGroup(
+    NamespacedKey("ballcore", "hearts"),
+    ItemStack(Material.WHITE_CONCRETE)
+  )
 
-    def registerItems()(using registry: ItemRegistry, pe: PolygonEditor, gm: GroupManager, bm: BlockManager, hn: CivBeaconManager, sql: SQLManager) =
-        registry.register(new HeartBlock())
+  def registerItems()(using
+                      registry: ItemRegistry,
+                      pe: PolygonEditor,
+                      gm: GroupManager,
+                      bm: BlockManager,
+                      hn: CivBeaconManager,
+                      sql: SQLManager
+  ) =
+    registry.register(new HeartBlock())
