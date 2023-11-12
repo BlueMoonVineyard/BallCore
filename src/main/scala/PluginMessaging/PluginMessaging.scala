@@ -101,7 +101,8 @@ class PluginMessaging()(using p: Plugin, gm: GroupManager, sql: SQLManager)
                                         player: Player,
                                         message: Array[Byte]
                                       ): Unit =
-    if channel != Messaging.channel then return
+    if channel != Messaging.channel then
+      return
 
       decodeByteArray[ClientMessage](message) match
         case Left(err) =>

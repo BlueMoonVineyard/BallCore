@@ -7,7 +7,8 @@ package BallCoreDependencyPlugin
 import org.bukkit.plugin.java.JavaPlugin
 
 final class Main extends JavaPlugin:
-    override def onEnable() =
-        ()
-    override def onDisable() =
-        ()
+  override def onEnable() =
+    ()
+
+  override def onDisable() =
+    ()

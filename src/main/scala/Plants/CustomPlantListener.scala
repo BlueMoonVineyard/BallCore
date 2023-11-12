@@ -39,9 +39,11 @@ class CustomPlantListener()(using pbm: PlantBatchManager) extends Listener:
   def inspectPlant(event: PlayerInteractEvent): Unit =
     if event.getHand() != EquipmentSlot.HAND || event
       .getAction() != Action.RIGHT_CLICK_BLOCK
-    then return
-      if event.getItem() == null || !Tag.ITEMS_HOES.isTagged(
+    then
+      return if event.getItem() == null || !Tag.ITEMS_HOES.isTagged(
         event.getItem().getType()
       )
-      then return
-        pbm.send(PlantMsg.inspect(event.getClickedBlock(), event.getPlayer()))
+      then
+        return pbm.send(
+          PlantMsg.inspect(event.getClickedBlock(), event.getPlayer())
+        )

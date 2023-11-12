@@ -69,7 +69,8 @@ class MapCloningListener extends Listener:
       .getInventory()
       .getResult()
       .getType() != Material.FILLED_MAP
-    then return
+    then
+      return
 
       if !pice
         .getInventory()
@@ -127,13 +128,15 @@ class MapCloningListener extends Listener:
   def prepareResultEvent(per: PrepareResultEvent): Unit =
     if per
       .getResult() == null || per.getResult().getType() != Material.FILLED_MAP
-    then return
+    then
+      return
 
       if !per
         .getInventory()
         .getContents()
         .exists(x => x != null && x.getType() == Material.MAP)
-      then return
+      then
+        return
 
         if per.getInventory().isInstanceOf[CartographyInventory] then
           per

@@ -160,9 +160,10 @@ class MiningListener()(using
     val it1 = sql.useBlocking(ac.blockBrokenPartA(event.getBlock()))
     val it2 = ac.blockBrokenPartB(event.getBlock(), it1)
     val it3 = sql.useBlocking(ac.blockBrokenPartC(event.getBlock(), it2))
-    if !it3 then return
-      if !Mining.stoneBlocks.contains(event.getBlock().getType()) then return
-        if Mining.oceans.contains(event.getBlock().getBiome()) then return
+    if !it3 then
+      return if !Mining.stoneBlocks.contains(event.getBlock().getType()) then
+        return if Mining.oceans.contains(event.getBlock().getBiome()) then
+          return
 
     val plr = event.getPlayer().getUniqueId()
     val (lat, long) =

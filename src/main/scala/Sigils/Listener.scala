@@ -92,8 +92,7 @@ class DamageListener(using da: DamageActor) extends Listener:
 
     val player = e.getEntity().asInstanceOf[Player]
     val damager = getPlayerOrigin(e.getDamager())
-    if damager == null then return
-      da.damage(damager, player, e.getDamage())
+    if damager == null then return da.damage(damager, player, e.getDamage())
 
 class SigilListener(using
                     ssm: SigilSlimeManager,
