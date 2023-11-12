@@ -11,11 +11,12 @@ import io.circe.syntax.*
 import skunk.Session
 
 import java.util as ju
+import scala.collection.mutable
 import scala.collection.mutable.Map
 
 class MemKeyVal extends KeyVal:
-  private val globalKeys: Map[(String, String), String] = Map()
-  private val playerKeys: Map[(ju.UUID, String), String] = Map()
+  private val globalKeys: mutable.Map[(String, String), String] = mutable.Map()
+  private val playerKeys: mutable.Map[(ju.UUID, String), String] = mutable.Map()
 
   def debugDump(): Unit =
     println(globalKeys)
@@ -53,7 +54,7 @@ class MemKeyVal extends KeyVal:
                                                      Session[IO]
   ): IO[Unit] =
     IO {
-      globalKeys.remove((superkey, key));
+      globalKeys.remove((superkey, key))
       ()
     }
 
@@ -61,6 +62,6 @@ class MemKeyVal extends KeyVal:
                                                     Session[IO]
   ): IO[Unit] =
     IO {
-      playerKeys.remove((player, key));
+      playerKeys.remove((player, key))
       ()
     }

@@ -13,7 +13,7 @@ import java.time.temporal.ChronoUnit
 import java.util as ju
 
 class EntityReinforcementSuite extends munit.FunSuite {
-  val sql = FunFixture[SQLManager](TestDatabase.setup, TestDatabase.teardown)
+  val sql: FunFixture[SQLManager] = FunFixture[SQLManager](TestDatabase.setup, TestDatabase.teardown)
   sql.test("entity reinforcements basic stuff") { implicit sql =>
     given gm: Groups.GroupManager = new Groups.GroupManager
 
@@ -99,7 +99,7 @@ class EntityReinforcementSuite extends munit.FunSuite {
 
     val d1 = res2.toOption.get.health - res3.toOption.get.health
 
-    clock.changeTimeBy(ChronoUnit.HOURS.getDuration().multipliedBy(5))
+    clock.changeTimeBy(ChronoUnit.HOURS.getDuration.multipliedBy(5))
 
     val res4 = erm.damage(entity)
     assert(res4.isRight, res4)

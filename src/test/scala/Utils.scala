@@ -13,6 +13,7 @@ import skunk.implicits.*
 import skunk.util.Origin
 import skunk.{Fragment, Session, *}
 
+import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
 object TestDatabase:
@@ -61,14 +62,14 @@ object TestDatabase:
             DROP DATABASE $nameFragment;
             """.command)
       }
-      .unsafeRunSync();
+      .unsafeRunSync()
     ()
 
 class TestUIServices(assertions: Assertions) extends UIServices:
-  val promptQueue = scala.collection.mutable.Queue[(String, Promise[String])]()
-  val transferQueue =
+  val promptQueue: mutable.Queue[(String, Promise[String])] = scala.collection.mutable.Queue[(String, Promise[String])]()
+  val transferQueue: mutable.Queue[Promise[(UIProgram, Any)]] =
     scala.collection.mutable.Queue[Promise[(UIProgram, Any)]]()
-  val notifyQueue = scala.collection.mutable.Queue[Promise[String]]()
+  val notifyQueue: mutable.Queue[Promise[String]] = scala.collection.mutable.Queue[Promise[String]]()
 
   def expectTransfer(): Future[(UIProgram, Any)] =
     val p = Promise[(UIProgram, Any)]()

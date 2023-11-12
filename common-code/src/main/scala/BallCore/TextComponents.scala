@@ -13,7 +13,7 @@ class TextComponents:
       while strings.hasNext do
         expressions.next() match
           case c: ComponentLike => it = it.append(c)
-          case obj => it = it.append(Component.text(obj.toString()))
+          case obj => it = it.append(Component.text(obj.toString))
         it = it.append(Component.text(strings.next()))
       it
 
@@ -38,14 +38,14 @@ class TextComponents:
 
   extension (o: Any)
     def toComponent: Component =
-      Component.text(o.toString())
+      Component.text(o.toString)
 
   object Colors:
-    val red = TextColor.fromHexString("#e93d58")
-    val teal = TextColor.fromHexString("#00d485")
-    val grellow = TextColor.fromHexString("#b6e521")
-    val yellow = TextColor.fromHexString("#ffe247")
-    val serverMessage = TextColor.fromHexString("#6dd3ff")
+    val red: TextColor = TextColor.fromHexString("#e93d58")
+    val teal: TextColor = TextColor.fromHexString("#00d485")
+    val grellow: TextColor = TextColor.fromHexString("#b6e521")
+    val yellow: TextColor = TextColor.fromHexString("#ffe247")
+    val serverMessage: TextColor = TextColor.fromHexString("#6dd3ff")
 
   def txt(of: String): Component =
     Component.text(of)

@@ -1,10 +1,12 @@
+// scalac: -Xlint:unused
+
 package BallCore.LinkedAccounts
 
 import BallCore.Storage.{Migration, SQLManager}
 import cats.effect.IO
-import skunk.{Session, SqlState}
 import skunk.codec.all.*
 import skunk.implicits.*
+import skunk.{Session, SqlState}
 
 import java.util.UUID
 import scala.util.Random
@@ -46,10 +48,10 @@ class LinkedAccountsManager()(using sql: SQLManager):
     )
   )
 
-  def generateLinkCode(): String =
+  private def generateLinkCode(): String =
     Random.alphanumeric.take(6).mkString.toLowerCase()
 
-  def isAlreadyLinked(discordID: String): Boolean =
+  private def isAlreadyLinked(discordID: String): Boolean =
     sql.useBlocking(
       sql.queryUniqueIO(
         sql"""
@@ -60,7 +62,7 @@ class LinkedAccountsManager()(using sql: SQLManager):
       )
     )
 
-  def isAlreadyLinked(mcuuid: UUID): Boolean =
+  private def isAlreadyLinked(mcuuid: UUID): Boolean =
     sql.useBlocking(
       sql.queryUniqueIO(
         sql"""
