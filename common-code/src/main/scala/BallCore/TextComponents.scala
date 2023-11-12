@@ -1,8 +1,8 @@
 package BallCore
 
 import net.kyori.adventure.audience.Audience
-import net.kyori.adventure.text.{Component, ComponentLike}
 import net.kyori.adventure.text.format.{Style, TextColor, TextDecoration}
+import net.kyori.adventure.text.{Component, ComponentLike}
 
 class TextComponents:
   extension (sc: StringContext)
@@ -13,7 +13,7 @@ class TextComponents:
       while strings.hasNext do
         expressions.next() match
           case c: ComponentLike => it = it.append(c)
-          case obj => it = it.append(Component.text(obj.toString))
+          case obj              => it = it.append(Component.text(obj.toString))
         it = it.append(Component.text(strings.next()))
       it
 

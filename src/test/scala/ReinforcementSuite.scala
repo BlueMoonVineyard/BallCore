@@ -13,7 +13,8 @@ import java.time.temporal.ChronoUnit
 import java.util as ju
 
 class ReinforcementSuite extends munit.FunSuite {
-  val sql: FunFixture[SQLManager] = FunFixture[SQLManager](TestDatabase.setup, TestDatabase.teardown)
+  val sql: FunFixture[SQLManager] =
+    FunFixture[SQLManager](TestDatabase.setup, TestDatabase.teardown)
   sql.test("block reinforcements basic stuff") { implicit sql =>
     given gm: Groups.GroupManager = new Groups.GroupManager
 
@@ -161,8 +162,8 @@ class ReinforcementSuite extends munit.FunSuite {
     assert(res1 == Right(()), res1)
 
     def break(
-               cond: Either[ReinforcementError, ReinforcementState] => Boolean
-             ): Unit =
+        cond: Either[ReinforcementError, ReinforcementState] => Boolean
+    ): Unit =
       val res = rm.break(0, 0, 0, 5.0, world)
       assert(cond(res), res)
 

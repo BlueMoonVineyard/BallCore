@@ -49,5 +49,5 @@ class BasicItemRegistry(using s: Server) extends ItemRegistry:
   private def getKey(recipe: Recipe): NamespacedKey =
     recipe match
       case s: (ShapedRecipe | ShapelessRecipe | CookingRecipe[_] |
-        StonecuttingRecipe) =>
+            StonecuttingRecipe) =>
         s.getKey()

@@ -22,7 +22,7 @@ object HTTP:
     given aec: concurrent.ExecutionContext = system.executionContext
 
     val bindingFuture
-    : concurrent.Future[akka.http.scaladsl.Http.ServerBinding] =
+        : concurrent.Future[akka.http.scaladsl.Http.ServerBinding] =
       Http().newServerAt("localhost", 7543).bind(router)
     cb.add { () =>
       bindingFuture

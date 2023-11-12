@@ -30,23 +30,23 @@ object PolygonEditor:
     p.getServer.getPluginManager.registerEvents(EditorListener(), p)
 
 class EditorListener()(using e: PolygonEditor) extends Listener:
-  // noinspection Annotator
+
   @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
   def interact(event: PlayerInteractEvent): Unit =
     if event.getHand != EquipmentSlot.HAND then
       return
 
-        event.getAction match
-          case Action.RIGHT_CLICK_BLOCK =>
-            if e.clicked(event.getPlayer, event.getClickedBlock.getLocation())
-            then event.setCancelled(true)
-          case Action.LEFT_CLICK_BLOCK =>
-            if e.leftClicked(
+      event.getAction match
+        case Action.RIGHT_CLICK_BLOCK =>
+          if e.clicked(event.getPlayer, event.getClickedBlock.getLocation())
+          then event.setCancelled(true)
+        case Action.LEFT_CLICK_BLOCK =>
+          if e.leftClicked(
               event.getPlayer,
               event.getClickedBlock.getLocation()
             )
-            then event.setCancelled(true)
-          case _ =>
+          then event.setCancelled(true)
+        case _ =>
 
   @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
   def look(event: PlayerMoveEvent): Unit =
@@ -105,10 +105,10 @@ class PolygonEditor(using p: Plugin, bm: CivBeaconManager, sql: SQLManager):
     }
 
   private def renderCreator(
-                             player: Player,
-                             model: CreatorModel,
-                             actions: List[CreatorAction]
-                           ): Unit =
+      player: Player,
+      model: CreatorModel,
+      actions: List[CreatorAction]
+  ): Unit =
     actions.foreach {
       case CreatorAction.drawLine(from, to) =>
         drawLine(from, to, player, Color.WHITE, 0.5)
@@ -118,7 +118,7 @@ class PolygonEditor(using p: Plugin, bm: CivBeaconManager, sql: SQLManager):
       case CreatorAction.drawFinisherLine(to) =>
         val from = player.getTargetBlockExact(100).getLocation()
         drawLine(from, to, player, Color.fromRGB(0xa8abb0), 1.0)
-      case CreatorAction.finished(_) =>
+      case CreatorAction.finished(_)     =>
       case CreatorAction.notifyPlayer(_) =>
     }
     model.state match
@@ -166,10 +166,8 @@ class PolygonEditor(using p: Plugin, bm: CivBeaconManager, sql: SQLManager):
         )
       case lookingAt(loc) =>
         player.sendActionBar(
-          txt"${keybind("key.use").style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Start dragging this point  |  ${
-            keybind("key.attack")
-              .style(NamedTextColor.GOLD, TextDecoration.BOLD)
-          }: Delete this point"
+          txt"${keybind("key.use").style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Start dragging this point  |  ${keybind("key.attack")
+              .style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Delete this point"
         )
       case editingPoint(idx, valid) =>
         player.sendActionBar(
@@ -177,10 +175,10 @@ class PolygonEditor(using p: Plugin, bm: CivBeaconManager, sql: SQLManager):
         )
 
   private def handleEditor(
-                            player: Player,
-                            model: EditorModel,
-                            actions: List[EditorAction]
-                          ): Option[PlayerState] =
+      player: Player,
+      model: EditorModel,
+      actions: List[EditorAction]
+  ): Option[PlayerState] =
     val done = actions
       .filter { action =>
         action match
@@ -221,10 +219,10 @@ class PolygonEditor(using p: Plugin, bm: CivBeaconManager, sql: SQLManager):
         None
 
   private def handleCreator(
-                             player: Player,
-                             model: CreatorModel,
-                             actions: List[CreatorAction]
-                           ): PlayerState =
+      player: Player,
+      model: CreatorModel,
+      actions: List[CreatorAction]
+  ): PlayerState =
     val done = actions
       .filter { action =>
         action match
@@ -316,12 +314,12 @@ class PolygonEditor(using p: Plugin, bm: CivBeaconManager, sql: SQLManager):
     prom.future
 
   def drawLine(
-                fromBlock: Location,
-                toBlock: Location,
-                showingTo: Player,
-                color: Color,
-                detail: Double
-              ): Unit =
+      fromBlock: Location,
+      toBlock: Location,
+      showingTo: Player,
+      color: Color,
+      detail: Double
+  ): Unit =
     val start = fromBlock.clone().add(0.5, 1.0, 0.5)
     val finish = toBlock.clone().add(0.5, 1.0, 0.5)
 

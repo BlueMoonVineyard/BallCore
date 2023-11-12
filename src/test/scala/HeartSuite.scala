@@ -14,7 +14,8 @@ import java.util.UUID
 import scala.util.chaining.*
 
 class HeartSuite extends munit.FunSuite {
-  val sql: FunFixture[SQLManager] = FunFixture[SQLManager](TestDatabase.setup, TestDatabase.teardown)
+  val sql: FunFixture[SQLManager] =
+    FunFixture[SQLManager](TestDatabase.setup, TestDatabase.teardown)
   sql.test("placing standalone heart") { implicit sql =>
     given gm: GroupManager = GroupManager()
     given hn: CivBeaconManager = CivBeaconManager()
@@ -75,7 +76,7 @@ class HeartSuite extends munit.FunSuite {
         assert(
           res match
             case Left(PolygonAdjustmentError.polygonTooLarge(_, _)) => true
-            case _ => false
+            case _                                                  => false
           ,
           res
         )

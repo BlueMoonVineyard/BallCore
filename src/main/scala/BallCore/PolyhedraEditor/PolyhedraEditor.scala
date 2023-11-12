@@ -27,12 +27,12 @@ val dullBlue = Color.fromRGB(82, 118, 137)
 val draggingTeal = Color.fromRGB(0x00, 0xd4, 0x85)
 
 def drawLine(
-              fromBlock: Location,
-              toBlock: Location,
-              showingTo: Player,
-              color: Color,
-              detail: Double
-            ): Unit =
+    fromBlock: Location,
+    toBlock: Location,
+    showingTo: Player,
+    color: Color,
+    detail: Double
+): Unit =
   val start = fromBlock.clone()
   val finish = toBlock.clone()
 
@@ -64,20 +64,20 @@ object PolyhedraEditor:
     p.getServer.getPluginManager.registerEvents(EditorListener(), p)
 
 class EditorListener()(using e: PolyhedraEditor) extends Listener:
-  // noinspection Annotator
+
   @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
   def interact(event: PlayerInteractEvent): Unit =
     if event.getHand != EquipmentSlot.HAND then
       return
 
-        event.getAction match
-          case Action.RIGHT_CLICK_BLOCK =>
-            if e.clicked(event.getPlayer, event.getClickedBlock) then
-              event.setCancelled(true)
-          case Action.LEFT_CLICK_BLOCK =>
-            if e.leftClicked(event.getPlayer, event.getClickedBlock) then
-              event.setCancelled(true)
-          case _ =>
+      event.getAction match
+        case Action.RIGHT_CLICK_BLOCK =>
+          if e.clicked(event.getPlayer, event.getClickedBlock) then
+            event.setCancelled(true)
+        case Action.LEFT_CLICK_BLOCK =>
+          if e.leftClicked(event.getPlayer, event.getClickedBlock) then
+            event.setCancelled(true)
+        case _ =>
 
   @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
   def look(event: PlayerMoveEvent): Unit =
@@ -103,9 +103,9 @@ enum VolumeEditingState:
   case dragging(corner: TargetedCorner)
 
 case class Volume(
-                   cornerA: Block,
-                   cornerB: Block
-                 ):
+    cornerA: Block,
+    cornerB: Block
+):
   def cornerALocation(): Location =
     cornerA.getLocation().tap(_.add(0, 0, 0))
 
@@ -247,9 +247,9 @@ case class Volume(
     )
 
 case class EditingVolume(
-                          volume: Volume,
-                          state: VolumeEditingState
-                        ):
+    volume: Volume,
+    state: VolumeEditingState
+):
 
   import VolumeEditingState.*
 
@@ -446,11 +446,11 @@ enum EditingState:
   case editing(volume: EditingVolume)
 
 case class State(
-                  volumes: List[Volume],
-                  state: EditingState,
-                  group: GroupID,
-                  subgroup: SubgroupID
-                ):
+    volumes: List[Volume],
+    state: EditingState,
+    group: GroupID,
+    subgroup: SubgroupID
+):
 
   import EditingState.*
 
@@ -524,17 +524,13 @@ case class State(
     state match
       case nothing() =>
         player.sendActionBar(
-          txt"${keybind("key.use").style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Place a rectangle  |  ${
-            txt("/done")
-              .style(NamedTextColor.GOLD, TextDecoration.BOLD)
-          }: Save and stop editing"
+          txt"${keybind("key.use").style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Place a rectangle  |  ${txt("/done")
+              .style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Save and stop editing"
         )
       case lookingAt(volumeIndex) =>
         player.sendActionBar(
-          txt"${keybind("key.use").style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Resize this rectangle  |  ${
-            keybind("key.attack")
-              .style(NamedTextColor.GOLD, TextDecoration.BOLD)
-          }: Delete this rectangle"
+          txt"${keybind("key.use").style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Resize this rectangle  |  ${keybind("key.attack")
+              .style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Delete this rectangle"
         )
       case editing(editingState) =>
         editingState.state match
@@ -544,10 +540,8 @@ case class State(
             )
           case BallCore.PolyhedraEditor.VolumeEditingState.lookingAt(corner) =>
             player.sendActionBar(
-              txt"${keybind("key.use").style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Start dragging this corner  |  ${
-                keybind("key.attack")
-                  .style(NamedTextColor.GOLD, TextDecoration.BOLD)
-              }: Stop resizing this rectangle"
+              txt"${keybind("key.use").style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Start dragging this corner  |  ${keybind("key.attack")
+                  .style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Stop resizing this rectangle"
             )
           case VolumeEditingState.dragging(corner) =>
             player.sendActionBar(
@@ -566,11 +560,11 @@ class PolyhedraEditor(using p: Plugin, sql: SQLManager, gm: GroupManager):
     val _ = playerPolygons.remove(player)
 
   def create(
-              player: Player,
-              world: World,
-              group: GroupID,
-              subgroup: SubgroupID
-            ): Unit =
+      player: Player,
+      world: World,
+      group: GroupID,
+      subgroup: SubgroupID
+  ): Unit =
     sql.useBlocking(gm.getSubclaims(group)) match
       case Left(err) =>
         player.sendServerMessage(
@@ -602,7 +596,7 @@ class PolyhedraEditor(using p: Plugin, sql: SQLManager, gm: GroupManager):
 
   def done(player: Player): Unit =
     val state = playerPolygons.get(player) match
-      case None => return
+      case None        => return
       case Some(value) => value
 
     val volumes = state.done().map { volume =>

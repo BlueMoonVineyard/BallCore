@@ -35,14 +35,13 @@ class CustomPlantListener()(using pbm: PlantBatchManager) extends Listener:
       case Some(what) =>
         pbm.send(PlantMsg.startGrowing(what, event.getBlock))
 
-  // noinspection Annotator
   @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
   def inspectPlant(event: PlayerInteractEvent): Unit =
     if event.getHand != EquipmentSlot.HAND || event.getAction != Action.RIGHT_CLICK_BLOCK
     then
       return if event.getItem == null || !Tag.ITEMS_HOES.isTagged(
-        event.getItem.getType
-      )
+          event.getItem.getType
+        )
       then
         return pbm.send(
           PlantMsg.inspect(event.getClickedBlock, event.getPlayer)

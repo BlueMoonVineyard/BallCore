@@ -15,8 +15,8 @@ import skunk.implicits.*
 import java.util.UUID
 
 class EntityStateManager()(using
-                           sql: Storage.SQLManager,
-                           csm: ChunkStateManager
+    sql: Storage.SQLManager,
+    csm: ChunkStateManager
 ):
   private val _ = csm
   sql.applyMigration(
@@ -52,7 +52,7 @@ class EntityStateManager()(using
 
     cache.get(key) match
       case Some(x) if !x.deleted => Some(x)
-      case _ => None
+      case _                     => None
 
   def set(key: UUID, value: ReinforcementState): Unit =
     cache(key) = value

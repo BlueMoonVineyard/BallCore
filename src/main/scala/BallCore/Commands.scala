@@ -22,18 +22,18 @@ import org.bukkit.entity.Player
 import org.bukkit.plugin.Plugin
 
 class CheatCommand(using
-                   registry: ItemRegistry,
-                   pbm: PlantBatchManager,
-                   aa: AcclimationActor,
-                   storage: BallCore.Acclimation.Storage,
-                   sql: SQLManager
-                  ) extends CommandExecutor:
+    registry: ItemRegistry,
+    pbm: PlantBatchManager,
+    aa: AcclimationActor,
+    storage: BallCore.Acclimation.Storage,
+    sql: SQLManager
+) extends CommandExecutor:
   override def onCommand(
-                          sender: CommandSender,
-                          command: Command,
-                          label: String,
-                          args: Array[String]
-                        ): Boolean =
+      sender: CommandSender,
+      command: Command,
+      label: String,
+      args: Array[String]
+  ): Boolean =
     if !sender.permissionValue("ballcore.cheat").toBooleanOrElse(false) then
       sender.sendMessage("no cheating for u >:(")
       return false
@@ -64,27 +64,19 @@ class CheatCommand(using
           } yield (elevation, latitude, longitude, temperature))
         import Information.*
         sender.sendServerMessage(
-          txt"Your current elevation: ${
-            elevation(plr.getLocation().getY.toInt).toComponent
-              .style(NamedTextColor.GOLD, TextDecoration.BOLD)
-          } | Your adapted elevation: ${
-            aElevation.toComponent
-              .style(NamedTextColor.GOLD, TextDecoration.BOLD)
-          }"
+          txt"Your current elevation: ${elevation(plr.getLocation().getY.toInt).toComponent
+              .style(NamedTextColor.GOLD, TextDecoration.BOLD)} | Your adapted elevation: ${aElevation.toComponent
+              .style(NamedTextColor.GOLD, TextDecoration.BOLD)}"
         )
         val (lat, long) =
           latLong(plr.getLocation().getX, plr.getLocation().getZ)
         sender.sendServerMessage(
-          txt"Your current latitude: ${lat.toComponent.style(NamedTextColor.GOLD, TextDecoration.BOLD)} | Your adapted latitude: ${
-            aLatitude.toComponent
-              .style(NamedTextColor.GOLD, TextDecoration.BOLD)
-          }"
+          txt"Your current latitude: ${lat.toComponent.style(NamedTextColor.GOLD, TextDecoration.BOLD)} | Your adapted latitude: ${aLatitude.toComponent
+              .style(NamedTextColor.GOLD, TextDecoration.BOLD)}"
         )
         sender.sendServerMessage(
-          txt"Your current longitude: ${lat.toComponent.style(NamedTextColor.GOLD, TextDecoration.BOLD)} | Your adapted longitude: ${
-            aLatitude.toComponent
-              .style(NamedTextColor.GOLD, TextDecoration.BOLD)
-          }"
+          txt"Your current longitude: ${lat.toComponent.style(NamedTextColor.GOLD, TextDecoration.BOLD)} | Your adapted longitude: ${aLatitude.toComponent
+              .style(NamedTextColor.GOLD, TextDecoration.BOLD)}"
         )
         val temp = temperature(
           plr.getLocation().getX.toInt,
@@ -92,10 +84,8 @@ class CheatCommand(using
           plr.getLocation().getZ.toInt
         )
         sender.sendServerMessage(
-          txt"Your current temperature: ${temp.toComponent.style(NamedTextColor.GOLD, TextDecoration.BOLD)} | Your adapted temperature: ${
-            aTemperature.toComponent
-              .style(NamedTextColor.GOLD, TextDecoration.BOLD)
-          }"
+          txt"Your current temperature: ${temp.toComponent.style(NamedTextColor.GOLD, TextDecoration.BOLD)} | Your adapted temperature: ${aTemperature.toComponent
+              .style(NamedTextColor.GOLD, TextDecoration.BOLD)}"
         )
 
         val dlat = Information.similarityNeg(lat, aLatitude)
@@ -104,27 +94,25 @@ class CheatCommand(using
         // multiplier of the bonus on top of baseline rate
         val bonusRateMultiplier = (dlat + dlong) / 2.0
         sender.sendServerMessage(
-          txt"Your bonus rate multiplier for mining: ${
-            bonusRateMultiplier.toComponent
-              .style(NamedTextColor.GOLD)
-          }"
+          txt"Your bonus rate multiplier for mining: ${bonusRateMultiplier.toComponent
+              .style(NamedTextColor.GOLD)}"
         )
     true
 
 class GroupsCommand(using
-                    prompts: UI.Prompts,
-                    plugin: Plugin,
-                    gm: GroupManager,
-                    cbm: CivBeaconManager,
-                    sql: SQLManager,
-                    e: PolyhedraEditor
-                   ) extends CommandExecutor:
+    prompts: UI.Prompts,
+    plugin: Plugin,
+    gm: GroupManager,
+    cbm: CivBeaconManager,
+    sql: SQLManager,
+    e: PolyhedraEditor
+) extends CommandExecutor:
   override def onCommand(
-                          sender: CommandSender,
-                          command: Command,
-                          label: String,
-                          args: Array[String]
-                        ): true =
+      sender: CommandSender,
+      command: Command,
+      label: String,
+      args: Array[String]
+  ): true =
     val p = Groups.GroupListProgram()
     val plr = sender.asInstanceOf[Player]
     val runner = UIProgramRunner(p, p.Flags(plr.getUniqueId), plr)
@@ -132,13 +120,13 @@ class GroupsCommand(using
     true
 
 class PlantsCommand(using prompts: UI.Prompts, plugin: Plugin)
-  extends CommandExecutor:
+    extends CommandExecutor:
   override def onCommand(
-                          sender: CommandSender,
-                          command: Command,
-                          label: String,
-                          args: Array[String]
-                        ): true =
+      sender: CommandSender,
+      command: Command,
+      label: String,
+      args: Array[String]
+  ): true =
     val p = PlantListProgram()
     val plr = sender.asInstanceOf[Player]
     val runner = UIProgramRunner(p, p.Flags(), plr)
@@ -146,13 +134,13 @@ class PlantsCommand(using prompts: UI.Prompts, plugin: Plugin)
     true
 
 class DoneCommand(using editor: PolygonEditor, polyhedraEditor: PolyhedraEditor)
-  extends CommandExecutor:
+    extends CommandExecutor:
   override def onCommand(
-                          sender: CommandSender,
-                          command: Command,
-                          label: String,
-                          args: Array[String]
-                        ): Boolean =
+      sender: CommandSender,
+      command: Command,
+      label: String,
+      args: Array[String]
+  ): Boolean =
     val plr = sender.asInstanceOf[Player]
     editor.done(plr)
     polyhedraEditor.done(plr)
@@ -161,11 +149,11 @@ class DoneCommand(using editor: PolygonEditor, polyhedraEditor: PolyhedraEditor)
 class ChatCommands(using ca: ChatActor, gm: GroupManager, sql: SQLManager):
   object Group extends CommandExecutor:
     override def onCommand(
-                            sender: CommandSender,
-                            command: Command,
-                            label: String,
-                            args: Array[String]
-                          ): Boolean =
+        sender: CommandSender,
+        command: Command,
+        label: String,
+        args: Array[String]
+    ): Boolean =
       val p = sender.asInstanceOf[Player]
       val group = args(0)
       sql
@@ -183,22 +171,22 @@ class ChatCommands(using ca: ChatActor, gm: GroupManager, sql: SQLManager):
 
   object Global extends CommandExecutor:
     override def onCommand(
-                            sender: CommandSender,
-                            command: Command,
-                            label: String,
-                            args: Array[String]
-                          ): Boolean =
+        sender: CommandSender,
+        command: Command,
+        label: String,
+        args: Array[String]
+    ): Boolean =
       val p = sender.asInstanceOf[Player]
       ca.send(ChatMessage.chattingInGlobal(p))
       true
 
   object Local extends CommandExecutor:
     override def onCommand(
-                            sender: CommandSender,
-                            command: Command,
-                            label: String,
-                            args: Array[String]
-                          ): Boolean =
+        sender: CommandSender,
+        command: Command,
+        label: String,
+        args: Array[String]
+    ): Boolean =
       val p = sender.asInstanceOf[Player]
       ca.send(ChatMessage.chattingInLocal(p))
       true

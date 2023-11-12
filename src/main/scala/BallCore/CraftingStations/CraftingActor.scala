@@ -43,22 +43,22 @@ object WorkChestUtils:
       .flatMap { chest =>
         chest.getState() match
           case double: DoubleChest => Some((chest, double.getInventory))
-          case single: Chest => Some((chest, single.getInventory))
-          case _ => None
+          case single: Chest       => Some((chest, single.getInventory))
+          case _                   => None
       }
 
   def insertInto(
-                  outputs: List[ItemStack],
-                  inventory: Inventory,
-                  at: Block
-                ): Unit =
+      outputs: List[ItemStack],
+      inventory: Inventory,
+      at: Block
+  ): Unit =
     outputs.foreach { output =>
       if !inventory.addItem(output).isEmpty then
         val _ = at.getWorld.dropItemNaturally(at.getLocation(), output)
     }
 
   def ensureLoaded(b: Block): Unit =
-  // ensure any double chests across chunk seams are loaded
+    // ensure any double chests across chunk seams are loaded
     sides.foreach(face => b.getRelative(face))
 
 class CraftingActor(using p: Plugin) extends Actor[CraftingMessage]:
@@ -80,21 +80,21 @@ class CraftingActor(using p: Plugin) extends Actor[CraftingMessage]:
     ()
 
   private def ensureLoaded(b: Block): Unit =
-  // ensure any double chests across chunk seams are loaded
+    // ensure any double chests across chunk seams are loaded
     sides.foreach(face => b.getRelative(face))
 
   private def updateFirst[A](l: List[A])(p: A => Boolean)(
-    update: A => A
+      update: A => A
   ): List[A] =
     val found = l.zipWithIndex.find { case (item, _) => p(item) }
     found match
       case Some((item, idx)) => l.updated(idx, update(item))
-      case None => l
+      case None              => l
 
   def inventoryContains(
-                         recipe: List[(RecipeChoice, Int)],
-                         inventory: Inventory
-                       ): Boolean =
+      recipe: List[(RecipeChoice, Int)],
+      inventory: Inventory
+  ): Boolean =
     var rezept = recipe
     inventory.getStorageContents.foreach { is =>
       if is != null then
@@ -105,9 +105,9 @@ class CraftingActor(using p: Plugin) extends Actor[CraftingMessage]:
     rezept.forall(_._2 <= 0)
 
   private def removeFrom(
-                          recipe: List[(RecipeChoice, Int)],
-                          inventory: Inventory
-                        ): Boolean =
+      recipe: List[(RecipeChoice, Int)],
+      inventory: Inventory
+  ): Boolean =
     var rezept = recipe
     inventory.getStorageContents.foreach { is =>
       if is != null then

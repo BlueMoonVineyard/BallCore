@@ -16,12 +16,12 @@ import java.util.concurrent.TimeUnit
 import java.util.function.Consumer
 
 case class GameDate(
-                     year: Long, // 12*31*24*60 minutes
-                     month: Long, // 31*24*60 minutes
-                     day: Long, // 24*60 minutes
-                     hour: Long, // 60 minutes
-                     minute: Long
-                   )
+    year: Long, // 12*31*24*60 minutes
+    month: Long, // 31*24*60 minutes
+    day: Long, // 24*60 minutes
+    hour: Long, // 60 minutes
+    minute: Long
+)
 
 enum Season:
   case spring
@@ -52,9 +52,9 @@ enum DateUnit(val width: Duration) extends TemporalUnit:
   override def getDuration: Duration = width
 
   override def between(
-                        temporal1Inclusive: Temporal,
-                        temporal2Exclusive: Temporal
-                      ): Long =
+      temporal1Inclusive: Temporal,
+      temporal2Exclusive: Temporal
+  ): Long =
     temporal1Inclusive.until(temporal2Exclusive, this)
 
   override def addTo[R <: Temporal](temporal: R, amount: Long): R =
@@ -75,32 +75,32 @@ enum Month:
   case Sisira
 
   def displayName: String = this match
-    case Nieuwice => "Early Winter"
+    case Nieuwice    => "Early Winter"
     case Bleibschnee => "Mid Winter"
-    case Coldwane => "Late Winter"
-    case Lluvita => "Early Spring"
-    case Floraison => "Mid Spring"
-    case Caldera => "Late Spring"
-    case Zha => "Early Summer"
-    case Dashu => "Mid Summer"
-    case Nurui => "Late Summer"
-    case Sarada => "Early Autumn"
-    case Aban => "Mid Autumn"
-    case Sisira => "Late Autumn"
+    case Coldwane    => "Late Winter"
+    case Lluvita     => "Early Spring"
+    case Floraison   => "Mid Spring"
+    case Caldera     => "Late Spring"
+    case Zha         => "Early Summer"
+    case Dashu       => "Mid Summer"
+    case Nurui       => "Late Summer"
+    case Sarada      => "Early Autumn"
+    case Aban        => "Mid Autumn"
+    case Sisira      => "Late Autumn"
 
   def season: Season = this match
-    case Nieuwice => Season.winter
+    case Nieuwice    => Season.winter
     case Bleibschnee => Season.winter
-    case Coldwane => Season.winter
-    case Lluvita => Season.spring
-    case Floraison => Season.spring
-    case Caldera => Season.spring
-    case Zha => Season.summer
-    case Dashu => Season.summer
-    case Nurui => Season.summer
-    case Sarada => Season.autumn
-    case Aban => Season.autumn
-    case Sisira => Season.autumn
+    case Coldwane    => Season.winter
+    case Lluvita     => Season.spring
+    case Floraison   => Season.spring
+    case Caldera     => Season.spring
+    case Zha         => Season.summer
+    case Dashu       => Season.summer
+    case Nurui       => Season.summer
+    case Sarada      => Season.autumn
+    case Aban        => Season.autumn
+    case Sisira      => Season.autumn
 
 object Datekeeping:
   // pizza tower release date on steam
@@ -118,9 +118,9 @@ object Datekeeping:
     val year: Duration = month multipliedBy 12
 
   private def truncateLarge(
-                             instant: Instant,
-                             truncatedTo: TemporalUnit
-                           ): OffsetDateTime =
+      instant: Instant,
+      truncatedTo: TemporalUnit
+  ): OffsetDateTime =
     val dur = truncatedTo.getDuration.toNanos
     val nanos = instant.getNano
     val seconds = instant.getEpochSecond
@@ -158,7 +158,7 @@ object Datekeeping:
           case 2 => "nd"
           case 3 => "rd"
           case _ => "th"
-          )
+        )
       sid.setAll(
         SidebarLine.date,
         Some(txt" $suffixed of ${monat.displayName}, ${date.year}")

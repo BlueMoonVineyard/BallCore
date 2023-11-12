@@ -12,7 +12,7 @@ import java.util.logging.Level
 import scala.concurrent.ExecutionContext
 
 class LocationExecutionContext(loc: Location)(using plugin: Plugin)
-  extends ExecutionContext:
+    extends ExecutionContext:
   val sched: RegionScheduler = plugin.getServer.getRegionScheduler
 
   override def execute(runnable: Runnable): Unit =

@@ -23,13 +23,13 @@ import scala.util.Try
 import scala.util.chaining.*
 
 case class Migration(
-                      name: String,
-                      apply: List[Command[Void]],
-                      reverse: List[Command[Void]]
-                    )
+    name: String,
+    apply: List[Command[Void]],
+    reverse: List[Command[Void]]
+)
 
 case class MigrationFailure(which: String, num: Int, why: SQLException)
-  extends Exception(s"$which failed at the ${num + 1}-th fragment", why)
+    extends Exception(s"$which failed at the ${num + 1}-th fragment", why)
 
 case class Config(
     host: String,
@@ -49,11 +49,11 @@ enum ConfigError:
 
 object Config:
   private def get[V](
-                      config: CommentedConfigurationNode,
-                      node: String,
-                      klass: Class[V],
-                      left: ConfigError
-                    ): Either[ConfigError, V] =
+      config: CommentedConfigurationNode,
+      node: String,
+      klass: Class[V],
+      left: ConfigError
+  ): Either[ConfigError, V] =
     for {
       valueOpt <- Try(Option(config.node(node).get(klass))).toEither.left
         .map(ConfigError.error.apply)
@@ -142,7 +142,7 @@ class SQLManager(resource: Resource[IO, Session[IO]], val database: String):
     session.use { implicit session => fn }.unsafeRunAndForget()
 
   def commandIO[T](fragmentP: Fragment[T], parameters: T)(using
-                                                          s: Session[IO]
+      s: Session[IO]
   ): IO[Completion] =
     val fragment = fragmentP
     async[IO] {
@@ -152,10 +152,10 @@ class SQLManager(resource: Resource[IO, Session[IO]], val database: String):
     }
 
   def queryUniqueIO[I, O](
-                           fragmentP: Fragment[I],
-                           decoder: Decoder[O],
-                           parameters: I
-                         )(using s: Session[IO]): IO[O] =
+      fragmentP: Fragment[I],
+      decoder: Decoder[O],
+      parameters: I
+  )(using s: Session[IO]): IO[O] =
     val fragment = fragmentP
     async[IO] {
       val prepared = s.prepare(fragment.query(decoder)).await
@@ -167,10 +167,10 @@ class SQLManager(resource: Resource[IO, Session[IO]], val database: String):
     useIO(commandIO(fragmentP, parameters)).unsafeToFuture()
 
   def queryListIO[I, O](
-                         fragmentP: Fragment[I],
-                         decoder: Decoder[O],
-                         parameters: I
-                       )(using s: Session[IO]): IO[List[O]] =
+      fragmentP: Fragment[I],
+      decoder: Decoder[O],
+      parameters: I
+  )(using s: Session[IO]): IO[List[O]] =
     val fragment = fragmentP
     async[IO] {
       val prepared = s.prepare(fragment.query(decoder)).await
@@ -179,17 +179,17 @@ class SQLManager(resource: Resource[IO, Session[IO]], val database: String):
     }
 
   def queryList[I, O](
-                       fragmentP: Fragment[I],
-                       decoder: Decoder[O],
-                       parameters: I
-                     ): Future[List[O]] =
+      fragmentP: Fragment[I],
+      decoder: Decoder[O],
+      parameters: I
+  ): Future[List[O]] =
     useIO(queryListIO(fragmentP, decoder, parameters)).unsafeToFuture()
 
   def queryOptionIO[I, O](
-                           fragmentP: Fragment[I],
-                           decoder: Decoder[O],
-                           parameters: I
-                         )(using s: Session[IO]): IO[Option[O]] =
+      fragmentP: Fragment[I],
+      decoder: Decoder[O],
+      parameters: I
+  )(using s: Session[IO]): IO[Option[O]] =
     val fragment = fragmentP
     async[IO] {
       val prepared = s.prepare(fragment.query(decoder)).await
@@ -198,8 +198,8 @@ class SQLManager(resource: Resource[IO, Session[IO]], val database: String):
     }
 
   def queryOption[I, O](
-                         fragmentP: Fragment[I],
-                         decoder: Decoder[O],
-                         parameters: I
-                       ): Future[Option[O]] =
+      fragmentP: Fragment[I],
+      decoder: Decoder[O],
+      parameters: I
+  ): Future[Option[O]] =
     useIO(queryOptionIO(fragmentP, decoder, parameters)).unsafeToFuture()

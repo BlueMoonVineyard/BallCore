@@ -36,11 +36,11 @@ def lerp(a: Double, b: Double, f: Double): Double =
 
 object AcclimationActor:
   def register()(using
-                 s: Storage,
-                 p: Plugin,
-                 hnm: CivBeaconManager,
-                 sm: ShutdownCallbacks,
-                 sql: SQLManager
+      s: Storage,
+      p: Plugin,
+      hnm: CivBeaconManager,
+      sm: ShutdownCallbacks,
+      sql: SQLManager
   ): AcclimationActor =
     val a = AcclimationActor()
     a.startListener()
@@ -55,11 +55,11 @@ class AcclimationNoter()(using s: Storage, sql: SQLManager) extends Listener:
     sql.useFireAndForget(s.setLastSeenLocation(player.getUniqueId, loc))
 
 class AcclimationActor(using
-                       s: Storage,
-                       p: Plugin,
-                       hnm: CivBeaconManager,
-                       sql: SQLManager
-                      ) extends Actor[AcclimationMessage]:
+    s: Storage,
+    p: Plugin,
+    hnm: CivBeaconManager,
+    sql: SQLManager
+) extends Actor[AcclimationMessage]:
   private def sixHoursMillis = 6 * 60 * 60 * 1000
 
   private def millisToNextSixthHour(): Long =
@@ -118,9 +118,9 @@ class AcclimationActor(using
           val adjustFactor =
             sql.useBlocking(hnm.getBeaconFor(uuid)) match
               case Some(beacon)
-                if sql
-                  .useBlocking(hnm.beaconContaining(location))
-                  .contains(beacon) =>
+                  if sql
+                    .useBlocking(hnm.beaconContaining(location))
+                    .contains(beacon) =>
                 BoostFactors.boosted
               case Some(beacon) =>
                 BoostFactors.antiBoosted

@@ -60,7 +60,7 @@ object Woodcutter:
   )
 
 class Woodcutter()(using act: CraftingActor, p: Plugin, prompts: Prompts)
-  extends CraftingStation(Woodcutter.recipes):
+    extends CraftingStation(Woodcutter.recipes):
   def group: ItemGroup = CraftingStations.group
 
   def template: CustomItemStack = Woodcutter.template

@@ -29,8 +29,7 @@ class ChatListener extends Listener:
   def joinEvent(event: PlayerJoinEvent): Unit =
     event.joinMessage(null)
     val message =
-      event
-        .getPlayer
+      event.getPlayer
         .displayName()
         .append(Component.text(" has joined the hub"))
         .color(NamedTextColor.YELLOW)
@@ -40,8 +39,7 @@ class ChatListener extends Listener:
   def leaveEvent(event: PlayerQuitEvent): Unit =
     event.quitMessage(null)
     val message =
-      event
-        .getPlayer
+      event.getPlayer
         .displayName()
         .append(Component.text(" has left the hub"))
         .color(NamedTextColor.YELLOW)

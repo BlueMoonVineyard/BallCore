@@ -52,13 +52,13 @@ case class GroupMemberships(groupID: ju.UUID, userID: ju.UUID):
       .map(_ => ())
 
 case class GroupRoles(
-                       groupID: ju.UUID,
-                       roleID: ju.UUID,
-                       name: String,
-                       hoist: Boolean,
-                       permissions: Map[Permissions, RuleMode],
-                       ord: String
-                     ):
+    groupID: ju.UUID,
+    roleID: ju.UUID,
+    name: String,
+    hoist: Boolean,
+    permissions: Map[Permissions, RuleMode],
+    ord: String
+):
   def save()(using sql: SQLManager)(using Session[IO]): IO[Unit] =
     sql
       .commandIO(
@@ -78,10 +78,10 @@ case class GroupRoles(
       .map(_ => ())
 
 case class GroupRoleMemberships(
-                                 groupID: ju.UUID,
-                                 roleID: ju.UUID,
-                                 userID: ju.UUID
-                               ):
+    groupID: ju.UUID,
+    roleID: ju.UUID,
+    userID: ju.UUID
+):
   def save()(using sql: SQLManager)(using Session[IO]): IO[Unit] =
     sql
       .commandIO(
@@ -130,23 +130,23 @@ enum GroupError:
 
   def explain(): String =
     this match
-      case MustBeOwner => "you must be owner"
-      case MustBeOnlyOwner => "you must be the only owner"
-      case GroupNotFound => "the group was not found"
-      case TargetNotInGroup => "the target is not in the group"
+      case MustBeOwner            => "you must be owner"
+      case MustBeOnlyOwner        => "you must be the only owner"
+      case GroupNotFound          => "the group was not found"
+      case TargetNotInGroup       => "the target is not in the group"
       case GroupWouldHaveNoOwners => "the group would have no owners"
-      case TargetIsAlreadyOwner => "the target is already an owner"
-      case AlreadyInGroup => "the target is already in the group"
-      case NoPermissions => "you do not have permission"
-      case RoleNotFound => "the role was not found"
-      case RoleAboveYours => "the role was above your topmost role"
-      case CantAssignEveryone => "you cannot assign the everyone role"
+      case TargetIsAlreadyOwner   => "the target is already an owner"
+      case AlreadyInGroup         => "the target is already in the group"
+      case NoPermissions          => "you do not have permission"
+      case RoleNotFound           => "the role was not found"
+      case RoleAboveYours         => "the role was above your topmost role"
+      case CantAssignEveryone     => "you cannot assign the everyone role"
       case MustHavePermission =>
         "you must have the permission in order to give it to others"
 
 /** The GroupManager implements all of the logic relating to group management
- * and permission
- */
+  * and permission
+  */
 class GroupManager()(using sql: Storage.SQLManager):
   sql.applyMigration(
     Storage.Migration(
@@ -341,7 +341,7 @@ class GroupManager()(using sql: Storage.SQLManager):
     }
 
   def deleteGroup(as: UserID, group: GroupID)(using
-                                              s: Session[IO]
+      s: Session[IO]
   ): EitherT[IO, GroupError, Unit] =
     EitherT
       .right(getGroupOwners(group))
@@ -362,8 +362,8 @@ class GroupManager()(using sql: Storage.SQLManager):
       .map(_ => ())
 
   private def getGroupOwners(
-                              group: GroupID
-                            )(using s: Session[IO]): IO[List[GroupOwnerships]] =
+      group: GroupID
+  )(using s: Session[IO]): IO[List[GroupOwnerships]] =
     sql.queryListIO(
       sql"SELECT GroupID, UserID FROM GroupOwnerships WHERE GroupID = $uuid;",
       (uuid *: uuid).to[GroupOwnerships],
@@ -371,8 +371,8 @@ class GroupManager()(using sql: Storage.SQLManager):
     )
 
   private def getGroupMembers(
-                               group: GroupID
-                             )(using s: Session[IO]): IO[List[GroupMemberships]] =
+      group: GroupID
+  )(using s: Session[IO]): IO[List[GroupMemberships]] =
     sql.queryListIO(
       sql"SELECT GroupID, UserID FROM GroupMemberships WHERE GroupID = $uuid;",
       (uuid *: uuid).to[GroupMemberships],
@@ -380,8 +380,8 @@ class GroupManager()(using sql: Storage.SQLManager):
     )
 
   private def getSubgroups(
-                            group: GroupID
-                          )(using Session[IO]): IO[List[SubgroupState]] =
+      group: GroupID
+  )(using Session[IO]): IO[List[SubgroupState]] =
     sql
       .queryListIO(
         sql"""
@@ -409,7 +409,7 @@ class GroupManager()(using sql: Storage.SQLManager):
       }
 
   private def groupStateIO(group: GroupID)(using
-                                           s: Session[IO]
+      s: Session[IO]
   ): EitherT[IO, GroupError, GroupStates] =
     EitherT.fromOptionF(
       sql.queryOptionIO(
@@ -423,8 +423,8 @@ class GroupManager()(using sql: Storage.SQLManager):
     )
 
   private def rolesIO(
-                       group: GroupID
-                     )(using s: Session[IO]): IO[List[RoleState]] =
+      group: GroupID
+  )(using s: Session[IO]): IO[List[RoleState]] =
     sql
       .queryListIO(
         sql"""
@@ -447,8 +447,8 @@ class GroupManager()(using sql: Storage.SQLManager):
       }
 
   private def getAll(
-                      group: GroupID
-                    )(using s: Session[IO]): EitherT[IO, GroupError, GroupState] =
+      group: GroupID
+  )(using s: Session[IO]): EitherT[IO, GroupError, GroupState] =
     for {
       gs <- groupStateIO(group)
       gm <- EitherT.right(
@@ -494,7 +494,7 @@ class GroupManager()(using sql: Storage.SQLManager):
     )
 
   def promoteToOwner(as: UserID, target: UserID, group: GroupID)(using
-                                                                 s: Session[IO]
+      s: Session[IO]
   ): EitherT[IO, GroupError, Unit] =
     (for {
       owners <- EitherT.right(getGroupOwners(group))
@@ -523,7 +523,7 @@ class GroupManager()(using sql: Storage.SQLManager):
       }
 
   def giveUpOwnership(as: UserID, group: GroupID)(using
-                                                  s: Session[IO]
+      s: Session[IO]
   ): EitherT[IO, GroupError, Unit] =
     EitherT
       .right(getGroupOwners(group))
@@ -547,10 +547,10 @@ class GroupManager()(using sql: Storage.SQLManager):
       }
 
   def sudoSetRolePermissions(
-                              groupID: GroupID,
-                              roleID: RoleID,
-                              permissions: Map[Permissions, RuleMode]
-                            )(using s: Session[IO]): IO[Completion] =
+      groupID: GroupID,
+      roleID: RoleID,
+      permissions: Map[Permissions, RuleMode]
+  )(using s: Session[IO]): IO[Completion] =
     sql.commandIO(
       sql"""
         UPDATE GroupRoles SET Permissions = $jsonb WHERE GroupID = $uuid AND RoleID = $uuid
@@ -559,11 +559,11 @@ class GroupManager()(using sql: Storage.SQLManager):
     )
 
   def setRolePermissions(
-                          as: UserID,
-                          groupID: GroupID,
-                          roleID: RoleID,
-                          permissions: Map[Permissions, RuleMode]
-                        )(using s: Session[IO]): EitherT[IO, GroupError, Unit] =
+      as: UserID,
+      groupID: GroupID,
+      roleID: RoleID,
+      permissions: Map[Permissions, RuleMode]
+  )(using s: Session[IO]): EitherT[IO, GroupError, Unit] =
     getAll(groupID)
       .guard(GroupError.NoPermissions) {
         _.check(Permissions.ManageRoles, as, nullUUID)
@@ -585,12 +585,12 @@ class GroupManager()(using sql: Storage.SQLManager):
       }
 
   def setSubgroupRolePermissions(
-                                  as: UserID,
-                                  groupID: GroupID,
-                                  subgroupID: SubgroupID,
-                                  roleID: RoleID,
-                                  permissions: Map[Permissions, RuleMode]
-                                )(using s: Session[IO]): EitherT[IO, GroupError, Unit] =
+      as: UserID,
+      groupID: GroupID,
+      subgroupID: SubgroupID,
+      roleID: RoleID,
+      permissions: Map[Permissions, RuleMode]
+  )(using s: Session[IO]): EitherT[IO, GroupError, Unit] =
     getAll(groupID)
       .guard(GroupError.NoPermissions) {
         _.check(Permissions.ManageSubgroups, as, subgroupID)
@@ -624,15 +624,15 @@ class GroupManager()(using sql: Storage.SQLManager):
       }
 
   def roles(
-             group: GroupID
-           )(using s: Session[IO]): EitherT[IO, GroupError, List[RoleState]] =
+      group: GroupID
+  )(using s: Session[IO]): EitherT[IO, GroupError, List[RoleState]] =
     for {
       gs <- groupStateIO(group)
       roles <- EitherT.right(rolesIO(group))
     } yield roles
 
   def createRole(as: UserID, group: GroupID, name: String)(using
-                                                           s: Session[IO]
+      s: Session[IO]
   ): EitherT[IO, GroupError, RoleID] =
     getAll(group)
       .guard(GroupError.NoPermissions) {
@@ -665,7 +665,7 @@ class GroupManager()(using sql: Storage.SQLManager):
       }
 
   def createSubgroup(as: UserID, group: GroupID, name: String)(using
-                                                               s: Session[IO]
+      s: Session[IO]
   ): EitherT[IO, GroupError, SubgroupID] =
     getAll(group)
       .guard(GroupError.NoPermissions) {
@@ -691,7 +691,7 @@ class GroupManager()(using sql: Storage.SQLManager):
       }
 
   def deleteSubgroup(as: UserID, group: GroupID, subgroup: SubgroupID)(using
-                                                                       s: Session[IO]
+      s: Session[IO]
   ): EitherT[IO, GroupError, Unit] =
     getAll(group)
       .guard(GroupError.NoPermissions) {
@@ -711,7 +711,7 @@ class GroupManager()(using sql: Storage.SQLManager):
       }
 
   def deleteRole(as: UserID, role: RoleID, group: GroupID)(using
-                                                           s: Session[IO]
+      s: Session[IO]
   ): EitherT[IO, GroupError, Unit] =
     getAll(group)
       .guard(GroupError.NoPermissions) {
@@ -738,12 +738,12 @@ class GroupManager()(using sql: Storage.SQLManager):
       }
 
   def assignRole(
-                  as: UserID,
-                  target: UserID,
-                  group: GroupID,
-                  role: RoleID,
-                  has: Boolean
-                )(using s: Session[IO]): EitherT[IO, GroupError, Unit] =
+      as: UserID,
+      target: UserID,
+      group: GroupID,
+      role: RoleID,
+      has: Boolean
+  )(using s: Session[IO]): EitherT[IO, GroupError, Unit] =
     getAll(group)
       .guard(GroupError.NoPermissions) {
         _.check(Permissions.ManageUserRoles, as, nullUUID)
@@ -781,7 +781,7 @@ class GroupManager()(using sql: Storage.SQLManager):
 
   // TODO: invites/passwords
   def addToGroup(user: UserID, group: GroupID)(using
-                                               s: Session[IO]
+      s: Session[IO]
   ): EitherT[IO, GroupError, Unit] =
     EitherT
       .right(getGroupMembers(group))
@@ -802,8 +802,8 @@ class GroupManager()(using sql: Storage.SQLManager):
       }
 
   def groupAudience(
-                     groupID: GroupID
-                   )(using s: Session[IO]): EitherT[IO, GroupError, (String, Audience)] =
+      groupID: GroupID
+  )(using s: Session[IO]): EitherT[IO, GroupError, (String, Audience)] =
     for {
       gs <- groupStateIO(groupID)
       members <- EitherT.right(getGroupMembers(groupID).map(_.map(_.userID)))
@@ -817,8 +817,8 @@ class GroupManager()(using sql: Storage.SQLManager):
     )
 
   def userGroups(
-                  userID: UserID
-                )(using s: Session[IO]): EitherT[IO, GroupError, List[GroupStates]] =
+      userID: UserID
+  )(using s: Session[IO]): EitherT[IO, GroupError, List[GroupStates]] =
     EitherT.right(
       sql.queryListIO(
         sql"""
@@ -836,11 +836,11 @@ class GroupManager()(using sql: Storage.SQLManager):
     )
 
   def setSubclaims(
-                    as: UserID,
-                    group: GroupID,
-                    subgroup: SubgroupID,
-                    claims: Subclaims
-                  )(using s: Session[IO]): IO[Either[GroupError, Unit]] =
+      as: UserID,
+      group: GroupID,
+      subgroup: SubgroupID,
+      claims: Subclaims
+  )(using s: Session[IO]): IO[Either[GroupError, Unit]] =
     getAll(group)
       .guard(GroupError.NoPermissions) {
         _.check(Permissions.ManageClaims, as, subgroup)
@@ -864,8 +864,8 @@ class GroupManager()(using sql: Storage.SQLManager):
 
   /// relatively heavy function, call once and cache only if you need to frequently consult permissions
   def getSubclaims(
-                    groupID: GroupID
-                  )(using s: Session[IO]): IO[Either[GroupError, Map[SubgroupID, Subclaims]]] =
+      groupID: GroupID
+  )(using s: Session[IO]): IO[Either[GroupError, Map[SubgroupID, Subclaims]]] =
     EitherT
       .right(
         sql.queryListIO(
@@ -880,24 +880,24 @@ class GroupManager()(using sql: Storage.SQLManager):
       .value
 
   def getGroup(groupID: GroupID)(using
-                                 s: Session[IO]
+      s: Session[IO]
   ): EitherT[IO, GroupError, GroupState] =
     getAll(groupID)
 
   def check(
-             user: UserID,
-             group: GroupID,
-             subgroup: SubgroupID,
-             permission: Permissions
-           )(using s: Session[IO]): EitherT[IO, GroupError, Boolean] =
+      user: UserID,
+      group: GroupID,
+      subgroup: SubgroupID,
+      permission: Permissions
+  )(using s: Session[IO]): EitherT[IO, GroupError, Boolean] =
     getAll(group).map(_.check(permission, user, subgroup))
 
   def checkE(
-              user: UserID,
-              group: GroupID,
-              subgroup: SubgroupID,
-              permission: Permissions
-            )(using s: Session[IO]): EitherT[IO, GroupError, Unit] =
+      user: UserID,
+      group: GroupID,
+      subgroup: SubgroupID,
+      permission: Permissions
+  )(using s: Session[IO]): EitherT[IO, GroupError, Unit] =
     getAll(group)
       .guard(GroupError.NoPermissions) {
         _.check(permission, user, subgroup)

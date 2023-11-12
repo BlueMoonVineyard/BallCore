@@ -21,8 +21,8 @@ val reinforcementKindCodec = text.imap { str =>
 } { it => it.into() }
 
 /** The ChunkStateManager is responsible for managing the loading and saving of
- * chunkstates to a SQL database
- */
+  * chunkstates to a SQL database
+  */
 class ChunkStateManager()(using sql: Storage.SQLManager):
   sql.applyMigration(
     Storage.Migration(
@@ -104,7 +104,7 @@ class ChunkStateManager()(using sql: Storage.SQLManager):
               health,
               reinforcementKind,
               date
-              ) = tuple
+            ) = tuple
             cs.blocks(BlockKey(offsetX, offsetZ, y)) = ReinforcementState(
               group,
               subgroup,

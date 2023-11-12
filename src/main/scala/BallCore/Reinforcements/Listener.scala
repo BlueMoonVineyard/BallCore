@@ -51,7 +51,7 @@ object Listener:
       case ReinforcementTypes.Stone | ReinforcementTypes.Deepslate =>
         (Particle.SMOKE_NORMAL, 40, 0.0, 0.06)
       case ReinforcementTypes.CopperLike => (Particle.BUBBLE_POP, 100, 0.1, 0.2)
-      case ReinforcementTypes.IronLike => (Particle.END_ROD, 15, 0.0, 0.045)
+      case ReinforcementTypes.IronLike   => (Particle.END_ROD, 15, 0.0, 0.045)
     at.getWorld
       .spawnParticle(
         pType,
@@ -69,7 +69,7 @@ object Listener:
       case ReinforcementTypes.Stone | ReinforcementTypes.Deepslate =>
         (Particle.SMOKE_LARGE, 80, 0.0, 0.04)
       case ReinforcementTypes.CopperLike => (Particle.BUBBLE_POP, 500, 0.1, 0.5)
-      case ReinforcementTypes.IronLike => (Particle.END_ROD, 200, 0.0, 0.13)
+      case ReinforcementTypes.IronLike   => (Particle.END_ROD, 200, 0.0, 0.13)
     at.getWorld
       .spawnParticle(
         pType,
@@ -83,28 +83,28 @@ object Listener:
       )
 
 class Listener(using cbm: CivBeaconManager, gm: GroupManager, sql: SQLManager)
-  extends org.bukkit.event.Listener:
+    extends org.bukkit.event.Listener:
 
   import Listener.*
 
   def reinforcementFromItem(is: ItemStack): Option[ReinforcementTypes] =
     if is == null then return None
     is.getType match
-      case Material.STONE => Some(ReinforcementTypes.Stone)
-      case Material.DEEPSLATE => Some(ReinforcementTypes.Deepslate)
-      case Material.IRON_INGOT => Some(ReinforcementTypes.IronLike)
+      case Material.STONE        => Some(ReinforcementTypes.Stone)
+      case Material.DEEPSLATE    => Some(ReinforcementTypes.Deepslate)
+      case Material.IRON_INGOT   => Some(ReinforcementTypes.IronLike)
       case Material.COPPER_INGOT => Some(ReinforcementTypes.CopperLike)
-      case _ => None
+      case _                     => None
 
   //
   //// Stuff that interacts with the RSM; i.e. that mutates block states
   //
 
   private def checkAt(
-                       location: Location,
-                       player: Player,
-                       permission: Permissions
-                     ): Either[GroupError, Boolean] =
+      location: Location,
+      player: Player,
+      permission: Permissions
+  ): Either[GroupError, Boolean] =
     sql
       .useBlocking(cbm.beaconContaining(location))
       .flatMap(id => sql.useBlocking(cbm.getGroup(id)))
@@ -122,10 +122,10 @@ class Listener(using cbm: CivBeaconManager, gm: GroupManager, sql: SQLManager)
       .getOrElse(Right(true))
 
   private inline def checkAt(
-                              location: Block,
-                              player: Player,
-                              permission: Permissions
-                            ): Either[GroupError, Boolean] =
+      location: Block,
+      player: Player,
+      permission: Permissions
+  ): Either[GroupError, Boolean] =
     checkAt(
       BlockAdjustment.adjustBlock(location).getLocation(),
       player,
@@ -243,7 +243,7 @@ class Listener(using cbm: CivBeaconManager, gm: GroupManager, sql: SQLManager)
     val btype = loc.getType
 
     if MaterialTags.SHOVELS.isTagged(slot.getType) then
-    // prevent grass -> path
+      // prevent grass -> path
       if btype == Material.GRASS_BLOCK then event.setCancelled(true)
       // prevent extinguishing campfires with shovels
       else if BlockSets.campfires.contains(btype) then
@@ -261,7 +261,7 @@ class Listener(using cbm: CivBeaconManager, gm: GroupManager, sql: SQLManager)
       if BlockSets.beehives.contains(btype) then event.setCancelled(true)
     // prevent modifiying candles
     else if BlockSets.candles.contains(btype) then
-    // prevent extinguishing candles
+      // prevent extinguishing candles
       if !event.hasItem then
         val lightable = loc.getBlockData.asInstanceOf[Lightable]
         if lightable.isLit then event.setCancelled(true)
@@ -276,7 +276,7 @@ class Listener(using cbm: CivBeaconManager, gm: GroupManager, sql: SQLManager)
 
   @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
   def preventModifiyingBeacon(event: PlayerInteractEvent): Unit =
-    // noinspection Annotator
+
     if !event.hasBlock || event.getAction != Action.RIGHT_CLICK_BLOCK then
       return if event.getClickedBlock.getType != Material.BEACON then return
 
@@ -341,18 +341,18 @@ class Listener(using cbm: CivBeaconManager, gm: GroupManager, sql: SQLManager)
   @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
   def preventBonemealing(event: BlockFertilizeEvent): Unit =
     val player = event.getPlayer
-    // noinspection Annotator
+
     if player == null then
       return
 
-        if event.getBlocks.asScala.exists { x =>
+      if event.getBlocks.asScala.exists { x =>
           checkAt(x.getBlock, player, Permissions.Crops) match
             case Right(ok) if ok =>
               false
             case _ =>
               true
         }
-        then event.setCancelled(true)
+      then event.setCancelled(true)
   // TODO: notify of permission denied
 
   //
@@ -360,9 +360,9 @@ class Listener(using cbm: CivBeaconManager, gm: GroupManager, sql: SQLManager)
   //
 
   private def locationsAreCoveredByTheSameBeacon(
-                                                  l: Location,
-                                                  r: Location
-                                                ): Boolean =
+      l: Location,
+      r: Location
+  ): Boolean =
     sql.useBlocking {
       for {
         lBeacon <- cbm.beaconContaining(l)
@@ -375,10 +375,10 @@ class Listener(using cbm: CivBeaconManager, gm: GroupManager, sql: SQLManager)
   def preventPistonPush(event: BlockPistonExtendEvent): Unit =
     val piston = event.getBlock.getLocation()
     if event.getBlocks.asScala.exists { x =>
-      if !locationsAreCoveredByTheSameBeacon(piston, x.getLocation()) then
-        true
-      else false
-    }
+        if !locationsAreCoveredByTheSameBeacon(piston, x.getLocation()) then
+          true
+        else false
+      }
     then event.setCancelled(true)
 
   // prevent pistons from pulling blocks
@@ -386,10 +386,10 @@ class Listener(using cbm: CivBeaconManager, gm: GroupManager, sql: SQLManager)
   def preventPistonPull(event: BlockPistonRetractEvent): Unit =
     val piston = event.getBlock.getLocation()
     if event.getBlocks.asScala.exists { x =>
-      if !locationsAreCoveredByTheSameBeacon(piston, x.getLocation()) then
-        true
-      else false
-    }
+        if !locationsAreCoveredByTheSameBeacon(piston, x.getLocation()) then
+          true
+        else false
+      }
     then event.setCancelled(true)
 
   // prevent fire from burning blocks
@@ -401,43 +401,41 @@ class Listener(using cbm: CivBeaconManager, gm: GroupManager, sql: SQLManager)
   @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
   def preventZombies(event: EntityChangeBlockEvent): Unit =
     if sql
-      .useBlocking(cbm.beaconContaining(event.getBlock.getLocation()))
-      .isDefined
+        .useBlocking(cbm.beaconContaining(event.getBlock.getLocation()))
+        .isDefined
     then event.setCancelled(true)
 
-  // noinspection Annotator
   // prevent reinforced blocks from falling
   @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
   def preventFallingReinforcement(event: EntitySpawnEvent): Unit =
     if event.getEntityType != EntityType.FALLING_BLOCK then
       return if sql
-        .useBlocking(
-          cbm.beaconContaining(event.getLocation.getBlock.getLocation())
-        )
-        .isDefined
+          .useBlocking(
+            cbm.beaconContaining(event.getLocation.getBlock.getLocation())
+          )
+          .isDefined
       then
         event.getEntity.setGravity(false)
         event.setCancelled(true)
 
-  // noinspection Annotator
   // prevent liquids from washing blocks away
   @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
   def preventLiquidWashAway(event: BlockFromToEvent): Unit =
     if event.getToBlock.getY < event.getToBlock.getWorld.getMinHeight
     then
       return if sql
-        .useBlocking(cbm.beaconContaining(event.getBlock.getLocation()))
-        .isDefined
+          .useBlocking(cbm.beaconContaining(event.getBlock.getLocation()))
+          .isDefined
       then event.setCancelled(true)
 
   // prevent plants from breaking reinforced blocks
   @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
   def preventPlantGrowth(event: StructureGrowEvent): Unit =
     if event.getBlocks.asScala.exists { x =>
-      val loc = x.getBlock.getLocation()
-      if !locationsAreCoveredByTheSameBeacon(loc, event.getLocation) then true
-      else false
-    }
+        val loc = x.getBlock.getLocation()
+        if !locationsAreCoveredByTheSameBeacon(loc, event.getLocation) then true
+        else false
+      }
     then event.setCancelled(true)
 
   // have explosions damage blocks

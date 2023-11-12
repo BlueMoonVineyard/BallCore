@@ -107,20 +107,20 @@ object Mining:
   }
 
   def register()(using
-                 ac: AntiCheeser,
-                 as: Acclimation.Storage,
-                 p: Plugin,
-                 sql: SQLManager
+      ac: AntiCheeser,
+      as: Acclimation.Storage,
+      p: Plugin,
+      sql: SQLManager
   ): Unit =
     p.getServer.getPluginManager.registerEvents(MiningListener(), p)
 
 case class Drops(
-                  yLevels: Inclusive,
-                  amount: Inclusive,
-                  chance: Double,
-                  what: ItemStack,
-                  where: WorldLocation
-                )
+    yLevels: Inclusive,
+    amount: Inclusive,
+    chance: Double,
+    what: ItemStack,
+    where: WorldLocation
+)
 
 enum Quadrant:
   case northwest
@@ -154,13 +154,12 @@ enum WorldLocation:
   case everywhere
 
 class MiningListener()(using
-                       ac: AntiCheeser,
-                       as: Acclimation.Storage,
-                       sql: SQLManager
+    ac: AntiCheeser,
+    as: Acclimation.Storage,
+    sql: SQLManager
 ) extends Listener:
   val randomizer: Random = scala.util.Random()
 
-  // noinspection Annotator
   @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
   def onBreakBlock(event: BlockBreakEvent): Unit =
     val it1 = sql.useBlocking(ac.blockBrokenPartA(event.getBlock))

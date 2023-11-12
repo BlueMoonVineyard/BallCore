@@ -13,9 +13,9 @@ import org.bukkit.event.vehicle.{VehicleDamageEvent, VehicleEnterEvent}
 import org.bukkit.event.{EventHandler, EventPriority, Listener}
 
 class EntityListener()(using
-                       erm: EntityReinforcementManager,
-                       gm: GroupManager,
-                       sql: SQLManager
+    erm: EntityReinforcementManager,
+    gm: GroupManager,
+    sql: SQLManager
 ) extends Listener:
 
   import BallCore.Reinforcements.Listener.*
@@ -56,7 +56,7 @@ class EntityListener()(using
     val ent = event.getEntered
     if !ent.isInstanceOf[Player] then
       event.setCancelled(true)
-      // noinspection Annotator
+
       return sql.useBlocking(
         gm.check(
           ent.asInstanceOf[Player].getUniqueId,

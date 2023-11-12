@@ -12,7 +12,7 @@ import java.util.logging.Level
 import scala.concurrent.ExecutionContext
 
 class ChunkExecutionContext(cx: Int, cz: Int, world: World)(using
-                                                            plugin: Plugin
+    plugin: Plugin
 ) extends ExecutionContext:
   val sched: RegionScheduler = plugin.getServer.getRegionScheduler
 

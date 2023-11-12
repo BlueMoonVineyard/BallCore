@@ -40,19 +40,19 @@ enum OreTier:
   case Block
 
 case class OreVariants(
-                        raw: CustomItemStack,
-                        nugget: CustomItemStack,
-                        ingot: CustomItemStack,
-                        block: CustomItemStack,
-                        name: String,
-                        id: String
-                      ):
+    raw: CustomItemStack,
+    nugget: CustomItemStack,
+    ingot: CustomItemStack,
+    block: CustomItemStack,
+    name: String,
+    id: String
+):
   def ore(tier: OreTier): CustomItemStack =
     tier match
-      case OreTier.Raw => raw
+      case OreTier.Raw    => raw
       case OreTier.Nugget => nugget
-      case OreTier.Ingot => ingot
-      case OreTier.Block => block
+      case OreTier.Ingot  => ingot
+      case OreTier.Block  => block
 
   def register(group: ItemGroup, registry: ItemRegistry, serv: Server): Unit =
     OreTier.values.foreach { tier =>
@@ -148,14 +148,14 @@ case class OreVariants(
 
 object Helpers:
   def factory(
-               id: String,
-               name: String,
-               num: Int,
-               raw: Material,
-               nugget: Material,
-               ingot: Material,
-               block: Material
-             ): OreVariants =
+      id: String,
+      name: String,
+      num: Int,
+      raw: Material,
+      nugget: Material,
+      ingot: Material,
+      block: Material
+  ): OreVariants =
     OreVariants(
       withCustomModelData(
         CustomItemStack
@@ -191,9 +191,9 @@ object Helpers:
     )
 
   private def withCustomModelData(
-                                   is: CustomItemStack,
-                                   md: Int
-                                 ): CustomItemStack =
+      is: CustomItemStack,
+      md: Int
+  ): CustomItemStack =
     val im = is.getItemMeta
     im.setCustomModelData(md)
     is.setItemMeta(im)
@@ -233,13 +233,13 @@ object Helpers:
     )
 
   def register(group: ItemGroup, variants: OreVariants)(using
-                                                        registry: ItemRegistry,
-                                                        server: Server
+      registry: ItemRegistry,
+      server: Server
   ): Unit =
     variants.register(group, registry, server)
 
   def register(group: ItemGroup, ms: CustomItemStack*)(using
-                                                       registry: ItemRegistry,
-                                                       server: Server
+      registry: ItemRegistry,
+      server: Server
   ): Unit =
     ms.foreach { x => registry.register(PlainCustomItem(group, x)) }

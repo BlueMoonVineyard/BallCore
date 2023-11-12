@@ -26,15 +26,15 @@ object HeartBlock:
 // val tickHandler = RainbowTickHandler(Material.WHITE_CONCRETE, Material.PINK_CONCRETE, Material.RED_CONCRETE, Material.PINK_CONCRETE)
 
 class HeartBlock()(using
-                   hn: CivBeaconManager,
-                   editor: PolygonEditor,
-                   gm: GroupManager,
-                   bm: BlockManager,
-                   sql: SQLManager
+    hn: CivBeaconManager,
+    editor: PolygonEditor,
+    gm: GroupManager,
+    bm: BlockManager,
+    sql: SQLManager
 ) extends CustomItem,
-  Listeners.BlockPlaced,
-  Listeners.BlockRemoved,
-  Listeners.BlockClicked:
+      Listeners.BlockPlaced,
+      Listeners.BlockRemoved,
+      Listeners.BlockClicked:
 
   def group: ItemGroup = Beacons.group
 
@@ -84,12 +84,12 @@ class HeartBlock()(using
             txt"Your heart is already placed at [$x, $y, $z]..."
           )
         event.setCancelled(true)
-        // noinspection Annotator
+
         return
 
-          sql.useBlocking(
-            bm.store(event.getBlock, "owner", event.getPlayer.getUniqueId)
-          )
+        sql.useBlocking(
+          bm.store(event.getBlock, "owner", event.getPlayer.getUniqueId)
+        )
     sql.useBlocking(
       hn.placeHeart(
         event.getBlock.getLocation(),

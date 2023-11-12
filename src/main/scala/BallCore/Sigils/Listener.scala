@@ -79,13 +79,13 @@ class DamageListener(using da: DamageActor) extends Listener:
           case proj: Projectile =>
             proj.getShooter match
               case player: Player => player
-              case _ => null
+              case _              => null
           case _ =>
             e match
               case wolf: Wolf =>
                 wolf.getOwner match
                   case player: Player => player
-                  case _ => null
+                  case _              => null
               case _ => null
 
   @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -94,17 +94,17 @@ class DamageListener(using da: DamageActor) extends Listener:
 
     val player = e.getEntity.asInstanceOf[Player]
     val damager = getPlayerOrigin(e.getDamager)
-    // noinspection Annotator
+
     if damager == null then return da.damage(damager, player, e.getDamage())
 
 class SigilListener(using
-                    ssm: SigilSlimeManager,
-                    hnm: CivBeaconManager,
-                    da: DamageActor,
-                    ir: ItemRegistry,
-                    p: Plugin,
-                    sql: SQLManager
-                   ) extends Listener:
+    ssm: SigilSlimeManager,
+    hnm: CivBeaconManager,
+    da: DamageActor,
+    ir: ItemRegistry,
+    p: Plugin,
+    sql: SQLManager
+) extends Listener:
   @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
   def onPlayerMove(event: PlayerMoveEvent): Unit =
     val banished =
@@ -117,7 +117,7 @@ class SigilListener(using
     on match
       case head :: next =>
         val attacker = Bukkit.getPlayer(head)
-        // noinspection Annotator
+
         if attacker == null then return doSigilBinding(killed, next)
 
         given ec: ExecutionContext = EntityExecutionContext(attacker)

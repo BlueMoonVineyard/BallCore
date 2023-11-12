@@ -9,7 +9,8 @@ import BallCore.{Groups, Storage}
 import java.util as ju
 
 class GroupsSuite extends munit.FunSuite:
-  val sql: FunFixture[SQLManager] = FunFixture[SQLManager](TestDatabase.setup, TestDatabase.teardown)
+  val sql: FunFixture[SQLManager] =
+    FunFixture[SQLManager](TestDatabase.setup, TestDatabase.teardown)
   sql.test("creating and deleting one-person group") { implicit sql =>
     val gm = Groups.GroupManager()
     val ownerID = ju.UUID.randomUUID()

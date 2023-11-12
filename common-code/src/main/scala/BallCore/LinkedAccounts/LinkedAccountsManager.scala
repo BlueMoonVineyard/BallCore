@@ -74,8 +74,8 @@ class LinkedAccountsManager()(using sql: SQLManager):
     )
 
   def startLinkProcessFromDiscord(
-                                   user: String
-                                 ): Either[LinkedAccountError, String] =
+      user: String
+  ): Either[LinkedAccountError, String] =
     val code = generateLinkCode()
 
     if isAlreadyLinked(user) then
@@ -108,8 +108,8 @@ class LinkedAccountsManager()(using sql: SQLManager):
     )
 
   def startLinkProcessFromMinecraft(
-                                     user: UUID
-                                   ): Either[LinkedAccountError, String] =
+      user: UUID
+  ): Either[LinkedAccountError, String] =
     val code = generateLinkCode()
 
     if isAlreadyLinked(user) then
@@ -142,7 +142,7 @@ class LinkedAccountsManager()(using sql: SQLManager):
     )
 
   private def insertLinkage(discordID: String, mcuuid: UUID)(using
-                                                             Session[IO]
+      Session[IO]
   ): IO[Either[LinkedAccountError, Unit]] =
     sql.txIO { tx =>
       sql
@@ -169,9 +169,9 @@ class LinkedAccountsManager()(using sql: SQLManager):
     }
 
   def finishLinkProcessFromDiscord(
-                                    linkCode: String,
-                                    discordID: String
-                                  ): Either[LinkedAccountError, Unit] =
+      linkCode: String,
+      discordID: String
+  ): Either[LinkedAccountError, Unit] =
     sql.useBlocking(
       sql.queryOptionIO(
         sql"""
@@ -189,9 +189,9 @@ class LinkedAccountsManager()(using sql: SQLManager):
         sql.useBlocking(insertLinkage(discordID, mcuuid))
 
   def finishLinkProcessFromMinecraft(
-                                      linkCode: String,
-                                      mcuuid: UUID
-                                    ): Either[LinkedAccountError, Unit] =
+      linkCode: String,
+      mcuuid: UUID
+  ): Either[LinkedAccountError, Unit] =
     sql.useBlocking(
       sql.queryOptionIO(
         sql"""

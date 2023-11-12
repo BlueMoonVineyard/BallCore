@@ -48,9 +48,9 @@ class SQLKeyVal()(using sql: SQLManager) extends KeyVal:
   )
 
   override def set[A](player: UUID, key: String, value: A)(using
-                                                           Encoder[A],
-                                                           Decoder[A],
-                                                           Session[IO]
+      Encoder[A],
+      Decoder[A],
+      Session[IO]
   ): IO[Unit] =
     sql
       .commandIO(
@@ -62,9 +62,9 @@ class SQLKeyVal()(using sql: SQLManager) extends KeyVal:
       .map(_ => ())
 
   override def get[A](player: UUID, key: String)(using
-                                                 Encoder[A],
-                                                 Decoder[A],
-                                                 Session[IO]
+      Encoder[A],
+      Decoder[A],
+      Session[IO]
   ): IO[Option[A]] =
     sql.queryOptionIO(
       sql"""
@@ -85,9 +85,9 @@ class SQLKeyVal()(using sql: SQLManager) extends KeyVal:
       .map(_ => ())
 
   override def set[A](superkey: String, key: String, value: A)(using
-                                                               Encoder[A],
-                                                               Decoder[A],
-                                                               Session[IO]
+      Encoder[A],
+      Decoder[A],
+      Session[IO]
   ): IO[Unit] =
     sql
       .commandIO(
@@ -99,9 +99,9 @@ class SQLKeyVal()(using sql: SQLManager) extends KeyVal:
       .map(_ => ())
 
   override def get[A](superkey: String, key: String)(using
-                                                     Encoder[A],
-                                                     Decoder[A],
-                                                     Session[IO]
+      Encoder[A],
+      Decoder[A],
+      Session[IO]
   ): IO[Option[A]] =
     sql.queryOptionIO(
       sql"""
@@ -112,7 +112,7 @@ class SQLKeyVal()(using sql: SQLManager) extends KeyVal:
     )
 
   override def remove(superkey: String, key: String)(using
-                                                     Session[IO]
+      Session[IO]
   ): IO[Unit] =
     sql
       .commandIO(

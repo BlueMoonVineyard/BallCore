@@ -12,15 +12,15 @@ import skunk.Session
 
 trait BlockManager:
   def store[A](block: Block, key: String, what: A)(using
-                                                   Encoder[A],
-                                                   Decoder[A],
-                                                   Session[IO]
+      Encoder[A],
+      Decoder[A],
+      Session[IO]
   ): IO[Unit]
 
   def retrieve[A](block: Block, key: String)(using
-                                             Encoder[A],
-                                             Decoder[A],
-                                             Session[IO]
+      Encoder[A],
+      Decoder[A],
+      Session[IO]
   ): IO[Option[A]]
 
   def remove(block: Block, key: String)(using Session[IO]): IO[Unit]
@@ -29,14 +29,14 @@ trait BlockManager:
     remove(block, "item-id")
 
   def setCustomItem(block: Block, item: CustomItem)(using
-                                                    Session[IO]
+      Session[IO]
   ): IO[Unit] =
     import NamespacedKeyCodec.*
 
     store(block, "item-id", item.id)
 
   def getCustomItem(block: Block)(using registry: ItemRegistry)(using
-                                                                Session[IO]
+      Session[IO]
   ): IO[Option[CustomItem]] =
     import NamespacedKeyCodec.*
 

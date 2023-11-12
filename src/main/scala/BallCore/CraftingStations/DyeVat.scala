@@ -48,7 +48,7 @@ object DyeVat:
   )
 
 class DyeVat()(using act: CraftingActor, p: Plugin, prompts: Prompts)
-  extends CraftingStation(DyeVat.recipes):
+    extends CraftingStation(DyeVat.recipes):
   def group: ItemGroup = CraftingStations.group
 
   def template: CustomItemStack = DyeVat.template
