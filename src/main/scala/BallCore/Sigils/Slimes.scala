@@ -21,6 +21,7 @@ import org.bukkit.{Bukkit, Material, NamespacedKey}
 import org.joml.{AxisAngle4f, Vector3f}
 import skunk.Session
 import skunk.codec.all.*
+import skunk.implicits.*
 
 import java.util.UUID
 import scala.concurrent.ExecutionContext
