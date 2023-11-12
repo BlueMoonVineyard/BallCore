@@ -4,10 +4,9 @@
 
 package BallCore.CraftingStations
 
-import org.bukkit.inventory.RecipeChoice
-import org.bukkit.inventory.ItemStack
-import org.bukkit.entity.Player
 import org.bukkit.block.Block
+import org.bukkit.entity.Player
+import org.bukkit.inventory.{ItemStack, RecipeChoice}
 
 case class Recipe(
     name: String,
@@ -18,12 +17,12 @@ case class Recipe(
     /// a player can only dedicate "work" to one factory at a time,
     /// but they can do other stuff whilst working a factory
     work: Int,
-    minimumPlayersRequiredToWork: Int,
+    minimumPlayersRequiredToWork: Int
 )
 
 case class Job(
     factory: Block,
     recipe: Recipe,
     currentWork: Int,
-    workedBy: List[Player],
+    workedBy: List[Player]
 )

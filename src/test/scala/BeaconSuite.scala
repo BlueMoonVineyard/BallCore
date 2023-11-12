@@ -2,18 +2,16 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import BallCore.Storage
-import BallCore.Beacons
-import org.bukkit.Location
-import java.util.UUID
-import BallCore.Beacons.CivBeaconManager
-import be.seeseemelk.mockbukkit.WorldMock
-import org.locationtech.jts.geom.GeometryFactory
-import org.locationtech.jts.geom.Coordinate
-import scala.util.chaining._
-import BallCore.Beacons.PolygonAdjustmentError
-import BallCore.Storage.SQLManager
+import BallCore.Beacons.{CivBeaconManager, PolygonAdjustmentError}
 import BallCore.Groups.GroupManager
+import BallCore.Storage.SQLManager
+import BallCore.{Beacons, Storage}
+import be.seeseemelk.mockbukkit.WorldMock
+import org.bukkit.Location
+import org.locationtech.jts.geom.{Coordinate, GeometryFactory}
+
+import java.util.UUID
+import scala.util.chaining.*
 
 class HeartSuite extends munit.FunSuite {
   val sql = FunFixture[SQLManager](TestDatabase.setup, TestDatabase.teardown)
@@ -28,7 +26,8 @@ class HeartSuite extends munit.FunSuite {
     val res2 = sql.useBlocking(hn.heartAt(Location(world, 0, 0, 0)))
     assert(res2.isDefined, res2)
 
-    val res3 = sql.useBlocking(hn.removeHeart(Location(world, 0, 0, 0), ownerID))
+    val res3 =
+      sql.useBlocking(hn.removeHeart(Location(world, 0, 0, 0), ownerID))
     assert(res3.isEmpty, res3)
   }
   sql.test("polygon shenanigans") { implicit sql =>
@@ -36,51 +35,82 @@ class HeartSuite extends munit.FunSuite {
     given hn: CivBeaconManager = CivBeaconManager()
     val world = WorldMock()
     val ownerID = UUID.randomUUID()
-    val (beaconID, count) = sql.useBlocking(hn.placeHeart(Location(world, 0, 0, 0), ownerID)).toOption.get
+    val (beaconID, count) = sql
+      .useBlocking(hn.placeHeart(Location(world, 0, 0, 0), ownerID))
+      .toOption
+      .get
 
     val gf = GeometryFactory()
-    val validPolygon = gf.createPolygon(Array(
-      Coordinate(-10, -10),
-      Coordinate(-10, 10),
-      Coordinate(10, 10),
-      Coordinate(10, -10),
-      Coordinate(-10, -10),
-    ))
+    val validPolygon = gf.createPolygon(
+      Array(
+        Coordinate(-10, -10),
+        Coordinate(-10, 10),
+        Coordinate(10, 10),
+        Coordinate(10, -10),
+        Coordinate(-10, -10)
+      )
+    )
 
-    assertEquals(sql.useBlocking(hn.updateBeaconPolygon(beaconID, world, validPolygon)), Right(()))
-    assert(sql.useBlocking(hn.beaconContaining(Location(world, 0, 0, 0))).isDefined)
+    assertEquals(
+      sql.useBlocking(hn.updateBeaconPolygon(beaconID, world, validPolygon)),
+      Right(())
+    )
+    assert(
+      sql.useBlocking(hn.beaconContaining(Location(world, 0, 0, 0))).isDefined
+    )
 
-    val tooBigPolygon = gf.createPolygon(Array(
-      Coordinate(-1000, -1000),
-      Coordinate(-1000, 1000),
-      Coordinate(1000, 1000),
-      Coordinate(1000, -1000),
-      Coordinate(-1000, -1000),
-    ))
+    val tooBigPolygon = gf.createPolygon(
+      Array(
+        Coordinate(-1000, -1000),
+        Coordinate(-1000, 1000),
+        Coordinate(1000, 1000),
+        Coordinate(1000, -1000),
+        Coordinate(-1000, -1000)
+      )
+    )
 
-    sql.useBlocking(hn.updateBeaconPolygon(beaconID, world, tooBigPolygon)).pipe { res =>
-      assert(res match
-        case Left(PolygonAdjustmentError.polygonTooLarge(_, _)) => true
-        case _ => false
-      , res)
-    }
-    assert(sql.useBlocking(hn.beaconContaining(Location(world, 0, 0, 0))).isDefined)
+    sql
+      .useBlocking(hn.updateBeaconPolygon(beaconID, world, tooBigPolygon))
+      .pipe { res =>
+        assert(
+          res match
+            case Left(PolygonAdjustmentError.polygonTooLarge(_, _)) => true
+            case _ => false
+          ,
+          res
+        )
+      }
+    assert(
+      sql.useBlocking(hn.beaconContaining(Location(world, 0, 0, 0))).isDefined
+    )
 
-    val polygonNotContainingHeart = gf.createPolygon(Array(
-      Coordinate(-30, -30),
-      Coordinate(-30, -10),
-      Coordinate(-10, -10),
-      Coordinate(-10, -30),
-      Coordinate(-30, -30),
-    ))
+    val polygonNotContainingHeart = gf.createPolygon(
+      Array(
+        Coordinate(-30, -30),
+        Coordinate(-30, -10),
+        Coordinate(-10, -10),
+        Coordinate(-10, -30),
+        Coordinate(-30, -30)
+      )
+    )
 
-    sql.useBlocking(hn.updateBeaconPolygon(beaconID, world, polygonNotContainingHeart)).pipe { res =>
-      assert(res match
-        case Left(PolygonAdjustmentError.heartsNotIncludedInPolygon(_)) => true
-        case _ => false
-      , res)
-    }
-    assert(sql.useBlocking(hn.beaconContaining(Location(world, 0, 0, 0))).isDefined)
+    sql
+      .useBlocking(
+        hn.updateBeaconPolygon(beaconID, world, polygonNotContainingHeart)
+      )
+      .pipe { res =>
+        assert(
+          res match
+            case Left(PolygonAdjustmentError.heartsNotIncludedInPolygon(_)) =>
+              true
+            case _ => false
+          ,
+          res
+        )
+      }
+    assert(
+      sql.useBlocking(hn.beaconContaining(Location(world, 0, 0, 0))).isDefined
+    )
   }
   sql.test("two-heart beacon") { implicit sql =>
     given gm: GroupManager = GroupManager()
@@ -89,12 +119,14 @@ class HeartSuite extends munit.FunSuite {
     val id1 = UUID.randomUUID()
     val id2 = UUID.randomUUID()
 
-    val (hid, _) = sql.useBlocking(hn.placeHeart(Location(world, 0, 0, 0), id1)).toOption.get
+    val (hid, _) =
+      sql.useBlocking(hn.placeHeart(Location(world, 0, 0, 0), id1)).toOption.get
 
     val res2 = sql.useBlocking(hn.heartAt(Location(world, 0, 0, 0)))
     assert(res2.isDefined, res2)
 
-    val offsets = List((1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1))
+    val offsets =
+      List((1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1))
     offsets.foreach { offset =>
       val (x, y, z) = offset
       val res2 = sql.useBlocking(hn.placeHeart(Location(world, x, y, z), id2))

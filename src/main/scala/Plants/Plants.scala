@@ -4,20 +4,27 @@
 
 package BallCore.Plants
 
-import org.bukkit.plugin.Plugin
 import BallCore.CustomItems.ItemRegistry
+import BallCore.DataStructures.{Clock, ShutdownCallbacks}
 import BallCore.Storage.SQLManager
-import BallCore.DataStructures.ShutdownCallbacks
-import BallCore.DataStructures.Clock
+import org.bukkit.plugin.Plugin
 
 object Plants:
-	def register()(using p: Plugin, reg: ItemRegistry, sql: SQLManager, sm: ShutdownCallbacks, c: Clock): PlantBatchManager =
-		reg.register(Fruit(Fruit.apricot))
-		reg.register(Fruit(Fruit.peach))
-		reg.register(Fruit(Fruit.pear))
-		reg.register(Fruit(Fruit.plum))
-		given pbm: PlantBatchManager = PlantBatchManager()
-		pbm.startListener()
-		p.getServer().getPluginManager().registerEvents(VanillaPlantBlocker(), p)
-		p.getServer().getPluginManager().registerEvents(CustomPlantListener(), p)
-		return pbm
+  def register()(using
+                 p: Plugin,
+                 reg: ItemRegistry,
+                 sql: SQLManager,
+                 sm: ShutdownCallbacks,
+                 c: Clock
+  ): PlantBatchManager =
+    reg.register(Fruit(Fruit.apricot))
+    reg.register(Fruit(Fruit.peach))
+    reg.register(Fruit(Fruit.pear))
+    reg.register(Fruit(Fruit.plum))
+
+    given pbm: PlantBatchManager = PlantBatchManager()
+
+    pbm.startListener()
+    p.getServer().getPluginManager().registerEvents(VanillaPlantBlocker(), p)
+    p.getServer().getPluginManager().registerEvents(CustomPlantListener(), p)
+    return pbm

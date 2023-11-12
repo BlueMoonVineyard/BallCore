@@ -4,9 +4,9 @@
 
 package BallCore.Reinforcements
 
-import java.{util => ju}
-import scala.collection.mutable.Map
+import java.util as ju
 import java.util.UUID
+import scala.collection.mutable.Map
 
 object RuntimeStateManager:
-    val states = Map[ju.UUID, ju.UUID]()
+  val states = Map[ju.UUID, ju.UUID]()

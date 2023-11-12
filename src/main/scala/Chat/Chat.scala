@@ -4,14 +4,20 @@
 
 package BallCore.Chat
 
-import org.bukkit.plugin.Plugin
-import BallCore.Groups.GroupManager
 import BallCore.DataStructures.ShutdownCallbacks
+import BallCore.Groups.GroupManager
 import BallCore.Storage.SQLManager
+import org.bukkit.plugin.Plugin
 
 object Chat:
-	def register()(using p: Plugin, gm: GroupManager, sm: ShutdownCallbacks, sql: SQLManager): ChatActor =
-		given a: ChatActor = ChatActor()
-		a.startListener()
-		p.getServer().getPluginManager().registerEvents(ChatListener(), p)
-		a
+  def register()(using
+                 p: Plugin,
+                 gm: GroupManager,
+                 sm: ShutdownCallbacks,
+                 sql: SQLManager
+  ): ChatActor =
+    given a: ChatActor = ChatActor()
+
+    a.startListener()
+    p.getServer().getPluginManager().registerEvents(ChatListener(), p)
+    a

@@ -4,21 +4,24 @@
 
 package BallCore.DataStructures
 
-import java.time.temporal.TemporalAmount
 import java.time.OffsetDateTime
+import java.time.temporal.TemporalAmount
 
 trait Clock:
-    def now(): OffsetDateTime
+  def now(): OffsetDateTime
 
 class WallClock extends Clock:
-    override def now(): OffsetDateTime =
-        OffsetDateTime.now()
+  override def now(): OffsetDateTime =
+    OffsetDateTime.now()
 
 class TestClock(val start: OffsetDateTime) extends Clock:
-    var time = start
-    override def now(): OffsetDateTime =
-        time
-    def reset() =
-        time = start
-    def changeTimeBy(t: TemporalAmount) =
-        time = time.plus(t)
+  var time = start
+
+  override def now(): OffsetDateTime =
+    time
+
+  def reset() =
+    time = start
+
+  def changeTimeBy(t: TemporalAmount) =
+    time = time.plus(t)

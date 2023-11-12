@@ -4,155 +4,184 @@
 
 package BallCore.Datekeeping
 
-import java.time.Instant
 import BallCore.DataStructures.Clock
-import java.time.Duration
-import java.time.temporal.TemporalUnit
-import java.time.temporal.Temporal
-import BallCore.Sidebar.SidebarActor
-import org.bukkit.plugin.Plugin
-import java.util.concurrent.TimeUnit
-import BallCore.Sidebar.SidebarLine
+import BallCore.Sidebar.{SidebarActor, SidebarLine}
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask
-import java.util.function.Consumer
 import org.bukkit.Bukkit
-import java.time.OffsetDateTime
-import java.time.ZoneOffset
+import org.bukkit.plugin.Plugin
+
+import java.time.temporal.{Temporal, TemporalUnit}
+import java.time.{Duration, Instant, OffsetDateTime, ZoneOffset}
+import java.util.concurrent.TimeUnit
+import java.util.function.Consumer
 
 case class GameDate(
     year: Long, // 12*31*24*60 minutes
     month: Long, // 31*24*60 minutes
     day: Long, // 24*60 minutes
     hour: Long, // 60 minutes
-    minute: Long,
+    minute: Long
 )
 
 enum Season:
-    case spring
-    case summer
-    case autumn
-    case winter
+  case spring
+  case summer
+  case autumn
+  case winter
 
-    def display: String =
-        this match
-            case Season.spring => "spring"
-            case Season.summer => "summer"
-            case Season.autumn => "autumn"
-            case Season.winter => "winter"
+  def display: String =
+    this match
+      case Season.spring => "spring"
+      case Season.summer => "summer"
+      case Season.autumn => "autumn"
+      case Season.winter => "winter"
 
 enum DateUnit(val width: Duration) extends TemporalUnit:
-    case minute extends DateUnit(Datekeeping.Periods.minute)
-    case hour extends DateUnit(Datekeeping.Periods.hour)
-    case day extends DateUnit(Datekeeping.Periods.day)
-    case month extends DateUnit(Datekeeping.Periods.month)
-    case year extends DateUnit(Datekeeping.Periods.year)
+  case minute extends DateUnit(Datekeeping.Periods.minute)
+  case hour extends DateUnit(Datekeeping.Periods.hour)
+  case day extends DateUnit(Datekeeping.Periods.day)
+  case month extends DateUnit(Datekeeping.Periods.month)
+  case year extends DateUnit(Datekeeping.Periods.year)
 
-    override def isDateBased(): Boolean = false
-    override def isTimeBased(): Boolean = false
-    override def isDurationEstimated(): Boolean = false
-    override def getDuration(): Duration = width
-    override def between(temporal1Inclusive: Temporal, temporal2Exclusive: Temporal): Long =
-        temporal1Inclusive.until(temporal2Exclusive, this)
-    override def addTo[R <: Temporal](temporal: R, amount: Long): R =
-        temporal.plus(width.multipliedBy(amount)).asInstanceOf[R]
+  override def isDateBased(): Boolean = false
+
+  override def isTimeBased(): Boolean = false
+
+  override def isDurationEstimated(): Boolean = false
+
+  override def getDuration(): Duration = width
+
+  override def between(
+                        temporal1Inclusive: Temporal,
+                        temporal2Exclusive: Temporal
+                      ): Long =
+    temporal1Inclusive.until(temporal2Exclusive, this)
+
+  override def addTo[R <: Temporal](temporal: R, amount: Long): R =
+    temporal.plus(width.multipliedBy(amount)).asInstanceOf[R]
 
 enum Month:
-    case Nieuwice 
-    case Bleibschnee
-    case Coldwane
-    case Lluvita
-    case Floraison
-    case Caldera
-    case Zha
-    case Dashu
-    case Nurui
-    case Sarada
-    case Aban
-    case Sisira
+  case Nieuwice
+  case Bleibschnee
+  case Coldwane
+  case Lluvita
+  case Floraison
+  case Caldera
+  case Zha
+  case Dashu
+  case Nurui
+  case Sarada
+  case Aban
+  case Sisira
 
-    def displayName: String = this match
-        case Nieuwice => "Early Winter"
-        case Bleibschnee => "Mid Winter"
-        case Coldwane => "Late Winter"
-        case Lluvita => "Early Spring"
-        case Floraison => "Mid Spring"
-        case Caldera => "Late Spring"
-        case Zha => "Early Summer"
-        case Dashu => "Mid Summer"
-        case Nurui => "Late Summer"
-        case Sarada => "Early Autumn"
-        case Aban => "Mid Autumn"
-        case Sisira => "Late Autumn"
+  def displayName: String = this match
+    case Nieuwice => "Early Winter"
+    case Bleibschnee => "Mid Winter"
+    case Coldwane => "Late Winter"
+    case Lluvita => "Early Spring"
+    case Floraison => "Mid Spring"
+    case Caldera => "Late Spring"
+    case Zha => "Early Summer"
+    case Dashu => "Mid Summer"
+    case Nurui => "Late Summer"
+    case Sarada => "Early Autumn"
+    case Aban => "Mid Autumn"
+    case Sisira => "Late Autumn"
 
-    def season: Season = this match
-        case Nieuwice => Season.winter
-        case Bleibschnee => Season.winter
-        case Coldwane =>Season.winter
-        case Lluvita => Season.spring
-        case Floraison => Season.spring
-        case Caldera => Season.spring
-        case Zha => Season.summer
-        case Dashu => Season.summer
-        case Nurui => Season.summer
-        case Sarada => Season.autumn
-        case Aban => Season.autumn
-        case Sisira => Season.autumn
+  def season: Season = this match
+    case Nieuwice => Season.winter
+    case Bleibschnee => Season.winter
+    case Coldwane => Season.winter
+    case Lluvita => Season.spring
+    case Floraison => Season.spring
+    case Caldera => Season.spring
+    case Zha => Season.summer
+    case Dashu => Season.summer
+    case Nurui => Season.summer
+    case Sarada => Season.autumn
+    case Aban => Season.autumn
+    case Sisira => Season.autumn
 
 object Datekeeping:
-    // pizza tower release date on steam
-    val epoch = truncateLarge(Instant.ofEpochSecond(1674756019), DateUnit.year)
+  // pizza tower release date on steam
+  val epoch = truncateLarge(Instant.ofEpochSecond(1674756019), DateUnit.year)
 
-    // start year (pizza tower album track count * 10)
-    val year0 = 730
+  // start year (pizza tower album track count * 10)
+  val year0 = 730
 
-    object Periods:
-        val minute = Duration.ofMillis(2500)
-        val hour = minute multipliedBy 60
-        val day = hour multipliedBy 24
-        val month = day multipliedBy 31
-        val year = month multipliedBy 12
+  object Periods:
+    val minute = Duration.ofMillis(2500)
+    val hour = minute multipliedBy 60
+    val day = hour multipliedBy 24
+    val month = day multipliedBy 31
+    val year = month multipliedBy 12
 
-    def truncateLarge(instant: Instant, truncatedTo: TemporalUnit): OffsetDateTime =
-        val dur = truncatedTo.getDuration().toNanos()
-        val nanos = instant.getNano()
-        val seconds = instant.getEpochSecond()
-        val nod = (seconds * 1000000000) + nanos
-        val result = Math.floorDiv(nod, dur) * dur
-        OffsetDateTime.ofInstant(instant.plusNanos(result - nod), ZoneOffset.UTC)
+  def truncateLarge(
+                     instant: Instant,
+                     truncatedTo: TemporalUnit
+                   ): OffsetDateTime =
+    val dur = truncatedTo.getDuration().toNanos()
+    val nanos = instant.getNano()
+    val seconds = instant.getEpochSecond()
+    val nod = (seconds * 1000000000) + nanos
+    val result = Math.floorDiv(nod, dur) * dur
+    OffsetDateTime.ofInstant(instant.plusNanos(result - nod), ZoneOffset.UTC)
 
-    def time()(using clock: Clock): GameDate =
-        // the only thing in IRL units
-        val diff = Duration.between(epoch, clock.now()).toMillis()
+  def time()(using clock: Clock): GameDate =
+    // the only thing in IRL units
+    val diff = Duration.between(epoch, clock.now()).toMillis()
 
-        // ingame minutes that have elapsed since the epoch
-        val minutes = diff / 2500
+    // ingame minutes that have elapsed since the epoch
+    val minutes = diff / 2500
 
-        // date elements
-        val dateYear = year0 + minutes / (12*31*24*60)
-        val dateMonth = (minutes % (12*31*24*60)) / (31*24*60)
-        val dateDay = ((minutes % (12*31*24*60)) % (31*24*60)) / (24*60)
-        val dateHour = (((minutes % (12*31*24*60)) % (31*24*60)) % (24*60)) / 60
-        val dateMinutes = (((minutes % (12*31*24*60)) % (31*24*60)) % (24*60)) % 60
+    // date elements
+    val dateYear = year0 + minutes / (12 * 31 * 24 * 60)
+    val dateMonth = (minutes % (12 * 31 * 24 * 60)) / (31 * 24 * 60)
+    val dateDay = ((minutes % (12 * 31 * 24 * 60)) % (31 * 24 * 60)) / (24 * 60)
+    val dateHour =
+      (((minutes % (12 * 31 * 24 * 60)) % (31 * 24 * 60)) % (24 * 60)) / 60
+    val dateMinutes =
+      (((minutes % (12 * 31 * 24 * 60)) % (31 * 24 * 60)) % (24 * 60)) % 60
 
-        GameDate(dateYear, dateMonth, dateDay + 1, dateHour, dateMinutes)
+    GameDate(dateYear, dateMonth, dateDay + 1, dateHour, dateMinutes)
 
-    def startSidebarClock()(using sid: SidebarActor, c: Clock, p: Plugin): Unit =
-        import BallCore.UI.ChatElements._
+  def startSidebarClock()(using sid: SidebarActor, c: Clock, p: Plugin): Unit =
+    import BallCore.UI.ChatElements.*
 
-        val handler: Consumer[ScheduledTask] = { _ =>
-            val date = time()
-            val monat = Month.fromOrdinal(date.month.toInt)
-            val suffixed = s"${date.day}" +
-                ((if date.day < 20 then date.day else date.day%10) match
-                    case 1 => "st"
-                    case 2 => "nd"
-                    case 3 => "rd"
-                    case _ => "th")
-            sid.setAll(SidebarLine.date, Some(txt" ${suffixed} of ${monat.displayName}, ${date.year}"))
-            sid.setAll(SidebarLine.time, Some(txt" ${date.hour}:${date.minute.toString.reverse.padTo(2, '0').reverse}"))
-            p.getServer().getGlobalRegionScheduler().execute(p, () => {
-                val minute = (date.hour*60 + date.minute)*16.6666
-                Bukkit.getServer().getWorld("world").setTime(minute.floor.toLong + 18000)
-            })
-        }
-        val _ = p.getServer().getAsyncScheduler().runAtFixedRate(p, handler, 0, 1000, TimeUnit.MILLISECONDS)
+    val handler: Consumer[ScheduledTask] = { _ =>
+      val date = time()
+      val monat = Month.fromOrdinal(date.month.toInt)
+      val suffixed = s"${date.day}" +
+        ((if date.day < 20 then date.day else date.day % 10) match
+          case 1 => "st"
+          case 2 => "nd"
+          case 3 => "rd"
+          case _ => "th"
+          )
+      sid.setAll(
+        SidebarLine.date,
+        Some(txt" ${suffixed} of ${monat.displayName}, ${date.year}")
+      )
+      sid.setAll(
+        SidebarLine.time,
+        Some(
+          txt" ${date.hour}:${date.minute.toString.reverse.padTo(2, '0').reverse}"
+        )
+      )
+      p.getServer()
+        .getGlobalRegionScheduler()
+        .execute(
+          p,
+          () => {
+            val minute = (date.hour * 60 + date.minute) * 16.6666
+            Bukkit
+              .getServer()
+              .getWorld("world")
+              .setTime(minute.floor.toLong + 18000)
+          }
+        )
+    }
+    val _ = p
+      .getServer()
+      .getAsyncScheduler()
+      .runAtFixedRate(p, handler, 0, 1000, TimeUnit.MILLISECONDS)

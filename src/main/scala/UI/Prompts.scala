@@ -4,55 +4,52 @@
 
 package BallCore.UI
 
-import java.util.UUID
-import scala.concurrent.Promise
-import org.bukkit.event.Listener
-import org.bukkit.plugin.Plugin
-import org.bukkit.entity.Player
-import scala.concurrent.Future
-import scala.util.Try
-import scala.concurrent.ExecutionContext
-import BallCore.Folia.EntityExecutionContext
-import org.bukkit.event.EventHandler
+import BallCore.Folia.{EntityExecutionContext, FireAndForget}
+import BallCore.UI.ChatElements.*
 import io.papermc.paper.event.player.AsyncChatEvent
-import org.bukkit.event.EventPriority
-import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer
 import net.kyori.adventure.text.Component
-import BallCore.Folia.FireAndForget
-import BallCore.UI.ChatElements._
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer
+import org.bukkit.entity.Player
+import org.bukkit.event.{EventHandler, EventPriority, Listener}
+import org.bukkit.plugin.Plugin
+
+import java.util.UUID
+import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.util.Try
 
 private case class PromptState(
-    promise: Promise[String],
+                                promise: Promise[String]
 )
 
 class Prompts(using plugin: Plugin) extends Listener:
-    private val prompts = scala.collection.concurrent.TrieMap[UUID, PromptState]()
-    plugin.getServer().getPluginManager().registerEvents(this, plugin)
+  private val prompts = scala.collection.concurrent.TrieMap[UUID, PromptState]()
+  plugin.getServer().getPluginManager().registerEvents(this, plugin)
 
-    private def stringify(c: Component) = PlainTextComponentSerializer.plainText().serialize(c)
+  private def stringify(c: Component) =
+    PlainTextComponentSerializer.plainText().serialize(c)
 
-    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
-    def playerChat(event: AsyncChatEvent): Unit =
-        prompts.get(event.getPlayer().getUniqueId()).foreach { prompt =>
-            event.setCancelled(true)
-            prompt.promise.complete(Try(stringify(event.message())))
-            prompts.remove(event.getPlayer().getUniqueId())
-        }
+  @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+  def playerChat(event: AsyncChatEvent): Unit =
+    prompts.get(event.getPlayer().getUniqueId()).foreach { prompt =>
+      event.setCancelled(true)
+      prompt.promise.complete(Try(stringify(event.message())))
+      prompts.remove(event.getPlayer().getUniqueId())
+    }
 
-    def prompt(player: Player, prompt: String): Future[String] =
-        if prompts.contains(player.getUniqueId()) then
-            val state = prompts(player.getUniqueId())
-            state.promise.failure(Exception("cancelled by another prompt"))
-            val _ = prompts.remove(player.getUniqueId())
+  def prompt(player: Player, prompt: String): Future[String] =
+    if prompts.contains(player.getUniqueId()) then
+      val state = prompts(player.getUniqueId())
+      state.promise.failure(Exception("cancelled by another prompt"))
+      val _ = prompts.remove(player.getUniqueId())
 
-        val promise = Promise[String]()
-        given ctx: ExecutionContext = EntityExecutionContext(player)
+    val promise = Promise[String]()
 
-        val state = PromptState(promise)
-        FireAndForget {
-            player.closeInventory()
-            player.sendServerMessage(txt(prompt))
-        }
-        prompts(player.getUniqueId()) = state
-        promise.future
+    given ctx: ExecutionContext = EntityExecutionContext(player)
 
+    val state = PromptState(promise)
+    FireAndForget {
+      player.closeInventory()
+      player.sendServerMessage(txt(prompt))
+    }
+    prompts(player.getUniqueId()) = state
+    promise.future

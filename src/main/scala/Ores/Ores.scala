@@ -4,11 +4,13 @@
 
 package BallCore.Ores
 
-import BallCore.CustomItems.ItemGroup
-import BallCore.CustomItems.CustomItem
+import BallCore.CustomItems.{CustomItem, ItemGroup}
 
-class Ore(ig: ItemGroup, oreTier: OreTier, vars: OreVariants) extends CustomItem:
-    def group = ig
-    def template = vars.ore(oreTier)
-    val tier = oreTier
-    val variants = vars
+class Ore(ig: ItemGroup, oreTier: OreTier, vars: OreVariants)
+  extends CustomItem:
+  def group = ig
+
+  def template = vars.ore(oreTier)
+
+  val tier = oreTier
+  val variants = vars
