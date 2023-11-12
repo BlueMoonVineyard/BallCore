@@ -17,7 +17,7 @@ import scala.collection.mutable.Map
 case class BlockKey(
     offsetX: Int,
     offsetZ: Int,
-    y: Int
+    y: Int,
 )
 
 /** This holds the reinforcement state for a given block in a chunkstate */
@@ -29,14 +29,14 @@ case class ReinforcementState(
     deleted: Boolean,
     health: Int,
     kind: ReinforcementTypes,
-    placedAt: OffsetDateTime
+    placedAt: OffsetDateTime,
 )
 
 /** This keys ChunkStates in the cache */
 case class ChunkKey(
     chunkX: Int,
     chunkZ: Int,
-    world: UUID
+    world: UUID,
 )
 
 /** This holds reinforcement information for a single chunk (the Map is mutable

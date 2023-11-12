@@ -8,20 +8,20 @@ import java.time.OffsetDateTime
 import java.time.temporal.TemporalAmount
 
 trait Clock:
-  def now(): OffsetDateTime
+    def now(): OffsetDateTime
 
 class WallClock extends Clock:
-  override def now(): OffsetDateTime =
-    OffsetDateTime.now()
+    override def now(): OffsetDateTime =
+        OffsetDateTime.now()
 
 class TestClock(val start: OffsetDateTime) extends Clock:
-  var time: OffsetDateTime = start
+    var time: OffsetDateTime = start
 
-  override def now(): OffsetDateTime =
-    time
+    override def now(): OffsetDateTime =
+        time
 
-  def reset(): Unit =
-    time = start
+    def reset(): Unit =
+        time = start
 
-  def changeTimeBy(t: TemporalAmount): Unit =
-    time = time.plus(t)
+    def changeTimeBy(t: TemporalAmount): Unit =
+        time = time.plus(t)

@@ -12,17 +12,17 @@ import org.bukkit.inventory.ItemStack
 import org.bukkit.{Material, NamespacedKey}
 
 object Beacons:
-  val group: ItemGroup = ItemGroup(
-    NamespacedKey("ballcore", "hearts"),
-    ItemStack(Material.WHITE_CONCRETE)
-  )
+    val group: ItemGroup = ItemGroup(
+        NamespacedKey("ballcore", "hearts"),
+        ItemStack(Material.WHITE_CONCRETE),
+    )
 
-  def registerItems()(using
-      registry: ItemRegistry,
-      pe: PolygonEditor,
-      gm: GroupManager,
-      bm: BlockManager,
-      hn: CivBeaconManager,
-      sql: SQLManager
-  ): Unit =
-    registry.register(new HeartBlock())
+    def registerItems()(using
+        registry: ItemRegistry,
+        pe: PolygonEditor,
+        gm: GroupManager,
+        bm: BlockManager,
+        hn: CivBeaconManager,
+        sql: SQLManager,
+    ): Unit =
+        registry.register(new HeartBlock())

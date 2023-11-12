@@ -7,8 +7,8 @@ package BallCore.CommonCode
 import org.bukkit.plugin.java.JavaPlugin
 
 final class BukkitPlugin extends JavaPlugin:
-  override def onEnable(): Unit =
-    ()
+    override def onEnable(): Unit =
+        ()
 
-  override def onDisable(): Unit =
-    ()
+    override def onDisable(): Unit =
+        ()

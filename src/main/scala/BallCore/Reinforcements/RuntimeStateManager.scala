@@ -10,5 +10,5 @@ import scala.collection.mutable
 import scala.collection.mutable.Map
 
 object RuntimeStateManager:
-  val states: mutable.Map[_root_.java.util.UUID, _root_.java.util.UUID] =
-    mutable.Map[ju.UUID, ju.UUID]()
+    val states: mutable.Map[_root_.java.util.UUID, _root_.java.util.UUID] =
+        mutable.Map[ju.UUID, ju.UUID]()

@@ -22,34 +22,35 @@ private case class PromptState(
 )
 
 class Prompts(using plugin: Plugin) extends Listener:
-  private val prompts = scala.collection.concurrent.TrieMap[UUID, PromptState]()
-  plugin.getServer.getPluginManager.registerEvents(this, plugin)
+    private val prompts =
+        scala.collection.concurrent.TrieMap[UUID, PromptState]()
+    plugin.getServer.getPluginManager.registerEvents(this, plugin)
 
-  private def stringify(c: Component) =
-    PlainTextComponentSerializer.plainText().serialize(c)
+    private def stringify(c: Component) =
+        PlainTextComponentSerializer.plainText().serialize(c)
 
-  @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
-  def playerChat(event: AsyncChatEvent): Unit =
-    prompts.get(event.getPlayer.getUniqueId).foreach { prompt =>
-      event.setCancelled(true)
-      prompt.promise.complete(Try(stringify(event.message())))
-      prompts.remove(event.getPlayer.getUniqueId)
-    }
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    def playerChat(event: AsyncChatEvent): Unit =
+        prompts.get(event.getPlayer.getUniqueId).foreach { prompt =>
+            event.setCancelled(true)
+            prompt.promise.complete(Try(stringify(event.message())))
+            prompts.remove(event.getPlayer.getUniqueId)
+        }
 
-  def prompt(player: Player, prompt: String): Future[String] =
-    if prompts.contains(player.getUniqueId) then
-      val state = prompts(player.getUniqueId)
-      state.promise.failure(Exception("cancelled by another prompt"))
-      val _ = prompts.remove(player.getUniqueId)
+    def prompt(player: Player, prompt: String): Future[String] =
+        if prompts.contains(player.getUniqueId) then
+            val state = prompts(player.getUniqueId)
+            state.promise.failure(Exception("cancelled by another prompt"))
+            val _ = prompts.remove(player.getUniqueId)
 
-    val promise = Promise[String]()
+        val promise = Promise[String]()
 
-    given ctx: ExecutionContext = EntityExecutionContext(player)
+        given ctx: ExecutionContext = EntityExecutionContext(player)
 
-    val state = PromptState(promise)
-    FireAndForget {
-      player.closeInventory()
-      player.sendServerMessage(txt(prompt))
-    }
-    prompts(player.getUniqueId) = state
-    promise.future
+        val state = PromptState(promise)
+        FireAndForget {
+            player.closeInventory()
+            player.sendServerMessage(txt(prompt))
+        }
+        prompts(player.getUniqueId) = state
+        promise.future

@@ -14,46 +14,47 @@ import org.bukkit.plugin.Plugin
 import org.bukkit.{Material, NamespacedKey}
 
 object CraftingStations:
-  val group: ItemGroup = ItemGroup(
-    NamespacedKey("ballcore", "crafting_stations"),
-    ItemStack(Material.CRAFTING_TABLE)
-  )
-
-  def register()(using
-      p: Plugin,
-      registry: ItemRegistry,
-      prompts: Prompts,
-      sm: ShutdownCallbacks
-  ): Unit =
-    given act: CraftingActor = CraftingActor()
-
-    act.startListener()
-    registry.register(DyeVat())
-    registry.register(GlazingKiln())
-    registry.register(Kiln())
-    registry.register(StationMaker())
-    registry.register(ConcreteMixer())
-    registry.register(RailManufactory())
-    registry.register(Woodcutter())
-    val smRecipe = ShapedRecipe(
-      NamespacedKey("ballcore", "craft_station_maker"),
-      StationMaker.template
+    val group: ItemGroup = ItemGroup(
+        NamespacedKey("ballcore", "crafting_stations"),
+        ItemStack(Material.CRAFTING_TABLE),
     )
-    smRecipe.shape(
-      "II",
-      "II"
-    )
-    smRecipe.setIngredient('I', MaterialChoice(Material.CRAFTING_TABLE))
-    registry.addRecipe(smRecipe)
+
+    def register()(using
+        p: Plugin,
+        registry: ItemRegistry,
+        prompts: Prompts,
+        sm: ShutdownCallbacks,
+    ): Unit =
+        given act: CraftingActor = CraftingActor()
+
+        act.startListener()
+        registry.register(DyeVat())
+        registry.register(GlazingKiln())
+        registry.register(Kiln())
+        registry.register(StationMaker())
+        registry.register(ConcreteMixer())
+        registry.register(RailManufactory())
+        registry.register(Woodcutter())
+        val smRecipe = ShapedRecipe(
+            NamespacedKey("ballcore", "craft_station_maker"),
+            StationMaker.template,
+        )
+        smRecipe.shape(
+            "II",
+            "II",
+        )
+        smRecipe.setIngredient('I', MaterialChoice(Material.CRAFTING_TABLE))
+        registry.addRecipe(smRecipe)
 
 abstract class CraftingStation(recipes: List[Recipe])(using
     act: CraftingActor,
     p: Plugin,
-    prompts: Prompts
+    prompts: Prompts,
 ) extends CustomItem,
       Listeners.BlockClicked:
-  def onBlockClicked(event: PlayerInteractEvent): Unit =
-    val p = RecipeSelectorProgram(recipes)
-    val plr = event.getPlayer
-    val runner = UIProgramRunner(p, p.Flags(plr, event.getClickedBlock), plr)
-    runner.render()
+    def onBlockClicked(event: PlayerInteractEvent): Unit =
+        val p = RecipeSelectorProgram(recipes)
+        val plr = event.getPlayer
+        val runner =
+            UIProgramRunner(p, p.Flags(plr, event.getClickedBlock), plr)
+        runner.render()

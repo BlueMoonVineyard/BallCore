@@ -13,34 +13,34 @@ import org.bukkit.Server
 import org.bukkit.plugin.java.JavaPlugin
 
 object Reinforcements:
-  private def registerBlockListener()(using
-      server: Server,
-      plugin: JavaPlugin,
-      cbm: CivBeaconManager,
-      gm: GroupManager,
-      sql: SQLManager
-  ): Unit =
-    server.getPluginManager.registerEvents(Listener(), plugin)
+    private def registerBlockListener()(using
+        server: Server,
+        plugin: JavaPlugin,
+        cbm: CivBeaconManager,
+        gm: GroupManager,
+        sql: SQLManager,
+    ): Unit =
+        server.getPluginManager.registerEvents(Listener(), plugin)
 
-  private def registerEntityListener()(using
-      server: Server,
-      plugin: JavaPlugin,
-      erm: EntityReinforcementManager,
-      gm: GroupManager,
-      sql: SQLManager
-  ): Unit =
-    server.getPluginManager.registerEvents(EntityListener(), plugin)
+    private def registerEntityListener()(using
+        server: Server,
+        plugin: JavaPlugin,
+        erm: EntityReinforcementManager,
+        gm: GroupManager,
+        sql: SQLManager,
+    ): Unit =
+        server.getPluginManager.registerEvents(EntityListener(), plugin)
 
-  def register()(using
-      registry: ItemRegistry,
-      server: Server,
-      plugin: JavaPlugin,
-      cbm: CivBeaconManager,
-      erm: EntityReinforcementManager,
-      gm: GroupManager,
-      holos: HologramManager,
-      prompts: Prompts,
-      sql: SQLManager
-  ): Unit =
-    registerBlockListener()
-    registerEntityListener()
+    def register()(using
+        registry: ItemRegistry,
+        server: Server,
+        plugin: JavaPlugin,
+        cbm: CivBeaconManager,
+        erm: EntityReinforcementManager,
+        gm: GroupManager,
+        holos: HologramManager,
+        prompts: Prompts,
+        sql: SQLManager,
+    ): Unit =
+        registerBlockListener()
+        registerEntityListener()

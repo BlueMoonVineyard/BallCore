@@ -8,9 +8,9 @@ import BallCore.CustomItems.{CustomItem, CustomItemStack, ItemGroup}
 
 class Ore(ig: ItemGroup, oreTier: OreTier, vars: OreVariants)
     extends CustomItem:
-  def group: ItemGroup = ig
+    def group: ItemGroup = ig
 
-  def template: CustomItemStack = vars.ore(oreTier)
+    def template: CustomItemStack = vars.ore(oreTier)
 
-  val tier: OreTier = oreTier
-  val variants: OreVariants = vars
+    val tier: OreTier = oreTier
+    val variants: OreVariants = vars

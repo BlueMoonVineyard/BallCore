@@ -13,15 +13,15 @@ import scala.concurrent.ExecutionContext
 
 class LocationExecutionContext(loc: Location)(using plugin: Plugin)
     extends ExecutionContext:
-  val sched: RegionScheduler = plugin.getServer.getRegionScheduler
+    val sched: RegionScheduler = plugin.getServer.getRegionScheduler
 
-  override def execute(runnable: Runnable): Unit =
-    sched.execute(plugin, loc, runnable)
+    override def execute(runnable: Runnable): Unit =
+        sched.execute(plugin, loc, runnable)
 
-  override def reportFailure(cause: Throwable): Unit =
-    plugin.getLogger
-      .log(
-        Level.WARNING,
-        s"Error in LocationExecutionContext for $loc:",
-        cause
-      )
+    override def reportFailure(cause: Throwable): Unit =
+        plugin.getLogger
+            .log(
+                Level.WARNING,
+                s"Error in LocationExecutionContext for $loc:",
+                cause,
+            )

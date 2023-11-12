@@ -11,56 +11,58 @@ import org.bukkit.{Material, NamespacedKey, Server}
 
 object CardinalOres:
 
-  import Helpers.*
+    import Helpers.*
 
-  object ItemStacks:
-    // north
-    val sulfur: OreVariants = ironLike("sulfur", "Sulfur", OreTypes.sulfur.num)
-    val sapphire: CustomItemStack = CustomItemStack.make(
-      NamespacedKey("ballcore", "sapphire"),
-      Material.LAPIS_LAZULI,
-      txt"Sapphire"
+    object ItemStacks:
+        // north
+        val sulfur: OreVariants =
+            ironLike("sulfur", "Sulfur", OreTypes.sulfur.num)
+        val sapphire: CustomItemStack = CustomItemStack.make(
+            NamespacedKey("ballcore", "sapphire"),
+            Material.LAPIS_LAZULI,
+            txt"Sapphire",
+        )
+
+        // south
+        val sillicon: OreVariants =
+            ironLike("sillicon", "Sillicon", OreTypes.sillicon.num)
+        val diamond: CustomItemStack = CustomItemStack.make(
+            NamespacedKey("ballcore", "diamond"),
+            Material.DIAMOND,
+            txt"Diamond",
+        )
+
+        // east
+        val cobalt: OreVariants =
+            ironLike("cobalt", "Cobalt", OreTypes.cobalt.num)
+        val plutonium: CustomItemStack = CustomItemStack.make(
+            NamespacedKey("ballcore", "plutonium"),
+            Material.AMETHYST_SHARD,
+            txt"Plutonium",
+        )
+
+        // west
+        val lead: OreVariants = ironLike("lead", "Lead", OreTypes.lead.num)
+        val emerald: CustomItemStack = CustomItemStack.make(
+            NamespacedKey("ballcore", "emerald"),
+            Material.EMERALD,
+            txt"Emerald",
+        )
+
+    val group: ItemGroup = ItemGroup(
+        NamespacedKey("ballcore", "cardinal_ores"),
+        ItemStack(Material.IRON_INGOT),
     )
 
-    // south
-    val sillicon: OreVariants =
-      ironLike("sillicon", "Sillicon", OreTypes.sillicon.num)
-    val diamond: CustomItemStack = CustomItemStack.make(
-      NamespacedKey("ballcore", "diamond"),
-      Material.DIAMOND,
-      txt"Diamond"
-    )
+    def registerItems()(using registry: ItemRegistry, server: Server): Unit =
+        register(group, ItemStacks.sulfur)
+        register(group, ItemStacks.sapphire)
 
-    // east
-    val cobalt: OreVariants = ironLike("cobalt", "Cobalt", OreTypes.cobalt.num)
-    val plutonium: CustomItemStack = CustomItemStack.make(
-      NamespacedKey("ballcore", "plutonium"),
-      Material.AMETHYST_SHARD,
-      txt"Plutonium"
-    )
+        register(group, ItemStacks.sillicon)
+        register(group, ItemStacks.diamond)
 
-    // west
-    val lead: OreVariants = ironLike("lead", "Lead", OreTypes.lead.num)
-    val emerald: CustomItemStack = CustomItemStack.make(
-      NamespacedKey("ballcore", "emerald"),
-      Material.EMERALD,
-      txt"Emerald"
-    )
+        register(group, ItemStacks.cobalt)
+        register(group, ItemStacks.plutonium)
 
-  val group: ItemGroup = ItemGroup(
-    NamespacedKey("ballcore", "cardinal_ores"),
-    ItemStack(Material.IRON_INGOT)
-  )
-
-  def registerItems()(using registry: ItemRegistry, server: Server): Unit =
-    register(group, ItemStacks.sulfur)
-    register(group, ItemStacks.sapphire)
-
-    register(group, ItemStacks.sillicon)
-    register(group, ItemStacks.diamond)
-
-    register(group, ItemStacks.cobalt)
-    register(group, ItemStacks.plutonium)
-
-    register(group, ItemStacks.lead)
-    register(group, ItemStacks.emerald)
+        register(group, ItemStacks.lead)
+        register(group, ItemStacks.emerald)

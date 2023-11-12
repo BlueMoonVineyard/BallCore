@@ -19,7 +19,12 @@ import BallCore.Plants.PlantBatchManager
 import BallCore.PluginMessaging.Messaging
 import BallCore.PolygonEditor.PolygonEditor
 import BallCore.PolyhedraEditor.PolyhedraEditor
-import BallCore.Reinforcements.{ChunkStateManager, EntityReinforcementManager, EntityStateManager, HologramManager}
+import BallCore.Reinforcements.{
+    ChunkStateManager,
+    EntityReinforcementManager,
+    EntityStateManager,
+    HologramManager,
+}
 import BallCore.Shops.Order
 import BallCore.Sidebar.SidebarActor
 import BallCore.Sigils.{CustomEntityManager, Sigil, SigilSlimeManager}
@@ -34,102 +39,104 @@ import scala.concurrent.{Await, ExecutionContext}
 import scala.util.Try
 
 final class Main extends JavaPlugin:
-  given sm: ShutdownCallbacks = ShutdownCallbacks()
+    given sm: ShutdownCallbacks = ShutdownCallbacks()
 
-  override def onEnable(): Unit =
-    val dataDirectory = getDataFolder.toPath
-    val loader = YamlConfigurationLoader
-      .builder()
-      .path(dataDirectory.resolve("config.yaml"))
-      .build()
-    Files.createDirectories(dataDirectory)
-    val config = Try(loader.load()).get
-    val databaseConfig = Config.from(config.node("database")) match
-      case Left(err) =>
-        throw Exception(s"failed to read config because $err")
-      case Right(value) =>
-        value
+    override def onEnable(): Unit =
+        val dataDirectory = getDataFolder.toPath
+        val loader = YamlConfigurationLoader
+            .builder()
+            .path(dataDirectory.resolve("config.yaml"))
+            .build()
+        Files.createDirectories(dataDirectory)
+        val config = Try(loader.load()).get
+        val databaseConfig = Config.from(config.node("database")) match
+            case Left(err) =>
+                throw Exception(s"failed to read config because $err")
+            case Right(value) =>
+                value
 
-    given sql: Storage.SQLManager = Storage.SQLManager(databaseConfig)
+        given sql: Storage.SQLManager = Storage.SQLManager(databaseConfig)
 
-    given keyVal: Storage.SQLKeyVal = new Storage.SQLKeyVal
+        given keyVal: Storage.SQLKeyVal = new Storage.SQLKeyVal
 
-    given acclimation: Acclimation.Storage = new Acclimation.Storage
+        given acclimation: Acclimation.Storage = new Acclimation.Storage
 
-    given ballcore: Main = this
+        given ballcore: Main = this
 
-    given prompts: UI.Prompts = new UI.Prompts
+        given prompts: UI.Prompts = new UI.Prompts
 
-    given gm: GroupManager = new GroupManager
+        given gm: GroupManager = new GroupManager
 
-    given csm: ChunkStateManager = new ChunkStateManager
+        given csm: ChunkStateManager = new ChunkStateManager
 
-    given esm: EntityStateManager = new EntityStateManager
+        given esm: EntityStateManager = new EntityStateManager
 
-    given clock: Clock = new WallClock
+        given clock: Clock = new WallClock
 
-    given hm: HologramManager = new HologramManager
+        given hm: HologramManager = new HologramManager
 
-    given hn: CivBeaconManager = new CivBeaconManager
+        given hn: CivBeaconManager = new CivBeaconManager
 
-    given erm: EntityReinforcementManager = new EntityReinforcementManager
+        given erm: EntityReinforcementManager = new EntityReinforcementManager
 
-    given ac: AntiCheeser = new AntiCheeser
+        given ac: AntiCheeser = new AntiCheeser
 
-    given server: Server = Bukkit.getServer
+        given server: Server = Bukkit.getServer
 
-    given reg: ItemRegistry = BasicItemRegistry()
+        given reg: ItemRegistry = BasicItemRegistry()
 
-    given bm: BlockManager = KeyValBlockManager()
+        given bm: BlockManager = KeyValBlockManager()
 
-    given cem: CustomEntityManager = CustomEntityManager()
+        given cem: CustomEntityManager = CustomEntityManager()
 
-    given bam: SigilSlimeManager = SigilSlimeManager()
+        given bam: SigilSlimeManager = SigilSlimeManager()
 
-    given editor: PolygonEditor = new PolygonEditor()
+        given editor: PolygonEditor = new PolygonEditor()
 
-    given editor3D: PolyhedraEditor = new PolyhedraEditor()
+        given editor3D: PolyhedraEditor = new PolyhedraEditor()
 
-    given lib: ScoreboardLibrary = ScoreboardLibrary.loadScoreboardLibrary(this)
+        given lib: ScoreboardLibrary =
+            ScoreboardLibrary.loadScoreboardLibrary(this)
 
-    given sid: SidebarActor = SidebarActor()
+        given sid: SidebarActor = SidebarActor()
 
-    sid.startListener()
+        sid.startListener()
 
-    Datekeeping.Datekeeping.startSidebarClock()
-    Beacons.registerItems()
-    QuadrantOres.registerItems()
-    QuadrantGear.registerItems()
-    CardinalOres.registerItems()
-    Furnace.registerItems()
-    Reinforcements.Reinforcements.register()
-    CustomItemListener.register()
-    CraftingStations.register()
+        Datekeeping.Datekeeping.startSidebarClock()
+        Beacons.registerItems()
+        QuadrantOres.registerItems()
+        QuadrantGear.registerItems()
+        CardinalOres.registerItems()
+        Furnace.registerItems()
+        Reinforcements.Reinforcements.register()
+        CustomItemListener.register()
+        CraftingStations.register()
 
-    given aa: AcclimationActor = AcclimationActor.register()
+        given aa: AcclimationActor = AcclimationActor.register()
 
-    PolyhedraEditor.register()
-    PolygonEditor.register()
-    Mining.Mining.register()
-    MapCloningListener.register()
-    Sigil.register()
+        PolyhedraEditor.register()
+        PolygonEditor.register()
+        Mining.Mining.register()
+        MapCloningListener.register()
+        Sigil.register()
 
-    given pbm: PlantBatchManager = Plants.Plants.register()
+        given pbm: PlantBatchManager = Plants.Plants.register()
 
-    given chatActor: ChatActor = Chat.Chat.register()
+        given chatActor: ChatActor = Chat.Chat.register()
 
-    val chatCommands = ChatCommands()
-    Order.register()
-    // HTTP.register()
-    getCommand("group").setExecutor(chatCommands.Group)
-    getCommand("global").setExecutor(chatCommands.Global)
-    getCommand("local").setExecutor(chatCommands.Local)
-    getCommand("groups").setExecutor(new GroupsCommand)
-    getCommand("cheat").setExecutor(CheatCommand())
-    getCommand("done").setExecutor(DoneCommand())
-    getCommand("plants").setExecutor(PlantsCommand())
-    Messaging.register()
+        val chatCommands = ChatCommands()
+        Order.register()
+        // HTTP.register()
+        getCommand("group").setExecutor(chatCommands.Group)
+        getCommand("global").setExecutor(chatCommands.Global)
+        getCommand("local").setExecutor(chatCommands.Local)
+        getCommand("groups").setExecutor(new GroupsCommand)
+        getCommand("cheat").setExecutor(CheatCommand())
+        getCommand("done").setExecutor(DoneCommand())
+        getCommand("plants").setExecutor(PlantsCommand())
+        Messaging.register()
 
-  override def onDisable(): Unit =
-    import scala.concurrent.ExecutionContext.Implicits.global
-    val _ = Await.ready(sm.shutdown(), scala.concurrent.duration.Duration.Inf)
+    override def onDisable(): Unit =
+        import scala.concurrent.ExecutionContext.Implicits.global
+        val _ =
+            Await.ready(sm.shutdown(), scala.concurrent.duration.Duration.Inf)

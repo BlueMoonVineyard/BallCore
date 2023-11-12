@@ -13,11 +13,15 @@ import scala.concurrent.ExecutionContext
 
 class EntityExecutionContext(ent: Entity)(using plugin: Plugin)
     extends ExecutionContext:
-  val sched: EntityScheduler = ent.getScheduler
+    val sched: EntityScheduler = ent.getScheduler
 
-  override def execute(runnable: Runnable): Unit =
-    val _ = sched.run(plugin, _ => runnable.run(), null)
+    override def execute(runnable: Runnable): Unit =
+        val _ = sched.run(plugin, _ => runnable.run(), null)
 
-  override def reportFailure(cause: Throwable): Unit =
-    plugin.getLogger
-      .log(Level.WARNING, s"Error in EntityExecutionContext for $ent:", cause)
+    override def reportFailure(cause: Throwable): Unit =
+        plugin.getLogger
+            .log(
+                Level.WARNING,
+                s"Error in EntityExecutionContext for $ent:",
+                cause,
+            )

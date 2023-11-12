@@ -10,21 +10,21 @@ import BallCore.Storage.SQLManager
 import org.bukkit.plugin.Plugin
 
 object Plants:
-  def register()(using
-      p: Plugin,
-      reg: ItemRegistry,
-      sql: SQLManager,
-      sm: ShutdownCallbacks,
-      c: Clock
-  ): PlantBatchManager =
-    reg.register(Fruit(Fruit.apricot))
-    reg.register(Fruit(Fruit.peach))
-    reg.register(Fruit(Fruit.pear))
-    reg.register(Fruit(Fruit.plum))
+    def register()(using
+        p: Plugin,
+        reg: ItemRegistry,
+        sql: SQLManager,
+        sm: ShutdownCallbacks,
+        c: Clock,
+    ): PlantBatchManager =
+        reg.register(Fruit(Fruit.apricot))
+        reg.register(Fruit(Fruit.peach))
+        reg.register(Fruit(Fruit.pear))
+        reg.register(Fruit(Fruit.plum))
 
-    given pbm: PlantBatchManager = PlantBatchManager()
+        given pbm: PlantBatchManager = PlantBatchManager()
 
-    pbm.startListener()
-    p.getServer.getPluginManager.registerEvents(VanillaPlantBlocker(), p)
-    p.getServer.getPluginManager.registerEvents(CustomPlantListener(), p)
-    pbm
+        pbm.startListener()
+        p.getServer.getPluginManager.registerEvents(VanillaPlantBlocker(), p)
+        p.getServer.getPluginManager.registerEvents(CustomPlantListener(), p)
+        pbm

@@ -17,12 +17,12 @@ case class Recipe(
     /// a player can only dedicate "work" to one factory at a time,
     /// but they can do other stuff whilst working a factory
     work: Int,
-    minimumPlayersRequiredToWork: Int
+    minimumPlayersRequiredToWork: Int,
 )
 
 case class Job(
     factory: Block,
     recipe: Recipe,
     currentWork: Int,
-    workedBy: List[Player]
+    workedBy: List[Player],
 )

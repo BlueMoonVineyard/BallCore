@@ -5,39 +5,39 @@
 package BallCore.DataStructures
 
 object Lexorank:
-  private val minChar = '0'
-  private val maxChar = 'z'
+    private val minChar = '0'
+    private val maxChar = 'z'
 
-  private def mid(l: Char, r: Char): Char =
-    ((l + r) / 2).toChar
+    private def mid(l: Char, r: Char): Char =
+        ((l + r) / 2).toChar
 
-  private def getChar(str: String, i: Int, default: Char): Char =
-    if i >= str.length then default
-    else str.charAt(i)
+    private def getChar(str: String, i: Int, default: Char): Char =
+        if i >= str.length then default
+        else str.charAt(i)
 
-  def rank(prev: String, next: String): String =
-    val prev_ = if prev == "" then minChar.toString else prev
-    val next_ = if next == "" then maxChar.toString else next
+    def rank(prev: String, next: String): String =
+        val prev_ = if prev == "" then minChar.toString else prev
+        val next_ = if next == "" then maxChar.toString else next
 
-    var rank = ""
-    var i = 0
-    var done = false
+        var rank = ""
+        var i = 0
+        var done = false
 
-    while (!done) {
-      val prevChar = getChar(prev_, i, minChar)
-      val nextChar = getChar(next_, i, minChar)
-      val midChar = mid(prevChar, nextChar)
+        while (!done) {
+            val prevChar = getChar(prev_, i, minChar)
+            val nextChar = getChar(next_, i, minChar)
+            val midChar = mid(prevChar, nextChar)
 
-      if prevChar == nextChar then
-        rank = rank + prevChar
-        i = i + 1
-      else if midChar == prevChar || midChar == nextChar then
-        rank = rank + prevChar
-        i = i + 1
-      else
-        rank = rank + midChar
-        done = true
-    }
+            if prevChar == nextChar then
+                rank = rank + prevChar
+                i = i + 1
+            else if midChar == prevChar || midChar == nextChar then
+                rank = rank + prevChar
+                i = i + 1
+            else
+                rank = rank + midChar
+                done = true
+        }
 
-    if rank >= next_ then prev_
-    else rank
+        if rank >= next_ then prev_
+        else rank

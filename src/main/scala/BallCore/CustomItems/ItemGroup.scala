@@ -16,47 +16,47 @@ import scala.util.chaining.*
 
 class CustomItemStack(
     val itemID: NamespacedKey,
-    val stack: ItemStack
+    val stack: ItemStack,
 ) extends ItemStack(stack):
-  val id: NamespacedKey = itemID
-  setItemMeta(
-    getItemMeta
-      .tap(
-        _.getPersistentDataContainer.set(
-          BasicItemRegistry.persistenceKeyID,
-          PersistentDataType.STRING,
-          id.toString
-        )
-      )
-  )
+    val id: NamespacedKey = itemID
+    setItemMeta(
+        getItemMeta
+            .tap(
+                _.getPersistentDataContainer.set(
+                    BasicItemRegistry.persistenceKeyID,
+                    PersistentDataType.STRING,
+                    id.toString,
+                )
+            )
+    )
 
 object CustomItemStack:
-  def loreify(a: Component): Component =
-    a.style(x => {
-      x.decorationIfAbsent(TextDecoration.ITALIC, State.FALSE)
-        .colorIfAbsent(NamedTextColor.GRAY)
-      ()
-    })
+    def loreify(a: Component): Component =
+        a.style(x => {
+            x.decorationIfAbsent(TextDecoration.ITALIC, State.FALSE)
+                .colorIfAbsent(NamedTextColor.GRAY)
+            ()
+        })
 
-  def make(
-      itemID: NamespacedKey,
-      stack: Material,
-      name: Component,
-      lore: Component*
-  ): CustomItemStack =
-    val is = ItemStack(stack)
-    is.setItemMeta(
-      is.getItemMeta
-        .tap(_.displayName(name.style(x => {
-          x.decorationIfAbsent(TextDecoration.ITALIC, State.FALSE)
-            .colorIfAbsent(NamedTextColor.WHITE)
-          ()
-        })))
-        .tap(_.lore(lore.map(loreify).asJava))
-    )
-    CustomItemStack(itemID, is)
+    def make(
+        itemID: NamespacedKey,
+        stack: Material,
+        name: Component,
+        lore: Component*
+    ): CustomItemStack =
+        val is = ItemStack(stack)
+        is.setItemMeta(
+            is.getItemMeta
+                .tap(_.displayName(name.style(x => {
+                    x.decorationIfAbsent(TextDecoration.ITALIC, State.FALSE)
+                        .colorIfAbsent(NamedTextColor.WHITE)
+                    ()
+                })))
+                .tap(_.lore(lore.map(loreify).asJava))
+        )
+        CustomItemStack(itemID, is)
 
 case class ItemGroup(
     key: NamespacedKey,
-    gui: ItemStack
+    gui: ItemStack,
 )

@@ -14,84 +14,84 @@ import org.bukkit.plugin.Plugin
 import scala.concurrent.{ExecutionContext, Future}
 
 trait UITransferrer:
-  def transferTo(p: UIProgram, f: p.Flags): Unit
+    def transferTo(p: UIProgram, f: p.Flags): Unit
 
-  def quit(): Unit
+    def quit(): Unit
 
 trait UIPrompts:
-  def prompt(prompt: String): Future[String]
+    def prompt(prompt: String): Future[String]
 
-  def notify(what: String): Unit
+    def notify(what: String): Unit
 
 trait UIServices extends UITransferrer, UIPrompts, ExecutionContext
 
 trait UIProgram:
-  given Conversion[Model, Future[Model]] = Future.successful(_)
+    given Conversion[Model, Future[Model]] = Future.successful(_)
 
-  type Flags
-  type Model
-  type Message
-  type Callback = Object => InventoryClickEvent => Unit
+    type Flags
+    type Model
+    type Message
+    type Callback = Object => InventoryClickEvent => Unit
 
-  def init(flags: Flags): Model
+    def init(flags: Flags): Model
 
-  def view(model: Model): Callback ?=> Gui
+    def view(model: Model): Callback ?=> Gui
 
-  def update(msg: Message, model: Model)(using
-      services: UIServices
-  ): Future[Model]
+    def update(msg: Message, model: Model)(using
+        services: UIServices
+    ): Future[Model]
 
 class UIProgramRunner(
     program: UIProgram,
     flags: program.Flags,
-    showingTo: Player
+    showingTo: Player,
 )(using prompts: Prompts, plugin: Plugin)
     extends UIServices:
-  private var model = program.init(flags)
-  private var transferred = false
-  private val ec = EntityExecutionContext(showingTo)
+    private var model = program.init(flags)
+    private var transferred = false
+    private val ec = EntityExecutionContext(showingTo)
 
-  private given ctx: ExecutionContext = ec
+    private given ctx: ExecutionContext = ec
 
-  def render(): Unit =
-    val mod = model
-    FireAndForget {
-      given cb: program.Callback = this.dispatch
+    def render(): Unit =
+        val mod = model
+        FireAndForget {
+            given cb: program.Callback = this.dispatch
 
-      val res = program.view(mod)
-      res.show(showingTo)
-    }
+            val res = program.view(mod)
+            res.show(showingTo)
+        }
 
-  def block(event: InventoryClickEvent): Unit =
-    event.setCancelled(true)
+    def block(event: InventoryClickEvent): Unit =
+        event.setCancelled(true)
 
-  private def dispatch(obj: Object)(event: InventoryClickEvent): Unit =
-    implicit val s: UIServices = this
-    event.setCancelled(true)
-    program.update(obj.asInstanceOf[program.Message], model).foreach { x =>
-      model = x
-      if !transferred then render()
-    }
+    private def dispatch(obj: Object)(event: InventoryClickEvent): Unit =
+        implicit val s: UIServices = this
+        event.setCancelled(true)
+        program.update(obj.asInstanceOf[program.Message], model).foreach { x =>
+            model = x
+            if !transferred then render()
+        }
 
-  def quit(): Unit =
-    transferred = true
-    showingTo.closeInventory()
+    def quit(): Unit =
+        transferred = true
+        showingTo.closeInventory()
 
-  def transferTo(newProgram: UIProgram, newFlags: newProgram.Flags): Unit =
-    transferred = true
-    val newUI = UIProgramRunner(newProgram, newFlags, showingTo)
-    newUI.render()
+    def transferTo(newProgram: UIProgram, newFlags: newProgram.Flags): Unit =
+        transferred = true
+        val newUI = UIProgramRunner(newProgram, newFlags, showingTo)
+        newUI.render()
 
-  def prompt(prompt: String): Future[String] =
-    prompts.prompt(showingTo, prompt)
+    def prompt(prompt: String): Future[String] =
+        prompts.prompt(showingTo, prompt)
 
-  def notify(what: String): Unit =
-    FireAndForget {
-      showingTo.sendServerMessage(txt(what))
-    }
+    def notify(what: String): Unit =
+        FireAndForget {
+            showingTo.sendServerMessage(txt(what))
+        }
 
-  def execute(runnable: Runnable): Unit =
-    ec.execute(runnable)
+    def execute(runnable: Runnable): Unit =
+        ec.execute(runnable)
 
-  def reportFailure(cause: Throwable): Unit =
-    ec.reportFailure(cause)
+    def reportFailure(cause: Throwable): Unit =
+        ec.reportFailure(cause)

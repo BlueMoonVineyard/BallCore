@@ -12,28 +12,28 @@ import scala.quoted.*
 case class ClickCallback(name: String)
 
 given ToExpr[ClickCallback] with
-  def apply(x: ClickCallback)(using Quotes): Expr[ClickCallback] =
-    '{ ClickCallback(${ Expr(x.name) }) }
+    def apply(x: ClickCallback)(using Quotes): Expr[ClickCallback] =
+        '{ ClickCallback(${ Expr(x.name) }) }
 
 private def inspectCode(x: Expr[Any])(using Quotes): Expr[ClickCallback] =
-  import quotes.reflect.*
+    import quotes.reflect.*
 
-  @tailrec
-  def extract(tree: Tree): String =
-    tree match
-      case Select(_, name)             => name
-      case Block(List(stmt), term)     => extract(stmt)
-      case DefDef(_, _, _, Some(term)) => extract(term)
-      case Apply(term, _)              => extract(term)
-      case Inlined(_, _, term)         => extract(term)
-      case _ => throw new MatchError(s"unhandled ${x.asTerm}")
+    @tailrec
+    def extract(tree: Tree): String =
+        tree match
+            case Select(_, name) => name
+            case Block(List(stmt), term) => extract(stmt)
+            case DefDef(_, _, _, Some(term)) => extract(term)
+            case Apply(term, _) => extract(term)
+            case Inlined(_, _, term) => extract(term)
+            case _ => throw new MatchError(s"unhandled ${x.asTerm}")
 
-  val cb = ClickCallback(extract(x.asTerm))
-  Expr(cb)
+    val cb = ClickCallback(extract(x.asTerm))
+    Expr(cb)
 
 //noinspection Annotator
 inline def callback(inline x: InventoryClickEvent => Unit): ClickCallback = ${
-  inspectCode('x)
+    inspectCode('x)
 }
 //noinspection Annotator
 inline def callback[A](
