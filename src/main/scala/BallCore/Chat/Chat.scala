@@ -11,10 +11,10 @@ import org.bukkit.plugin.Plugin
 
 object Chat:
   def register()(using
-                 p: Plugin,
-                 gm: GroupManager,
-                 sm: ShutdownCallbacks,
-                 sql: SQLManager
+      p: Plugin,
+      gm: GroupManager,
+      sm: ShutdownCallbacks,
+      sql: SQLManager
   ): ChatActor =
     given a: ChatActor = ChatActor()
 

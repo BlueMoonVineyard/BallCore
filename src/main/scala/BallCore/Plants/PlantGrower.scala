@@ -29,12 +29,12 @@ object PlantGrower:
         val consumer: Consumer[BlockState] = state => {}
         block.setType(Material.AIR, true)
         if !block.getWorld
-          .generateTree(
-            block.getLocation(),
-            java.util.Random(),
-            kind,
-            consumer
-          )
+            .generateTree(
+              block.getLocation(),
+              java.util.Random(),
+              kind,
+              consumer
+            )
         then block.setType(Material.DEAD_BUSH, true)
         true
       case PlantType.stemmedAgeable(stem, fruit, _) =>

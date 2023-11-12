@@ -30,8 +30,7 @@ object TestDatabase:
       Fragment(List(Left(cleanName)), Void.codec, Origin.unknown)
     session
       .use { s =>
-        s.execute(
-          sql"""
+        s.execute(sql"""
             CREATE DATABASE $nameFragment;
             """.command)
       }
@@ -57,8 +56,7 @@ object TestDatabase:
       Fragment(List(Left(s.database)), Void.codec, Origin.unknown)
     session
       .use { s =>
-        s.execute(
-          sql"""
+        s.execute(sql"""
             DROP DATABASE $nameFragment;
             """.command)
       }
@@ -66,10 +64,12 @@ object TestDatabase:
     ()
 
 class TestUIServices(assertions: Assertions) extends UIServices:
-  val promptQueue: mutable.Queue[(String, Promise[String])] = scala.collection.mutable.Queue[(String, Promise[String])]()
+  val promptQueue: mutable.Queue[(String, Promise[String])] =
+    scala.collection.mutable.Queue[(String, Promise[String])]()
   val transferQueue: mutable.Queue[Promise[(UIProgram, Any)]] =
     scala.collection.mutable.Queue[Promise[(UIProgram, Any)]]()
-  val notifyQueue: mutable.Queue[Promise[String]] = scala.collection.mutable.Queue[Promise[String]]()
+  val notifyQueue: mutable.Queue[Promise[String]] =
+    scala.collection.mutable.Queue[Promise[String]]()
 
   def expectTransfer(): Future[(UIProgram, Any)] =
     val p = Promise[(UIProgram, Any)]()

@@ -33,7 +33,7 @@ enum PlayerState:
   case groupChat(group: GroupID)
 
 class ChatActor(using gm: GroupManager, sql: SQLManager)
-  extends Actor[ChatMessage]:
+    extends Actor[ChatMessage]:
 
   import BallCore.UI.ChatElements.*
 

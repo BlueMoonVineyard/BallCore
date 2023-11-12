@@ -13,23 +13,23 @@ import java.util.UUID
 import scala.math.*
 
 class EntityReinforcementManager()(using
-                                   esm: EntityStateManager,
-                                   gsm: Groups.GroupManager,
-                                   c: Clock,
-                                   sql: SQLManager
+    esm: EntityStateManager,
+    gsm: Groups.GroupManager,
+    c: Clock,
+    sql: SQLManager
 ):
   private def hoist[B](
-                        either: Either[Groups.GroupError, B]
-                      ): Either[ReinforcementError, B] =
+      either: Either[Groups.GroupError, B]
+  ): Either[ReinforcementError, B] =
     either.left.map(BallCore.Reinforcements.ReinforcementGroupError.apply)
 
   def reinforce(
-                 as: Groups.UserID,
-                 group: Groups.GroupID,
-                 subgroup: Groups.SubgroupID,
-                 entity: UUID,
-                 kind: ReinforcementTypes
-               ): Either[ReinforcementError, Unit] =
+      as: Groups.UserID,
+      group: Groups.GroupID,
+      subgroup: Groups.SubgroupID,
+      entity: UUID,
+      kind: ReinforcementTypes
+  ): Either[ReinforcementError, Unit] =
     val state = esm.get(entity)
     state match
       case None =>
@@ -58,9 +58,9 @@ class EntityReinforcementManager()(using
         Left(AlreadyExists())
 
   def unreinforce(
-                   as: Groups.UserID,
-                   entity: UUID
-                 ): Either[ReinforcementError, Unit] =
+      as: Groups.UserID,
+      entity: UUID
+  ): Either[ReinforcementError, Unit] =
     esm.get(entity).filterNot(_.deleted) match
       case None => Left(DoesntExist())
       case Some(value) =>
@@ -85,7 +85,7 @@ class EntityReinforcementManager()(using
 
   def damage(entity: UUID): Either[ReinforcementError, ReinforcementState] =
     esm.get(entity).filterNot(_.deleted) match
-      case None => Left(DoesntExist())
+      case None        => Left(DoesntExist())
       case Some(value) =>
         // TODO: factor in hearts + acclimation
         val hardness = 20

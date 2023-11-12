@@ -27,9 +27,9 @@ enum CreatorMsg:
   case click(at: Location)
 
 case class CreatorModel(
-                         beaconID: BeaconID,
-                         state: CreatorModelState
-                       ) extends Model[CreatorModel, CreatorMsg, CreatorAction]:
+    beaconID: BeaconID,
+    state: CreatorModelState
+) extends Model[CreatorModel, CreatorMsg, CreatorAction]:
 
   import BallCore.UI.ChatElements.*
 
@@ -48,10 +48,10 @@ case class CreatorModel(
       case (definingPointC(pointA, pointB), click(pointC)) =>
         this.copy(state = definingPointD(pointA, pointB, pointC))
           -> List(
-          drawLine(pointA, pointB),
-          drawLine(pointB, pointC),
-          drawSelectionLine(pointC),
-          drawFinisherLine(pointA)
-        )
+            drawLine(pointA, pointB),
+            drawLine(pointB, pointC),
+            drawSelectionLine(pointC),
+            drawFinisherLine(pointA)
+          )
       case (definingPointD(pointA, pointB, pointC), click(pointD)) =>
         this -> List(finished(List(pointA, pointB, pointC, pointD)))

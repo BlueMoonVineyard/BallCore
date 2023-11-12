@@ -16,10 +16,10 @@ object BlockAdjustment:
   private def counterclockwise(face: BlockFace): BlockFace =
     face match
       case BlockFace.NORTH => BlockFace.WEST
-      case BlockFace.EAST => BlockFace.NORTH
+      case BlockFace.EAST  => BlockFace.NORTH
       case BlockFace.SOUTH => BlockFace.EAST
-      case BlockFace.WEST => BlockFace.SOUTH
-      case _ => face
+      case BlockFace.WEST  => BlockFace.SOUTH
+      case _               => face
 
   // there's a lot of multiblock things in minecraft, so this is responsible for choosing which block is the
   // "responsible" block
@@ -42,26 +42,26 @@ object BlockAdjustment:
             otherBlock
       // plants defer to the block below them
       case DANDELION | POPPY | BLUE_ORCHID | ALLIUM | AZURE_BLUET |
-           ORANGE_TULIP | RED_TULIP | PINK_TULIP | WHITE_TULIP | OXEYE_DAISY |
-           ACACIA_SAPLING | BIRCH_SAPLING | DARK_OAK_SAPLING | JUNGLE_SAPLING |
-           OAK_SAPLING | SPRUCE_SAPLING | WARPED_FUNGUS | CRIMSON_FUNGUS |
-           BAMBOO_SAPLING | FLOWERING_AZALEA | WHEAT | CARROTS | POTATOES |
-           BEETROOTS | SWEET_BERRY_BUSH | MELON_STEM | PUMPKIN_STEM |
-           ATTACHED_MELON_STEM | ATTACHED_PUMPKIN_STEM | WARPED_ROOTS |
-           CRIMSON_ROOTS | NETHER_SPROUTS | WITHER_ROSE | LILY_OF_THE_VALLEY |
-           CORNFLOWER | SEA_PICKLE | FERN | KELP | GRASS | SEAGRASS |
-           TUBE_CORAL | TUBE_CORAL_FAN | BRAIN_CORAL | BRAIN_CORAL_FAN |
-           BUBBLE_CORAL | BUBBLE_CORAL_FAN | FIRE_CORAL | FIRE_CORAL_FAN |
-           HORN_CORAL | HORN_CORAL_FAN | DEAD_TUBE_CORAL | DEAD_TUBE_CORAL_FAN |
-           DEAD_BRAIN_CORAL | DEAD_BRAIN_CORAL_FAN | DEAD_BUBBLE_CORAL |
-           DEAD_BUBBLE_CORAL_FAN | DEAD_FIRE_CORAL | DEAD_FIRE_CORAL_FAN |
-           DEAD_HORN_CORAL | DEAD_HORN_CORAL_FAN | SMALL_DRIPLEAF |
-           NETHER_WART =>
+          ORANGE_TULIP | RED_TULIP | PINK_TULIP | WHITE_TULIP | OXEYE_DAISY |
+          ACACIA_SAPLING | BIRCH_SAPLING | DARK_OAK_SAPLING | JUNGLE_SAPLING |
+          OAK_SAPLING | SPRUCE_SAPLING | WARPED_FUNGUS | CRIMSON_FUNGUS |
+          BAMBOO_SAPLING | FLOWERING_AZALEA | WHEAT | CARROTS | POTATOES |
+          BEETROOTS | SWEET_BERRY_BUSH | MELON_STEM | PUMPKIN_STEM |
+          ATTACHED_MELON_STEM | ATTACHED_PUMPKIN_STEM | WARPED_ROOTS |
+          CRIMSON_ROOTS | NETHER_SPROUTS | WITHER_ROSE | LILY_OF_THE_VALLEY |
+          CORNFLOWER | SEA_PICKLE | FERN | KELP | GRASS | SEAGRASS |
+          TUBE_CORAL | TUBE_CORAL_FAN | BRAIN_CORAL | BRAIN_CORAL_FAN |
+          BUBBLE_CORAL | BUBBLE_CORAL_FAN | FIRE_CORAL | FIRE_CORAL_FAN |
+          HORN_CORAL | HORN_CORAL_FAN | DEAD_TUBE_CORAL | DEAD_TUBE_CORAL_FAN |
+          DEAD_BRAIN_CORAL | DEAD_BRAIN_CORAL_FAN | DEAD_BUBBLE_CORAL |
+          DEAD_BUBBLE_CORAL_FAN | DEAD_FIRE_CORAL | DEAD_FIRE_CORAL_FAN |
+          DEAD_HORN_CORAL | DEAD_HORN_CORAL_FAN | SMALL_DRIPLEAF |
+          NETHER_WART =>
         block.getRelative(BlockFace.DOWN)
       // tall plants need to scan downwards to find the block they want to defer to
       case SUGAR_CANE | BAMBOO | ROSE_BUSH | TWISTING_VINES_PLANT |
-           BIG_DRIPLEAF_STEM | CACTUS | SUNFLOWER | LILAC | TALL_GRASS |
-           LARGE_FERN | TALL_SEAGRASS | KELP_PLANT | PEONY =>
+          BIG_DRIPLEAF_STEM | CACTUS | SUNFLOWER | LILAC | TALL_GRASS |
+          LARGE_FERN | TALL_SEAGRASS | KELP_PLANT | PEONY =>
         var below = block.getRelative(BlockFace.DOWN)
         while below.getType == block.getType do
           below = below.getRelative(BlockFace.DOWN)
@@ -72,15 +72,15 @@ object BlockAdjustment:
 
       // doors defer to the bottom block
       case ACACIA_DOOR | BIRCH_DOOR | DARK_OAK_DOOR | IRON_DOOR | SPRUCE_DOOR |
-           JUNGLE_DOOR | WARPED_DOOR | CRIMSON_DOOR | OAK_DOOR =>
+          JUNGLE_DOOR | WARPED_DOOR | CRIMSON_DOOR | OAK_DOOR =>
         if block.getRelative(BlockFace.UP).getType != block.getType then
           block.getRelative(BlockFace.DOWN)
         else block
 
       // beds defer to the bed base
       case BLACK_BED | BLUE_BED | BROWN_BED | CYAN_BED | GRAY_BED | GREEN_BED |
-           MAGENTA_BED | LIME_BED | ORANGE_BED | PURPLE_BED | PINK_BED |
-           WHITE_BED | LIGHT_GRAY_BED | LIGHT_BLUE_BED | RED_BED | YELLOW_BED =>
+          MAGENTA_BED | LIME_BED | ORANGE_BED | PURPLE_BED | PINK_BED |
+          WHITE_BED | LIGHT_GRAY_BED | LIGHT_BLUE_BED | RED_BED | YELLOW_BED =>
         val bed = block.getBlockData.asInstanceOf[Bed]
         if bed.getPart == Bed.Part.HEAD then
           block.getRelative(bed.getFacing.getOppositeFace)
@@ -88,9 +88,9 @@ object BlockAdjustment:
 
       // these blocks defer to the block they're anchored on
       case TUBE_CORAL_WALL_FAN | BRAIN_CORAL_WALL_FAN | BUBBLE_CORAL_WALL_FAN |
-           FIRE_CORAL_WALL_FAN | HORN_CORAL_WALL_FAN | DEAD_TUBE_CORAL_WALL_FAN |
-           DEAD_BRAIN_CORAL_WALL_FAN | DEAD_BUBBLE_CORAL_WALL_FAN |
-           DEAD_FIRE_CORAL_WALL_FAN | DEAD_HORN_CORAL_WALL_FAN =>
+          FIRE_CORAL_WALL_FAN | HORN_CORAL_WALL_FAN | DEAD_TUBE_CORAL_WALL_FAN |
+          DEAD_BRAIN_CORAL_WALL_FAN | DEAD_BUBBLE_CORAL_WALL_FAN |
+          DEAD_FIRE_CORAL_WALL_FAN | DEAD_HORN_CORAL_WALL_FAN =>
         val cwf = block.getBlockData.asInstanceOf[CoralWallFan]
         block.getRelative(cwf.getFacing.getOppositeFace)
       // so do these

@@ -48,13 +48,13 @@ object Sigil:
     NamespacedKey("ballcore", "sigil_bound_player_uuid")
 
   def register()(using
-                 registry: ItemRegistry,
-                 p: Plugin,
-                 cb: ShutdownCallbacks,
-                 hmn: CivBeaconManager,
-                 ssm: SigilSlimeManager,
-                 cem: CustomEntityManager,
-                 sql: SQLManager
+      registry: ItemRegistry,
+      p: Plugin,
+      cb: ShutdownCallbacks,
+      hmn: CivBeaconManager,
+      ssm: SigilSlimeManager,
+      cem: CustomEntityManager,
+      sql: SQLManager
   ): Unit =
     registry.register(Sigil())
     registry.register(SlimeEgg())

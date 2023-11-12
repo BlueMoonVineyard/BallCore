@@ -18,11 +18,11 @@ object Beacons:
   )
 
   def registerItems()(using
-                      registry: ItemRegistry,
-                      pe: PolygonEditor,
-                      gm: GroupManager,
-                      bm: BlockManager,
-                      hn: CivBeaconManager,
-                      sql: SQLManager
+      registry: ItemRegistry,
+      pe: PolygonEditor,
+      gm: GroupManager,
+      bm: BlockManager,
+      hn: CivBeaconManager,
+      sql: SQLManager
   ): Unit =
     registry.register(new HeartBlock())

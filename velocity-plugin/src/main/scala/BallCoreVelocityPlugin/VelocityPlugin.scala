@@ -90,8 +90,8 @@ class HTTP(apiKey: String)(using lam: LinkedAccountsManager):
     }
 
   def check(credentials: Credentials): Option[String] = credentials match {
-    case p@Credentials.Provided(token) if p.verify(apiKey) => Some(token)
-    case _ => None
+    case p @ Credentials.Provided(token) if p.verify(apiKey) => Some(token)
+    case _                                                   => None
   }
 
   def register()(using l: Logger): () => Future[Unit] =
@@ -109,7 +109,7 @@ class HTTP(apiKey: String)(using lam: LinkedAccountsManager):
     given aec: concurrent.ExecutionContext = system.executionContext
 
     val bindingFuture
-    : concurrent.Future[akka.http.scaladsl.Http.ServerBinding] =
+        : concurrent.Future[akka.http.scaladsl.Http.ServerBinding] =
       Http().newServerAt("0.0.0.0", 7543).bind(router)
     Await.result(bindingFuture, Duration.Inf)
     { () =>
@@ -186,10 +186,10 @@ object VerifyCommand:
     BrigadierCommand(node)
 
 final class VelocityPlugin(
-                            server: ProxyServer,
-                            logger: Logger,
-                            dataDirectory: Path
-                          ):
+    server: ProxyServer,
+    logger: Logger,
+    dataDirectory: Path
+):
   given Logger = logger
 
   private var shutdownHTTP: () => Future[Unit] = _

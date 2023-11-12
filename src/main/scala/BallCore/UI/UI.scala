@@ -38,15 +38,15 @@ trait UIProgram:
   def view(model: Model): Callback ?=> Gui
 
   def update(msg: Message, model: Model)(using
-                                         services: UIServices
+      services: UIServices
   ): Future[Model]
 
 class UIProgramRunner(
-                       program: UIProgram,
-                       flags: program.Flags,
-                       showingTo: Player
-                     )(using prompts: Prompts, plugin: Plugin)
-  extends UIServices:
+    program: UIProgram,
+    flags: program.Flags,
+    showingTo: Player
+)(using prompts: Prompts, plugin: Plugin)
+    extends UIServices:
   private var model = program.init(flags)
   private var transferred = false
   private val ec = EntityExecutionContext(showingTo)

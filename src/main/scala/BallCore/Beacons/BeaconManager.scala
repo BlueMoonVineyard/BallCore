@@ -2,8 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// noinspection Annotator
-
 package BallCore.Beacons
 
 import BallCore.Groups.{GroupID, GroupManager}
@@ -36,9 +34,9 @@ private def addPoint(l: Point, r: Point): Point =
   Point(l.x + r.x, l.y + r.y, l.z + r.z)
 
 case class CivBeaconInformation(
-                                 players: List[UUID],
-                                 centroid: Point
-                               )
+    players: List[UUID],
+    centroid: Point
+)
 
 val df =
   val it = new DecimalFormat()
@@ -54,20 +52,14 @@ enum PolygonAdjustmentError:
 
     this match
       case polygonTooLarge(maximum, actual) =>
-        txt"This polygon is too large; the maximum area is ${
-          txt(maximum.toString())
-            .color(Colors.teal)
-        } blocks but the actual area is ${
-          txt(df.format(actual))
-            .color(Colors.teal)
-        }"
+        txt"This polygon is too large; the maximum area is ${txt(maximum.toString())
+            .color(Colors.teal)} blocks but the actual area is ${txt(df.format(actual))
+            .color(Colors.teal)}"
       case heartsNotIncludedInPolygon(at) =>
         val locations = at
           .map { loc =>
-            txt"${
-              txt(df.format(loc.getX()))
-                .color(Colors.grellow)
-            }/${txt(df.format(loc.getY())).color(Colors.grellow)}"
+            txt"${txt(df.format(loc.getX()))
+                .color(Colors.grellow)}/${txt(df.format(loc.getY())).color(Colors.grellow)}"
           }
           .mkComponent(txt", ")
         txt"There are hearts not included in this polygon at $locations"
@@ -111,11 +103,11 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
   )
 
   private case class WorldData(
-                                var beaconRTree: RTree[(Polygon, BeaconID)],
-                                var beaconIDsToRTreeEntries: Map[BeaconID, IndexedSeq[
-                                  RTreeEntry[(Polygon, BeaconID)]
-                                ]]
-                              )
+      var beaconRTree: RTree[(Polygon, BeaconID)],
+      var beaconIDsToRTreeEntries: Map[BeaconID, IndexedSeq[
+        RTreeEntry[(Polygon, BeaconID)]
+      ]]
+  )
 
   private val triangulator = DelaunayTriangulationBuilder()
   private val geometryFactory = GeometryFactory()
@@ -147,8 +139,8 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
     )
 
   def getBeaconLocationFor(
-                            player: OwnerID
-                          )(using Session[IO]): IO[Option[(Long, Long, Long)]] =
+      player: OwnerID
+  )(using Session[IO]): IO[Option[(Long, Long, Long)]] =
     sql.queryOptionIO(
       sql"""
         SELECT X, Y, Z FROM Hearts WHERE Owner = $uuid;
@@ -158,7 +150,7 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
     )
 
   def setGroup(beacon: BeaconID, group: GroupID)(using
-                                                 Session[IO]
+      Session[IO]
   ): IO[Either[Unit, Unit]] =
     for {
       size <- beaconSize(beacon)
@@ -185,9 +177,9 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
     )
 
   private def triangulate(
-                           id: BeaconID,
-                           polygonBlob: Array[Byte]
-                         ): IndexedSeq[RTreeEntry[(Polygon, BeaconID)]] =
+      id: BeaconID,
+      polygonBlob: Array[Byte]
+  ): IndexedSeq[RTreeEntry[(Polygon, BeaconID)]] =
     val polygon = ObjectInputStream(ByteArrayInputStream(polygonBlob))
       .readObject()
       .asInstanceOf[Polygon]
@@ -197,7 +189,7 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
       .asInstanceOf[GeometryCollection]
     val triangles =
       for i <- 0 until triangleCollection.getNumGeometries
-        yield triangleCollection.getGeometryN(i).asInstanceOf[Polygon]
+      yield triangleCollection.getGeometryN(i).asInstanceOf[Polygon]
 
     triangles.map { triangle =>
       val Array(minmin, _, maxmax, _, _) =
@@ -215,8 +207,8 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
     }
 
   private def recomputeEntryFor(
-                                 id: BeaconID
-                               )(using Session[IO]): IO[IndexedSeq[RTreeEntry[(Polygon, BeaconID)]]] =
+      id: BeaconID
+  )(using Session[IO]): IO[IndexedSeq[RTreeEntry[(Polygon, BeaconID)]]] =
     sql
       .queryOptionIO(
         sql"""
@@ -253,8 +245,8 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
       })
 
   private def loadHearts(
-                          world: UUID
-                        )(using Session[IO]): IO[RTree[(Polygon, BeaconID)]] =
+      world: UUID
+  )(using Session[IO]): IO[RTree[(Polygon, BeaconID)]] =
     sql
       .queryListIO(
         sql"""
@@ -318,7 +310,7 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
     }
 
   def updateBeaconPolygon(beacon: BeaconID, world: World, polygon: Polygon)(
-    using Session[IO]
+      using Session[IO]
   ): IO[Either[PolygonAdjustmentError, Unit]] =
     sql
       .queryListIO(
@@ -401,7 +393,7 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
     )
 
   def placeHeart(l: Location, owner: UUID)(using
-                                           Session[IO]
+      Session[IO]
   ): IO[Either[Unit, (BeaconID, Long)]] =
     val offsets =
       List((1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1))
@@ -451,7 +443,7 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
     }
 
   def removeHeart(l: Location, owner: OwnerID)(using
-                                               Session[IO]
+      Session[IO]
   ): IO[Option[(BeaconID, Long)]] =
     sql
       .queryUniqueIO(

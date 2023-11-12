@@ -23,15 +23,15 @@ object ShopChest:
   )
 
 class ShopChest(using ItemRegistry)
-  extends CustomItem,
-    Listeners.BlockLeftClicked:
+    extends CustomItem,
+      Listeners.BlockLeftClicked:
   def group: ItemGroup = Order.group
 
   def template: CustomItemStack = ShopChest.template
 
   case class PurchasingState(
-                              index: Int
-                            )
+      index: Int
+  )
 
   val states: TrieMap[UUID, PurchasingState] = TrieMap[UUID, PurchasingState]()
 
@@ -48,8 +48,8 @@ class ShopChest(using ItemRegistry)
   override def onBlockLeftClicked(event: PlayerInteractEvent): Unit =
     val inv = event.getClickedBlock.getState() match
       case double: DoubleChest => double.getInventory
-      case single: Chest => single.getInventory
-      case _ => // noinspection Annotator
+      case single: Chest       => single.getInventory
+      case _ =>
         return ()
 
     if event.getItem == null || event.getItem.getType == Material.AIR then
@@ -112,10 +112,8 @@ class ShopChest(using ItemRegistry)
               err match
                 case ExchangeError.buyerCantAfford(has, needed) =>
                   player.sendServerMessage(
-                    txt"You can't afford that purchase (it requires $needed ${
-                      order.price._1
-                        .displayName()
-                    } but you only have $has)"
+                    txt"You can't afford that purchase (it requires $needed ${order.price._1
+                        .displayName()} but you only have $has)"
                   )
                 case ExchangeError.buyerCantReceive =>
                   player.sendServerMessage(
@@ -123,10 +121,8 @@ class ShopChest(using ItemRegistry)
                   )
                 case ExchangeError.sellerCantAfford(has, needed) =>
                   player.sendServerMessage(
-                    txt"The chest doesn't have enough items to sell (it requires $needed ${
-                      order.selling._1
-                        .displayName()
-                    } but it only has $has)"
+                    txt"The chest doesn't have enough items to sell (it requires $needed ${order.selling._1
+                        .displayName()} but it only has $has)"
                   )
                 case ExchangeError.sellerCantReceive =>
                   player.sendServerMessage(
@@ -137,11 +133,9 @@ class ShopChest(using ItemRegistry)
 
             case Right(_) =>
               player.sendServerMessage(
-                txt"You paid ${order.price._1.displayName()} × ${order.price._2} and received ${
-                  order.selling._1
+                txt"You paid ${order.price._1.displayName()} × ${order.price._2} and received ${order.selling._1
                     .displayName()
-                    .hoverEvent(order.selling._1)
-                } × ${order.selling._2} "
+                    .hoverEvent(order.selling._1)} × ${order.selling._2} "
               )
         case Some(order) =>
           player.sendServerMessage(

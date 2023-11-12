@@ -137,7 +137,7 @@ object GlazingKiln:
   )
 
 class GlazingKiln()(using act: CraftingActor, p: Plugin, prompts: Prompts)
-  extends CraftingStation(GlazingKiln.recipes):
+    extends CraftingStation(GlazingKiln.recipes):
   def group: ItemGroup = CraftingStations.group
 
   def template: CustomItemStack = GlazingKiln.template

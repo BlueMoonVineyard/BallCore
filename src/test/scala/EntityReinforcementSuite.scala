@@ -13,7 +13,8 @@ import java.time.temporal.ChronoUnit
 import java.util as ju
 
 class EntityReinforcementSuite extends munit.FunSuite {
-  val sql: FunFixture[SQLManager] = FunFixture[SQLManager](TestDatabase.setup, TestDatabase.teardown)
+  val sql: FunFixture[SQLManager] =
+    FunFixture[SQLManager](TestDatabase.setup, TestDatabase.teardown)
   sql.test("entity reinforcements basic stuff") { implicit sql =>
     given gm: Groups.GroupManager = new Groups.GroupManager
 

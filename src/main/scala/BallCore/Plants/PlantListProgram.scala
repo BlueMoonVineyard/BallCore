@@ -61,25 +61,23 @@ class PlantListProgram extends UIProgram:
               case GrowingSeason.specific(Season.summer) => summerColor
               case GrowingSeason.specific(Season.autumn) => autumnColor
               case GrowingSeason.specific(Season.winter) => winterColor
-              case GrowingSeason.allYear => allColor
+              case GrowingSeason.allYear                 => allColor
             ))
           ) {
-            Lore(txt"Grows during ${
-              plant.growingSeason match
+            Lore(txt"Grows during ${plant.growingSeason match
                 case GrowingSeason.specific(Season.spring) => spring
                 case GrowingSeason.specific(Season.summer) => summer
                 case GrowingSeason.specific(Season.autumn) => autumn
                 case GrowingSeason.specific(Season.winter) => winter
-                case GrowingSeason.allYear => allYear
-            }".color(NamedTextColor.GRAY))
-            Lore(txt"Grows in ${
-              plant.growingClimate match
-                case GrowingClimate.specific(Climate.warmArid) => warmArid
+                case GrowingSeason.allYear                 => allYear
+              }".color(NamedTextColor.GRAY))
+            Lore(txt"Grows in ${plant.growingClimate match
+                case GrowingClimate.specific(Climate.warmArid)  => warmArid
                 case GrowingClimate.specific(Climate.warmHumid) => warmHumid
-                case GrowingClimate.specific(Climate.coldArid) => coldArid
+                case GrowingClimate.specific(Climate.coldArid)  => coldArid
                 case GrowingClimate.specific(Climate.coldHumid) => coldHumid
-                case GrowingClimate.allClimates => allClimates
-            } climates".color(NamedTextColor.GRAY))
+                case GrowingClimate.allClimates                 => allClimates
+              } climates".color(NamedTextColor.GRAY))
             plant.plant match
               case PlantType.ageable(_, hoursBetweenStages) =>
                 Lore(
@@ -117,6 +115,6 @@ class PlantListProgram extends UIProgram:
     }
 
   override def update(msg: Message, model: Model)(using
-                                                  services: UIServices
+      services: UIServices
   ): Future[Model] =
     model

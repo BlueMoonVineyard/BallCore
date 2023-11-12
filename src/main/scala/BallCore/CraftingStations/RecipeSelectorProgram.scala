@@ -19,7 +19,7 @@ import scala.concurrent.Future
 import scala.jdk.CollectionConverters.*
 
 class RecipeSelectorProgram(recipes: List[Recipe])(using actor: CraftingActor)
-  extends UIProgram:
+    extends UIProgram:
 
   import io.circe.generic.auto.*
 
@@ -40,7 +40,7 @@ class RecipeSelectorProgram(recipes: List[Recipe])(using actor: CraftingActor)
     Model(flags.player, flags.factory, 0)
 
   override def update(msg: Message, model: Model)(using
-                                                  services: UIServices
+      services: UIServices
   ): Future[Model] =
     msg match
       case Message.selectRecipe(index) =>
@@ -107,10 +107,8 @@ class RecipeSelectorProgram(recipes: List[Recipe])(using actor: CraftingActor)
             )
             recipe.outputs.foreach { output =>
               Lore(
-                txt" - ${
-                  nameOf(output)
-                    .style(NamedTextColor.GRAY, TextDecoration.BOLD)
-                } × ${output.getAmount}"
+                txt" - ${nameOf(output)
+                    .style(NamedTextColor.GRAY, TextDecoration.BOLD)} × ${output.getAmount}"
                   .color(NamedTextColor.WHITE)
               )
               if output.getItemMeta.hasLore then

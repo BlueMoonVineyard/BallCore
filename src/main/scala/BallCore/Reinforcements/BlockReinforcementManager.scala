@@ -18,7 +18,7 @@ type WorldID = UUID
 sealed trait ReinforcementError
 
 case class ReinforcementGroupError(error: Groups.GroupError)
-  extends ReinforcementError
+    extends ReinforcementError
 
 case class JustBroken(bs: ReinforcementState) extends ReinforcementError
 
@@ -38,31 +38,31 @@ def explain(err: ReinforcementError): String =
       "A reinforcement was just broken"
 
 /** The ReinforcementManager implements all of the logic of reinforcement data
- */
+  */
 class BlockReinforcementManager()(using
-                                  csm: ChunkStateManager,
-                                  gsm: Groups.GroupManager,
-                                  c: Clock,
-                                  sql: SQLManager
+    csm: ChunkStateManager,
+    gsm: Groups.GroupManager,
+    c: Clock,
+    sql: SQLManager
 ):
   private def toOffsets(x: Int, z: Int): (Int, Int, Int, Int) =
     (x / 16, z / 16, x % 16, z % 16)
 
   private def hoist[B](
-                        either: Either[Groups.GroupError, B]
-                      ): Either[ReinforcementError, B] =
+      either: Either[Groups.GroupError, B]
+  ): Either[ReinforcementError, B] =
     either.left.map(BallCore.Reinforcements.ReinforcementGroupError.apply)
 
   def reinforce(
-                 as: Groups.UserID,
-                 group: Groups.UserID,
-                 subgroup: Groups.SubgroupID,
-                 x: Int,
-                 y: Int,
-                 z: Int,
-                 world: WorldID,
-                 kind: ReinforcementTypes
-               ): Either[ReinforcementError, Unit] =
+      as: Groups.UserID,
+      group: Groups.UserID,
+      subgroup: Groups.SubgroupID,
+      x: Int,
+      y: Int,
+      z: Int,
+      world: WorldID,
+      kind: ReinforcementTypes
+  ): Either[ReinforcementError, Unit] =
     val (chunkX, chunkZ, offsetX, offsetZ) = toOffsets(x, z)
     val state = csm.get(ChunkKey(chunkX, chunkZ, world))
     val bkey = BlockKey(offsetX, offsetZ, y)
@@ -90,12 +90,12 @@ class BlockReinforcementManager()(using
         Left(AlreadyExists())
 
   def unreinforce(
-                   as: Groups.UserID,
-                   x: Int,
-                   y: Int,
-                   z: Int,
-                   world: WorldID
-                 ): Either[ReinforcementError, Unit] =
+      as: Groups.UserID,
+      x: Int,
+      y: Int,
+      z: Int,
+      world: WorldID
+  ): Either[ReinforcementError, Unit] =
     val (chunkX, chunkZ, offsetX, offsetZ) = toOffsets(x, z)
     val state = csm.get(ChunkKey(chunkX, chunkZ, world))
     val bkey = BlockKey(offsetX, offsetZ, y)
@@ -122,17 +122,17 @@ class BlockReinforcementManager()(using
           }
 
   def break(
-             x: Int,
-             y: Int,
-             z: Int,
-             hardness: Double,
-             world: WorldID
-           ): Either[ReinforcementError, ReinforcementState] =
+      x: Int,
+      y: Int,
+      z: Int,
+      hardness: Double,
+      world: WorldID
+  ): Either[ReinforcementError, ReinforcementState] =
     val (chunkX, chunkZ, offsetX, offsetZ) = toOffsets(x, z)
     val state = csm.get(ChunkKey(chunkX, chunkZ, world))
     val bkey = BlockKey(offsetX, offsetZ, y)
     state.blocks.get(bkey).filterNot(_.deleted) match
-      case None => Left(DoesntExist())
+      case None        => Left(DoesntExist())
       case Some(value) =>
         // TODO: factor in hearts + acclimation
         val hoursPassed =
@@ -149,11 +149,11 @@ class BlockReinforcementManager()(using
         else Right(newValue)
 
   def getReinforcement(
-                        x: Int,
-                        y: Int,
-                        z: Int,
-                        world: WorldID
-                      ): Option[ReinforcementState] =
+      x: Int,
+      y: Int,
+      z: Int,
+      world: WorldID
+  ): Option[ReinforcementState] =
     val (chunkX, chunkZ, offsetX, offsetZ) = toOffsets(x, z)
     val state = csm.get(ChunkKey(chunkX, chunkZ, world))
     val bkey = BlockKey(offsetX, offsetZ, y)

@@ -16,19 +16,19 @@ import scala.jdk.CollectionConverters.*
 
 object CustomItemListener:
   def register()(using
-                 bm: BlockManager,
-                 reg: ItemRegistry,
-                 plugin: Plugin,
-                 sql: SQLManager
+      bm: BlockManager,
+      reg: ItemRegistry,
+      plugin: Plugin,
+      sql: SQLManager
   ): Unit =
     plugin.getServer.getPluginManager
       .registerEvents(new CustomItemListener, plugin)
 
 class CustomItemListener(using
-                         bm: BlockManager,
-                         reg: ItemRegistry,
-                         sql: SQLManager
-                        ) extends org.bukkit.event.Listener:
+    bm: BlockManager,
+    reg: ItemRegistry,
+    sql: SQLManager
+) extends org.bukkit.event.Listener:
   @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
   def onPlayerJoin(event: PlayerJoinEvent): Unit =
     event.getPlayer.discoverRecipes(reg.recipes().asJava)
@@ -44,7 +44,7 @@ class CustomItemListener(using
               place.onBlockPlace(event)
               event.isCancelled
             case _ => false
-        // noinspection Annotator
+
         if cancelled then return ()
         sql.useBlocking(bm.setCustomItem(event.getBlockPlaced, item))
       case _ => ()
@@ -59,7 +59,7 @@ class CustomItemListener(using
               break.onBlockRemoved(event)
               event.isCancelled
             case _ => false
-        // noinspection Annotator
+
         if cancelled then return ()
         sql.useBlocking(bm.clearCustomItem(event.getBlock))
         event.setDropItems(false)
@@ -77,7 +77,7 @@ class CustomItemListener(using
 
   @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
   def onInteractItemBlock(event: PlayerInteractEvent): Unit =
-    // noinspection Annotator
+
     if !event.hasItem || event.getAction != Action.RIGHT_CLICK_BLOCK then
       return ()
 
@@ -92,25 +92,23 @@ class CustomItemListener(using
         event.setCancelled(cancel)
       case None =>
 
-  // noinspection Annotator
   @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
   def onInteractItem(event: PlayerInteractEvent): Unit =
     if !event.hasItem || !(event.getAction == Action.RIGHT_CLICK_AIR || event.getAction == Action.RIGHT_CLICK_BLOCK)
     then
       return
 
-        reg.lookup(event.getItem) match
-          case Some(item) =>
-            val cancel =
-              item match
-                case click: Listeners.ItemUsed =>
-                  click.onItemUsed(event)
-                  true
-                case _ => false
-            event.setCancelled(cancel)
-          case None =>
+      reg.lookup(event.getItem) match
+        case Some(item) =>
+          val cancel =
+            item match
+              case click: Listeners.ItemUsed =>
+                click.onItemUsed(event)
+                true
+              case _ => false
+          event.setCancelled(cancel)
+        case None =>
 
-  // noinspection Annotator
   @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
   def onInteractBlock(event: PlayerInteractEvent): Unit =
     if event.getHand != EquipmentSlot.HAND then
@@ -118,19 +116,19 @@ class CustomItemListener(using
         return if event.getPlayer.isSneaking then
           return
 
-            sql.useBlocking(bm.getCustomItem(event.getClickedBlock)) match
-              case Some(item) =>
-                val cancel =
-                  item match
-                    case click: Listeners.BlockClicked
+          sql.useBlocking(bm.getCustomItem(event.getClickedBlock)) match
+            case Some(item) =>
+              val cancel =
+                item match
+                  case click: Listeners.BlockClicked
                       if event.getAction == Action.RIGHT_CLICK_BLOCK =>
-                      click.onBlockClicked(event)
-                      true
-                    case click: Listeners.BlockLeftClicked
+                    click.onBlockClicked(event)
+                    true
+                  case click: Listeners.BlockLeftClicked
                       if event.getAction == Action.LEFT_CLICK_BLOCK =>
-                      click.onBlockLeftClicked(event)
-                      true
-                    case _ =>
-                      false
-                event.setCancelled(cancel)
-              case _ =>
+                    click.onBlockLeftClicked(event)
+                    true
+                  case _ =>
+                    false
+              event.setCancelled(cancel)
+            case _ =>

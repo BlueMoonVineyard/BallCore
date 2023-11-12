@@ -15,9 +15,9 @@ import scala.util.Try
 import scala.util.chaining.*
 
 def countPayment(
-                  of: Iterator[ItemStack],
-                  isValidPayment: ItemStack => Boolean
-                ): (Int, List[ItemStack]) =
+    of: Iterator[ItemStack],
+    isValidPayment: ItemStack => Boolean
+): (Int, List[ItemStack]) =
   of.filterNot(_ == null).foldLeft((0, Nil: List[ItemStack])) { (tuple, item) =>
     val (sum, items) = tuple
     if isValidPayment(item) then (sum + item.getAmount, item :: items)
@@ -25,9 +25,9 @@ def countPayment(
   }
 
 def countReceive(
-                  of: Iterator[ItemStack],
-                  payment: ItemStack
-                ): (Int, List[ItemStack]) =
+    of: Iterator[ItemStack],
+    payment: ItemStack
+): (Int, List[ItemStack]) =
   of.foldLeft((0, Nil: List[ItemStack])) { (tuple, item) =>
     val (sum, items) = tuple
     if item == null then (sum + payment.getMaxStackSize, item :: items)
@@ -53,8 +53,8 @@ def deduct(from: List[ItemStack], amount: Int): Unit =
 
 object SellOrderDescription:
   def debugEnumerateFrom(
-                          inv: Iterator[ItemStack]
-                        ): Iterator[SellOrderItemDescription] =
+      inv: Iterator[ItemStack]
+  ): Iterator[SellOrderItemDescription] =
     inv
       .filterNot(_ == null)
       .map(x =>
@@ -80,9 +80,9 @@ enum ExchangeError:
   case unknownPrice
 
 case class SellOrderDescription(
-                                 selling: (ItemStack, Int),
-                                 price: (CustomMaterial, Int)
-                               ):
+    selling: (ItemStack, Int),
+    price: (CustomMaterial, Int)
+):
   extension (i: ItemStack)
     private def normalized: ItemStack =
       i.clone().tap(_.setAmount(1))
@@ -96,13 +96,13 @@ case class SellOrderDescription(
     counted.getOrElse(selling._1.normalized, 0) / selling._2
 
   def perform(
-               buyerPay: Iterator[ItemStack],
-               buyerReceive: Iterator[ItemStack],
-               buyerInsert: ((ItemStack, Int)) => Unit,
-               sellerPay: Iterator[ItemStack],
-               sellerReceive: Iterator[ItemStack],
-               sellerInsert: ((ItemStack, Int)) => Unit
-             )(using ItemRegistry): Either[ExchangeError, Unit] =
+      buyerPay: Iterator[ItemStack],
+      buyerReceive: Iterator[ItemStack],
+      buyerInsert: ((ItemStack, Int)) => Unit,
+      sellerPay: Iterator[ItemStack],
+      sellerReceive: Iterator[ItemStack],
+      sellerInsert: ((ItemStack, Int)) => Unit
+  )(using ItemRegistry): Either[ExchangeError, Unit] =
     val (buyerCount, buyerItems) = countPayment(buyerPay, price._1.matches)
     if buyerCount < price._2 then
       return Left(ExchangeError.buyerCantAfford(buyerCount, price._2))
@@ -119,7 +119,7 @@ case class SellOrderDescription(
 
     val paymentTemplate = price._1.template() match
       case Some(it) => it
-      case None => return Left(ExchangeError.unknownPrice)
+      case None     => return Left(ExchangeError.unknownPrice)
     val (sellerFreeCount, sellerFreeItems) =
       countReceive(sellerReceive, paymentTemplate)
     if sellerFreeCount < price._2 then
@@ -172,9 +172,9 @@ object SellOrderItemDescription:
     SellOrderItemDescription(selling, price)
 
 case class SellOrderItemDescription(
-                                     selling: Option[(ItemStack, Int)],
-                                     price: Option[(CustomMaterial, Int)]
-                                   ):
+    selling: Option[(ItemStack, Int)],
+    price: Option[(CustomMaterial, Int)]
+):
   def into(): Option[SellOrderDescription] =
     for {
       sellingP <- selling
@@ -227,10 +227,10 @@ case class SellOrderItemDescription(
     val fullLore =
       sellingLore ++
         (if sellingLore.isEmpty then Nil
-        else List(txt"")) ++
+         else List(txt"")) ++
         priceLore ++
         (if priceLore.isEmpty then Nil
-        else List(txt"")) ++
+         else List(txt"")) ++
         SellOrder.defaultLore
 
     to.lore(fullLore.map(CustomItemStack.loreify).asJava)
@@ -255,8 +255,8 @@ object SellOrder:
   )
 
 class SellOrder(using registry: ItemRegistry)
-  extends CustomItem,
-    Listeners.ItemUsed:
+    extends CustomItem,
+      Listeners.ItemUsed:
   def group: ItemGroup = Order.group
 
   def template: CustomItemStack = SellOrder.template

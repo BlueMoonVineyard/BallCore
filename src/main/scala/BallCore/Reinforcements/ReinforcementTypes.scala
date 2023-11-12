@@ -12,23 +12,23 @@ enum ReinforcementTypes(val hp: Int):
 
   def displayName(): String =
     this match
-      case Stone => "Stone"
-      case Deepslate => "Deepslate"
+      case Stone      => "Stone"
+      case Deepslate  => "Deepslate"
       case CopperLike => "Red"
-      case IronLike => "White"
+      case IronLike   => "White"
 
   def into(): String =
     this match
-      case Stone => "stone"
-      case Deepslate => "deepslate"
+      case Stone      => "stone"
+      case Deepslate  => "deepslate"
       case CopperLike => "copperlike"
-      case IronLike => "ironlike"
+      case IronLike   => "ironlike"
 
 object ReinforcementTypes:
   def from(s: String): Option[ReinforcementTypes] =
     s match
-      case "stone" => Some(Stone)
-      case "deepslate" => Some(Deepslate)
+      case "stone"      => Some(Stone)
+      case "deepslate"  => Some(Deepslate)
       case "copperlike" => Some(CopperLike)
-      case "ironlike" => Some(IronLike)
-      case _ => None
+      case "ironlike"   => Some(IronLike)
+      case _            => None

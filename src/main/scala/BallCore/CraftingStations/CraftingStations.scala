@@ -20,10 +20,10 @@ object CraftingStations:
   )
 
   def register()(using
-                 p: Plugin,
-                 registry: ItemRegistry,
-                 prompts: Prompts,
-                 sm: ShutdownCallbacks
+      p: Plugin,
+      registry: ItemRegistry,
+      prompts: Prompts,
+      sm: ShutdownCallbacks
   ): Unit =
     given act: CraftingActor = CraftingActor()
 
@@ -47,11 +47,11 @@ object CraftingStations:
     registry.addRecipe(smRecipe)
 
 abstract class CraftingStation(recipes: List[Recipe])(using
-                                                      act: CraftingActor,
-                                                      p: Plugin,
-                                                      prompts: Prompts
+    act: CraftingActor,
+    p: Plugin,
+    prompts: Prompts
 ) extends CustomItem,
-  Listeners.BlockClicked:
+      Listeners.BlockClicked:
   def onBlockClicked(event: PlayerInteractEvent): Unit =
     val p = RecipeSelectorProgram(recipes)
     val plr = event.getPlayer

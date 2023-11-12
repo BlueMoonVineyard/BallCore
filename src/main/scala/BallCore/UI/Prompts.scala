@@ -18,8 +18,8 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.Try
 
 private case class PromptState(
-                                promise: Promise[String]
-                              )
+    promise: Promise[String]
+)
 
 class Prompts(using plugin: Plugin) extends Listener:
   private val prompts = scala.collection.concurrent.TrieMap[UUID, PromptState]()

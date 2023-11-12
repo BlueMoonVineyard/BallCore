@@ -5,7 +5,7 @@ name: BallCore
 version: 0.1
 main: BallCore.Main
 description: Core plugin of CivBalls
-authors: [Janet Blackquill]
+authors: [ Janet Blackquill ]
 website: https://github.com/BlueMoonVineyard/BallCore
 folia-supported: true
 api-version: 1.13
@@ -28,7 +28,7 @@ commands:
     description: Cheats in a custom item
   group:
     description: Changes your chat channel to a specific group
-    aliases: [g]
+    aliases: [ g ]
   global:
     description: Changes your chat channel to global chat
   polyhedra:

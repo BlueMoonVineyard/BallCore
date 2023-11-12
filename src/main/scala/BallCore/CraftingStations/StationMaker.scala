@@ -105,7 +105,7 @@ object StationMaker:
   )
 
 class StationMaker()(using act: CraftingActor, p: Plugin, prompts: Prompts)
-  extends CraftingStation(StationMaker.recipes):
+    extends CraftingStation(StationMaker.recipes):
   def group: ItemGroup = CraftingStations.group
 
   def template: CustomItemStack = StationMaker.template

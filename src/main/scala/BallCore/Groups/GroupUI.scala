@@ -20,19 +20,19 @@ import org.bukkit.{Bukkit, Material}
 import scala.concurrent.Future
 
 class GroupManagementProgram(using
-                             gm: GroupManager,
-                             cbm: CivBeaconManager,
-                             sql: SQLManager,
-                             editor: PolyhedraEditor
-                            ) extends UIProgram:
+    gm: GroupManager,
+    cbm: CivBeaconManager,
+    sql: SQLManager,
+    editor: PolyhedraEditor
+) extends UIProgram:
   case class Flags(groupID: GroupID, userID: UserID)
 
   case class Model(
-                    group: GroupState,
-                    userID: UserID,
-                    viewing: ViewingWhat,
-                    canBindToHeart: Boolean
-                  )
+      group: GroupState,
+      userID: UserID,
+      viewing: ViewingWhat,
+      canBindToHeart: Boolean
+  )
 
   // noinspection ScalaWeakerAccess
   enum ViewingWhat:
@@ -109,8 +109,8 @@ class GroupManagementProgram(using
         Item(Material.BLACK_STAINED_GLASS_PANE, displayName = Some(txt""))()
       }
       model.viewing match
-        case ViewingWhat.Players => Players(model)
-        case ViewingWhat.Roles => Roles(model)
+        case ViewingWhat.Players   => Players(model)
+        case ViewingWhat.Roles     => Roles(model)
         case ViewingWhat.Subgroups => Subgroups(model)
     }
 
@@ -189,7 +189,7 @@ class GroupManagementProgram(using
     }
 
   override def update(msg: Message, model: Model)(using
-                                                  services: UIServices
+      services: UIServices
   ): Future[Model] =
     msg match
       case Message.View(what) =>
@@ -272,11 +272,11 @@ class GroupManagementProgram(using
           }
 
 class SubgroupManagementProgram(using
-                                gm: GroupManager,
-                                cbm: CivBeaconManager,
-                                sql: SQLManager,
-                                editor: PolyhedraEditor
-                               ) extends UIProgram:
+    gm: GroupManager,
+    cbm: CivBeaconManager,
+    sql: SQLManager,
+    editor: PolyhedraEditor
+) extends UIProgram:
   case class Flags(groupID: GroupID, subgroupID: SubgroupID, userID: UserID)
 
   case class Model(group: GroupState, subgroup: SubgroupState, userID: UserID)
@@ -293,7 +293,7 @@ class SubgroupManagementProgram(using
     Model(group, subgroup, flags.userID)
 
   override def update(msg: Message, model: Model)(using
-                                                  services: UIServices
+      services: UIServices
   ): Future[Model] =
     msg match
       case Message.GoBack =>
@@ -396,25 +396,25 @@ class SubgroupManagementProgram(using
     }
 
 class RoleManagementProgram(using
-                            gm: GroupManager,
-                            cbm: CivBeaconManager,
-                            sql: SQLManager,
-                            editor: PolyhedraEditor
-                           ) extends UIProgram:
+    gm: GroupManager,
+    cbm: CivBeaconManager,
+    sql: SQLManager,
+    editor: PolyhedraEditor
+) extends UIProgram:
   case class Flags(
-                    groupID: GroupID,
-                    roleID: RoleID,
-                    userID: UserID,
-                    subgroup: Option[SubgroupID]
-                  )
+      groupID: GroupID,
+      roleID: RoleID,
+      userID: UserID,
+      subgroup: Option[SubgroupID]
+  )
 
   case class Model(
-                    group: GroupState,
-                    groupID: GroupID,
-                    userID: UserID,
-                    role: RoleState,
-                    subgroup: Option[SubgroupState]
-                  )
+      group: GroupState,
+      groupID: GroupID,
+      userID: UserID,
+      role: RoleState,
+      subgroup: Option[SubgroupState]
+  )
 
   enum Message:
     case DeleteRole
@@ -443,7 +443,7 @@ class RoleManagementProgram(using
         model
 
   override def update(msg: Message, model: Model)(using
-                                                  services: UIServices
+      services: UIServices
   ): Future[Model] =
     msg match
       case Message.DeleteRole =>
@@ -465,12 +465,12 @@ class RoleManagementProgram(using
             subgroup.permissions.getOrElse(model.role.id, Map())
 
         val newPerm = permissions.get(perm) match
-          case None => Some(RuleMode.Allow)
+          case None                 => Some(RuleMode.Allow)
           case Some(RuleMode.Allow) => Some(RuleMode.Deny)
-          case Some(RuleMode.Deny) => None
+          case Some(RuleMode.Deny)  => None
         val newPermissions =
           newPerm match
-            case None => permissions.removed(perm)
+            case None       => permissions.removed(perm)
             case Some(mode) => permissions.updated(perm, mode)
 
         model.subgroup match
@@ -554,9 +554,9 @@ class RoleManagementProgram(using
 
           val name =
             permissions.get(x) match
-              case None => s"§7* ${x.displayName()}"
+              case None                 => s"§7* ${x.displayName()}"
               case Some(RuleMode.Allow) => s"§a✔ ${x.displayName()}"
-              case Some(RuleMode.Deny) => s"§c✖ ${x.displayName()}"
+              case Some(RuleMode.Deny)  => s"§c✖ ${x.displayName()}"
 
           Button(x.displayItem(), txt"$name", Message.TogglePermission(x)) {
             Lore(txt"${x.displayExplanation()}".color(NamedTextColor.WHITE))
@@ -622,7 +622,7 @@ class RoleManagementProgram(using
     }
 
 class InvitesListProgram(using gm: GroupManager, sql: SQLManager)
-  extends UIProgram:
+    extends UIProgram:
   case class Flags(userID: UserID)
 
   // noinspection ScalaWeakerAccess
@@ -631,10 +631,10 @@ class InvitesListProgram(using gm: GroupManager, sql: SQLManager)
     case ViewingInvite(user: UserID, group: GroupState)
 
   case class Model(
-                    userID: UserID,
-                    invites: List[(UserID, GroupState)],
-                    mode: Mode
-                  )
+      userID: UserID,
+      invites: List[(UserID, GroupState)],
+      mode: Mode
+  )
 
   enum Message:
     case ClickInvite(inviter: UserID, group: GroupID)
@@ -652,7 +652,7 @@ class InvitesListProgram(using gm: GroupManager, sql: SQLManager)
     Model(flags.userID, computeInvites(flags.userID), Mode.List)
 
   override def update(msg: Message, model: Model)(using
-                                                  services: UIServices
+      services: UIServices
   ): Future[Model] =
     msg match
       case Message.ClickInvite(user, group) =>
@@ -668,7 +668,7 @@ class InvitesListProgram(using gm: GroupManager, sql: SQLManager)
 
   override def view(model: Model): Callback ?=> Gui =
     model.mode match
-      case Mode.List => list(model)
+      case Mode.List                       => list(model)
       case Mode.ViewingInvite(user, group) => viewing(user, group)
 
   def list(model: Model): Callback ?=> Gui =
@@ -693,9 +693,9 @@ class InvitesListProgram(using gm: GroupManager, sql: SQLManager)
     }
 
   private def viewing(
-                       inviter: UserID,
-                       group: GroupState
-                     ): Callback ?=> Gui =
+      inviter: UserID,
+      group: GroupState
+  ): Callback ?=> Gui =
     Root(txt"Accept / Reject Invite?", 1) {
       OutlinePane(0, 0, 1, 1) {
         Button(
@@ -728,11 +728,11 @@ class InvitesListProgram(using gm: GroupManager, sql: SQLManager)
     }
 
 class GroupListProgram(using
-                       gm: GroupManager,
-                       cbm: CivBeaconManager,
-                       sql: SQLManager,
-                       editor: PolyhedraEditor
-                      ) extends UIProgram:
+    gm: GroupManager,
+    cbm: CivBeaconManager,
+    sql: SQLManager,
+    editor: PolyhedraEditor
+) extends UIProgram:
   case class Flags(userID: UserID)
 
   case class Model(userID: UserID, groups: List[GroupStates])
@@ -754,7 +754,7 @@ class GroupListProgram(using
     )
 
   override def update(msg: Message, model: Model)(using
-                                                  services: UIServices
+      services: UIServices
   ): Future[Model] =
     msg match
       case Message.ClickGroup(groupID) =>

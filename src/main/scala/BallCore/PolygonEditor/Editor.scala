@@ -40,10 +40,10 @@ object EditorModel:
     )
 
 case class EditorModel(
-                        beaconID: BeaconID,
-                        polygon: List[Location],
-                        state: EditorModelState
-                      ) extends Model[EditorModel, EditorMsg, EditorAction]:
+    beaconID: BeaconID,
+    polygon: List[Location],
+    state: EditorModelState
+) extends Model[EditorModel, EditorMsg, EditorAction]:
 
   import BallCore.UI.ChatElements.*
   import EditorAction.*
@@ -125,8 +125,8 @@ case class EditorModel(
             ) -> List()
 
   private def updateLookingAt(
-                               targetLoc: Location
-                             ): (EditorModel, List[EditorAction]) =
+      targetLoc: Location
+  ): (EditorModel, List[EditorAction]) =
     state match
       case editingPoint(idx, _) =>
         val nieuw = polygon.updated(idx, targetLoc)
@@ -142,7 +142,7 @@ case class EditorModel(
             .sortBy(_._2)
             .headOption
             .map(_._1) match
-            case None => idle()
+            case None      => idle()
             case Some(loc) => lookingAt(loc)
 
         this.copy(state = newState) -> List()

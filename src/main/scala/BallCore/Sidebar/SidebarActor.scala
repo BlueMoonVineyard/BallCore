@@ -29,8 +29,8 @@ enum SidebarLine:
   case filler2
 
 class SidebarActor(using lib: ScoreboardLibrary, p: Plugin)
-  extends Actor[SidebarMsg],
-    Listener:
+    extends Actor[SidebarMsg],
+      Listener:
   private val sidebars = TrieMap[Player, Sidebar]()
 
   @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)

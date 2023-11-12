@@ -36,52 +36,52 @@ enum DiamondToolSetCustomModelDatas(val num: Int) extends CustomModelDatas:
   case placeholder extends DiamondToolSetCustomModelDatas(1)
 
 enum ToolSet[E <: CustomModelDatas](
-                                     val pick: Material,
-                                     val axe: Material,
-                                     val shovel: Material,
-                                     val hoe: Material,
-                                     val sword: Material,
-                                     val helmet: Material,
-                                     val chestplate: Material,
-                                     val leggings: Material,
-                                     val boots: Material
-                                   ):
+    val pick: Material,
+    val axe: Material,
+    val shovel: Material,
+    val hoe: Material,
+    val sword: Material,
+    val helmet: Material,
+    val chestplate: Material,
+    val leggings: Material,
+    val boots: Material
+):
   case Iron
-    extends ToolSet[IronToolSetCustomModelDatas](
-      Material.IRON_PICKAXE,
-      Material.IRON_AXE,
-      Material.IRON_SHOVEL,
-      Material.IRON_HOE,
-      Material.IRON_SWORD,
-      Material.IRON_HELMET,
-      Material.IRON_CHESTPLATE,
-      Material.IRON_LEGGINGS,
-      Material.IRON_BOOTS
-    )
+      extends ToolSet[IronToolSetCustomModelDatas](
+        Material.IRON_PICKAXE,
+        Material.IRON_AXE,
+        Material.IRON_SHOVEL,
+        Material.IRON_HOE,
+        Material.IRON_SWORD,
+        Material.IRON_HELMET,
+        Material.IRON_CHESTPLATE,
+        Material.IRON_LEGGINGS,
+        Material.IRON_BOOTS
+      )
   case Gold
-    extends ToolSet[GoldToolSetCustomModelDatas](
-      Material.GOLDEN_PICKAXE,
-      Material.GOLDEN_AXE,
-      Material.GOLDEN_SHOVEL,
-      Material.GOLDEN_HOE,
-      Material.GOLDEN_SWORD,
-      Material.GOLDEN_HELMET,
-      Material.GOLDEN_CHESTPLATE,
-      Material.GOLDEN_LEGGINGS,
-      Material.GOLDEN_BOOTS
-    )
+      extends ToolSet[GoldToolSetCustomModelDatas](
+        Material.GOLDEN_PICKAXE,
+        Material.GOLDEN_AXE,
+        Material.GOLDEN_SHOVEL,
+        Material.GOLDEN_HOE,
+        Material.GOLDEN_SWORD,
+        Material.GOLDEN_HELMET,
+        Material.GOLDEN_CHESTPLATE,
+        Material.GOLDEN_LEGGINGS,
+        Material.GOLDEN_BOOTS
+      )
   case Diamond
-    extends ToolSet[DiamondToolSetCustomModelDatas](
-      Material.DIAMOND_PICKAXE,
-      Material.DIAMOND_AXE,
-      Material.DIAMOND_SHOVEL,
-      Material.DIAMOND_HOE,
-      Material.DIAMOND_SWORD,
-      Material.DIAMOND_HELMET,
-      Material.DIAMOND_CHESTPLATE,
-      Material.DIAMOND_LEGGINGS,
-      Material.DIAMOND_BOOTS
-    )
+      extends ToolSet[DiamondToolSetCustomModelDatas](
+        Material.DIAMOND_PICKAXE,
+        Material.DIAMOND_AXE,
+        Material.DIAMOND_SHOVEL,
+        Material.DIAMOND_HOE,
+        Material.DIAMOND_SWORD,
+        Material.DIAMOND_HELMET,
+        Material.DIAMOND_CHESTPLATE,
+        Material.DIAMOND_LEGGINGS,
+        Material.DIAMOND_BOOTS
+      )
 
 object Gear:
   val group: ItemGroup = ItemGroup(
@@ -95,13 +95,13 @@ object Gear:
     val _ = s.setItemMeta(meta)
 
   private def pickaxe[E <: CustomModelDatas](
-                                              base: ToolSet[E],
-                                              ore: ItemStack,
-                                              name: String,
-                                              id: String,
-                                              cmd: E,
-                                              enchants: (Enchantment, Int)*
-                                            )(using registry: ItemRegistry): Unit =
+      base: ToolSet[E],
+      ore: ItemStack,
+      name: String,
+      id: String,
+      cmd: E,
+      enchants: (Enchantment, Int)*
+  )(using registry: ItemRegistry): Unit =
     val is = CustomItemStack.make(
       NamespacedKey("ballcore", s"${id}_pickaxe"),
       base.pick,
@@ -121,13 +121,13 @@ object Gear:
     registry.addRecipe(recipe)
 
   private def axe[E <: CustomModelDatas](
-                                          base: ToolSet[E],
-                                          ore: ItemStack,
-                                          name: String,
-                                          id: String,
-                                          cmd: E,
-                                          enchants: (Enchantment, Int)*
-                                        )(using registry: ItemRegistry): Unit =
+      base: ToolSet[E],
+      ore: ItemStack,
+      name: String,
+      id: String,
+      cmd: E,
+      enchants: (Enchantment, Int)*
+  )(using registry: ItemRegistry): Unit =
     val is = CustomItemStack.make(
       NamespacedKey("ballcore", s"${id}_axe"),
       base.axe,
@@ -147,13 +147,13 @@ object Gear:
     registry.addRecipe(recipe)
 
   private def shovel[E <: CustomModelDatas](
-                                             base: ToolSet[E],
-                                             ore: ItemStack,
-                                             name: String,
-                                             id: String,
-                                             cmd: E,
-                                             enchants: (Enchantment, Int)*
-                                           )(using registry: ItemRegistry): Unit =
+      base: ToolSet[E],
+      ore: ItemStack,
+      name: String,
+      id: String,
+      cmd: E,
+      enchants: (Enchantment, Int)*
+  )(using registry: ItemRegistry): Unit =
     val is = CustomItemStack.make(
       NamespacedKey("ballcore", s"${id}_shovel"),
       base.shovel,
@@ -173,13 +173,13 @@ object Gear:
     registry.addRecipe(recipe)
 
   private def hoe[E <: CustomModelDatas](
-                                          base: ToolSet[E],
-                                          ore: ItemStack,
-                                          name: String,
-                                          id: String,
-                                          cmd: E,
-                                          enchants: (Enchantment, Int)*
-                                        )(using registry: ItemRegistry): Unit =
+      base: ToolSet[E],
+      ore: ItemStack,
+      name: String,
+      id: String,
+      cmd: E,
+      enchants: (Enchantment, Int)*
+  )(using registry: ItemRegistry): Unit =
     val is = CustomItemStack.make(
       NamespacedKey("ballcore", s"${id}_hoe"),
       base.hoe,
@@ -199,26 +199,26 @@ object Gear:
     registry.addRecipe(recipe)
 
   def tools[E <: CustomModelDatas](
-                                    base: ToolSet[E],
-                                    ore: ItemStack,
-                                    name: String,
-                                    id: String,
-                                    cmd: E,
-                                    enchants: (Enchantment, Int)*
-                                  )(using registry: ItemRegistry): Unit =
+      base: ToolSet[E],
+      ore: ItemStack,
+      name: String,
+      id: String,
+      cmd: E,
+      enchants: (Enchantment, Int)*
+  )(using registry: ItemRegistry): Unit =
     pickaxe(base, ore, name, id, cmd, enchants: _*)
     axe(base, ore, name, id, cmd, enchants: _*)
     shovel(base, ore, name, id, cmd, enchants: _*)
     hoe(base, ore, name, id, cmd, enchants: _*)
 
   def sword[E <: CustomModelDatas](
-                                    base: ToolSet[E],
-                                    ore: ItemStack,
-                                    name: String,
-                                    id: String,
-                                    cmd: E,
-                                    enchants: (Enchantment, Int)*
-                                  )(using registry: ItemRegistry): Unit =
+      base: ToolSet[E],
+      ore: ItemStack,
+      name: String,
+      id: String,
+      cmd: E,
+      enchants: (Enchantment, Int)*
+  )(using registry: ItemRegistry): Unit =
     val is = CustomItemStack.make(
       NamespacedKey("ballcore", s"${id}_sword"),
       base.sword,
@@ -238,13 +238,13 @@ object Gear:
     registry.addRecipe(recipe)
 
   private def helmet[E <: CustomModelDatas](
-                                             base: ToolSet[E],
-                                             ore: ItemStack,
-                                             name: String,
-                                             id: String,
-                                             cmd: E,
-                                             enchants: (Enchantment, Int)*
-                                           )(using registry: ItemRegistry): Unit =
+      base: ToolSet[E],
+      ore: ItemStack,
+      name: String,
+      id: String,
+      cmd: E,
+      enchants: (Enchantment, Int)*
+  )(using registry: ItemRegistry): Unit =
     val is = CustomItemStack.make(
       NamespacedKey("ballcore", s"${id}_helmet"),
       base.helmet,
@@ -262,13 +262,13 @@ object Gear:
     registry.addRecipe(recipe)
 
   private def chestplate[E <: CustomModelDatas](
-                                                 base: ToolSet[E],
-                                                 ore: ItemStack,
-                                                 name: String,
-                                                 id: String,
-                                                 cmd: E,
-                                                 enchants: (Enchantment, Int)*
-                                               )(using registry: ItemRegistry): Unit =
+      base: ToolSet[E],
+      ore: ItemStack,
+      name: String,
+      id: String,
+      cmd: E,
+      enchants: (Enchantment, Int)*
+  )(using registry: ItemRegistry): Unit =
     val is = CustomItemStack.make(
       NamespacedKey("ballcore", s"${id}_chestplate"),
       base.chestplate,
@@ -287,13 +287,13 @@ object Gear:
     registry.addRecipe(recipe)
 
   private def leggings[E <: CustomModelDatas](
-                                               base: ToolSet[E],
-                                               ore: ItemStack,
-                                               name: String,
-                                               id: String,
-                                               cmd: E,
-                                               enchants: (Enchantment, Int)*
-                                             )(using registry: ItemRegistry): Unit =
+      base: ToolSet[E],
+      ore: ItemStack,
+      name: String,
+      id: String,
+      cmd: E,
+      enchants: (Enchantment, Int)*
+  )(using registry: ItemRegistry): Unit =
     val is = CustomItemStack.make(
       NamespacedKey("ballcore", s"${id}_leggings"),
       base.leggings,
@@ -312,13 +312,13 @@ object Gear:
     registry.addRecipe(recipe)
 
   private def boots[E <: CustomModelDatas](
-                                            base: ToolSet[E],
-                                            ore: ItemStack,
-                                            name: String,
-                                            id: String,
-                                            cmd: E,
-                                            enchants: (Enchantment, Int)*
-                                          )(using registry: ItemRegistry): Unit =
+      base: ToolSet[E],
+      ore: ItemStack,
+      name: String,
+      id: String,
+      cmd: E,
+      enchants: (Enchantment, Int)*
+  )(using registry: ItemRegistry): Unit =
     val is = CustomItemStack.make(
       NamespacedKey("ballcore", s"${id}_boots"),
       base.boots,
@@ -336,25 +336,25 @@ object Gear:
     registry.addRecipe(recipe)
 
   def armor[E <: CustomModelDatas](
-                                    base: ToolSet[E],
-                                    ore: ItemStack,
-                                    name: String,
-                                    id: String,
-                                    cmd: E,
-                                    enchants: (Enchantment, Int)*
-                                  )(using registry: ItemRegistry): Unit =
+      base: ToolSet[E],
+      ore: ItemStack,
+      name: String,
+      id: String,
+      cmd: E,
+      enchants: (Enchantment, Int)*
+  )(using registry: ItemRegistry): Unit =
     helmet(base, ore, name, id, cmd, enchants: _*)
     chestplate(base, ore, name, id, cmd, enchants: _*)
     leggings(base, ore, name, id, cmd, enchants: _*)
     boots(base, ore, name, id, cmd, enchants: _*)
 
   private def register[E <: CustomModelDatas](
-                                               is: CustomItemStack,
-                                               cmd: E,
-                                               enchants: Seq[(Enchantment, Int)]
-                                             )(using
-                                               registry: ItemRegistry
-                                             ): Unit =
+      is: CustomItemStack,
+      cmd: E,
+      enchants: Seq[(Enchantment, Int)]
+  )(using
+      registry: ItemRegistry
+  ): Unit =
     hide(is)
     enchants.foreach {
       // noinspection ConvertibleToMethodValue

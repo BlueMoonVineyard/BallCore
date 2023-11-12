@@ -14,15 +14,15 @@ import scala.language.implicitConversions
 
 class Storage()(using kvs: KeyVal):
   private def get(player: UUID, key: String, default: Double)(using
-                                                              Session[IO]
+      Session[IO]
   ): IO[Double] =
     kvs.get[Double](player, key).map {
       case Some(value) => value
-      case None => default
+      case None        => default
     }
 
   private def set(player: UUID, key: String, value: Double)(using
-                                                            Session[IO]
+      Session[IO]
   ): IO[Unit] =
     kvs.set(player, key, value)
 
@@ -41,7 +41,7 @@ class Storage()(using kvs: KeyVal):
       }
 
   def setLastSeenLocation(player: UUID, to: Location)(using
-                                                      Session[IO]
+      Session[IO]
   ): IO[Unit] =
     val tuple = (to.getX, to.getY, to.getZ, to.getWorld.getUID)
     kvs.set(player, "acclimation.last-seen-location", tuple)
@@ -54,8 +54,8 @@ class Storage()(using kvs: KeyVal):
     set(player, "acclimation.temperature", value)
 
   /** elevation ranges from -1.0 (bedrock) to 0.0 (sea level) to 1.0 (build
-   * limit)
-   */
+    * limit)
+    */
   def getElevation(player: UUID)(using Session[IO]): IO[Double] =
     get(player, "acclimation.elevation", 0.0)
 
@@ -70,7 +70,7 @@ class Storage()(using kvs: KeyVal):
     set(player, "acclimation.longitude", value)
 
   /** latitude ranges from -1.0 (northmost) to 0.0 (centre) to 1.0 (southmost)
-   */
+    */
   def getLatitude(player: UUID)(using Session[IO]): IO[Double] =
     get(player, "acclimation.latitude", 0.0)
 

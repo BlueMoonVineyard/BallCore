@@ -19,13 +19,13 @@ type SubgroupID = ju.UUID
 lazy val nullUUID = ju.UUID(0, 0)
 
 /** the null UUID is used for the role that everyone in the world has, no
- * exceptions
- */
+  * exceptions
+  */
 lazy val everyoneUUID = ju.UUID(0, 0)
 
 /** the null UUID is used for the role that everyone in a group has, no
- * exceptions
- */
+  * exceptions
+  */
 lazy val groupMemberUUID = ju.UUID(0, 1)
 
 enum RuleMode:
@@ -34,7 +34,7 @@ enum RuleMode:
   def toggle(): RuleMode =
     this match
       case Allow => Deny
-      case Deny => Allow
+      case Deny  => Allow
 
 implicit val rmDecoder: Decoder[RuleMode] = deriveDecoder[RuleMode]
 implicit val rmEncoder: Encoder[RuleMode] = deriveEncoder[RuleMode]
@@ -61,40 +61,40 @@ enum Permissions(val name: String):
 
   def displayName(): String =
     this match
-      case ManageRoles => "Manage Roles"
-      case ManageUserRoles => "Assign Roles"
-      case InviteUser => "Invite Users"
-      case RemoveUser => "Remove Users"
+      case ManageRoles            => "Manage Roles"
+      case ManageUserRoles        => "Assign Roles"
+      case InviteUser             => "Invite Users"
+      case RemoveUser             => "Remove Users"
       case UpdateGroupInformation => "Modify Group Information"
-      case ManageSubgroups => "Manage Subgroups"
-      case ManageClaims => "Manage Claims"
-      case AddReinforcements => "Reinforce Blocks/Entities"
-      case RemoveReinforcements => "Unreinforce Blocks/Entities"
-      case Build => "Build"
-      case Chests => "Use Chests"
-      case Doors => "Use Doors"
-      case Crops => "Use Crops"
-      case Signs => "Edit Signs"
-      case Entities => "Interact with Entities"
+      case ManageSubgroups        => "Manage Subgroups"
+      case ManageClaims           => "Manage Claims"
+      case AddReinforcements      => "Reinforce Blocks/Entities"
+      case RemoveReinforcements   => "Unreinforce Blocks/Entities"
+      case Build                  => "Build"
+      case Chests                 => "Use Chests"
+      case Doors                  => "Use Doors"
+      case Crops                  => "Use Crops"
+      case Signs                  => "Edit Signs"
+      case Entities               => "Interact with Entities"
 
   def displayExplanation(): String =
     this match
       case ManageRoles => "Allows users to modify roles"
       case ManageUserRoles =>
         "Allows users to assign and revoke roles below their highest role to other users"
-      case InviteUser => "Allows user to invite others"
-      case RemoveUser => "Allows user to remove others"
+      case InviteUser             => "Allows user to invite others"
+      case RemoveUser             => "Allows user to remove others"
       case UpdateGroupInformation => "Allows user to update group information"
       case AddReinforcements =>
         "Allows the user to reinforce blocks and entities"
       case RemoveReinforcements =>
         "Allows the user to unreinforce blocks and entities"
-      case Build => "Allows the user to modify reinforced blocks"
+      case Build  => "Allows the user to modify reinforced blocks"
       case Chests => "Allows the user to open reinforced chests"
-      case Doors => "Allows the user to open reinforced doors"
+      case Doors  => "Allows the user to open reinforced doors"
       case Crops =>
         "Allows the user to plant and harvest crops on reinforced farmland"
-      case Signs => "Allows users to edit signs (hanging and not)"
+      case Signs    => "Allows users to edit signs (hanging and not)"
       case Entities => "Allows the user to interact with entities"
       case ManageSubgroups =>
         "Allows users to create, rename, and delete subgroups"
@@ -103,21 +103,21 @@ enum Permissions(val name: String):
 
   def displayItem(): Material =
     this match
-      case ManageRoles => Material.LEATHER_CHESTPLATE
-      case ManageUserRoles => Material.IRON_CHESTPLATE
-      case InviteUser => Material.PLAYER_HEAD
-      case RemoveUser => Material.BARRIER
+      case ManageRoles            => Material.LEATHER_CHESTPLATE
+      case ManageUserRoles        => Material.IRON_CHESTPLATE
+      case InviteUser             => Material.PLAYER_HEAD
+      case RemoveUser             => Material.BARRIER
       case UpdateGroupInformation => Material.NAME_TAG
-      case AddReinforcements => Material.STONE
-      case RemoveReinforcements => Material.IRON_PICKAXE
-      case Build => Material.BRICKS
-      case Chests => Material.CHEST
-      case Doors => Material.OAK_DOOR
-      case Crops => Material.WHEAT
-      case Signs => Material.OAK_SIGN
-      case Entities => Material.EGG
-      case ManageClaims => Material.BEACON
-      case ManageSubgroups => Material.RED_BED
+      case AddReinforcements      => Material.STONE
+      case RemoveReinforcements   => Material.IRON_PICKAXE
+      case Build                  => Material.BRICKS
+      case Chests                 => Material.CHEST
+      case Doors                  => Material.OAK_DOOR
+      case Crops                  => Material.WHEAT
+      case Signs                  => Material.OAK_SIGN
+      case Entities               => Material.EGG
+      case ManageClaims           => Material.BEACON
+      case ManageSubgroups        => Material.RED_BED
 
 implicit val pKeyEncoder: KeyEncoder[Permissions] = (perm: Permissions) =>
   perm.name
@@ -125,25 +125,25 @@ implicit val pKeyDecoder: KeyDecoder[Permissions] = (key: String) =>
   Permissions.values.find(v => v.name == key)
 
 case class SubgroupState(
-                          id: SubgroupID,
-                          name: String,
-                          permissions: Map[RoleID, Map[Permissions, RuleMode]]
-                        )
+    id: SubgroupID,
+    name: String,
+    permissions: Map[RoleID, Map[Permissions, RuleMode]]
+)
 
 case class Position(
-                     x: Int,
-                     y: Int,
-                     z: Int,
-                     world: ju.UUID
-                   )
+    x: Int,
+    y: Int,
+    z: Int,
+    world: ju.UUID
+)
 
 implicit val pDecoder: Decoder[Position] = deriveDecoder[Position]
 implicit val pEncoder: Encoder[Position] = deriveEncoder[Position]
 
 case class Volume(
-                   cornerA: Position,
-                   cornerB: Position
-                 ):
+    cornerA: Position,
+    cornerB: Position
+):
   private def cornerALocation(): Position =
     cornerA
 
@@ -162,15 +162,15 @@ case class Volume(
     val cb = cornerBLocation()
 
     check1D(target.getX, ca.x, cb.x) &&
-      check1D(target.getY, ca.y, cb.y) &&
-      check1D(target.getZ, ca.z, cb.z)
+    check1D(target.getY, ca.y, cb.y) &&
+    check1D(target.getZ, ca.z, cb.z)
 
 implicit val vDecoder: Decoder[Volume] = deriveDecoder[Volume]
 implicit val vEncoder: Encoder[Volume] = deriveEncoder[Volume]
 
 case class Subclaims(
-                      volumes: List[Volume]
-                    ):
+    volumes: List[Volume]
+):
   def contains(target: Location): Boolean =
     volumes.exists(_.contains(target))
 
@@ -178,27 +178,27 @@ implicit val scDecoder: Decoder[Subclaims] = deriveDecoder[Subclaims]
 implicit val scEncoder: Encoder[Subclaims] = deriveEncoder[Subclaims]
 
 case class RoleState(
-                      id: RoleID,
-                      name: String,
-                      hoist: Boolean,
-                      permissions: Map[Permissions, RuleMode]
-                    )
+    id: RoleID,
+    name: String,
+    hoist: Boolean,
+    permissions: Map[Permissions, RuleMode]
+)
 
 implicit val rsDecoder: Decoder[RoleState] = deriveDecoder[RoleState]
 implicit val rsEncoder: Encoder[RoleState] = deriveEncoder[RoleState]
 
 /** This holds all the information about a group */
 case class GroupState(
-                       metadata: GroupStates,
-                       owners: List[UserID],
-                       roles: List[RoleState],
-                       users: Map[UserID, Set[RoleID]],
-                       subgroups: List[SubgroupState]
-                     ):
+    metadata: GroupStates,
+    owners: List[UserID],
+    roles: List[RoleState],
+    users: Map[UserID, Set[RoleID]],
+    subgroups: List[SubgroupState]
+):
   private def subgroupPermissionsFor(
-                                      subgroup: SubgroupID,
-                                      role: RoleID
-                                    ): Map[Permissions, RuleMode] =
+      subgroup: SubgroupID,
+      role: RoleID
+  ): Map[Permissions, RuleMode] =
     subgroups
       .find(_.id == subgroup)
       .flatMap(_.permissions.get(role))
@@ -229,10 +229,10 @@ case class GroupState(
         }
         subgroupPerms.find { x => x.isDefined }.flatten match
           case Some(RuleMode.Allow) => return true
-          case Some(RuleMode.Deny) => return false
-          case _ =>
+          case Some(RuleMode.Deny)  => return false
+          case _                    =>
 
       perms.find { x => x.isDefined }.flatten match
         case Some(RuleMode.Allow) => true
-        case Some(RuleMode.Deny) => false
-        case _ => false
+        case Some(RuleMode.Deny)  => false
+        case _                    => false

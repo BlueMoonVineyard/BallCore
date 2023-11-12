@@ -68,7 +68,7 @@ object Messaging:
     ()
 
 class PluginMessaging()(using p: Plugin, gm: GroupManager, sql: SQLManager)
-  extends PluginMessageListener:
+    extends PluginMessageListener:
   object Extensions:
     extension (plr: Player)
       def sendPluginMessage(ba: Array[Byte]): Unit =
@@ -77,16 +77,16 @@ class PluginMessaging()(using p: Plugin, gm: GroupManager, sql: SQLManager)
   import Extensions.*
 
   private val handlers
-  : Map[String, (Player, Json) => IO[Either[RPCError, Json]]] = Map(
+      : Map[String, (Player, Json) => IO[Either[RPCError, Json]]] = Map(
     "getGroups" -> lift(getGroups)
   )
 
   inline private def lift[Input, Output](
-                                          fn: (Player, Input) => IO[Either[RPCError, Output]]
-                                        )(using
-                                          Decoder[Input],
-                                          Encoder[Output]
-                                        ): (Player, Json) => IO[Either[RPCError, Json]] = { (player, params) =>
+      fn: (Player, Input) => IO[Either[RPCError, Output]]
+  )(using
+      Decoder[Input],
+      Encoder[Output]
+  ): (Player, Json) => IO[Either[RPCError, Json]] = { (player, params) =>
     params.as[Input] match
       case Left(err) =>
         IO.pure(Left(RPCError(-32602, err.toString, Json.obj())))
@@ -94,53 +94,52 @@ class PluginMessaging()(using p: Plugin, gm: GroupManager, sql: SQLManager)
         fn(player, value).map(_.map(_.asJson))
   }
 
-  // noinspection Annotator
   override def onPluginMessageReceived(
-                                        channel: String,
-                                        player: Player,
-                                        message: Array[Byte]
-                                      ): Unit =
+      channel: String,
+      player: Player,
+      message: Array[Byte]
+  ): Unit =
     if channel != Messaging.channel then
       return
 
-        decodeByteArray[ClientMessage](message) match
-          case Left(err) =>
-            player.sendServerMessage(
-              txt"I received an invalid message from one of your mods: $err"
-            )
-          case Right(ClientMessage.notification(what, params)) =>
-            ()
-          case Right(ClientMessage.request(what, params, id)) =>
-            handlers.get(what) match
-              case None =>
-                player.sendPluginMessage(
-                  ServerMessage(
-                    Left(RPCError(-32601, "Method not found", Json.obj())),
-                    id
-                  ).asJson.toString.getBytes(StandardCharsets.UTF_8)
-                )
-              case Some(handler) =>
-                handler(player, params).unsafeRunAsync {
-                  case Left(exception) =>
-                    player.sendPluginMessage(
-                      ServerMessage(
-                        Left(
-                          RPCError(-32000, "Internal server error", Json.obj())
-                        ),
-                        id
-                      ).asJson.toString.getBytes(StandardCharsets.UTF_8)
-                    )
-                  case Right(Left(err)) =>
-                    player.sendPluginMessage(
-                      ServerMessage(Left(err), id).asJson.toString
-                        .getBytes(StandardCharsets.UTF_8)
-                    )
-                  case Right(Right(resp)) =>
-                    player.sendPluginMessage(
-                      ServerMessage(Right(resp), id).asJson.toString
-                        .getBytes(StandardCharsets.UTF_8)
-                    )
-                }
+      decodeByteArray[ClientMessage](message) match
+        case Left(err) =>
+          player.sendServerMessage(
+            txt"I received an invalid message from one of your mods: $err"
+          )
+        case Right(ClientMessage.notification(what, params)) =>
+          ()
+        case Right(ClientMessage.request(what, params, id)) =>
+          handlers.get(what) match
+            case None =>
+              player.sendPluginMessage(
+                ServerMessage(
+                  Left(RPCError(-32601, "Method not found", Json.obj())),
+                  id
+                ).asJson.toString.getBytes(StandardCharsets.UTF_8)
+              )
+            case Some(handler) =>
+              handler(player, params).unsafeRunAsync {
+                case Left(exception) =>
+                  player.sendPluginMessage(
+                    ServerMessage(
+                      Left(
+                        RPCError(-32000, "Internal server error", Json.obj())
+                      ),
+                      id
+                    ).asJson.toString.getBytes(StandardCharsets.UTF_8)
+                  )
+                case Right(Left(err)) =>
+                  player.sendPluginMessage(
+                    ServerMessage(Left(err), id).asJson.toString
+                      .getBytes(StandardCharsets.UTF_8)
+                  )
+                case Right(Right(resp)) =>
+                  player.sendPluginMessage(
+                    ServerMessage(Right(resp), id).asJson.toString
+                      .getBytes(StandardCharsets.UTF_8)
+                  )
+              }
 
   case class GetGroupsRequest()
 
@@ -155,9 +154,9 @@ class PluginMessaging()(using p: Plugin, gm: GroupManager, sql: SQLManager)
   }
 
   private def getGroups(
-                         player: Player,
-                         params: GetGroupsRequest
-                       ): IO[Either[RPCError, GetGroupsResponse]] =
+      player: Player,
+      params: GetGroupsRequest
+  ): IO[Either[RPCError, GetGroupsResponse]] =
     val _ = params
     sql.useIO {
       gm.userGroups(player.getUniqueId).value.map {

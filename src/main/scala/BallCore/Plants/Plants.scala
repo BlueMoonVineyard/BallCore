@@ -11,11 +11,11 @@ import org.bukkit.plugin.Plugin
 
 object Plants:
   def register()(using
-                 p: Plugin,
-                 reg: ItemRegistry,
-                 sql: SQLManager,
-                 sm: ShutdownCallbacks,
-                 c: Clock
+      p: Plugin,
+      reg: ItemRegistry,
+      sql: SQLManager,
+      sm: ShutdownCallbacks,
+      c: Clock
   ): PlantBatchManager =
     reg.register(Fruit(Fruit.apricot))
     reg.register(Fruit(Fruit.peach))

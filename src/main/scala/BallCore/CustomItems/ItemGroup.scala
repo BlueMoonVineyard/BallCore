@@ -15,9 +15,9 @@ import scala.jdk.CollectionConverters.*
 import scala.util.chaining.*
 
 class CustomItemStack(
-                       val itemID: NamespacedKey,
-                       val stack: ItemStack
-                     ) extends ItemStack(stack):
+    val itemID: NamespacedKey,
+    val stack: ItemStack
+) extends ItemStack(stack):
   val id: NamespacedKey = itemID
   setItemMeta(
     getItemMeta
@@ -39,11 +39,11 @@ object CustomItemStack:
     })
 
   def make(
-            itemID: NamespacedKey,
-            stack: Material,
-            name: Component,
-            lore: Component*
-          ): CustomItemStack =
+      itemID: NamespacedKey,
+      stack: Material,
+      name: Component,
+      lore: Component*
+  ): CustomItemStack =
     val is = ItemStack(stack)
     is.setItemMeta(
       is.getItemMeta
@@ -57,6 +57,6 @@ object CustomItemStack:
     CustomItemStack(itemID, is)
 
 case class ItemGroup(
-                      key: NamespacedKey,
-                      gui: ItemStack
-                    )
+    key: NamespacedKey,
+    gui: ItemStack
+)

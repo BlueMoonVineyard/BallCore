@@ -12,7 +12,7 @@ import java.util.logging.Level
 import scala.concurrent.ExecutionContext
 
 class EntityExecutionContext(ent: Entity)(using plugin: Plugin)
-  extends ExecutionContext:
+    extends ExecutionContext:
   val sched: EntityScheduler = ent.getScheduler
 
   override def execute(runnable: Runnable): Unit =

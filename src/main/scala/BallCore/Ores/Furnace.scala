@@ -38,10 +38,10 @@ enum FurnaceTier:
   case Three
 
 class FurnaceListener(using
-                      bm: BlockManager,
-                      registry: ItemRegistry,
-                      sql: SQLManager
-                     ) extends Listener:
+    bm: BlockManager,
+    registry: ItemRegistry,
+    sql: SQLManager
+) extends Listener:
   def spawn(it: ItemStack, by: Block): Unit =
     val loc = by.getLocation().clone().add(0, 1, 0)
     WorkChestUtils.findWorkChest(by) match
@@ -162,11 +162,11 @@ object Furnace:
     List(praecantatioFurnace, auramFurnace, alkimiaFurnace)
 
   def registerItems()(using
-                      bm: BlockManager,
-                      registry: ItemRegistry,
-                      server: Server,
-                      plugin: JavaPlugin,
-                      sql: SQLManager
+      bm: BlockManager,
+      registry: ItemRegistry,
+      server: Server,
+      plugin: JavaPlugin,
+      sql: SQLManager
   ): Unit =
     server.getPluginManager.registerEvents(FurnaceListener(), plugin)
     List(
@@ -179,7 +179,7 @@ object Furnace:
       }
 
 class Furnace(furnaceTier: FurnaceTier, items: CustomItemStack)
-  extends CustomItem:
+    extends CustomItem:
   def group: ItemGroup = Furnaces.group
 
   def template: CustomItemStack = items

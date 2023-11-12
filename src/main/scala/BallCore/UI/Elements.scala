@@ -55,27 +55,27 @@ object Elements extends TextComponents:
   private def nil[T, E]: Accumulator[T, E] ?=> Unit = {}
 
   def Root(title: Component, rows: Int)(
-    inner: PaneAccumulator ?=> Unit = nil
+      inner: PaneAccumulator ?=> Unit = nil
   )(using cb: Object => InventoryClickEvent => Unit): ChestGui =
     val chest = ChestGui(rows, ComponentHolder.of(title))
     Accumulator.run(inner, cb).foreach(x => chest.addPane(x))
     chest
 
   def OutlinePane(
-                   x: Int,
-                   y: Int,
-                   length: Int,
-                   height: Int,
-                   priority: Priority = Priority.NORMAL,
-                   repeat: Boolean = false
-                 )(inner: ItemAccumulator ?=> Unit = nil)(using an: PaneAccumulator): Unit =
+      x: Int,
+      y: Int,
+      length: Int,
+      height: Int,
+      priority: Priority = Priority.NORMAL,
+      repeat: Boolean = false
+  )(inner: ItemAccumulator ?=> Unit = nil)(using an: PaneAccumulator): Unit =
     val pane = IFOutlinePane(x, y, length, height, priority)
     pane.setRepeat(repeat)
     Accumulator.run(inner, an.extra).foreach(x => pane.addItem(x))
     an add pane
 
   def Item(item: ItemStack, displayName: Option[Component])(
-    inner: LoreAccumulator ?=> Unit
+      inner: LoreAccumulator ?=> Unit
   )(using an: ItemAccumulator): Unit =
     val is = item.clone()
     val im = is.getItemMeta
@@ -110,21 +110,21 @@ object Elements extends TextComponents:
     an add GuiItem(is, ev => ev.setCancelled(true))
 
   def Item(
-            id: Material,
-            amount: Int = 1,
-            displayName: Option[Component] = None
-          )(inner: LoreAccumulator ?=> Unit = nil)(using an: ItemAccumulator): Unit =
+      id: Material,
+      amount: Int = 1,
+      displayName: Option[Component] = None
+  )(inner: LoreAccumulator ?=> Unit = nil)(using an: ItemAccumulator): Unit =
     val is = ItemStack(id, amount)
 
     Item(is, displayName)(inner)
 
   def Button[Msg](
-                   id: Material,
-                   displayName: Component,
-                   onClick: Msg,
-                   amount: Int = 1,
-                   highlighted: Boolean = false
-                 )(inner: LoreAccumulator ?=> Unit = nil)(using an: ItemAccumulator): Unit =
+      id: Material,
+      displayName: Component,
+      onClick: Msg,
+      amount: Int = 1,
+      highlighted: Boolean = false
+  )(inner: LoreAccumulator ?=> Unit = nil)(using an: ItemAccumulator): Unit =
     val is = ItemStack(id, amount)
     val im = is.getItemMeta
     val baked = an.extra(onClick.asInstanceOf[Object])

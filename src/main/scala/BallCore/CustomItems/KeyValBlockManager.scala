@@ -15,16 +15,16 @@ class KeyValBlockManager(using kv: KeyVal) extends BlockManager:
     s"${b.getWorld.getUID}|${b.getX}|${b.getY}|${b.getZ}|$key"
 
   def store[A](block: Block, key: String, what: A)(using
-                                                   Encoder[A],
-                                                   Decoder[A],
-                                                   Session[IO]
+      Encoder[A],
+      Decoder[A],
+      Session[IO]
   ): IO[Unit] =
     kv.set("blockdb", keyof(block, key), what)
 
   def retrieve[A](block: Block, key: String)(using
-                                             Encoder[A],
-                                             Decoder[A],
-                                             Session[IO]
+      Encoder[A],
+      Decoder[A],
+      Session[IO]
   ): IO[Option[A]] =
     kv.get("blockdb", keyof(block, key))
 

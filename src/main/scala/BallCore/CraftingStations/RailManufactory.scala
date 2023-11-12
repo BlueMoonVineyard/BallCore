@@ -80,7 +80,7 @@ object RailManufactory:
   )
 
 class RailManufactory()(using act: CraftingActor, p: Plugin, prompts: Prompts)
-  extends CraftingStation(RailManufactory.recipes):
+    extends CraftingStation(RailManufactory.recipes):
   def group: ItemGroup = CraftingStations.group
 
   def template: CustomItemStack = RailManufactory.template
