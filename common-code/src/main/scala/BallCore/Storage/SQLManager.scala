@@ -6,6 +6,7 @@ package BallCore.Storage
 
 import cats.effect.*
 import cats.effect.cps.*
+import cats.effect.unsafe.IORuntime
 import cats.effect.unsafe.implicits.global
 import cats.syntax.traverse.*
 import natchez.Trace.Implicits.noop
@@ -84,14 +85,14 @@ object SQLManager:
 class SQLManager(resource: Resource[IO, Session[IO]], val database: String):
   val session: Resource[IO, Session[IO]] = resource
 
-  val runtime = global
+  val runtime: IORuntime = global
 
-  val countQuery: Query[String, Long] =
+  private val countQuery: Query[String, Long] =
     sql"""
         SELECT COUNT(*) FROM _Migrations WHERE NAME = $text
         """.query(int8)
 
-  val insertCommand: Command[String] =
+  private val insertCommand: Command[String] =
     sql"""
         INSERT INTO _Migrations (Name) VALUES ($text)
         """.command
@@ -123,7 +124,7 @@ class SQLManager(resource: Resource[IO, Session[IO]], val database: String):
       }
       .unsafeRunSync()
 
-  def txIO[A](fn: (Transaction[IO]) => IO[A])(using s: Session[IO]): IO[A] =
+  def txIO[A](fn: Transaction[IO] => IO[A])(using s: Session[IO]): IO[A] =
     s.transaction.use { tx =>
       fn(tx)
     }

@@ -16,19 +16,16 @@ lazy val dependencyPlugin = project
     version := "0.1.0-SNAPSHOT",
     assembly / assemblyJarName := "BallCoreDependencyPlugin.jar",
     assembly / assemblyMergeStrategy := {
-      case PathList("META-INF", xs @ _*) => MergeStrategy.discard
+      case PathList("META-INF", xs@_*) => MergeStrategy.discard
       case PathList(ps @ _*) if ps.endsWith(".conf") => MergeStrategy.concat
       case x => (assembly / assemblyMergeStrategy).value(x)
     },
-
     scalaVersion := scala3Version,
-
     resolvers += "spigot-repo" at "https://hub.spigotmc.org/nexus/content/repositories/snapshots/",
     resolvers += "paper-repo" at "https://repo.papermc.io/repository/maven-public/",
     resolvers += "codemc-repo" at "https://repo.codemc.io/repository/maven-public/",
     resolvers += "jitpack.io" at "https://jitpack.io/",
     resolvers += "akka" at "https://repo.akka.io/maven",
-
     libraryDependencies += "dev.folia" % "folia-api" % foliaVersion % "provided", // intransitive()
     libraryDependencies += "com.velocitypowered" % "velocity-api" % "3.2.0-SNAPSHOT" % "provided",
     libraryDependencies += "com.github.plokhotnyuk.rtree2d" %% "rtree2d-core" % "0.11.12",
@@ -56,12 +53,11 @@ lazy val dependencyPlugin = project
       "io.circe" %% "circe-generic",
       "io.circe" %% "circe-parser"
     ).map(_ % circeVersion),
-
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-actor-typed" % AkkaVersion,
       "com.typesafe.akka" %% "akka-stream" % AkkaVersion,
-      "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
-    ),
+      "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion
+    )
   )
 
 lazy val commonCode = project
@@ -70,16 +66,12 @@ lazy val commonCode = project
   .settings(
     name := "BallCoreCommonCode",
     version := "0.1.0-SNAPSHOT",
-
     scalaVersion := scala3Version,
-
     libraryDependencies += "org.scalameta" %% "munit" % "0.7.29" % Test,
-
     libraryDependencies += "dev.folia" % "folia-api" % foliaVersion % "provided",
     libraryDependencies += "com.velocitypowered" % "velocity-api" % "3.2.0-SNAPSHOT" % "provided",
-
     Test / fork := true,
-    Test / run / javaOptions += "--enable-preview",
+    Test / run / javaOptions += "--enable-preview"
   )
 
 lazy val velocityPlugin = project
@@ -89,15 +81,11 @@ lazy val velocityPlugin = project
   .settings(
     name := "BallCoreVelocity",
     version := "0.1.0-SNAPSHOT",
-
     scalaVersion := scala3Version,
-
     libraryDependencies += "org.scalameta" %% "munit" % "0.7.29" % Test,
-
     libraryDependencies += "com.velocitypowered" % "velocity-api" % "3.2.0-SNAPSHOT" % "provided",
-
     Test / fork := true,
-    Test / run / javaOptions += "--enable-preview",
+    Test / run / javaOptions += "--enable-preview"
   )
 
 lazy val actualPlugin = project
@@ -107,17 +95,14 @@ lazy val actualPlugin = project
   .settings(
     name := "BallCore",
     version := "0.1.0-SNAPSHOT",
-
     scalaVersion := scala3Version,
-
     libraryDependencies += "org.scalameta" %% "munit" % "0.7.29" % Test,
     libraryDependencies += "com.github.seeseemelk" % "MockBukkit-v1.20" % "3.18.0" % Test,
-
     libraryDependencies += "org.locationtech.jts" % "jts-core" % "1.16.1" % "provided",
     libraryDependencies += "dev.folia" % "folia-api" % foliaVersion % "provided", // intransitive()
 
     Test / fork := true,
-    Test / run / javaOptions += "--enable-preview",
+    Test / run / javaOptions += "--enable-preview"
   )
 
 lazy val hubPlugin = project
@@ -127,14 +112,11 @@ lazy val hubPlugin = project
   .settings(
     name := "BallCoreHub",
     version := "0.1.0-SNAPSHOT",
-
     scalaVersion := scala3Version,
-
     libraryDependencies += "org.scalameta" %% "munit" % "0.7.29" % Test,
     libraryDependencies += "com.github.seeseemelk" % "MockBukkit-v1.19" % "2.29.0" % Test,
-
     libraryDependencies += "dev.folia" % "folia-api" % foliaVersion % "provided", // intransitive()
 
     Test / fork := true,
-    Test / run / javaOptions += "--enable-preview",
+    Test / run / javaOptions += "--enable-preview"
   )

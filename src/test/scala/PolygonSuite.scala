@@ -3,14 +3,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import BallCore.PolygonEditor.*
-import be.seeseemelk.mockbukkit.{MockBukkit, WorldMock}
+import be.seeseemelk.mockbukkit.entity.PlayerMock
+import be.seeseemelk.mockbukkit.{MockBukkit, MockPlugin, ServerMock, WorldMock}
 import org.bukkit.Location
 import org.bukkit.plugin.Plugin
 
 class PolygonSuite extends munit.FunSuite:
-  val server = MockBukkit.mock()
-  val plugin = MockBukkit.createMockPlugin()
-  val player = server.addPlayer()
+  val server: ServerMock = MockBukkit.mock()
+  val plugin: MockPlugin = MockBukkit.createMockPlugin()
+  val player: PlayerMock = server.addPlayer()
 
   given Plugin = plugin
 
@@ -32,8 +33,8 @@ class PolygonSuite extends munit.FunSuite:
 
     var invalidationEM = (initialEM, List[EditorAction]())
 
-    invalidationEM = invalidationEM._1.update(look(locs(0)))
-    assertEquals(invalidationEM._1.state, lookingAt(locs(0)))
+    invalidationEM = invalidationEM._1.update(look(locs.head))
+    assertEquals(invalidationEM._1.state, lookingAt(locs.head))
     val beforeInvalid = invalidationEM._1.polygon
     invalidationEM = invalidationEM._1.update(rightClick())
     assertEquals(invalidationEM._1.state, editingPoint(0, true))
@@ -46,8 +47,8 @@ class PolygonSuite extends munit.FunSuite:
 
     var deletionEM = (initialEM, List[EditorAction]())
 
-    deletionEM = deletionEM._1.update(look(locs(0)))
-    assertEquals(deletionEM._1.state, lookingAt(locs(0)))
+    deletionEM = deletionEM._1.update(look(locs.head))
+    assertEquals(deletionEM._1.state, lookingAt(locs.head))
     deletionEM = deletionEM._1.update(leftClick())
     assert(deletionEM._2.length == 1, deletionEM)
   }
