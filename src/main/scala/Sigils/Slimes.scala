@@ -236,36 +236,35 @@ class SlimeBehaviours()(using
               chunk
                 .getEntities()
                 .flatMap(castOption[Interaction])
-                .foreach {
-                  interaction =>
-                    sql.useBlocking(cem.entityKind(interaction)) match
-                      case Some((kind, disp)) if kind == Slimes.entityKind =>
-                        given ec: ExecutionContext =
-                          EntityExecutionContext(interaction)
+                .foreach { interaction =>
+                  sql.useBlocking(cem.entityKind(interaction)) match
+                    case Some((kind, disp)) if kind == Slimes.entityKind =>
+                      given ec: ExecutionContext =
+                        EntityExecutionContext(interaction)
 
-                        FireAndForget {
-                          val players =
-                            interaction
-                              .getNearbyEntities(10, 3, 10)
-                              .asScala
-                              .flatMap(castOption[Player])
-                          if players.length > 0 then
-                            val player =
-                              players(randomizer.nextInt(players.length))
-                            val loc = interaction
-                              .getLocation()
-                              .clone()
-                              .setDirection(
-                                player
-                                  .getLocation()
-                                  .clone()
-                                  .subtract(interaction.getLocation())
-                                  .toVector()
-                              )
-                            interaction.setRotation(loc.getYaw(), 0)
-                            Bukkit.getEntity(disp).setRotation(loc.getYaw(), 0)
-                        }
-                      case _ =>
+                      FireAndForget {
+                        val players =
+                          interaction
+                            .getNearbyEntities(10, 3, 10)
+                            .asScala
+                            .flatMap(castOption[Player])
+                        if players.length > 0 then
+                          val player =
+                            players(randomizer.nextInt(players.length))
+                          val loc = interaction
+                            .getLocation()
+                            .clone()
+                            .setDirection(
+                              player
+                                .getLocation()
+                                .clone()
+                                .subtract(interaction.getLocation())
+                                .toVector()
+                            )
+                          interaction.setRotation(loc.getYaw(), 0)
+                          Bukkit.getEntity(disp).setRotation(loc.getYaw(), 0)
+                      }
+                    case _ =>
                 }
             }
           )

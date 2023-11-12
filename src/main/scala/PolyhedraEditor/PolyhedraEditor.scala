@@ -66,7 +66,8 @@ object PolyhedraEditor:
 class EditorListener()(using e: PolyhedraEditor) extends Listener:
   @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
   def interact(event: PlayerInteractEvent): Unit =
-    if event.getHand() != EquipmentSlot.HAND then return
+    if event.getHand() != EquipmentSlot.HAND then
+      return
 
       event.getAction() match
         case Action.RIGHT_CLICK_BLOCK =>

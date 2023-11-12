@@ -64,11 +64,11 @@ class VanillaPlantBlocker() extends Listener:
   def onPlayerBonemeal(event: PlayerInteractEvent): Unit =
     if event.getAction() != Action.RIGHT_CLICK_BLOCK || event
       .getClickedBlock() == null
-    then return
-      if event
+    then
+      return if event
         .getItem() == null || event.getItem().getType() != Material.BONE_MEAL
-      then return
-        if VanillaPlantBlocker.bonemealables.contains(
+      then
+        return if VanillaPlantBlocker.bonemealables.contains(
           event.getClickedBlock().getType()
         )
         then event.setCancelled(true)
@@ -92,10 +92,12 @@ class VanillaPlantBlocker() extends Listener:
     if !(event.getBlock().getType() == Material.GRASS || event
       .getBlock()
       .getType() == Material.TALL_GRASS)
-    then return
+    then
+      return
 
       if event.getPlayer().getInventory().getItemInMainHand() == Material.SHEARS
-      then return
+      then
+        return
 
         if !(Random.nextDouble() < 0.125) then return
 

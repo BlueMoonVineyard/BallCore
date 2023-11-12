@@ -102,7 +102,8 @@ class CustomItemListener(using
     if !event
       .hasItem() || !(event.getAction() == Action.RIGHT_CLICK_AIR || event
       .getAction() == Action.RIGHT_CLICK_BLOCK)
-    then return
+    then
+      return
 
       reg.lookup(event.getItem()) match
         case Some(item) =>
@@ -117,9 +118,10 @@ class CustomItemListener(using
 
   @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
   def onInteractBlock(event: PlayerInteractEvent): Unit =
-    if event.getHand() != EquipmentSlot.HAND then return
-      if !event.hasBlock() then return
-        if event.getPlayer().isSneaking() then return
+    if event.getHand() != EquipmentSlot.HAND then
+      return if !event.hasBlock() then
+        return if event.getPlayer().isSneaking() then
+          return
 
           sql.useBlocking(bm.getCustomItem(event.getClickedBlock())) match
             case Some(item) =>

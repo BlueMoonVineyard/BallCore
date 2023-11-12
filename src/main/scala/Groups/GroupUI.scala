@@ -746,9 +746,12 @@ class GroupListProgram(using
   override def init(flags: Flags): Model =
     Model(
       flags.userID,
-      sql.useBlocking {
-        gm.userGroups(flags.userID).value
-      }.toOption.get
+      sql
+        .useBlocking {
+          gm.userGroups(flags.userID).value
+        }
+        .toOption
+        .get
     )
 
   override def update(msg: Message, model: Model)(using

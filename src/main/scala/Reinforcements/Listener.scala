@@ -278,8 +278,7 @@ class Listener(using cbm: CivBeaconManager, gm: GroupManager, sql: SQLManager)
   @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
   def preventModifiyingBeacon(event: PlayerInteractEvent): Unit =
     if !event.hasBlock() || event.getAction() != Action.RIGHT_CLICK_BLOCK then
-      return
-        if event.getClickedBlock().getType() != Material.BEACON then return
+      return if event.getClickedBlock().getType() != Material.BEACON then return
 
     val player = event.getPlayer()
     val loc = event.getClickedBlock()
@@ -347,7 +346,8 @@ class Listener(using cbm: CivBeaconManager, gm: GroupManager, sql: SQLManager)
   @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
   def preventBonemealing(event: BlockFertilizeEvent): Unit =
     val player = event.getPlayer()
-    if player == null then return
+    if player == null then
+      return
 
       if event.getBlocks().asScala.exists { x =>
         checkAt(x.getBlock(), player, Permissions.Crops) match
@@ -409,8 +409,8 @@ class Listener(using cbm: CivBeaconManager, gm: GroupManager, sql: SQLManager)
   // prevent reinforced blocks from falling
   @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
   def preventFallingReinforcement(event: EntitySpawnEvent): Unit =
-    if event.getEntityType() != EntityType.FALLING_BLOCK then return
-      if sql
+    if event.getEntityType() != EntityType.FALLING_BLOCK then
+      return if sql
         .useBlocking(
           cbm.beaconContaining(event.getLocation().getBlock().getLocation())
         )
@@ -423,8 +423,8 @@ class Listener(using cbm: CivBeaconManager, gm: GroupManager, sql: SQLManager)
   @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
   def preventLiquidWashAway(event: BlockFromToEvent): Unit =
     if event.getToBlock().getY() < event.getToBlock().getWorld().getMinHeight()
-    then return
-      if sql
+    then
+      return if sql
         .useBlocking(cbm.beaconContaining(event.getBlock().getLocation()))
         .isDefined
       then event.setCancelled(true)

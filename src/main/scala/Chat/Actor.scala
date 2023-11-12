@@ -97,15 +97,16 @@ class ChatActor(using gm: GroupManager, sql: SQLManager)
                   .color(localGrey)
               )
           case PlayerState.groupChat(group) =>
-            sql.useBlocking {
-              gm.groupAudience(group).value
-            }.foreach {
-              (name, aud) =>
+            sql
+              .useBlocking {
+                gm.groupAudience(group).value
+              }
+              .foreach { (name, aud) =>
                 aud.sendMessage(
                   txt"[${name}] ${p.displayName()}: ${m.color(NamedTextColor.WHITE)}"
                     .color(groupGrey)
                 )
-            }
+              }
       case ChatMessage.joined(p) =>
         Bukkit
           .getServer()
