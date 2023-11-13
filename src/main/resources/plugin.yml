@@ -19,24 +19,6 @@ softdepend:
   - ViaBackwards
   - ViaRewind
   - Geyser-Spigot
-commands:
-  groups:
-    description: View the groups UI
-  plants:
-    description: View the list of plants
-  cheat:
-    description: Cheats in a custom item
-  group:
-    description: Changes your chat channel to a specific group
-    aliases: [ g ]
-  global:
-    description: Changes your chat channel to global chat
-  polyhedra:
-    description: "TODO: polyhedra editor"
-  local:
-    description: Changes your chat channel to local chat
-  done:
-    description: Completes the editor
 permissions:
   ballcore.cheat:
     description: Allows using /cheat

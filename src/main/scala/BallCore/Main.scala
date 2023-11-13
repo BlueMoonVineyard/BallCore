@@ -33,6 +33,7 @@ import net.megavex.scoreboardlibrary.api.ScoreboardLibrary
 import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.{Bukkit, Server}
 import org.spongepowered.configurate.yaml.YamlConfigurationLoader
+import dev.jorel.commandapi.{CommandAPI, CommandAPIBukkitConfig}
 
 import java.nio.file.Files
 import scala.concurrent.{Await, ExecutionContext}
@@ -42,6 +43,9 @@ final class Main extends JavaPlugin:
     given sm: ShutdownCallbacks = ShutdownCallbacks()
 
     override def onEnable(): Unit =
+        CommandAPI.onLoad(CommandAPIBukkitConfig(this))
+        CommandAPI.onEnable()
+
         val dataDirectory = getDataFolder.toPath
         val loader = YamlConfigurationLoader
             .builder()
@@ -127,16 +131,17 @@ final class Main extends JavaPlugin:
         val chatCommands = ChatCommands()
         Order.register()
         // HTTP.register()
-        getCommand("group").setExecutor(chatCommands.Group)
-        getCommand("global").setExecutor(chatCommands.Global)
-        getCommand("local").setExecutor(chatCommands.Local)
-        getCommand("groups").setExecutor(new GroupsCommand)
-        getCommand("cheat").setExecutor(CheatCommand())
-        getCommand("done").setExecutor(DoneCommand())
-        getCommand("plants").setExecutor(PlantsCommand())
+        chatCommands.group.register()
+        chatCommands.global.register()
+        chatCommands.local.register()
+        GroupsCommand().node.register()
+        CheatCommand().node.register()
+        DoneCommand().node.register()
+        PlantsCommand().node.register()
         Messaging.register()
 
     override def onDisable(): Unit =
+        CommandAPI.onDisable()
         import scala.concurrent.ExecutionContext.Implicits.global
         val _ =
             Await.ready(sm.shutdown(), scala.concurrent.duration.Duration.Inf)

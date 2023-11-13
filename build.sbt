@@ -47,6 +47,7 @@ lazy val dependencyPlugin = project
         libraryDependencies += "org.typelevel" %% "cats-effect-cps" % "0.4.0",
         libraryDependencies += "org.tpolecat" %% "skunk-core" % "0.6.0",
         libraryDependencies += "org.tpolecat" %% "skunk-circe" % "0.6.0",
+        libraryDependencies += "dev.jorel" % "commandapi-bukkit-shade" % "9.1.0",
 
         // currently vendored in lib for a bugfix
         // libraryDependencies += "com.github.stefvanschie.inventoryframework" % "IF" % "0.10.8",
@@ -98,11 +99,13 @@ lazy val actualPlugin = project
         name := "BallCore",
         version := "0.1.0-SNAPSHOT",
         scalaVersion := scala3Version,
+        resolvers += "minecraft" at "https://libraries.minecraft.net",
         libraryDependencies += "org.scalameta" %% "munit" % "0.7.29" % Test,
         libraryDependencies += "com.github.seeseemelk" % "MockBukkit-v1.20" % "3.18.0" % Test,
         libraryDependencies += "org.locationtech.jts" % "jts-core" % "1.16.1" % "provided",
         libraryDependencies += "org.locationtech.jts" % "jts-io" % "1.16.1" % "provided",
         libraryDependencies += "dev.folia" % "folia-api" % foliaVersion % "provided", // intransitive()
+        libraryDependencies += "com.mojang" % "brigadier" % "1.0.18" % "provided",
 
         Test / fork := true,
         Test / run / javaOptions += "--enable-preview",
