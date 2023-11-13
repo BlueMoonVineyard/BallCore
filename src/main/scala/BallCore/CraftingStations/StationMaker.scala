@@ -124,6 +124,18 @@ object StationMaker:
             30,
             1,
         ),
+        Recipe(
+            "Make Herbivore Kitchen",
+            List(
+                (MaterialChoice(Material.SMOKER), 1),
+                (MaterialChoice(Material.BREAD), 64),
+            ),
+            List(
+                HerbivoreKitchen.template
+            ),
+            30,
+            1,
+        ),
     )
     val template: CustomItemStack = CustomItemStack.make(
         NamespacedKey("ballcore", "station_maker"),
