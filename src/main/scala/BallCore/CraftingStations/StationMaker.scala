@@ -109,6 +109,21 @@ object StationMaker:
             30,
             1,
         ),
+        Recipe(
+            "Make Carnivore Kitchen",
+            List(
+                (MaterialChoice(Material.SMOKER), 1),
+                (MaterialChoice(Material.BEEF), 16),
+                (MaterialChoice(Material.CHICKEN), 16),
+                (MaterialChoice(Material.PORKCHOP), 16),
+                (MaterialChoice(Material.MUTTON), 16),
+            ),
+            List(
+                CarnivoreKitchen.template
+            ),
+            30,
+            1,
+        ),
     )
     val template: CustomItemStack = CustomItemStack.make(
         NamespacedKey("ballcore", "station_maker"),
