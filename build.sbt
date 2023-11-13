@@ -33,7 +33,8 @@ lazy val dependencyPlugin = project
         libraryDependencies += "org.scalikejdbc" %% "scalikejdbc" % "4.0.0",
         libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "2.1.0",
         libraryDependencies += "org.xerial" % "sqlite-jdbc" % "3.40.0.0",
-        libraryDependencies += "org.locationtech.jts" % "jts-core" % "1.16.1",
+        libraryDependencies += "org.locationtech.jts" % "jts-core" % "1.19.0",
+        libraryDependencies += "org.locationtech.jts.io" % "jts-io-common" % "1.19.0",
         libraryDependencies += "com.github.megavexnetwork.scoreboard-library" % "scoreboard-library-api" % scoreBoardLibraryVersion,
         libraryDependencies += "com.github.megavexnetwork.scoreboard-library" % "scoreboard-library-implementation" % scoreBoardLibraryVersion,
         libraryDependencies += "com.github.megavexnetwork.scoreboard-library" % "scoreboard-library-v1_20_R1" % scoreBoardLibraryVersion,
@@ -100,6 +101,7 @@ lazy val actualPlugin = project
         libraryDependencies += "org.scalameta" %% "munit" % "0.7.29" % Test,
         libraryDependencies += "com.github.seeseemelk" % "MockBukkit-v1.20" % "3.18.0" % Test,
         libraryDependencies += "org.locationtech.jts" % "jts-core" % "1.16.1" % "provided",
+        libraryDependencies += "org.locationtech.jts" % "jts-io" % "1.16.1" % "provided",
         libraryDependencies += "dev.folia" % "folia-api" % foliaVersion % "provided", // intransitive()
 
         Test / fork := true,

@@ -43,6 +43,13 @@ object TestDatabase:
             database = cleanName,
             password = Some("shitty password"),
         )
+        testSession
+            .use { s =>
+                s.execute(sql"""
+            CREATE EXTENSION postgis;
+            """.command)
+            }
+            .unsafeRunSync()
         new SQLManager(testSession, cleanName)
 
     def teardown(s: SQLManager): Unit =

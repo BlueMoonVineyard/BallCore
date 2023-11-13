@@ -24,13 +24,7 @@ import org.locationtech.jts.triangulate.DelaunayTriangulationBuilder
 import skunk.Session
 import skunk.codec.all.*
 import skunk.implicits.*
-
-import java.io.{
-    ByteArrayInputStream,
-    ByteArrayOutputStream,
-    ObjectInputStream,
-    ObjectOutputStream,
-}
+import org.locationtech.jts.io.geojson.{GeoJsonReader, GeoJsonWriter}
 import java.text.DecimalFormat
 import java.util.UUID
 
@@ -84,7 +78,7 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
                 CREATE TABLE CivBeacons (
                     ID UUID NOT NULL,
                     World UUID NOT NULL,
-                    PolygonData BYTEA,
+                    CoveredArea GEOMETRY(Polygon),
                     GroupID UUID,
                     PRIMARY KEY(ID),
                     FOREIGN KEY (GroupID) REFERENCES GroupStates (ID)
@@ -123,6 +117,11 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
     private val triangulator = DelaunayTriangulationBuilder()
     private val geometryFactory = GeometryFactory()
     private var worldData = Map[UUID, WorldData]()
+    private val polygonGeojsonCodec = text.imap[Polygon] { json =>
+        GeoJsonReader(geometryFactory).read(json).asInstanceOf[Polygon]
+    } { polygon =>
+        GeoJsonWriter().write(polygon)
+    }
 
     private def getWorldData(w: World)(using Session[IO]): IO[WorldData] =
         if !worldData.contains(w.getUID) then
@@ -189,11 +188,8 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
 
     private def triangulate(
         id: BeaconID,
-        polygonBlob: Array[Byte],
+        polygon: Polygon,
     ): IndexedSeq[RTreeEntry[(Polygon, BeaconID)]] =
-        val polygon = ObjectInputStream(ByteArrayInputStream(polygonBlob))
-            .readObject()
-            .asInstanceOf[Polygon]
         triangulator.setSites(polygon)
         val triangleCollection = triangulator
             .getTriangles(geometryFactory)
@@ -224,13 +220,13 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
             .queryOptionIO(
                 sql"""
         SELECT
-            PolygonData
+            ST_AsGeoJSON(CoveredArea)
         FROM
             CivBeacons
         WHERE
-            ID = $uuid AND PolygonData IS NOT NULL;
+            ID = $uuid AND CoveredArea IS NOT NULL;
         """,
-                bytea,
+                polygonGeojsonCodec,
                 id,
             )
             .map(_.map(triangulate(id, _)).getOrElse(IndexedSeq()))
@@ -240,20 +236,15 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
             .queryOptionIO(
                 sql"""
         SELECT
-            PolygonData
+            ST_AsGeoJSON(CoveredArea)
         FROM
             CivBeacons
         WHERE
-            ID = $uuid AND PolygonData IS NOT NULL;
+            ID = $uuid AND CoveredArea IS NOT NULL;
         """,
-                bytea,
+                polygonGeojsonCodec,
                 id,
             )
-            .map(_.map { bytes =>
-                ObjectInputStream(ByteArrayInputStream(bytes))
-                    .readObject()
-                    .asInstanceOf[Polygon]
-            })
 
     private def loadHearts(
         world: UUID
@@ -262,13 +253,13 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
             .queryListIO(
                 sql"""
         SELECT
-            ID, PolygonData
+            ID, ST_AsGeoJSON(CoveredArea)
         FROM
             CivBeacons
         WHERE
             World = $uuid;
         """,
-                uuid *: bytea.opt,
+                uuid *: polygonGeojsonCodec.opt,
                 world,
             )
             .map(
@@ -377,17 +368,12 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
                         )
                     )
                 else
-                    val baos = ByteArrayOutputStream()
-                    val oos = ObjectOutputStream(baos)
-                    oos.writeObject(polygon)
-                    val ba = baos.toByteArray
-
                     sql
                         .commandIO(
                             sql"""
-                UPDATE CivBeacons SET PolygonData = $bytea WHERE ID = $uuid
+                UPDATE CivBeacons SET CoveredArea = ST_GeomFromGeoJSON($polygonGeojsonCodec) WHERE ID = $uuid
                 """,
-                            (ba, beacon),
+                            (polygon, beacon),
                         )
                         .flatMap(_ => recomputeEntryFor(beacon))
                         .flatMap(x => getWorldData(world).map(x -> _))
