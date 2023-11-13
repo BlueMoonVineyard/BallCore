@@ -36,6 +36,8 @@ object CraftingStations:
         registry.register(RailManufactory())
         registry.register(Woodcutter())
         registry.register(RedstoneMaker())
+        registry.register(CarnivoreKitchen())
+
         val smRecipe = ShapedRecipe(
             NamespacedKey("ballcore", "craft_station_maker"),
             StationMaker.template,
