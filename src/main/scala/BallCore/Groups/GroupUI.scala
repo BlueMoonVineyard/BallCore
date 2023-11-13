@@ -718,8 +718,12 @@ class RoleManagementProgram(using
             }
         }
 
-class InvitesListProgram(using gm: GroupManager, sql: SQLManager)
-    extends UIProgram:
+class InvitesListProgram(using
+    gm: GroupManager,
+    sql: SQLManager,
+    cbm: CivBeaconManager,
+    phe: PolyhedraEditor,
+) extends UIProgram:
     case class Flags(userID: UserID)
 
     // noinspection ScalaWeakerAccess
@@ -737,6 +741,7 @@ class InvitesListProgram(using gm: GroupManager, sql: SQLManager)
         case ClickInvite(inviter: UserID, group: GroupID)
         case AcceptInvite(group: GroupID)
         case DenyInvite(group: GroupID)
+        case GoBack()
 
     private def computeInvites(userID: UserID): List[(UserID, GroupState)] =
         sql
@@ -771,6 +776,13 @@ class InvitesListProgram(using gm: GroupManager, sql: SQLManager)
                     mode = Mode.List,
                     invites = computeInvites(model.userID),
                 )
+            case Message.GoBack() =>
+                val p = GroupListProgram()
+                services.transferTo(
+                    p,
+                    p.Flags(model.userID),
+                )
+                model
 
     override def view(model: Model): Callback ?=> Gui =
         model.mode match
@@ -778,9 +790,29 @@ class InvitesListProgram(using gm: GroupManager, sql: SQLManager)
             case Mode.ViewingInvite(user, group) => viewing(user, group)
 
     def list(model: Model): Callback ?=> Gui =
-        val rows = (model.invites.length / 9).max(1)
+        val rows = (model.invites.length / 7).max(1)
         Root(txt"Invites", rows) {
             OutlinePane(0, 0, 1, rows) {
+                Button(
+                    Material.OAK_DOOR,
+                    txt"Go Back".style(NamedTextColor.WHITE),
+                    Message.GoBack,
+                )()
+            }
+            OutlinePane(
+                1,
+                0,
+                1,
+                rows,
+                priority = Priority.LOWEST,
+                repeat = true,
+            ) {
+                Item(
+                    Material.BLACK_STAINED_GLASS_PANE,
+                    displayName = Some(txt""),
+                )()
+            }
+            OutlinePane(2, 0, 7, rows) {
                 model.invites.foreach { invite =>
                     val player = Bukkit.getOfflinePlayer(invite._1)
                     Button(
