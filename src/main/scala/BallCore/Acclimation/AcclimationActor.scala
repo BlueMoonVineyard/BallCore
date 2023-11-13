@@ -18,6 +18,7 @@ import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.*
 import scala.concurrent.{Await, ExecutionContext, Future}
+import org.bukkit.Location
 
 enum AcclimationMessage:
     // ticks every 6 hours
@@ -54,7 +55,10 @@ class AcclimationNoter()(using s: Storage, sql: SQLManager) extends Listener:
         val loc = player.getLocation()
         sql.useFireAndForget(s.setLastSeenLocation(player.getUniqueId, loc))
 
-class AcclimationActor(using
+private def locEc(loc: Location)(using p: Plugin): ExecutionContext =
+    LocationExecutionContext(loc)
+
+class AcclimationActor(executionContextFactory: Plugin ?=> (Location => ExecutionContext) = locEc)(using
     s: Storage,
     p: Plugin,
     hnm: CivBeaconManager,
@@ -99,8 +103,7 @@ class AcclimationActor(using
                             x.getPlayer.getLocation()
                         else sql.useBlocking(s.getLastSeenLocation(uuid))
 
-                    given ec: ExecutionContext =
-                        LocationExecutionContext(location)
+                    given ec: ExecutionContext = executionContextFactory(location)
 
                     val (lat, long) = Information
                         .latLong(location.getX.toFloat, location.getZ.toFloat)
