@@ -20,7 +20,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres
+        image: postgis/postgis
         env:
           POSTGRES_PASSWORD: "shitty password"
           POSTGRES_DB: civcubed
