@@ -96,6 +96,19 @@ object StationMaker:
             30,
             1,
         ),
+        Recipe(
+            "Make Redstone Maker",
+            List(
+                (MaterialChoice(Material.PISTON), 1),
+                (MaterialChoice(Material.REDSTONE), 64),
+                (MaterialChoice(Material.QUARTZ), 32),
+            ),
+            List(
+                RedstoneMaker.template
+            ),
+            30,
+            1,
+        ),
     )
     val template: CustomItemStack = CustomItemStack.make(
         NamespacedKey("ballcore", "station_maker"),
