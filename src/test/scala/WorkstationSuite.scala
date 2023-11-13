@@ -17,24 +17,32 @@ import org.bukkit.NamespacedKey
 import org.bukkit.Material
 
 class WorkstationSuite extends munit.FunSuite:
-	test("create workstations") {
-		val server = MockBukkit.mock()
-		server.createMaterialTag(NamespacedKey.minecraft("cherry_logs"), "blocks", Material.CHERRY_LOG)
-		server.createMaterialTag(NamespacedKey.minecraft("mangrove_logs"), "blocks", Material.MANGROVE_LOG)
+    test("create workstations") {
+        val server = MockBukkit.mock()
+        server.createMaterialTag(
+            NamespacedKey.minecraft("cherry_logs"),
+            "blocks",
+            Material.CHERRY_LOG,
+        )
+        server.createMaterialTag(
+            NamespacedKey.minecraft("mangrove_logs"),
+            "blocks",
+            Material.MANGROVE_LOG,
+        )
 
-		println(Tag.BIRCH_LOGS.getValues())
-		given Plugin = MockBukkit.createMockPlugin()
-		given CraftingActor = CraftingActor()
-		given Prompts = Prompts()
+        println(Tag.BIRCH_LOGS.getValues())
+        given Plugin = MockBukkit.createMockPlugin()
+        given CraftingActor = CraftingActor()
+        given Prompts = Prompts()
 
-		DyeVat()
-		GlazingKiln()
-		Kiln()
-		StationMaker()
-		ConcreteMixer()
-		RailManufactory()
-		Woodcutter()
-		RedstoneMaker()
-		CarnivoreKitchen()
-		HerbivoreKitchen()
-	}
+        DyeVat()
+        GlazingKiln()
+        Kiln()
+        StationMaker()
+        ConcreteMixer()
+        RailManufactory()
+        Woodcutter()
+        RedstoneMaker()
+        CarnivoreKitchen()
+        HerbivoreKitchen()
+    }
