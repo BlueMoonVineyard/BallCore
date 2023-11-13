@@ -18,6 +18,56 @@ import net.kyori.adventure.text.format.{NamedTextColor, TextDecoration}
 import org.bukkit.{Bukkit, Material}
 
 import scala.concurrent.Future
+import net.kyori.adventure.text.Component
+import BallCore.UI.ItemAccumulator
+
+class ConfirmationPrompt(
+    title: Component,
+    yesLabel: Component,
+    noLabel: Component,
+    centerLabel: ItemAccumulator ?=> Unit,
+    onYes: UIServices ?=> Unit,
+    onNo: UIServices ?=> Unit,
+) extends UIProgram:
+    case class Flags()
+    case class Model()
+
+    enum Message:
+        case Accept
+        case Deny
+
+    override def init(flags: Flags): Model =
+        Model()
+
+    override def view(model: Model): Callback ?=> Gui =
+        Root(title, 1) {
+            OutlinePane(0, 0, 1, 1) {
+                Button(
+                    Material.RED_DYE,
+                    noLabel.color(NamedTextColor.WHITE),
+                    Message.Deny,
+                )()
+            }
+            OutlinePane(4, 0, 1, 1) {
+                centerLabel
+            }
+            OutlinePane(8, 0, 1, 1) {
+                Button(
+                    Material.LIME_DYE,
+                    yesLabel.color(NamedTextColor.WHITE),
+                    Message.Accept,
+                )()
+            }
+        }
+
+    override def update(msg: Message, model: Model)(using services: UIServices): Future[Model] =
+        msg match
+            case Message.Accept =>
+                onYes(using services)
+                model
+            case Message.Deny =>
+                onNo(using services)
+                model
 
 class GroupManagementProgram(using
     gm: GroupManager,
@@ -47,6 +97,8 @@ class GroupManagementProgram(using
         case ClickRole(role: RoleID)
         case CreateSubgroup
         case ClickSubgroup(subgroup: SubgroupID)
+        case LeaveGroup
+        case DeleteGroup
 
     private def randomBedFor(obj: Object): Material =
         val beds = MaterialTags.BEDS.getValues.toArray(Array[Material]())
@@ -99,18 +151,17 @@ class GroupManagementProgram(using
                         Message.View(ViewingWhat.Subgroups),
                         highlighted = model.viewing == ViewingWhat.Subgroups,
                     )()
-                if group.check(Permissions.InviteUser, model.userID, nullUUID)
-                then
+                if !group.owners.contains(model.userID) then
                     Button(
-                        Material.COMPASS,
-                        txt"Invite A Member".style(NamedTextColor.GREEN),
-                        Message.InviteMember,
+                        Material.MINECART,
+                        txt"Leave Group".style(NamedTextColor.GREEN),
+                        Message.LeaveGroup,
                     )()
-                if model.canBindToHeart then
+                else if group.owners.length == 1 then
                     Button(
-                        Material.WHITE_CONCRETE,
-                        txt"Bind to Beacon".style(NamedTextColor.GREEN),
-                        Message.BindToHeart,
+                        Material.LAVA_BUCKET,
+                        txt"Delete Group".style(NamedTextColor.GREEN),
+                        Message.DeleteGroup,
                     )()
             }
             OutlinePane(1, 0, 1, 6, priority = Priority.LOWEST, repeat = true) {
@@ -149,11 +200,17 @@ class GroupManagementProgram(using
                 txt"Create Subgroup".style(NamedTextColor.GREEN),
                 Message.CreateSubgroup,
             )()
+            if model.canBindToHeart then
+                Button(
+                    Material.WHITE_CONCRETE,
+                    txt"Bind to Beacon".style(NamedTextColor.GREEN),
+                    Message.BindToHeart,
+                )()
         }
 
     private def Players(model: Model)(using PaneAccumulator): Unit =
         val group = model.group
-        OutlinePane(2, 0, 7, 6) {
+        OutlinePane(2, 0, 7, 5) {
             group.users.keys.toList
                 .map(x => Bukkit.getOfflinePlayer(x))
                 .sortBy(_.getName())
@@ -191,6 +248,15 @@ class GroupManagementProgram(using
                             }
                     }
                 }
+        }
+        OutlinePane(2, 5, 7, 1) {
+            if group.check(Permissions.InviteUser, model.userID, nullUUID)
+            then
+                Button(
+                    Material.COMPASS,
+                    txt"Invite A Member".style(NamedTextColor.GREEN),
+                    Message.InviteMember,
+                )()
         }
 
     private def Roles(model: Model)(using PaneAccumulator): Unit =
@@ -324,6 +390,60 @@ class GroupManagementProgram(using
                             .get
                         model.copy(group = group)
                     }
+            case Message.DeleteGroup =>
+                val p = ConfirmationPrompt(
+                    txt"Delete ${model.group.metadata.name}?",
+                    txt"Delete ${model.group.metadata.name}",
+                    txt"Don't Delete ${model.group.metadata.name}",
+                    Item(
+                        Material.LEATHER_CHESTPLATE,
+                        displayName = Some(txt"${model.group.metadata.name}".color(NamedTextColor.GREEN)),
+                    )(),
+                    {
+                        val services = summon[UIServices]
+                        sql.useBlocking(gm.deleteGroup(model.userID, model.group.metadata.id).value) match
+                            case Left(err) =>
+                                services.notify(s"Could not delete ${model.group.metadata.name} because ${err.explain()}")
+                                services.quit()
+                            case Right(_) =>
+                                val p = GroupListProgram()
+                                services.notify(s"Deleted ${model.group.metadata.name}")
+                                services.transferTo(p, p.Flags(model.userID))
+                    },
+                    {
+                        val services = summon[UIServices]
+                        services.transferTo(this, this.Flags(model.group.metadata.id, model.userID))
+                    },
+                )
+                services.transferTo(p, p.Flags())
+                model
+            case Message.LeaveGroup =>
+                val p = ConfirmationPrompt(
+                    txt"Leave ${model.group.metadata.name}?",
+                    txt"Leave ${model.group.metadata.name}",
+                    txt"Don't Leave ${model.group.metadata.name}",
+                    Item(
+                        Material.LEATHER_CHESTPLATE,
+                        displayName = Some(txt"${model.group.metadata.name}".color(NamedTextColor.GREEN)),
+                    )(),
+                    {
+                        val services = summon[UIServices]
+                        sql.useBlocking(gm.leaveGroup(model.userID, model.group.metadata.id)) match
+                            case Left(err) =>
+                                services.notify(s"Could not leave ${model.group.metadata.name} because ${err.explain()}")
+                                services.quit()
+                            case Right(_) =>
+                                val p = GroupListProgram()
+                                services.notify(s"Left ${model.group.metadata.name}")
+                                services.transferTo(p, p.Flags(model.userID))
+                    },
+                    {
+                        val services = summon[UIServices]
+                        services.transferTo(this, this.Flags(model.group.metadata.id, model.userID))
+                    },
+                )
+                services.transferTo(p, p.Flags())
+                model
 
 class SubgroupManagementProgram(using
     gm: GroupManager,

@@ -116,6 +116,7 @@ object GroupError:
 
 enum GroupError:
     case MustBeOwner
+    case MustNotBeOwner
     case MustBeOnlyOwner
     case GroupNotFound
     case TargetNotInGroup
@@ -131,6 +132,7 @@ enum GroupError:
     def explain(): String =
         this match
             case MustBeOwner => "you must be owner"
+            case MustNotBeOwner => "you must not be an owner"
             case MustBeOnlyOwner => "you must be the only owner"
             case GroupNotFound => "the group was not found"
             case TargetNotInGroup => "the target is not in the group"
@@ -341,6 +343,27 @@ class GroupManager()(using sql: Storage.SQLManager):
                 }
             } yield newGroupID
         }
+
+    def leaveGroup(as: UserID, group: GroupID)(using
+        s: Session[IO]
+    ): IO[Either[GroupError, Unit]] =
+        getGroup(group)
+            .guard(GroupError.MustNotBeOwner) {
+                !_.owners.contains(as)
+            }
+            .guard(GroupError.TargetNotInGroup) {
+                _.users.contains(as)
+            }
+            .flatMap { _ =>
+                EitherT.right(
+                    sql.commandIO(
+                        sql"DELETE FROM GroupMemberships WHERE GroupID = $uuid AND UserID = $uuid",
+                        (group, as),
+                    )
+                )
+            }
+            .map(_ => ())
+            .value
 
     def deleteGroup(as: UserID, group: GroupID)(using
         s: Session[IO]
