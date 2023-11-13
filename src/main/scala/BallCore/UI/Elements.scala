@@ -34,6 +34,8 @@ object Accumulator:
     def run[T, E](inner: Accumulator[T, E] ?=> Unit, item: E): List[T] =
         given akku: Accumulator[T, E] = Accumulator(item)
 
+        inner
+
         akku.items.toList
 
 class Box[T](val initial: T):
