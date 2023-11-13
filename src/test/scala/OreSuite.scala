@@ -1,13 +1,11 @@
 import org.bukkit.Server
-import be.seeseemelk.mockbukkit.MockBukkit
 import BallCore.CustomItems.ItemRegistry
 import BallCore.CustomItems.BasicItemRegistry
 import BallCore.Ores.QuadrantOres
 import BallCore.Ores.CardinalOres
 
 class OreSuite extends munit.FunSuite:
-    val server = MockBukkit.mock()
-    given Server = server
+    given Server = mockServerSingleton
 
     test("register quadrant ores") {
         given ItemRegistry = BasicItemRegistry()

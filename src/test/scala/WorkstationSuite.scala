@@ -18,7 +18,7 @@ import org.bukkit.Material
 
 class WorkstationSuite extends munit.FunSuite:
     test("create workstations") {
-        val server = MockBukkit.mock()
+        val server = mockServerSingleton
         server.createMaterialTag(
             NamespacedKey.minecraft("cherry_logs"),
             "blocks",

@@ -15,6 +15,9 @@ import skunk.{Fragment, Session, *}
 
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future, Promise}
+import be.seeseemelk.mockbukkit.MockBukkit
+
+val mockServerSingleton = MockBukkit.mock()
 
 object TestDatabase:
     def setup(opts: munit.TestOptions): SQLManager =

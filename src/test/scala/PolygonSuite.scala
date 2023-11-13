@@ -4,14 +4,13 @@
 
 import BallCore.PolygonEditor.*
 import be.seeseemelk.mockbukkit.entity.PlayerMock
-import be.seeseemelk.mockbukkit.{MockBukkit, MockPlugin, ServerMock, WorldMock}
+import be.seeseemelk.mockbukkit.{MockBukkit, MockPlugin, WorldMock}
 import org.bukkit.Location
 import org.bukkit.plugin.Plugin
 
 class PolygonSuite extends munit.FunSuite:
-    val server: ServerMock = MockBukkit.mock()
+    val player: PlayerMock = mockServerSingleton.addPlayer()
     val plugin: MockPlugin = MockBukkit.createMockPlugin()
-    val player: PlayerMock = server.addPlayer()
 
     given Plugin = plugin
 
