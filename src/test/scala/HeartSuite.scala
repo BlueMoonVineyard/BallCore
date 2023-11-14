@@ -12,6 +12,7 @@ import org.locationtech.jts.geom.{Coordinate, GeometryFactory}
 
 import java.util.UUID
 import scala.util.chaining.*
+import org.locationtech.jts.geom.Polygon
 
 class HeartSuite extends munit.FunSuite {
     val sql: FunFixture[SQLManager] =
@@ -45,11 +46,11 @@ class HeartSuite extends munit.FunSuite {
         val gf = GeometryFactory()
         val validPolygon = gf.createPolygon(
             Array(
-                Coordinate(-10, -10),
-                Coordinate(-10, 10),
-                Coordinate(10, 10),
-                Coordinate(10, -10),
-                Coordinate(-10, -10),
+                Coordinate(-10, -10, 0),
+                Coordinate(-10, 10, 0),
+                Coordinate(10, 10, 0),
+                Coordinate(10, -10, 0),
+                Coordinate(-10, -10, 0),
             )
         )
 
@@ -66,11 +67,11 @@ class HeartSuite extends munit.FunSuite {
 
         val tooBigPolygon = gf.createPolygon(
             Array(
-                Coordinate(-1000, -1000),
-                Coordinate(-1000, 1000),
-                Coordinate(1000, 1000),
-                Coordinate(1000, -1000),
-                Coordinate(-1000, -1000),
+                Coordinate(-1000, -1000, 0),
+                Coordinate(-1000, 1000, 0),
+                Coordinate(1000, 1000, 0),
+                Coordinate(1000, -1000, 0),
+                Coordinate(-1000, -1000, 0),
             )
         )
 
@@ -95,11 +96,11 @@ class HeartSuite extends munit.FunSuite {
 
         val polygonNotContainingHeart = gf.createPolygon(
             Array(
-                Coordinate(-30, -30),
-                Coordinate(-30, -10),
-                Coordinate(-10, -10),
-                Coordinate(-10, -30),
-                Coordinate(-30, -30),
+                Coordinate(-30, -30, 0),
+                Coordinate(-30, -10, 0),
+                Coordinate(-10, -10, 0),
+                Coordinate(-10, -30, 0),
+                Coordinate(-30, -30, 0),
             )
         )
 
@@ -169,5 +170,51 @@ class HeartSuite extends munit.FunSuite {
             assert(hid == hid3, (hid, hid3))
             assert(hni3 == 1, hni3)
         }
+    }
+    def rectangleCenteredAt(gf: GeometryFactory, x: Int, z: Int, y: Int, size: Int): Polygon =
+        gf.createPolygon(
+            Array(
+                Coordinate(x - size, z - size, y),
+                Coordinate(x - size, z + size, y),
+                Coordinate(x + size, z - size, y),
+                Coordinate(x + size, z + size, y),
+                Coordinate(x - size, z - size, y),
+            )
+        )
+
+    sql.test("multiple claim areas") { implicit sql =>
+        given gm: GroupManager = GroupManager()
+        given hn: CivBeaconManager = CivBeaconManager()
+        val world = WorldMock()
+        val id1 = UUID.randomUUID()
+        val (hid1, _) =
+            sql.useBlocking(hn.placeHeart(Location(world, 0, -10, 0), id1))
+                .toOption
+                .get
+
+        val id2 = UUID.randomUUID()
+        val (hid2, _) =
+            sql.useBlocking(hn.placeHeart(Location(world, 100, 10, 100), id2))
+                .toOption
+                .get
+
+        assertNotEquals(hid1, hid2, "different heart IDs")
+
+        val gf = GeometryFactory()
+        val area1 = rectangleCenteredAt(gf, 0, 0, -10, 5)
+        assert(area1.covers(gf.createPoint(Coordinate(0, 0, -10))), "sanity check of area 1")
+        val res1 = sql.useBlocking(hn.updateBeaconPolygon(hid1, world, area1))
+        assert(res1.isRight, (res1, "setting first heart's area"))
+
+        val area2 = rectangleCenteredAt(gf, 100, 100, 10, 5)
+        assert(area2.covers(gf.createPoint(Coordinate(100, 100, 10))), "sanity check of area 2")
+        val res2 = sql.useBlocking(hn.updateBeaconPolygon(hid2, world, area2))
+        assert(res2.isRight, (res2, "setting second heart's area"))
+
+        val covered1 = sql.useBlocking(hn.beaconContaining(Location(world, 1, -10, 1)))
+        assertEquals(covered1, Some(hid1), "area 1 contains beacon 1")
+
+        val covered2 = sql.useBlocking(hn.beaconContaining(Location(world, 101, 10, 101)))
+        assertEquals(covered2, Some(hid2), "area 2 contains beacon 2")
     }
 }
