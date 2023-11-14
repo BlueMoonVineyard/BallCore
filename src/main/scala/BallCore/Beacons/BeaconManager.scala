@@ -106,6 +106,21 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
             ),
         )
     )
+    sql.applyMigration(
+        Storage.Migration(
+            "Polygons have Z-values actually",
+            List(
+                sql"""
+                ALTER TABLE CivBeacons ALTER COLUMN CoveredArea SET DATA TYPE GEOMETRY(PolygonZ);
+                """.command
+            ),
+            List(
+                sql"""
+                ALTER TABLE CivBeacons ALTER COLUMN CoveredArea SET DATA TYPE GEOMETRY(Polygon);
+                """.command
+            ),
+        )
+    )
 
     private case class WorldData(
         var beaconRTree: RTree[(Polygon, BeaconID)],
@@ -114,7 +129,6 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
         ]],
     )
 
-    private val triangulator = DelaunayTriangulationBuilder()
     private val geometryFactory = GeometryFactory()
     private var worldData = Map[UUID, WorldData]()
     private val polygonGeojsonCodec = text.imap[Polygon] { json =>
@@ -190,6 +204,7 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
         id: BeaconID,
         polygon: Polygon,
     ): IndexedSeq[RTreeEntry[(Polygon, BeaconID)]] =
+        val triangulator = DelaunayTriangulationBuilder()
         triangulator.setSites(polygon)
         val triangleCollection = triangulator
             .getTriangles(geometryFactory)
@@ -338,10 +353,10 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
                 val actualArea =
                     polygon.getArea
                 val heartsOutsidePolygon =
-                    hearts.filterNot((x, _, z) =>
-                        polygon.contains(
+                    hearts.filterNot((x, y, z) =>
+                        polygon.covers(
                             geometryFactory
-                                .createPoint(Coordinate(x.toDouble, z.toDouble))
+                                .createPoint(Coordinate(x.toDouble, z.toDouble, y.toDouble))
                         )
                     )
 
