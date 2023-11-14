@@ -68,12 +68,12 @@ class MapCloningListener extends Listener:
     def prepareCraftEvent(pice: PrepareItemCraftEvent): Unit =
 
         if pice.getInventory.getResult == null || pice.getInventory.getResult.getType != Material.FILLED_MAP
-        then
-            return
+        then return
 
-            if !pice.getInventory.getContents
-                    .exists(x => x != null && x.getType == Material.MAP)
-            then return
+        if !pice.getInventory.getContents.exists(x =>
+                x != null && x.getType == Material.MAP
+            )
+        then return
 
         val inputMap = pice.getInventory.getMatrix
             .find(x => x != null && x.getType == Material.FILLED_MAP)
@@ -128,21 +128,20 @@ class MapCloningListener extends Listener:
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     def prepareResultEvent(per: PrepareResultEvent): Unit =
         if per.getResult == null || per.getResult.getType != Material.FILLED_MAP
-        then
+        then return
+
+        if !per.getInventory.getContents.exists(x =>
+                x != null && x.getType == Material.MAP
+            )
+        then return
+
+        if per.getInventory.isInstanceOf[CartographyInventory] then
+            per.getViewers
+                .forEach(
+                    _.sendServerMessage(
+                        txt"Duplicating maps with a cartography table is disabled due to limitations in PaperMC, sorry :( Use a crafting table instead"
+                    )
+                )
+            // i would close the inventory here but that causes item loss
+            per.setResult(null)
             return
-
-            if !per.getInventory.getContents
-                    .exists(x => x != null && x.getType == Material.MAP)
-            then
-                return
-
-                if per.getInventory.isInstanceOf[CartographyInventory] then
-                    per.getViewers
-                        .forEach(
-                            _.sendServerMessage(
-                                txt"Duplicating maps with a cartography table is disabled due to limitations in PaperMC, sorry :( Use a crafting table instead"
-                            )
-                        )
-                    // i would close the inventory here but that causes item loss
-                    per.setResult(null)
-                    return

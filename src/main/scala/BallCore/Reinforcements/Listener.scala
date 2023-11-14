@@ -287,10 +287,9 @@ class Listener(using cbm: CivBeaconManager, gm: GroupManager, sql: SQLManager)
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     def preventModifiyingBeacon(event: PlayerInteractEvent): Unit =
-
         if !event.hasBlock || event.getAction != Action.RIGHT_CLICK_BLOCK then
-            return if event.getClickedBlock.getType != Material.BEACON then
-                return
+            return
+        if event.getClickedBlock.getType != Material.BEACON then return
 
         val player = event.getPlayer
         val loc = event.getClickedBlock
@@ -354,17 +353,16 @@ class Listener(using cbm: CivBeaconManager, gm: GroupManager, sql: SQLManager)
     def preventBonemealing(event: BlockFertilizeEvent): Unit =
         val player = event.getPlayer
 
-        if player == null then
-            return
+        if player == null then return
 
-            if event.getBlocks.asScala.exists { x =>
-                    checkAt(x.getBlock, player, Permissions.Crops) match
-                        case Right(ok) if ok =>
-                            false
-                        case _ =>
-                            true
-                }
-            then event.setCancelled(true)
+        if event.getBlocks.asScala.exists { x =>
+                checkAt(x.getBlock, player, Permissions.Crops) match
+                    case Right(ok) if ok =>
+                        false
+                    case _ =>
+                        true
+            }
+        then event.setCancelled(true)
     // TODO: notify of permission denied
 
     //
@@ -420,29 +418,29 @@ class Listener(using cbm: CivBeaconManager, gm: GroupManager, sql: SQLManager)
     // prevent reinforced blocks from falling
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     def preventFallingReinforcement(event: EntitySpawnEvent): Unit =
-        if event.getEntityType != EntityType.FALLING_BLOCK then
-            return if sql
-                    .useBlocking(
-                        cbm.beaconContaining(
-                            event.getLocation.getBlock.getLocation()
-                        )
+        if event.getEntityType != EntityType.FALLING_BLOCK then return
+        if sql
+                .useBlocking(
+                    cbm.beaconContaining(
+                        event.getLocation.getBlock.getLocation()
                     )
-                    .isDefined
-            then
-                event.getEntity.setGravity(false)
-                event.setCancelled(true)
+                )
+                .isDefined
+        then
+            event.getEntity.setGravity(false)
+            event.setCancelled(true)
 
     // prevent liquids from washing blocks away
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     def preventLiquidWashAway(event: BlockFromToEvent): Unit =
         if event.getToBlock.getY < event.getToBlock.getWorld.getMinHeight
-        then
-            return if sql
-                    .useBlocking(
-                        cbm.beaconContaining(event.getBlock.getLocation())
-                    )
-                    .isDefined
-            then event.setCancelled(true)
+        then return
+        if sql
+                .useBlocking(
+                    cbm.beaconContaining(event.getBlock.getLocation())
+                )
+                .isDefined
+        then event.setCancelled(true)
 
     // prevent plants from breaking reinforced blocks
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)

@@ -148,7 +148,8 @@ class GroupsCommand(using
                 given ExecutionContext = EntityExecutionContext(sender)
                 FireAndForget {
                     val p = Groups.GroupListProgram()
-                    val runner = UIProgramRunner(p, p.Flags(sender.getUniqueId), sender)
+                    val runner =
+                        UIProgramRunner(p, p.Flags(sender.getUniqueId), sender)
                     runner.render()
                 }
             }: PlayerCommandExecutor)

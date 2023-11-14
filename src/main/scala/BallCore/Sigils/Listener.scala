@@ -103,7 +103,9 @@ class DamageListener(using da: DamageActor) extends Listener:
         val player = e.getEntity.asInstanceOf[Player]
         val damager = getPlayerOrigin(e.getDamager)
 
-        if damager == null then return da.damage(damager, player, e.getDamage())
+        if damager == null then return
+
+        da.damage(damager, player, e.getDamage())
 
 class SigilListener(using
     ssm: SigilSlimeManager,
@@ -128,7 +130,9 @@ class SigilListener(using
             case head :: next =>
                 val attacker = Bukkit.getPlayer(head)
 
-                if attacker == null then return doSigilBinding(killed, next)
+                if attacker == null then return
+
+                doSigilBinding(killed, next)
 
                 given ec: ExecutionContext = EntityExecutionContext(attacker)
 

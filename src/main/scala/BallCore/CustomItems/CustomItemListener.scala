@@ -45,7 +45,7 @@ class CustomItemListener(using
                             event.isCancelled
                         case _ => false
 
-                if cancelled then return ()
+                if cancelled then return
                 sql.useBlocking(bm.setCustomItem(event.getBlockPlaced, item))
             case _ => ()
 
@@ -60,7 +60,7 @@ class CustomItemListener(using
                             event.isCancelled
                         case _ => false
 
-                if cancelled then return ()
+                if cancelled then return
                 sql.useBlocking(bm.clearCustomItem(event.getBlock))
                 event.setDropItems(false)
                 event.getBlock.getState() match
@@ -74,6 +74,7 @@ class CustomItemListener(using
                                         x,
                                     )
                             }
+                    case _ => ()
                 val _ = event.getBlock.getWorld
                     .dropItemNaturally(
                         event.getBlock.getLocation(),
@@ -83,7 +84,6 @@ class CustomItemListener(using
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     def onInteractItemBlock(event: PlayerInteractEvent): Unit =
-
         if !event.hasItem || event.getAction != Action.RIGHT_CLICK_BLOCK then
             return ()
 
@@ -101,42 +101,40 @@ class CustomItemListener(using
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     def onInteractItem(event: PlayerInteractEvent): Unit =
         if !event.hasItem || !(event.getAction == Action.RIGHT_CLICK_AIR || event.getAction == Action.RIGHT_CLICK_BLOCK)
-        then
-            return
+        then return
 
-            reg.lookup(event.getItem) match
-                case Some(item) =>
-                    val cancel =
-                        item match
-                            case click: Listeners.ItemUsed =>
-                                click.onItemUsed(event)
-                                true
-                            case _ => false
-                    event.setCancelled(cancel)
-                case None =>
+        reg.lookup(event.getItem) match
+            case Some(item) =>
+                val cancel =
+                    item match
+                        case click: Listeners.ItemUsed =>
+                            click.onItemUsed(event)
+                            true
+                        case _ => false
+                event.setCancelled(cancel)
+            case None =>
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     def onInteractBlock(event: PlayerInteractEvent): Unit =
-        if event.getHand != EquipmentSlot.HAND then
-            return if !event.hasBlock then
-                return if event.getPlayer.isSneaking then
-                    return
+        if event.getHand != EquipmentSlot.HAND then return
+        if !event.hasBlock then return
+        if event.getPlayer.isSneaking then return
 
-                    sql.useBlocking(
-                        bm.getCustomItem(event.getClickedBlock)
-                    ) match
-                        case Some(item) =>
-                            val cancel =
-                                item match
-                                    case click: Listeners.BlockClicked
-                                        if event.getAction == Action.RIGHT_CLICK_BLOCK =>
-                                        click.onBlockClicked(event)
-                                        true
-                                    case click: Listeners.BlockLeftClicked
-                                        if event.getAction == Action.LEFT_CLICK_BLOCK =>
-                                        click.onBlockLeftClicked(event)
-                                        true
-                                    case _ =>
-                                        false
-                            event.setCancelled(cancel)
+        sql.useBlocking(
+            bm.getCustomItem(event.getClickedBlock)
+        ) match
+            case Some(item) =>
+                val cancel =
+                    item match
+                        case click: Listeners.BlockClicked
+                            if event.getAction == Action.RIGHT_CLICK_BLOCK =>
+                            click.onBlockClicked(event)
+                            true
+                        case click: Listeners.BlockLeftClicked
+                            if event.getAction == Action.LEFT_CLICK_BLOCK =>
+                            click.onBlockLeftClicked(event)
+                            true
                         case _ =>
+                            false
+                event.setCancelled(cancel)
+            case _ =>

@@ -68,13 +68,13 @@ class VanillaPlantBlocker() extends Listener:
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     def onPlayerBonemeal(event: PlayerInteractEvent): Unit =
         if event.getAction != Action.RIGHT_CLICK_BLOCK || event.getClickedBlock == null
-        then
-            return if event.getItem == null || event.getItem.getType != Material.BONE_MEAL
-            then
-                return if VanillaPlantBlocker.bonemealables.contains(
-                        event.getClickedBlock.getType
-                    )
-                then event.setCancelled(true)
+        then return
+        if event.getItem == null || event.getItem.getType != Material.BONE_MEAL
+        then return
+        if VanillaPlantBlocker.bonemealables.contains(
+                event.getClickedBlock.getType
+            )
+        then event.setCancelled(true)
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     def onDispenserBonemeal(event: BlockDispenseEvent): Unit =
@@ -92,9 +92,10 @@ class VanillaPlantBlocker() extends Listener:
     def onHarvest(event: BlockBreakEvent): Unit =
 
         if !(event.getBlock.getType == Material.GRASS || event.getBlock.getType == Material.TALL_GRASS)
-        then
-            return if event.getPlayer.getInventory.getItemInMainHand == Material.SHEARS
-            then return if !(Random.nextDouble() < 0.125) then return
+        then return
+        if event.getPlayer.getInventory.getItemInMainHand == Material.SHEARS
+        then return
+        if !(Random.nextDouble() < 0.125) then return
 
         val loc = event.getBlock
         val climate = Climate.climateAt(loc.getX, loc.getY, loc.getZ)

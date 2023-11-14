@@ -71,17 +71,16 @@ class EditorListener()(using e: PolyhedraEditor) extends Listener:
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     def interact(event: PlayerInteractEvent): Unit =
-        if event.getHand != EquipmentSlot.HAND then
-            return
+        if event.getHand != EquipmentSlot.HAND then return
 
-            event.getAction match
-                case Action.RIGHT_CLICK_BLOCK =>
-                    if e.clicked(event.getPlayer, event.getClickedBlock) then
-                        event.setCancelled(true)
-                case Action.LEFT_CLICK_BLOCK =>
-                    if e.leftClicked(event.getPlayer, event.getClickedBlock)
-                    then event.setCancelled(true)
-                case _ =>
+        event.getAction match
+            case Action.RIGHT_CLICK_BLOCK =>
+                if e.clicked(event.getPlayer, event.getClickedBlock) then
+                    event.setCancelled(true)
+            case Action.LEFT_CLICK_BLOCK =>
+                if e.leftClicked(event.getPlayer, event.getClickedBlock)
+                then event.setCancelled(true)
+            case _ =>
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     def look(event: PlayerMoveEvent): Unit =

@@ -85,16 +85,15 @@ class HeartBlock()(using
                         txt"Your heart is already placed at [$x, $y, $z]..."
                     )
                 event.setCancelled(true)
-
                 return
 
-                sql.useBlocking(
-                    bm.store(
-                        event.getBlock,
-                        "owner",
-                        event.getPlayer.getUniqueId,
-                    )
-                )
+        sql.useBlocking(
+            bm.store(
+                event.getBlock,
+                "owner",
+                event.getPlayer.getUniqueId,
+            )
+        )
         sql.useBlocking(
             hn.placeHeart(
                 event.getBlock.getLocation(),

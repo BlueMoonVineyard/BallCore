@@ -99,65 +99,64 @@ class PluginMessaging()(using p: Plugin, gm: GroupManager, sql: SQLManager)
         player: Player,
         message: Array[Byte],
     ): Unit =
-        if channel != Messaging.channel then
-            return
+        if channel != Messaging.channel then return
 
-            decodeByteArray[ClientMessage](message) match
-                case Left(err) =>
-                    player.sendServerMessage(
-                        txt"I received an invalid message from one of your mods: $err"
-                    )
-                case Right(ClientMessage.notification(what, params)) =>
-                    ()
-                case Right(ClientMessage.request(what, params, id)) =>
-                    handlers.get(what) match
-                        case None =>
-                            player.sendPluginMessage(
-                                ServerMessage(
-                                    Left(
-                                        RPCError(
-                                            -32601,
-                                            "Method not found",
-                                            Json.obj(),
-                                        )
-                                    ),
-                                    id,
-                                ).asJson.toString
-                                    .getBytes(StandardCharsets.UTF_8)
-                            )
-                        case Some(handler) =>
-                            handler(player, params).unsafeRunAsync {
-                                case Left(exception) =>
-                                    player.sendPluginMessage(
-                                        ServerMessage(
-                                            Left(
-                                                RPCError(
-                                                    -32000,
-                                                    "Internal server error",
-                                                    Json.obj(),
-                                                )
-                                            ),
-                                            id,
-                                        ).asJson.toString
-                                            .getBytes(StandardCharsets.UTF_8)
+        decodeByteArray[ClientMessage](message) match
+            case Left(err) =>
+                player.sendServerMessage(
+                    txt"I received an invalid message from one of your mods: $err"
+                )
+            case Right(ClientMessage.notification(what, params)) =>
+                ()
+            case Right(ClientMessage.request(what, params, id)) =>
+                handlers.get(what) match
+                    case None =>
+                        player.sendPluginMessage(
+                            ServerMessage(
+                                Left(
+                                    RPCError(
+                                        -32601,
+                                        "Method not found",
+                                        Json.obj(),
                                     )
-                                case Right(Left(err)) =>
-                                    player.sendPluginMessage(
-                                        ServerMessage(
-                                            Left(err),
-                                            id,
-                                        ).asJson.toString
-                                            .getBytes(StandardCharsets.UTF_8)
-                                    )
-                                case Right(Right(resp)) =>
-                                    player.sendPluginMessage(
-                                        ServerMessage(
-                                            Right(resp),
-                                            id,
-                                        ).asJson.toString
-                                            .getBytes(StandardCharsets.UTF_8)
-                                    )
-                            }
+                                ),
+                                id,
+                            ).asJson.toString
+                                .getBytes(StandardCharsets.UTF_8)
+                        )
+                    case Some(handler) =>
+                        handler(player, params).unsafeRunAsync {
+                            case Left(exception) =>
+                                player.sendPluginMessage(
+                                    ServerMessage(
+                                        Left(
+                                            RPCError(
+                                                -32000,
+                                                "Internal server error",
+                                                Json.obj(),
+                                            )
+                                        ),
+                                        id,
+                                    ).asJson.toString
+                                        .getBytes(StandardCharsets.UTF_8)
+                                )
+                            case Right(Left(err)) =>
+                                player.sendPluginMessage(
+                                    ServerMessage(
+                                        Left(err),
+                                        id,
+                                    ).asJson.toString
+                                        .getBytes(StandardCharsets.UTF_8)
+                                )
+                            case Right(Right(resp)) =>
+                                player.sendPluginMessage(
+                                    ServerMessage(
+                                        Right(resp),
+                                        id,
+                                    ).asJson.toString
+                                        .getBytes(StandardCharsets.UTF_8)
+                                )
+                        }
 
     case class GetGroupsRequest()
 

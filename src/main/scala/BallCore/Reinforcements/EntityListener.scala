@@ -56,20 +56,21 @@ class EntityListener()(using
         val ent = event.getEntered
         if !ent.isInstanceOf[Player] then
             event.setCancelled(true)
+            return
 
-            return sql.useBlocking(
-                gm.check(
-                    ent.asInstanceOf[Player].getUniqueId,
-                    reinf.group,
-                    reinf.subgroup,
-                    Permissions.Entities,
-                ).value
-            ) match
-                case Right(ok) if ok =>
-                    ()
-                case _ =>
-                    // TODO: notify of permission denied
-                    event.setCancelled(true)
+        sql.useBlocking(
+            gm.check(
+                ent.asInstanceOf[Player].getUniqueId,
+                reinf.group,
+                reinf.subgroup,
+                Permissions.Entities,
+            ).value
+        ) match
+            case Right(ok) if ok =>
+                ()
+            case _ =>
+                // TODO: notify of permission denied
+                event.setCancelled(true)
 
     // prevent interacting with reinforced entities
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)

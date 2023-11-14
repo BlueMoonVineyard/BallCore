@@ -23,6 +23,7 @@ class BasicItemRegistry(using s: Server) extends ItemRegistry:
     def lookup(from: ItemStack): Option[CustomItem] =
         val meta = from.getItemMeta
         if meta == null then return None
+
         val pdc = meta.getPersistentDataContainer
         Option(
             pdc.getOrDefault(

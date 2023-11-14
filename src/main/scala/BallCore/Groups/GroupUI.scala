@@ -60,7 +60,9 @@ class ConfirmationPrompt(
             }
         }
 
-    override def update(msg: Message, model: Model)(using services: UIServices): Future[Model] =
+    override def update(msg: Message, model: Model)(using
+        services: UIServices
+    ): Future[Model] =
         msg match
             case Message.Accept =>
                 onYes(using services)
@@ -397,22 +399,35 @@ class GroupManagementProgram(using
                     txt"Don't Delete ${model.group.metadata.name}",
                     Item(
                         Material.LEATHER_CHESTPLATE,
-                        displayName = Some(txt"${model.group.metadata.name}".color(NamedTextColor.GREEN)),
-                    )(),
-                    {
+                        displayName = Some(
+                            txt"${model.group.metadata.name}"
+                                .color(NamedTextColor.GREEN)
+                        ),
+                    )(), {
                         val services = summon[UIServices]
-                        sql.useBlocking(gm.deleteGroup(model.userID, model.group.metadata.id).value) match
+                        sql.useBlocking(
+                            gm.deleteGroup(
+                                model.userID,
+                                model.group.metadata.id,
+                            ).value
+                        ) match
                             case Left(err) =>
-                                services.notify(s"Could not delete ${model.group.metadata.name} because ${err.explain()}")
+                                services.notify(
+                                    s"Could not delete ${model.group.metadata.name} because ${err.explain()}"
+                                )
                                 services.quit()
                             case Right(_) =>
                                 val p = GroupListProgram()
-                                services.notify(s"Deleted ${model.group.metadata.name}")
+                                services.notify(
+                                    s"Deleted ${model.group.metadata.name}"
+                                )
                                 services.transferTo(p, p.Flags(model.userID))
-                    },
-                    {
+                    }, {
                         val services = summon[UIServices]
-                        services.transferTo(this, this.Flags(model.group.metadata.id, model.userID))
+                        services.transferTo(
+                            this,
+                            this.Flags(model.group.metadata.id, model.userID),
+                        )
                     },
                 )
                 services.transferTo(p, p.Flags())
@@ -424,22 +439,32 @@ class GroupManagementProgram(using
                     txt"Don't Leave ${model.group.metadata.name}",
                     Item(
                         Material.LEATHER_CHESTPLATE,
-                        displayName = Some(txt"${model.group.metadata.name}".color(NamedTextColor.GREEN)),
-                    )(),
-                    {
+                        displayName = Some(
+                            txt"${model.group.metadata.name}"
+                                .color(NamedTextColor.GREEN)
+                        ),
+                    )(), {
                         val services = summon[UIServices]
-                        sql.useBlocking(gm.leaveGroup(model.userID, model.group.metadata.id)) match
+                        sql.useBlocking(
+                            gm.leaveGroup(model.userID, model.group.metadata.id)
+                        ) match
                             case Left(err) =>
-                                services.notify(s"Could not leave ${model.group.metadata.name} because ${err.explain()}")
+                                services.notify(
+                                    s"Could not leave ${model.group.metadata.name} because ${err.explain()}"
+                                )
                                 services.quit()
                             case Right(_) =>
                                 val p = GroupListProgram()
-                                services.notify(s"Left ${model.group.metadata.name}")
+                                services.notify(
+                                    s"Left ${model.group.metadata.name}"
+                                )
                                 services.transferTo(p, p.Flags(model.userID))
-                    },
-                    {
+                    }, {
                         val services = summon[UIServices]
-                        services.transferTo(this, this.Flags(model.group.metadata.id, model.userID))
+                        services.transferTo(
+                            this,
+                            this.Flags(model.group.metadata.id, model.userID),
+                        )
                     },
                 )
                 services.transferTo(p, p.Flags())
