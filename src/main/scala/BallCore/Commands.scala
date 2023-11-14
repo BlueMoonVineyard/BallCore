@@ -28,6 +28,18 @@ import scala.jdk.FutureConverters._
 import scala.concurrent.ExecutionContext
 import BallCore.Folia.EntityExecutionContext
 import BallCore.Folia.FireAndForget
+import dev.jorel.commandapi.arguments.TextArgument
+import org.bukkit.command.CommandSender
+import com.mojang.brigadier.suggestion.SuggestionsBuilder
+import java.util.concurrent.CompletableFuture
+import com.mojang.brigadier.suggestion.Suggestions
+import dev.jorel.commandapi.SuggestionInfo
+import dev.jorel.commandapi.executors.CommandArguments
+import BallCore.Groups.GroupStates
+import dev.jorel.commandapi.arguments.OfflinePlayerArgument
+import org.bukkit.OfflinePlayer
+import BallCore.Groups.nullUUID
+import BallCore.Groups.Permissions
 
 class CheatCommand(using
     registry: ItemRegistry,
@@ -134,6 +146,62 @@ class CheatCommand(using
                     }: PlayerCommandExecutor)
             )
 
+private def suggestGroups(using sql: SQLManager, gm: GroupManager)(
+    escaped: Boolean
+)(
+    context: SuggestionInfo[CommandSender],
+    builder: SuggestionsBuilder,
+): CompletableFuture[Suggestions] =
+    val player = context.sender().asInstanceOf[Player]
+
+    sql.useFuture {
+        gm.userGroups(player.getUniqueId)
+            .value
+            .map(_.toOption.get)
+            .map { groups =>
+                groups
+                    .filter(
+                        _.name
+                            .toLowerCase()
+                            .contains(
+                                context.currentArg().toLowerCase()
+                            )
+                    )
+                    .foreach(it =>
+                        builder.suggest(
+                            if !escaped then it.name
+                            else "\"" + it.name.replaceAll("\"", "\\\"") + "\""
+                        )
+                    )
+                builder.build()
+            }
+    }.asJava
+        .toCompletableFuture()
+
+private def withGroupArgument(using sql: SQLManager, gm: GroupManager)(
+    name: String
+)(
+    fn: (Player, CommandArguments, GroupStates) => Unit
+): PlayerCommandExecutor = { (sender, args) =>
+    val group = args.getUnchecked[String](name)
+
+    sql
+        .useBlocking {
+            gm.userGroups(sender.getUniqueId).value
+        }
+        .map(_.find(_.name == group)) match
+        case Left(err) =>
+            sender.sendServerMessage(
+                err.explain().toComponent
+            )
+        case Right(Some(group)) =>
+            fn(sender, args, group)
+        case Right(None) =>
+            sender.sendServerMessage(
+                txt"I couldn't find a group matching '$group'"
+            )
+}
+
 class GroupsCommand(using
     prompts: UI.Prompts,
     plugin: Plugin,
@@ -142,12 +210,95 @@ class GroupsCommand(using
     sql: SQLManager,
     e: PolyhedraEditor,
 ):
+    val inviteNode =
+        LiteralArgument("invite")
+            .`then`(
+                OfflinePlayerArgument("player")
+                    .executesPlayer(withGroupArgument("group") { (sender, args, group) =>
+                        val target =
+                            args.getUnchecked[OfflinePlayer]("player")
+                        if target.getName() == null then
+                            sender.sendServerMessage(
+                                txt"That player has never joined CivCubed"
+                            )
+                        sql.useBlocking(gm.getGroup(group.id).value) match
+                            case Left(err) =>
+                                sender.sendServerMessage(
+                                    txt"Could not invite ${target
+                                            .getName()} because ${err.explain()}"
+                                )
+                            case Right(fullGroup) =>
+                                if fullGroup.check(
+                                        Permissions.InviteUser,
+                                        sender.getUniqueId,
+                                        nullUUID,
+                                    )
+                                then
+                                    if fullGroup.users.contains(
+                                            target.getUniqueId
+                                        )
+                                    then
+                                        sender.sendServerMessage(
+                                            txt"${target.getName} is already in ${group.name}"
+                                        )
+                                    else
+                                        sql.useBlocking(
+                                            gm.invites.inviteToGroup(
+                                                sender.getUniqueId,
+                                                target.getUniqueId,
+                                                group.id,
+                                            )
+                                        )
+                                        sender.sendServerMessage(
+                                            txt"Invited ${target.getName} to ${group.name}"
+                                        )
+                                else
+                                    sender.sendServerMessage(
+                                        txt"You do not have the permission to invite people to ${group.name}"
+                                    )
+
+                    })
+            )
+
+    val individualGroupNode =
+        TextArgument("group")
+            .replaceSuggestions(suggestGroups(true))
+            .executesPlayer(withGroupArgument("group") {
+                (sender, args, group) =>
+                    given ExecutionContext = EntityExecutionContext(sender)
+                    FireAndForget {
+                        val p = Groups.GroupManagementProgram()
+                        val runner = UIProgramRunner(
+                            p,
+                            p.Flags(group.id, sender.getUniqueId),
+                            sender,
+                        )
+                        runner.render()
+                    }
+            })
+            .`then`(inviteNode)
+
     val node =
         CommandTree("groups")
             .executesPlayer({ (sender, args) =>
                 given ExecutionContext = EntityExecutionContext(sender)
                 FireAndForget {
                     val p = Groups.GroupListProgram()
+                    val runner =
+                        UIProgramRunner(p, p.Flags(sender.getUniqueId), sender)
+                    runner.render()
+                }
+            }: PlayerCommandExecutor)
+            .`then`(
+                individualGroupNode
+            )
+
+    val invitesNode =
+        CommandTree("invites")
+            .executesPlayer({ (sender, args) =>
+                given ExecutionContext = EntityExecutionContext(sender)
+                FireAndForget {
+                    val p = Groups.InvitesListProgram()
                     val runner =
                         UIProgramRunner(p, p.Flags(sender.getUniqueId), sender)
                     runner.render()
@@ -183,53 +334,14 @@ class ChatCommands(using ca: ChatActor, gm: GroupManager, sql: SQLManager):
         CommandTree("group")
             .`then`(
                 GreedyStringArgument("group-to-chat-in")
-                    .replaceSuggestions { (context, builder) =>
-                        val player = context.sender().asInstanceOf[Player]
-
-                        sql.useFuture {
-                            gm.userGroups(player.getUniqueId)
-                                .value
-                                .map(_.toOption.get)
-                                .map { groups =>
-                                    groups
-                                        .filter(
-                                            _.name
-                                                .toLowerCase()
-                                                .contains(
-                                                    context
-                                                        .currentArg()
-                                                        .toLowerCase()
-                                                )
-                                        )
-                                        .foreach(it => builder.suggest(it.name))
-                                    builder.build()
-                                }
-                        }.asJava
-                            .toCompletableFuture()
-                    }
-                    .executesPlayer({ (sender, args) =>
-                        val group =
-                            args.getUnchecked[String]("group-to-chat-in")
-
-                        sql
-                            .useBlocking {
-                                gm.userGroups(sender.getUniqueId).value
-                            }
-                            .map(_.find(_.name == group)) match
-                            case Left(err) =>
-                                sender.sendServerMessage(
-                                    err.explain().toComponent
-                                )
-                            case Right(Some(group)) =>
-                                ca.send(
-                                    ChatMessage
-                                        .chattingInGroup(sender, group.id)
-                                )
-                            case Right(None) =>
-                                sender.sendServerMessage(
-                                    txt"I couldn't find a group matching '$group'"
-                                )
-                    }: PlayerCommandExecutor)
+                    .replaceSuggestions(suggestGroups(false))
+                    .executesPlayer(withGroupArgument("group-to-chat-in") {
+                        (sender, args, group) =>
+                            ca.send(
+                                ChatMessage
+                                    .chattingInGroup(sender, group.id)
+                            )
+                    })
             )
 
     val global =
