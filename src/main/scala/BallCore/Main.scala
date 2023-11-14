@@ -38,6 +38,7 @@ import dev.jorel.commandapi.{CommandAPI, CommandAPIBukkitConfig}
 import java.nio.file.Files
 import scala.concurrent.{Await, ExecutionContext}
 import scala.util.Try
+import BallCore.Reinforcements.BustThroughTracker
 
 final class Main extends JavaPlugin:
     given sm: ShutdownCallbacks = ShutdownCallbacks()
@@ -103,6 +104,8 @@ final class Main extends JavaPlugin:
             ScoreboardLibrary.loadScoreboardLibrary(this)
 
         given sid: SidebarActor = SidebarActor()
+
+        given busts: BustThroughTracker = BustThroughTracker()
 
         sid.startListener()
 

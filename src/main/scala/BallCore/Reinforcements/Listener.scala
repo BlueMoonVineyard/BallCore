@@ -91,8 +91,12 @@ object Listener:
                 null,
             )
 
-class Listener(using cbm: CivBeaconManager, gm: GroupManager, sql: SQLManager)
-    extends org.bukkit.event.Listener:
+class Listener(using
+    cbm: CivBeaconManager,
+    gm: GroupManager,
+    sql: SQLManager,
+    busts: BustThroughTracker,
+) extends org.bukkit.event.Listener:
 
     import Listener.*
 
@@ -128,7 +132,19 @@ class Listener(using cbm: CivBeaconManager, gm: GroupManager, sql: SQLManager)
                     gm.check(player.getUniqueId, group, sgid, permission).value
                 )
             })
-            .getOrElse(Right(true))
+            .getOrElse(Right(true)) match
+            case Right(false) =>
+                busts.bust(location) match
+                    case BustResult.alreadyBusted =>
+                        Right(true)
+                    case BustResult.justBusted =>
+                        playBreakEffect(location, ReinforcementTypes.IronLike)
+                        Right(false)
+                    case BustResult.busting =>
+                        playDamageEffect(location, ReinforcementTypes.IronLike)
+                        Right(false)
+            case it =>
+                it
 
     private inline def checkAt(
         location: Block,

@@ -19,6 +19,7 @@ object Reinforcements:
         cbm: CivBeaconManager,
         gm: GroupManager,
         sql: SQLManager,
+        busts: BustThroughTracker,
     ): Unit =
         server.getPluginManager.registerEvents(Listener(), plugin)
 
@@ -41,6 +42,7 @@ object Reinforcements:
         holos: HologramManager,
         prompts: Prompts,
         sql: SQLManager,
+        busts: BustThroughTracker,
     ): Unit =
         registerBlockListener()
         registerEntityListener()
