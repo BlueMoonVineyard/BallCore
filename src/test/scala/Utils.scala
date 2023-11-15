@@ -16,6 +16,9 @@ import skunk.{Fragment, Session, *}
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import be.seeseemelk.mockbukkit.MockBukkit
+import org.locationtech.jts.geom.GeometryFactory
+import org.locationtech.jts.geom.Polygon
+import org.locationtech.jts.geom.Coordinate
 
 val mockServerSingleton = MockBukkit.mock()
 
@@ -73,6 +76,23 @@ object TestDatabase:
             }
             .unsafeRunSync()
         ()
+
+def rectangleCenteredAt(
+    gf: GeometryFactory,
+    x: Int,
+    z: Int,
+    y: Int,
+    size: Int,
+): Polygon =
+    gf.createPolygon(
+        Array(
+            Coordinate(x - size, z - size, y),
+            Coordinate(x - size, z + size, y),
+            Coordinate(x + size, z - size, y),
+            Coordinate(x + size, z + size, y),
+            Coordinate(x - size, z - size, y),
+        )
+    )
 
 class TestUIServices(assertions: Assertions) extends UIServices:
     val promptQueue: mutable.Queue[(String, Promise[String])] =

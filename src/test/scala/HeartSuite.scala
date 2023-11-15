@@ -12,7 +12,6 @@ import org.locationtech.jts.geom.{Coordinate, GeometryFactory}
 
 import java.util.UUID
 import scala.util.chaining.*
-import org.locationtech.jts.geom.Polygon
 
 class HeartSuite extends munit.FunSuite {
     val sql: FunFixture[SQLManager] =
@@ -171,17 +170,6 @@ class HeartSuite extends munit.FunSuite {
             assert(hni3 == 1, hni3)
         }
     }
-    def rectangleCenteredAt(gf: GeometryFactory, x: Int, z: Int, y: Int, size: Int): Polygon =
-        gf.createPolygon(
-            Array(
-                Coordinate(x - size, z - size, y),
-                Coordinate(x - size, z + size, y),
-                Coordinate(x + size, z - size, y),
-                Coordinate(x + size, z + size, y),
-                Coordinate(x - size, z - size, y),
-            )
-        )
-
     sql.test("multiple claim areas") { implicit sql =>
         given gm: GroupManager = GroupManager()
         given hn: CivBeaconManager = CivBeaconManager()
