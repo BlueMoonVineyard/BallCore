@@ -107,7 +107,13 @@ class SQLManager(resource: Resource[IO, Session[IO]], val database: String):
         }
         .unsafeRunSync()
 
-    // TODO: transactions
+    /** Applies a migration synchronously
+      *
+      * Migrations are ran in a transaction.
+      *
+      * @param migrationP
+      *   The migration to run the `apply` queries of
+      */
     def applyMigration(migrationP: Migration): Unit =
         val migration = migrationP
         session
@@ -124,23 +130,64 @@ class SQLManager(resource: Resource[IO, Session[IO]], val database: String):
             }
             .unsafeRunSync()
 
+    /** Runs IO code in the context of a SQL transaction
+      *
+      * All SQL code ran within the transaction will be part of it
+      *
+      * Will roll back if an exception is thrown
+      *
+      * @param fn
+      *   the function to run within the transaction
+      * @tparam A
+      *   return type of the IO function to be ran within the transaction
+      */
     def txIO[A](fn: Transaction[IO] => IO[A])(using s: Session[IO]): IO[A] =
         s.transaction.use { tx =>
             fn(tx)
         }
 
+    /** Runs IO code that requires a database connection
+      *
+      * @param fn
+      *   the IO code to execute that requires a [[skunk.Session]]
+      */
     def useIO[T](fn: Session[IO] ?=> IO[T]): IO[T] =
         session.use { implicit session => fn }
 
+    /** Runs IO code that requires a database connection and returns a
+      * [[scala.concurrent.Future]]
+      *
+      * @see
+      *   useIO
+      */
     def useFuture[T](fn: Session[IO] ?=> IO[T]): Future[T] =
         session.use { implicit session => fn }.unsafeToFuture()
 
+    /** Runs IO code that requires a database connection synchronously
+      *
+      * @see
+      *   useIO
+      */
     def useBlocking[T](fn: Session[IO] ?=> IO[T]): T =
         session.use { implicit session => fn }.unsafeRunSync()
 
+    /** Runs IO code that requires a database connection asynchronously without
+      * returning any values
+      *
+      * @see
+      *   useIO
+      */
     def useFireAndForget[T](fn: Session[IO] ?=> IO[T]): Unit =
         session.use { implicit session => fn }.unsafeRunAndForget()
 
+    /** Executes a valueless SQL query with the given parameters
+      *
+      * @example
+      *   {{{ sql.commandIO(sql""" INSERT INTO SomeDatabase (Hello, World)
+      *   VALUES ($int4, $uuid) """, (someInt, someUUID)) }}}
+      * @see
+      *   useIO
+      */
     def commandIO[T](fragmentP: Fragment[T], parameters: T)(using
         s: Session[IO]
     ): IO[Completion] =
@@ -151,6 +198,15 @@ class SQLManager(resource: Resource[IO, Session[IO]], val database: String):
             res
         }
 
+    /** Executes a SQL query with the given parameters that returns exactly one
+      * value
+      *
+      * @example
+      *   {{{ sql.queryUniqueIO(sql""" SELECT (Hello, World) FROM SomeDatabase
+      *   WHERE Foo = $int4; """, (int4 *: uuid), someInt) }}}
+      * @see
+      *   useIO
+      */
     def queryUniqueIO[I, O](
         fragmentP: Fragment[I],
         decoder: Decoder[O],
@@ -163,9 +219,15 @@ class SQLManager(resource: Resource[IO, Session[IO]], val database: String):
             res
         }
 
-    def command[T](fragmentP: Fragment[T], parameters: T): Future[Completion] =
-        useIO(commandIO(fragmentP, parameters)).unsafeToFuture()
-
+    /** Executes a SQL query with the given parameters that returns 0 or more
+      * values
+      *
+      * @example
+      *   {{{ sql.queryListIO(sql"""SELECT (Hello, World) FROM SomeDatabase
+      *   WHERE Foo = $int4; """, (int4 *: uuid), someInt) }}}
+      * @see
+      *   useIO
+      */
     def queryListIO[I, O](
         fragmentP: Fragment[I],
         decoder: Decoder[O],
@@ -178,13 +240,15 @@ class SQLManager(resource: Resource[IO, Session[IO]], val database: String):
             res
         }
 
-    def queryList[I, O](
-        fragmentP: Fragment[I],
-        decoder: Decoder[O],
-        parameters: I,
-    ): Future[List[O]] =
-        useIO(queryListIO(fragmentP, decoder, parameters)).unsafeToFuture()
-
+    /** Executes a SQL query with the given parameters that returns 0 or 1
+      * values
+      *
+      * @example
+      *   {{{ sql.queryOptionIO(sql""" SELECT (Hello, World) FROM SomeDatabase
+      *   WHERE Foo = $int4; """, (int4 *: uuid), someInt) }}}
+      * @see
+      *   useIO
+      */
     def queryOptionIO[I, O](
         fragmentP: Fragment[I],
         decoder: Decoder[O],
@@ -196,10 +260,3 @@ class SQLManager(resource: Resource[IO, Session[IO]], val database: String):
             val res = prepared.option(parameters).await
             res
         }
-
-    def queryOption[I, O](
-        fragmentP: Fragment[I],
-        decoder: Decoder[O],
-        parameters: I,
-    ): Future[Option[O]] =
-        useIO(queryOptionIO(fragmentP, decoder, parameters)).unsafeToFuture()
