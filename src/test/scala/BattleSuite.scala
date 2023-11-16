@@ -34,6 +34,7 @@ class TestBattleHooks(using assertions: Assertions) extends BattleHooks:
         battle: BattleID,
         offense: BeaconID,
         contestedArea: Geometry,
+        world: UUID,
         defense: BeaconID,
     ): IO[Unit] =
         IO {

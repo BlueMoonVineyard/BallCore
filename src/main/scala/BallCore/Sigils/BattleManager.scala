@@ -23,6 +23,7 @@ trait BattleHooks:
         battle: BattleID,
         offensiveBeacon: BeaconID,
         contestedArea: Geometry,
+        world: UUID,
         defensiveBeacon: BeaconID,
     ): IO[Unit]
     def battleDefended(
@@ -85,11 +86,12 @@ class BattleManager(using
         offense: BeaconID,
         defense: BeaconID,
         contestedArea: Geometry,
+        world: UUID,
         count: Int,
     ): IO[Unit] =
         (1 to count).toList
             .traverse(_ =>
-                hooks.spawnPillarFor(battle, offense, contestedArea, defense)
+                hooks.spawnPillarFor(battle, offense, contestedArea, world, defense)
             )
             .map(_ => ())
 
@@ -115,16 +117,16 @@ class BattleManager(using
         }
     def contestedArea(
         battle: BattleID
-    )(using Session[IO]): IO[Geometry] =
+    )(using Session[IO]): IO[(Geometry, UUID)] =
         sql.queryUniqueIO(
             sql"""
             SELECT ST_AsGeoJSON(ST_Intersection(
                 ST_MakeValid((SELECT OffensiveBeaconTargetArea FROM Battles WHERE BattleID = $uuid)),
                 ST_MakeValid((SELECT CoveredArea FROM CivBeacons WHERE ID = (SELECT DefensiveBeacon FROM Battles WHERE BattleID = $uuid)))
-            ));
+            )), (SELECT World FROM CivBeacons WHERE ID = (SELECT DefensiveBeacon FROM Battles WHERE BattleID = $uuid));
             """,
-            (geometryGeojsonCodec),
-            (battle, battle),
+            (geometryGeojsonCodec *: uuid),
+            (battle, battle, battle),
         )
     def startBattle(
         offensive: BeaconID,
@@ -159,12 +161,13 @@ class BattleManager(using
                 defensive,
             ),
         ).flatTap { (battleID, count) =>
-            contestedArea(battleID).flatMap { polygon =>
+            contestedArea(battleID).flatMap { (polygon, world) =>
                 spawnInitialPillars(
                     battleID,
                     offensive,
                     defensive,
                     polygon,
+                    world,
                     count,
                 )
             }
@@ -189,8 +192,8 @@ class BattleManager(using
                 )
             },
             { (offense, defense) =>
-                contestedArea(battle).flatMap { polygon =>
-                    hooks.spawnPillarFor(battle, offense, polygon, defense)
+                contestedArea(battle).flatMap { (polygon, world) =>
+                    hooks.spawnPillarFor(battle, offense, polygon, world, defense)
                 }
             },
         ).map(_ => ())
@@ -214,8 +217,8 @@ class BattleManager(using
                 )
             },
             { (offense, defense) =>
-                contestedArea(battle).flatMap { polygon =>
-                    hooks.spawnPillarFor(battle, offense, polygon, defense)
+                contestedArea(battle).flatMap { (polygon, world) =>
+                    hooks.spawnPillarFor(battle, offense, polygon, world, defense)
                 }
             },
         ).map(_ => ())
