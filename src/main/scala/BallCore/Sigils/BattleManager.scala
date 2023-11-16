@@ -14,6 +14,7 @@ import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.Polygon
 import org.locationtech.jts.io.geojson.GeoJsonReader
 import org.locationtech.jts.io.geojson.GeoJsonWriter
+import org.locationtech.jts.geom.Geometry
 
 type BattleID = UUID
 
@@ -21,6 +22,7 @@ trait BattleHooks:
     def spawnPillarFor(
         battle: BattleID,
         offensiveBeacon: BeaconID,
+        contestedArea: Geometry,
         defensiveBeacon: BeaconID,
     ): IO[Unit]
     def battleDefended(
@@ -46,6 +48,11 @@ class BattleManager(using
     private val geometryFactory = GeometryFactory()
     private val polygonGeojsonCodec = text.imap[Polygon] { json =>
         GeoJsonReader(geometryFactory).read(json).asInstanceOf[Polygon]
+    } { polygon =>
+        GeoJsonWriter().write(polygon)
+    }
+    private val geometryGeojsonCodec = text.imap[Geometry] { json =>
+        GeoJsonReader(geometryFactory).read(json).asInstanceOf[Geometry]
     } { polygon =>
         GeoJsonWriter().write(polygon)
     }
@@ -77,36 +84,48 @@ class BattleManager(using
         battle: BattleID,
         offense: BeaconID,
         defense: BeaconID,
+        contestedArea: Geometry,
         count: Int,
     ): IO[Unit] =
         (1 to count).toList
-            .traverse(_ => hooks.spawnPillarFor(battle, offense, defense))
+            .traverse(_ =>
+                hooks.spawnPillarFor(battle, offense, contestedArea, defense)
+            )
             .map(_ => ())
 
-    def offensiveResign(battle: BattleID): IO[Unit] =
-        sql.useIO(
-            sql.queryUniqueIO(
-                sql"""
-        DELETE FROM Battles WHERE BattleID = $uuid RETURNING OffensiveBeacon, DefensiveBeacon;
-        """,
-                (uuid *: uuid),
-                battle,
-            )
+    def offensiveResign(battle: BattleID)(using Session[IO]): IO[Unit] =
+        sql.queryUniqueIO(
+            sql"""
+    DELETE FROM Battles WHERE BattleID = $uuid RETURNING OffensiveBeacon, DefensiveBeacon;
+    """,
+            (uuid *: uuid),
+            battle,
         ).flatMap { (offense, defense) =>
             hooks.battleDefended(battle, offense, defense)
         }
-    def defensiveResign(battle: BattleID): IO[Unit] =
-        sql.useIO(
-            sql.queryUniqueIO(
-                sql"""
-        DELETE FROM Battles WHERE BattleID = $uuid RETURNING OffensiveBeacon, ST_AsGeoJSON(OffensiveBeaconTargetArea), DefensiveBeacon;
-        """,
-                (uuid *: polygonGeojsonCodec *: uuid),
-                battle,
-            )
+    def defensiveResign(battle: BattleID)(using Session[IO]): IO[Unit] =
+        sql.queryUniqueIO(
+            sql"""
+    DELETE FROM Battles WHERE BattleID = $uuid RETURNING OffensiveBeacon, ST_AsGeoJSON(OffensiveBeaconTargetArea), DefensiveBeacon;
+    """,
+            (uuid *: polygonGeojsonCodec *: uuid),
+            battle,
         ).flatMap { (offense, area, defense) =>
             hooks.battleTaken(battle, offense, area, defense)
         }
+    def contestedArea(
+        battle: BattleID
+    )(using Session[IO]): IO[Geometry] =
+        sql.queryUniqueIO(
+            sql"""
+            SELECT ST_AsGeoJSON(ST_Intersection(
+                ST_MakeValid((SELECT OffensiveBeaconTargetArea FROM Battles WHERE BattleID = $uuid)),
+                ST_MakeValid((SELECT CoveredArea FROM CivBeacons WHERE ID = (SELECT DefensiveBeacon FROM Battles WHERE BattleID = $uuid)))
+            ));
+            """,
+            (geometryGeojsonCodec),
+            (battle, battle),
+        )
     def startBattle(
         offensive: BeaconID,
         offensiveTargetArea: Polygon,
@@ -114,83 +133,89 @@ class BattleManager(using
     )(using
         Session[IO]
     ): IO[BattleID] =
-        sql.useIO(
-            sql.queryUniqueIO(
-                sql"""
-            INSERT INTO Battles (
-                BattleID, OffensiveBeacon, OffensiveBeaconTargetArea, DefensiveBeacon, Health, PillarCount
-            ) SELECT
-                gen_random_uuid() as BattleID,
-                $uuid as OffensiveBeacon,
-                ST_GeomFromGeoJSON($polygonGeojsonCodec) as OffensiveBeaconTargetArea,
-                $uuid as DefensiveBeacon,
-                $int4 as Health,
-                GREATEST(CEILING(ST_Area(ST_Intersection(
-                    ST_MakeValid(ST_GeomFromGeoJSON($polygonGeojsonCodec)),
-                    ST_MakeValid((SELECT CoveredArea FROM CivBeacons WHERE ID = $uuid))
-                )) / 512.0), 1)  as PillarCount
-            RETURNING BattleID, PillarCount;
-            """,
-                (uuid *: int4),
-                (
-                    offensive,
-                    offensiveTargetArea,
-                    defensive,
-                    initialHealth,
-                    offensiveTargetArea,
-                    defensive,
-                ),
-            )
+        sql.queryUniqueIO(
+            sql"""
+        INSERT INTO Battles (
+            BattleID, OffensiveBeacon, OffensiveBeaconTargetArea, DefensiveBeacon, Health, PillarCount
+        ) SELECT
+            gen_random_uuid() as BattleID,
+            $uuid as OffensiveBeacon,
+            ST_GeomFromGeoJSON($polygonGeojsonCodec) as OffensiveBeaconTargetArea,
+            $uuid as DefensiveBeacon,
+            $int4 as Health,
+            GREATEST(CEILING(ST_Area(ST_Intersection(
+                ST_MakeValid(ST_GeomFromGeoJSON($polygonGeojsonCodec)),
+                ST_MakeValid((SELECT CoveredArea FROM CivBeacons WHERE ID = $uuid))
+            )) / 512.0), 1)  as PillarCount
+        RETURNING BattleID, PillarCount;
+        """,
+            (uuid *: int4),
+            (
+                offensive,
+                offensiveTargetArea,
+                defensive,
+                initialHealth,
+                offensiveTargetArea,
+                defensive,
+            ),
         ).flatTap { (battleID, count) =>
-            spawnInitialPillars(battleID, offensive, defensive, count)
+            contestedArea(battleID).flatMap { polygon =>
+                spawnInitialPillars(
+                    battleID,
+                    offensive,
+                    defensive,
+                    polygon,
+                    count,
+                )
+            }
         }.map(_._1)
     def pillarDefended(battle: BattleID)(using Session[IO]): IO[Unit] =
-        sql.useIO(
-            sql.queryUniqueIO(
-                sql"""
-        UPDATE Battles SET Health = Health + 1 WHERE BattleID = $uuid RETURNING OffensiveBeacon, DefensiveBeacon;
-        """,
-                (uuid *: uuid),
-                battle,
-            ).redeemWith(
-                { case SqlState.CheckViolation(_) =>
-                    sql.queryUniqueIO(
-                        sql"""
-                        DELETE FROM Battles WHERE BattleID = $uuid RETURNING OffensiveBeacon, DefensiveBeacon;
-                        """,
-                        (uuid *: uuid),
-                        battle,
-                    ).flatMap((offense, defense) =>
-                        hooks.battleDefended(battle, offense, defense)
-                    )
-                },
-                { (offense, defense) =>
-                    hooks.spawnPillarFor(battle, offense, defense)
-                },
-            ).map(_ => ())
-        )
+        sql.queryUniqueIO(
+            sql"""
+    UPDATE Battles SET Health = Health + 1 WHERE BattleID = $uuid RETURNING OffensiveBeacon, DefensiveBeacon;
+    """,
+            (uuid *: uuid),
+            battle,
+        ).redeemWith(
+            { case SqlState.CheckViolation(_) =>
+                sql.queryUniqueIO(
+                    sql"""
+                    DELETE FROM Battles WHERE BattleID = $uuid RETURNING OffensiveBeacon, DefensiveBeacon;
+                    """,
+                    (uuid *: uuid),
+                    battle,
+                ).flatMap((offense, defense) =>
+                    hooks.battleDefended(battle, offense, defense)
+                )
+            },
+            { (offense, defense) =>
+                contestedArea(battle).flatMap { polygon =>
+                    hooks.spawnPillarFor(battle, offense, polygon, defense)
+                }
+            },
+        ).map(_ => ())
     def pillarTaken(battle: BattleID)(using Session[IO]): IO[Unit] =
-        sql.useIO(
-            sql.queryUniqueIO(
-                sql"""
-        UPDATE Battles SET Health = Health - 1 WHERE BattleID = $uuid RETURNING OffensiveBeacon, DefensiveBeacon;
-        """,
-                (uuid *: uuid),
-                battle,
-            ).redeemWith(
-                { case SqlState.CheckViolation(_) =>
-                    sql.queryUniqueIO(
-                        sql"""
-                        DELETE FROM Battles WHERE BattleID = $uuid RETURNING OffensiveBeacon, ST_AsGeoJSON(OffensiveBeaconTargetArea), DefensiveBeacon;
-                        """,
-                        (uuid *: polygonGeojsonCodec *: uuid),
-                        battle,
-                    ).flatMap((offense, area, defense) =>
-                        hooks.battleTaken(battle, offense, area, defense)
-                    )
-                },
-                { (offense, defense) =>
-                    hooks.spawnPillarFor(battle, offense, defense)
-                },
-            ).map(_ => ())
-        )
+        sql.queryUniqueIO(
+            sql"""
+    UPDATE Battles SET Health = Health - 1 WHERE BattleID = $uuid RETURNING OffensiveBeacon, DefensiveBeacon;
+    """,
+            (uuid *: uuid),
+            battle,
+        ).redeemWith(
+            { case SqlState.CheckViolation(_) =>
+                sql.queryUniqueIO(
+                    sql"""
+                    DELETE FROM Battles WHERE BattleID = $uuid RETURNING OffensiveBeacon, ST_AsGeoJSON(OffensiveBeaconTargetArea), DefensiveBeacon;
+                    """,
+                    (uuid *: polygonGeojsonCodec *: uuid),
+                    battle,
+                ).flatMap((offense, area, defense) =>
+                    hooks.battleTaken(battle, offense, area, defense)
+                )
+            },
+            { (offense, defense) =>
+                contestedArea(battle).flatMap { polygon =>
+                    hooks.spawnPillarFor(battle, offense, polygon, defense)
+                }
+            },
+        ).map(_ => ())

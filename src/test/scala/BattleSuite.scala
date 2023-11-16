@@ -19,6 +19,7 @@ import munit.Assertions
 import scala.collection.mutable
 import BallCore.Beacons.BeaconID
 import org.locationtech.jts.geom.Polygon
+import org.locationtech.jts.geom.Geometry
 
 class TestBattleHooks(using assertions: Assertions) extends BattleHooks:
     val spawnQueue: mutable.Queue[Unit] =
@@ -29,19 +30,33 @@ class TestBattleHooks(using assertions: Assertions) extends BattleHooks:
         mutable.Queue[Unit]()
 
     def expectSpawn() = spawnQueue.enqueue(())
-    override def spawnPillarFor(battle: BattleID, offense: BeaconID, defense: BeaconID): IO[Unit] =
+    override def spawnPillarFor(
+        battle: BattleID,
+        offense: BeaconID,
+        contestedArea: Geometry,
+        defense: BeaconID,
+    ): IO[Unit] =
         IO {
             assertions.assert(!spawnQueue.isEmpty, "unexpected spawn pillar")
             spawnQueue.dequeue()
         }
     def expectDefended() = defendQueue.enqueue(())
-    override def battleDefended(battle: BattleID, offense: BeaconID, defense: BeaconID): IO[Unit] =
+    override def battleDefended(
+        battle: BattleID,
+        offense: BeaconID,
+        defense: BeaconID,
+    ): IO[Unit] =
         IO {
             assertions.assert(!defendQueue.isEmpty, "unexpected defended")
             defendQueue.dequeue()
         }
     def expectTaken() = takeQueue.enqueue(())
-    override def battleTaken(battle: BattleID, offense: BeaconID, area: Polygon, defense: BeaconID): IO[Unit] =
+    override def battleTaken(
+        battle: BattleID,
+        offense: BeaconID,
+        area: Polygon,
+        defense: BeaconID,
+    ): IO[Unit] =
         IO {
             assertions.assert(!takeQueue.isEmpty, "unexpected taken")
             takeQueue.dequeue()
@@ -188,7 +203,7 @@ class BattleSuite extends munit.FunSuite:
             )
         )
 
-        for _ <- battleManager.initialHealth+1 to 10 do
+        for _ <- battleManager.initialHealth + 1 to 10 do
             hooks.expectSpawn()
             sql.useBlocking(battleManager.pillarDefended(battle))
 
@@ -262,7 +277,7 @@ class BattleSuite extends munit.FunSuite:
             )
         )
 
-        for _ <- 1 to battleManager.initialHealth-1 do
+        for _ <- 1 to battleManager.initialHealth - 1 do
             hooks.expectSpawn()
             sql.useBlocking(battleManager.pillarTaken(battle))
 
