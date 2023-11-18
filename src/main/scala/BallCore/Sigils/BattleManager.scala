@@ -36,6 +36,7 @@ trait BattleHooks:
         offensiveBeacon: BeaconID,
         newOffensiveArea: Polygon,
         defensiveBeacon: BeaconID,
+        newDefensiveArea: Polygon,
     )(using Session[IO]): IO[Unit]
 
 class BattleManager(using
@@ -68,6 +69,7 @@ class BattleManager(using
                     OffensiveBeacon UUID NOT NULL,
                     OffensiveBeaconTargetArea GEOMETRY(PolygonZ) NOT NULL,
                     DefensiveBeacon UUID NOT NULL,
+                    DefensiveBeaconTargetArea GEOMETRY(PolygonZ) NOT NULL,
                     Health INTEGER NOT NULL,
                     PillarCount INTEGER NOT NULL,
                     FOREIGN KEY (OffensiveBeacon) REFERENCES CivBeacons (ID),
@@ -108,12 +110,12 @@ class BattleManager(using
     def defensiveResign(battle: BattleID)(using Session[IO]): IO[Unit] =
         sql.queryUniqueIO(
             sql"""
-    DELETE FROM Battles WHERE BattleID = $uuid RETURNING OffensiveBeacon, ST_AsGeoJSON(OffensiveBeaconTargetArea), DefensiveBeacon;
+    DELETE FROM Battles WHERE BattleID = $uuid RETURNING OffensiveBeacon, ST_AsGeoJSON(OffensiveBeaconTargetArea), DefensiveBeacon, ST_AsGeoJSON(DefensiveBeaconTargetArea);
     """,
-            (uuid *: polygonGeojsonCodec *: uuid),
+            (uuid *: polygonGeojsonCodec *: uuid *: polygonGeojsonCodec),
             battle,
-        ).flatMap { (offense, area, defense) =>
-            hooks.battleTaken(battle, offense, area, defense)
+        ).flatMap { (offense, area, defense, area2) =>
+            hooks.battleTaken(battle, offense, area, defense, area2)
         }
     def contestedArea(
         battle: BattleID
@@ -132,18 +134,20 @@ class BattleManager(using
         offensive: BeaconID,
         offensiveTargetArea: Polygon,
         defensive: BeaconID,
+        defensiveTargetArea: Polygon,
     )(using
         Session[IO]
     ): IO[BattleID] =
         sql.queryUniqueIO(
             sql"""
         INSERT INTO Battles (
-            BattleID, OffensiveBeacon, OffensiveBeaconTargetArea, DefensiveBeacon, Health, PillarCount
+            BattleID, OffensiveBeacon, OffensiveBeaconTargetArea, DefensiveBeacon, DefensiveBeaconTargetArea, Health, PillarCount
         ) SELECT
             gen_random_uuid() as BattleID,
             $uuid as OffensiveBeacon,
             ST_GeomFromGeoJSON($polygonGeojsonCodec) as OffensiveBeaconTargetArea,
             $uuid as DefensiveBeacon,
+            ST_GeomFromGeoJSON($polygonGeojsonCodec) as DefensiveBeaconTargetArea,
             $int4 as Health,
             GREATEST(CEILING(ST_Area(ST_Intersection(
                 ST_MakeValid(ST_GeomFromGeoJSON($polygonGeojsonCodec)),
@@ -156,6 +160,7 @@ class BattleManager(using
                 offensive,
                 offensiveTargetArea,
                 defensive,
+                defensiveTargetArea,
                 initialHealth,
                 offensiveTargetArea,
                 defensive,
@@ -208,12 +213,12 @@ class BattleManager(using
             { case SqlState.CheckViolation(_) =>
                 sql.queryUniqueIO(
                     sql"""
-                    DELETE FROM Battles WHERE BattleID = $uuid RETURNING OffensiveBeacon, ST_AsGeoJSON(OffensiveBeaconTargetArea), DefensiveBeacon;
+                    DELETE FROM Battles WHERE BattleID = $uuid RETURNING OffensiveBeacon, ST_AsGeoJSON(OffensiveBeaconTargetArea), DefensiveBeacon, ST_AsGeoJSON(DefensiveBeaconTargetArea);
                     """,
-                    (uuid *: polygonGeojsonCodec *: uuid),
+                    (uuid *: polygonGeojsonCodec *: uuid *: polygonGeojsonCodec),
                     battle,
-                ).flatMap((offense, area, defense) =>
-                    hooks.battleTaken(battle, offense, area, defense)
+                ).flatMap((offense, area, defense, area2) =>
+                    hooks.battleTaken(battle, offense, area, defense, area2)
                 )
             },
             { (offense, defense) =>

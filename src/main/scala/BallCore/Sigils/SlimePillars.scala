@@ -4,27 +4,17 @@
 
 package BallCore.Sigils
 
-import BallCore.CustomItems.CustomItemStack
 import org.bukkit.inventory.ItemStack
 import org.bukkit.Material
 import org.bukkit.NamespacedKey
-import BallCore.TextComponents._
 import scala.util.chaining._
 import BallCore.Storage
 import BallCore.Beacons.CivBeaconManager
-import BallCore.CustomItems.CustomItem
 import skunk.implicits._
 import skunk.codec.all._
-import org.bukkit.event.player.PlayerInteractEvent
-import BallCore.CustomItems.Listeners
 import org.bukkit.entity.Interaction
 import skunk.Session
 import cats.effect.IO
-import org.bukkit.entity.EntityType
-import org.bukkit.entity.ItemDisplay
-import org.bukkit.util.Transformation
-import org.joml.Vector3f
-import org.joml.AxisAngle4f
 import org.bukkit.Bukkit
 import org.bukkit.plugin.Plugin
 import BallCore.Folia.EntityExecutionContext

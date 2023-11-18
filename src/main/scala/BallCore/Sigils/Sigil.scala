@@ -66,7 +66,6 @@ object Sigil:
     ): Unit =
         registry.register(Sigil())
         registry.register(SlimeEgg())
-        registry.register(SlimePillarDebugSpawnItemStack())
         given da: DamageActor = DamageActor()
         da.startListener()
         val behaviours = SlimeBehaviours()

@@ -123,15 +123,27 @@ class GameBattleHooks(using
             _ <- spawnPillarAt(block, battle)
         } yield ()
 
+    private def despawnPillarsFor(battle: BattleID)(using
+        Session[IO]
+    ): IO[Unit] =
+        ???
+
     override def battleDefended(
         battle: BattleID,
         offensiveBeacon: BeaconID,
         defensiveBeacon: BeaconID,
-    )(using Session[IO]): IO[Unit] = ???
+    )(using Session[IO]): IO[Unit] =
+        despawnPillarsFor(battle)
 
     override def battleTaken(
         battle: BattleID,
         offensiveBeacon: BeaconID,
         newOffensiveArea: Polygon,
         defensiveBeacon: BeaconID,
-    )(using Session[IO]): IO[Unit] = ???
+        newDefensiveArea: Polygon,
+    )(using Session[IO]): IO[Unit] =
+        for {
+            _ <- despawnPillarsFor(battle)
+            _ <- IO(???) // todo: set offense beacon to new area
+            _ <- IO(???) // todo: set defense beacon to new area
+        } yield ()

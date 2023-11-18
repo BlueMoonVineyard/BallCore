@@ -20,6 +20,7 @@ import scala.collection.mutable
 import BallCore.Beacons.BeaconID
 import org.locationtech.jts.geom.Polygon
 import org.locationtech.jts.geom.Geometry
+import skunk.Session
 
 class TestBattleHooks(using assertions: Assertions) extends BattleHooks:
     val spawnQueue: mutable.Queue[Unit] =
@@ -36,7 +37,7 @@ class TestBattleHooks(using assertions: Assertions) extends BattleHooks:
         contestedArea: Geometry,
         world: UUID,
         defense: BeaconID,
-    ): IO[Unit] =
+    )(using Session[IO]): IO[Unit] =
         IO {
             assertions.assert(!spawnQueue.isEmpty, "unexpected spawn pillar")
             spawnQueue.dequeue()
@@ -46,7 +47,7 @@ class TestBattleHooks(using assertions: Assertions) extends BattleHooks:
         battle: BattleID,
         offense: BeaconID,
         defense: BeaconID,
-    ): IO[Unit] =
+    )(using Session[IO]): IO[Unit] =
         IO {
             assertions.assert(!defendQueue.isEmpty, "unexpected defended")
             defendQueue.dequeue()
@@ -57,7 +58,8 @@ class TestBattleHooks(using assertions: Assertions) extends BattleHooks:
         offense: BeaconID,
         area: Polygon,
         defense: BeaconID,
-    ): IO[Unit] =
+        area2: Polygon,
+    )(using Session[IO]): IO[Unit] =
         IO {
             assertions.assert(!takeQueue.isEmpty, "unexpected taken")
             takeQueue.dequeue()
@@ -130,6 +132,7 @@ class BattleSuite extends munit.FunSuite:
                     offensiveBeacon,
                     area2,
                     defensiveBeacon,
+                    area2,
                 )
             )
 
@@ -201,6 +204,7 @@ class BattleSuite extends munit.FunSuite:
                 offensiveBeacon,
                 area2,
                 defensiveBeacon,
+                area2,
             )
         )
 
@@ -275,6 +279,7 @@ class BattleSuite extends munit.FunSuite:
                 offensiveBeacon,
                 area2,
                 defensiveBeacon,
+                area2,
             )
         )
 
