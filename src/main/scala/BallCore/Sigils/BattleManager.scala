@@ -25,18 +25,18 @@ trait BattleHooks:
         contestedArea: Geometry,
         world: UUID,
         defensiveBeacon: BeaconID,
-    ): IO[Unit]
+    )(using Session[IO]): IO[Unit]
     def battleDefended(
         battle: BattleID,
         offensiveBeacon: BeaconID,
         defensiveBeacon: BeaconID,
-    ): IO[Unit]
+    )(using Session[IO]): IO[Unit]
     def battleTaken(
         battle: BattleID,
         offensiveBeacon: BeaconID,
         newOffensiveArea: Polygon,
         defensiveBeacon: BeaconID,
-    ): IO[Unit]
+    )(using Session[IO]): IO[Unit]
 
 class BattleManager(using
     sql: Storage.SQLManager,
@@ -88,7 +88,7 @@ class BattleManager(using
         contestedArea: Geometry,
         world: UUID,
         count: Int,
-    ): IO[Unit] =
+    )(using Session[IO]): IO[Unit] =
         (1 to count).toList
             .traverse(_ =>
                 hooks.spawnPillarFor(battle, offense, contestedArea, world, defense)

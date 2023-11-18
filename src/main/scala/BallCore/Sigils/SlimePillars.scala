@@ -18,7 +18,6 @@ import skunk.codec.all._
 import org.bukkit.event.player.PlayerInteractEvent
 import BallCore.CustomItems.Listeners
 import org.bukkit.entity.Interaction
-import BallCore.Beacons.BeaconID
 import skunk.Session
 import cats.effect.IO
 import org.bukkit.entity.EntityType
@@ -40,15 +39,6 @@ object SlimePillar:
         slimePillarModel.getItemMeta().tap(_.setCustomModelData(7))
     )
 
-    val debugSpawnItemStack = CustomItemStack.make(
-        NamespacedKey("ballcore", "slime_pillar_debug"),
-        Material.PAPER,
-        txt"Slime Pillar Debug",
-    )
-    debugSpawnItemStack.setItemMeta(
-        debugSpawnItemStack.getItemMeta().tap(_.setCustomModelData(3))
-    )
-
     val scale = 4.5
     val heightBlocks = (8.0 * scale) / 16.0
     val totalHeightBlocks = heightBlocks * 4
@@ -66,11 +56,12 @@ class SlimePillarManager(using
             List(
                 sql"""
 				CREATE TABLE SlimePillars (
-					BeaconID UUID NOT NULL,
+					BattleID UUID NOT NULL,
 					InteractionEntityID UUID NOT NULL,
 					Health INTEGER NOT NULL,
 					UNIQUE(InteractionEntityID),
-					FOREIGN KEY (InteractionEntityID) REFERENCES CustomEntities(InteractionEntityID) ON DELETE CASCADE
+					FOREIGN KEY (InteractionEntityID) REFERENCES CustomEntities(InteractionEntityID) ON DELETE CASCADE,
+                    FORIEGN KEY (BattleID) REFERENCES Battles(BattleID)
 				);
 				""".command
             ),
@@ -84,18 +75,18 @@ class SlimePillarManager(using
     val _ = cbm
     val _ = cem
 
-    def addPillar(interaction: Interaction, beacon: BeaconID)(using
+    def addPillar(interaction: Interaction, battle: BattleID)(using
         Session[IO]
     ): IO[Unit] =
         sql.commandIO(
             sql"""
 		INSERT INTO SlimePillars (
-			BeaconID, InteractionEntityID
+			BattleID, InteractionEntityID
 		) VALUES (
 			$uuid, $uuid
 		)
 		""",
-            (beacon, interaction.getUniqueId()),
+            (battle, interaction.getUniqueId()),
         ).map(_ => ())
 
 class SlimePillarFlinger()(using
@@ -173,70 +164,3 @@ class SlimePillarFlinger()(using
                                 .setRotation(loc.getYaw(), 0)
                     }
         }
-
-class SlimePillarDebugSpawnItemStack(using
-    cem: CustomEntityManager,
-    spm: SlimePillarManager,
-    cbm: CivBeaconManager,
-    sql: Storage.SQLManager,
-) extends CustomItem,
-      Listeners.ItemUsedOnBlock:
-    def group = Sigil.group
-    def template = SlimePillar.debugSpawnItemStack
-
-    val _ = sql
-    val _ = spm
-    val _ = cbm
-    val _ = cem
-
-    override def onItemUsedOnBlock(event: PlayerInteractEvent): Unit =
-        val beacon =
-            sql.useBlocking(
-                cbm.getBeaconFor(event.getPlayer().getUniqueId())
-            ) match
-                case None =>
-                    import BallCore.UI.ChatElements._
-                    event
-                        .getPlayer()
-                        .sendServerMessage(
-                            txt"You must have a Civilization Heart placed to spawn a Pillar!"
-                                .color(Colors.red)
-                        )
-                    event.setCancelled(true)
-                    return
-                case Some(value) =>
-                    value
-
-        val block = event.getClickedBlock()
-        val world = block.getWorld()
-
-        val targetXZ = block.getLocation().clone().tap(_.add(0.5, 1, 0.5))
-
-        val targetModelLocation = targetXZ
-            .clone()
-            .tap(_.add(0, SlimePillar.scale - SlimePillar.heightBlocks, 0))
-        val itemDisplay = world
-            .spawnEntity(targetModelLocation, EntityType.ITEM_DISPLAY)
-            .asInstanceOf[ItemDisplay]
-        val scale = SlimePillar.scale
-        itemDisplay.setTransformation(
-            Transformation(
-                Vector3f(),
-                AxisAngle4f(),
-                Vector3f(scale.toFloat),
-                AxisAngle4f(),
-            )
-        )
-        itemDisplay.setItemStack(SlimePillar.slimePillarModel)
-
-        val interaction = world
-            .spawnEntity(targetXZ, EntityType.INTERACTION)
-            .asInstanceOf[Interaction]
-        interaction.setInteractionHeight(SlimePillar.totalHeightBlocks.toFloat)
-        interaction.setInteractionWidth(SlimePillar.heightBlocks.toFloat)
-        interaction.setResponsive(true)
-
-        sql.useBlocking(
-            cem.addEntity(interaction, itemDisplay, SlimePillar.entityKind)
-        )
-        sql.useBlocking(spm.addPillar(interaction, beacon))
