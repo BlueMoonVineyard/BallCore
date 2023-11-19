@@ -59,6 +59,7 @@ class TestBattleHooks(using assertions: Assertions) extends BattleHooks:
         area: Polygon,
         defense: BeaconID,
         area2: Polygon,
+        world: UUID,
     )(using Session[IO]): IO[Unit] =
         IO {
             assertions.assert(!takeQueue.isEmpty, "unexpected taken")
@@ -133,6 +134,7 @@ class BattleSuite extends munit.FunSuite:
                     area2,
                     defensiveBeacon,
                     area2,
+                    world.getUID(),
                 )
             )
 
@@ -205,6 +207,7 @@ class BattleSuite extends munit.FunSuite:
                 area2,
                 defensiveBeacon,
                 area2,
+                world.getUID(),
             )
         )
 
@@ -280,6 +283,7 @@ class BattleSuite extends munit.FunSuite:
                 area2,
                 defensiveBeacon,
                 area2,
+                world.getUID(),
             )
         )
 

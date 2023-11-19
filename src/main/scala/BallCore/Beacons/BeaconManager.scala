@@ -328,6 +328,35 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
                 .headOption
         }
 
+    def sudoSetBeaconPolygon(beacon: BeaconID, world: World, polygon: Polygon)(
+        using Session[IO]
+    ): IO[Unit] =
+        sql
+            .commandIO(
+                sql"""
+                UPDATE CivBeacons
+                    SET CoveredArea
+                        = ST_GeomFromGeoJSON($polygonGeojsonCodec)
+                WHERE ID = $uuid;
+                """,
+                (polygon, beacon),
+            )
+            .flatMap(_ => recomputeEntryFor(beacon))
+            .flatMap(x => getWorldData(world).map(x -> _))
+            .flatMap { (entry, data) =>
+                IO {
+                    data.beaconRTree = RTree.update(
+                        data.beaconRTree,
+                        data.beaconIDsToRTreeEntries
+                            .get(beacon)
+                            .toSeq
+                            .flatten,
+                        entry,
+                    )
+                    data.beaconIDsToRTreeEntries += beacon -> entry
+                }
+            }
+
     def updateBeaconPolygon(beacon: BeaconID, world: World, polygon: Polygon)(
         using Session[IO]
     ): IO[Either[PolygonAdjustmentError, Unit]] =
@@ -383,28 +412,7 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
                         )
                     )
                 else
-                    sql
-                        .commandIO(
-                            sql"""
-                UPDATE CivBeacons SET CoveredArea = ST_GeomFromGeoJSON($polygonGeojsonCodec) WHERE ID = $uuid
-                """,
-                            (polygon, beacon),
-                        )
-                        .flatMap(_ => recomputeEntryFor(beacon))
-                        .flatMap(x => getWorldData(world).map(x -> _))
-                        .map { (entry, data) =>
-                            data.beaconRTree = RTree.update(
-                                data.beaconRTree,
-                                data.beaconIDsToRTreeEntries
-                                    .get(beacon)
-                                    .toSeq
-                                    .flatten,
-                                entry,
-                            )
-                            data.beaconIDsToRTreeEntries += beacon -> entry
-
-                            Right(())
-                        }
+                    sudoSetBeaconPolygon(beacon, world, polygon).map(_ => Right(()))
             }
 
     def beaconSize(beacon: BeaconID)(using Session[IO]): IO[Long] =

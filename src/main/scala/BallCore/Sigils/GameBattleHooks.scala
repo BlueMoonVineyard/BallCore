@@ -23,12 +23,14 @@ import org.joml.Vector3f
 import org.joml.AxisAngle4f
 import org.bukkit.entity.Interaction
 import skunk.Session
+import BallCore.Beacons.CivBeaconManager
 
 object GameBattleHooks:
     def register()(using
         Plugin,
         CustomEntityManager,
         SlimePillarManager,
+        CivBeaconManager,
     ): GameBattleHooks =
         GameBattleHooks()
 
@@ -40,6 +42,7 @@ class GameBattleHooks(using
     p: Plugin,
     cem: CustomEntityManager,
     spm: SlimePillarManager,
+    cbm: CivBeaconManager,
 ) extends BattleHooks:
     private val gf = GeometryFactory()
 
@@ -141,9 +144,11 @@ class GameBattleHooks(using
         newOffensiveArea: Polygon,
         defensiveBeacon: BeaconID,
         newDefensiveArea: Polygon,
+        world: UUID,
     )(using Session[IO]): IO[Unit] =
         for {
+            world <- IO { Bukkit.getWorld(world) }
+            _ <- cbm.sudoSetBeaconPolygon(defensiveBeacon, world, newDefensiveArea)
+            _ <- cbm.sudoSetBeaconPolygon(offensiveBeacon, world, newOffensiveArea)
             _ <- despawnPillarsFor(battle)
-            _ <- IO(???) // todo: set offense beacon to new area
-            _ <- IO(???) // todo: set defense beacon to new area
         } yield ()
