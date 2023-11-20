@@ -27,6 +27,7 @@ import skunk.implicits.*
 import org.locationtech.jts.io.geojson.{GeoJsonReader, GeoJsonWriter}
 import java.text.DecimalFormat
 import java.util.UUID
+import cats.data.EitherT
 
 type OwnerID = UUID
 type HeartID = UUID
@@ -50,6 +51,12 @@ val df =
 enum PolygonAdjustmentError:
     case polygonTooLarge(maximum: Int, actual: Double)
     case heartsNotIncludedInPolygon(at: List[Location])
+    case overlapsOneOtherPolygon(
+        beaconID: BeaconID,
+        groupID: GroupID,
+        groupName: String,
+    )
+    case overlapsMultiplePolygons()
 
     def explain: Component =
         import BallCore.UI.ChatElements.*
@@ -68,6 +75,10 @@ enum PolygonAdjustmentError:
                     }
                     .mkComponent(txt", ")
                 txt"There are hearts not included in this polygon at $locations"
+            case overlapsOneOtherPolygon(beaconID, groupID, groupName) =>
+                txt"This overlaps ${txt(groupName).color(Colors.grellow)}'s beacon"
+            case overlapsMultiplePolygons() =>
+                txt"This overlaps multiple beacons"
 
 class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
     sql.applyMigration(
@@ -357,8 +368,39 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
                 }
             }
 
-    def updateBeaconPolygon(beacon: BeaconID, world: World, polygon: Polygon)(
+    private def findOverlappingBeacons(polygon: Polygon, excluding: BeaconID)(
         using Session[IO]
+    ): IO[Either[PolygonAdjustmentError, Unit]] =
+        sql.queryListIO(
+            sql"""
+        SELECT ID, GroupID From CivBeacons WHERE ID != $uuid AND ST_INTERSECTS(CivBeacons.CoveredArea, ST_GeomFromGeoJSON($polygonGeojsonCodec));
+        """,
+            (uuid *: uuid),
+            (excluding, polygon),
+        ).flatMap { beacons =>
+            if beacons.size == 0 then IO.pure(Right(()))
+            else if beacons.size > 1 then
+                IO.pure(Left(PolygonAdjustmentError.overlapsMultiplePolygons()))
+            else
+                val (id, group) = beacons(0)
+                summon[GroupManager].getGroup(group).value.map { it =>
+                    Left(
+                        PolygonAdjustmentError
+                            .overlapsOneOtherPolygon(
+                                id,
+                                group,
+                                it.toOption.get.metadata.name,
+                            )
+                    )
+                }
+        }
+
+    private def validatePolygonWithRegardToHearts(
+        beacon: BeaconID,
+        world: World,
+        polygon: Polygon,
+    )(using
+        Session[IO]
     ): IO[Either[PolygonAdjustmentError, Unit]] =
         sql
             .queryListIO(
@@ -376,7 +418,7 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
                 int8 *: int8 *: int8,
                 (world.getUID, beacon),
             )
-            .flatMap { hearts =>
+            .map { hearts =>
                 val expectedArea =
                     populationToArea(hearts.length)
                 val actualArea =
@@ -385,35 +427,47 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
                     hearts.filterNot((x, y, z) =>
                         polygon.covers(
                             geometryFactory
-                                .createPoint(Coordinate(x.toDouble, z.toDouble, y.toDouble))
+                                .createPoint(
+                                    Coordinate(
+                                        x.toDouble,
+                                        z.toDouble,
+                                        y.toDouble,
+                                    )
+                                )
                         )
                     )
 
                 if actualArea > expectedArea then
-                    IO.pure(
-                        Left(
-                            PolygonAdjustmentError
-                                .polygonTooLarge(expectedArea, actualArea)
-                        )
+                    Left(
+                        PolygonAdjustmentError
+                            .polygonTooLarge(expectedArea, actualArea)
                     )
                 else if heartsOutsidePolygon.nonEmpty then
-                    IO.pure(
-                        Left(
-                            PolygonAdjustmentError.heartsNotIncludedInPolygon(
-                                heartsOutsidePolygon.map((x, y, z) =>
-                                    Location(
-                                        world,
-                                        x.toDouble,
-                                        y.toDouble,
-                                        z.toDouble,
-                                    )
+                    Left(
+                        PolygonAdjustmentError.heartsNotIncludedInPolygon(
+                            heartsOutsidePolygon.map((x, y, z) =>
+                                Location(
+                                    world,
+                                    x.toDouble,
+                                    y.toDouble,
+                                    z.toDouble,
                                 )
                             )
                         )
                     )
-                else
-                    sudoSetBeaconPolygon(beacon, world, polygon).map(_ => Right(()))
+                else Right(())
             }
+
+    def updateBeaconPolygon(beacon: BeaconID, world: World, polygon: Polygon)(
+        using Session[IO]
+    ): IO[Either[PolygonAdjustmentError, Unit]] =
+        (for {
+            _ <- EitherT(findOverlappingBeacons(polygon, beacon))
+            _ <- EitherT(
+                validatePolygonWithRegardToHearts(beacon, world, polygon)
+            )
+            _ <- EitherT.right(sudoSetBeaconPolygon(beacon, world, polygon))
+        } yield ()).value
 
     def beaconSize(beacon: BeaconID)(using Session[IO]): IO[Long] =
         sql.queryUniqueIO(
