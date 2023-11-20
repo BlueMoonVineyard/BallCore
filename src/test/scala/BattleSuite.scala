@@ -56,9 +56,8 @@ class TestBattleHooks(using assertions: Assertions) extends BattleHooks:
     override def battleTaken(
         battle: BattleID,
         offense: BeaconID,
-        area: Polygon,
         defense: BeaconID,
-        area2: Polygon,
+        contestedArea: Polygon,
         world: UUID,
     )(using Session[IO]): IO[Unit] =
         IO {
@@ -131,7 +130,6 @@ class BattleSuite extends munit.FunSuite:
             val battle = sql.useBlocking(
                 battleManager.startBattle(
                     offensiveBeacon,
-                    area2,
                     defensiveBeacon,
                     area2,
                     world.getUID(),
@@ -204,7 +202,6 @@ class BattleSuite extends munit.FunSuite:
         val battle = sql.useBlocking(
             battleManager.startBattle(
                 offensiveBeacon,
-                area2,
                 defensiveBeacon,
                 area2,
                 world.getUID(),
@@ -280,7 +277,6 @@ class BattleSuite extends munit.FunSuite:
         val battle = sql.useBlocking(
             battleManager.startBattle(
                 offensiveBeacon,
-                area2,
                 defensiveBeacon,
                 area2,
                 world.getUID(),
