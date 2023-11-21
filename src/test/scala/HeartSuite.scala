@@ -190,19 +190,27 @@ class HeartSuite extends munit.FunSuite {
 
         val gf = GeometryFactory()
         val area1 = rectangleCenteredAt(gf, 0, 0, -10, 5)
-        assert(area1.covers(gf.createPoint(Coordinate(0, 0, -10))), "sanity check of area 1")
+        assert(
+            area1.covers(gf.createPoint(Coordinate(0, 0, -10))),
+            "sanity check of area 1",
+        )
         val res1 = sql.useBlocking(hn.updateBeaconPolygon(hid1, world, area1))
         assert(res1.isRight, (res1, "setting first heart's area"))
 
         val area2 = rectangleCenteredAt(gf, 100, 100, 10, 5)
-        assert(area2.covers(gf.createPoint(Coordinate(100, 100, 10))), "sanity check of area 2")
+        assert(
+            area2.covers(gf.createPoint(Coordinate(100, 100, 10))),
+            "sanity check of area 2",
+        )
         val res2 = sql.useBlocking(hn.updateBeaconPolygon(hid2, world, area2))
         assert(res2.isRight, (res2, "setting second heart's area"))
 
-        val covered1 = sql.useBlocking(hn.beaconContaining(Location(world, 1, -10, 1)))
+        val covered1 =
+            sql.useBlocking(hn.beaconContaining(Location(world, 1, -10, 1)))
         assertEquals(covered1, Some(hid1), "area 1 contains beacon 1")
 
-        val covered2 = sql.useBlocking(hn.beaconContaining(Location(world, 101, 10, 101)))
+        val covered2 =
+            sql.useBlocking(hn.beaconContaining(Location(world, 101, 10, 101)))
         assertEquals(covered2, Some(hid2), "area 2 contains beacon 2")
     }
     sql.test("overlapping two beacons") { implicit sql =>
@@ -217,7 +225,10 @@ class HeartSuite extends munit.FunSuite {
                 .get
 
         val group = sql.useBlocking(gm.createGroup(id1, "The Group"))
-        assert(sql.useBlocking(hn.setGroup(hid1, group)).isRight, "binding group")
+        assert(
+            sql.useBlocking(hn.setGroup(hid1, group)).isRight,
+            "binding group",
+        )
 
         val id2 = UUID.randomUUID()
         val (hid2, _) =
@@ -229,19 +240,42 @@ class HeartSuite extends munit.FunSuite {
 
         val gf = GeometryFactory()
         val area1 = rectangleCenteredAt(gf, 0, 0, -10, 5)
-        assert(area1.covers(gf.createPoint(Coordinate(0, 0, -10))), "sanity check of area 1")
+        assert(
+            area1.covers(gf.createPoint(Coordinate(0, 0, -10))),
+            "sanity check of area 1",
+        )
         val res1 = sql.useBlocking(hn.updateBeaconPolygon(hid1, world, area1))
         assert(res1.isRight, (res1, "setting first heart's area"))
 
         val area2 = rectangleCenteredAt(gf, 3, 0, 10, 5)
-        assert(area2.covers(gf.createPoint(Coordinate(0, 0, 10))), "sanity check of area 2")
+        assert(
+            area2.covers(gf.createPoint(Coordinate(0, 0, 10))),
+            "sanity check of area 2",
+        )
         val res2 = sql.useBlocking(hn.updateBeaconPolygon(hid2, world, area2))
-        assertEquals(res2, Left(PolygonAdjustmentError.overlapsOneOtherPolygon(hid1, group, "The Group", true)), "setting second heart's area")
+        assert(
+            res2 match
+                case Left(
+                        PolygonAdjustmentError.overlapsOneOtherPolygon(
+                            id,
+                            grp,
+                            "The Group",
+                            Some(_),
+                        )
+                    ) if id == hid1 && grp == group =>
+                    true
+                case _ =>
+                    false
+            ,
+            "setting second heart's area",
+        )
 
-        val covered1 = sql.useBlocking(hn.beaconContaining(Location(world, 1, -10, 1)))
+        val covered1 =
+            sql.useBlocking(hn.beaconContaining(Location(world, 1, -10, 1)))
         assertEquals(covered1, Some(hid1), "area 1 contains beacon 1")
 
-        val covered2 = sql.useBlocking(hn.beaconContaining(Location(world, 101, 10, 101)))
+        val covered2 =
+            sql.useBlocking(hn.beaconContaining(Location(world, 101, 10, 101)))
         assertEquals(covered2, None, "area 2 doesn't contains beacon 2")
     }
     sql.test("overlapping more than two beacons") { implicit sql =>
@@ -256,7 +290,10 @@ class HeartSuite extends munit.FunSuite {
                 .get
 
         val group = sql.useBlocking(gm.createGroup(id1, "The Group"))
-        assert(sql.useBlocking(hn.setGroup(hid1, group)).isRight, "binding group")
+        assert(
+            sql.useBlocking(hn.setGroup(hid1, group)).isRight,
+            "binding group",
+        )
 
         val id2 = UUID.randomUUID()
         val (hid2, _) =
@@ -264,7 +301,10 @@ class HeartSuite extends munit.FunSuite {
                 .toOption
                 .get
 
-        assert(sql.useBlocking(hn.setGroup(hid2, group)).isRight, "binding group")
+        assert(
+            sql.useBlocking(hn.setGroup(hid2, group)).isRight,
+            "binding group",
+        )
 
         val id3 = UUID.randomUUID()
         val (hid3, _) =
@@ -277,23 +317,35 @@ class HeartSuite extends munit.FunSuite {
 
         val gf = GeometryFactory()
         val area1 = rectangleCenteredAt(gf, 0, 0, -10, 5)
-        assert(area1.covers(gf.createPoint(Coordinate(0, 0, -10))), "sanity check of area 1")
+        assert(
+            area1.covers(gf.createPoint(Coordinate(0, 0, -10))),
+            "sanity check of area 1",
+        )
         val res1 = sql.useBlocking(hn.updateBeaconPolygon(hid1, world, area1))
         assert(res1.isRight, (res1, "setting first heart's area"))
 
         val area2 = rectangleCenteredAt(gf, 100, 100, 10, 5)
-        assert(area2.covers(gf.createPoint(Coordinate(100, 100, 10))), "sanity check of area 2")
+        assert(
+            area2.covers(gf.createPoint(Coordinate(100, 100, 10))),
+            "sanity check of area 2",
+        )
         val res2 = sql.useBlocking(hn.updateBeaconPolygon(hid2, world, area2))
         assert(res2.isRight, (res2, "setting second heart's area"))
 
         val area3 = rectangleCenteredAt(gf, 0, 0, 10, 200)
         val res3 = sql.useBlocking(hn.updateBeaconPolygon(hid3, world, area3))
-        assertEquals(res3, Left(PolygonAdjustmentError.overlapsMultiplePolygons()), "setting third heart's area")
+        assertEquals(
+            res3,
+            Left(PolygonAdjustmentError.overlapsMultiplePolygons()),
+            "setting third heart's area",
+        )
 
-        val covered1 = sql.useBlocking(hn.beaconContaining(Location(world, 1, -10, 1)))
+        val covered1 =
+            sql.useBlocking(hn.beaconContaining(Location(world, 1, -10, 1)))
         assertEquals(covered1, Some(hid1), "area 1 contains beacon 1")
 
-        val covered2 = sql.useBlocking(hn.beaconContaining(Location(world, 101, 10, 101)))
+        val covered2 =
+            sql.useBlocking(hn.beaconContaining(Location(world, 101, 10, 101)))
         assertEquals(covered2, Some(hid2), "area 2 contains beacon 2")
     }
 }

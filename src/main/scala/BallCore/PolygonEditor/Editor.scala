@@ -140,7 +140,7 @@ case class EditorModel(
                         polygon = nieuw,
                         state = editingPoint(idx, true),
                     ) -> List()
-                else this.copy(state = editingPoint(idx, false)) -> List()
+                else this.copy(state = editingPoint(idx, false), couldWarGroup = None) -> List()
             case idle() | lookingAt(_) =>
                 val newState =
                     polygon

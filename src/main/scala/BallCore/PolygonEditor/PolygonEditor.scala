@@ -28,6 +28,7 @@ import java.util.Arrays
 import java.util.concurrent.TimeUnit
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.{Future, Promise}
+import BallCore.Beacons.PolygonAdjustmentError
 
 object PolygonEditor:
     def register()(using e: PolygonEditor, p: Plugin): Unit =
@@ -178,7 +179,11 @@ class PolygonEditor(using p: Plugin, bm: CivBeaconManager, sql: SQLManager):
         model.state match
             case idle() =>
                 player.sendActionBar(
-                    txt"${txt("/done").style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Save and stop editing"
+                    model.couldWarGroup match
+                        case None =>
+                            txt"${txt("/done").style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Save and stop editing"
+                        case Some(_) =>
+                            txt"${txt("/done").style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Save and stop editing  |  ${txt("/declare").style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Start a battle for this land"
                 )
             case lookingAt(loc) =>
                 player.sendActionBar(
@@ -204,7 +209,7 @@ class PolygonEditor(using p: Plugin, bm: CivBeaconManager, sql: SQLManager):
                     case _ =>
                         true
             }
-            .flatMap { action =>
+            .map { action =>
                 action match
                     case EditorAction.finished() =>
                         val jtsPolygon = gf.createPolygon(
@@ -226,19 +231,36 @@ class PolygonEditor(using p: Plugin, bm: CivBeaconManager, sql: SQLManager):
                                 jtsPolygon,
                             )
                         ) match
+                            case Left(
+                                    err @ PolygonAdjustmentError
+                                        .overlapsOneOtherPolygon(
+                                            beacon,
+                                            group,
+                                            _,
+                                            Some(polygon),
+                                        )
+                                ) =>
+                                player.sendServerMessage(err.explain)
+                                Some(
+                                    model.copy(couldWarGroup =
+                                        Some((group, beacon, polygon))
+                                    )
+                                )
                             case Left(err) =>
                                 player.sendServerMessage(err.explain)
-                                None
+                                Some(model.copy(couldWarGroup = None))
                             case Right(_) =>
-                                Some(())
+                                None
                     case _ =>
-                        None
+                        Some(model)
             }
         done.lastOption match
             case None =>
                 Some(PlayerState.editing(model))
-            case Some(_) =>
+            case Some(None) =>
                 None
+            case Some(Some(newModel)) =>
+                Some(PlayerState.editing(newModel))
 
     private def handleCreator(
         player: Player,
