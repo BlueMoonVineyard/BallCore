@@ -8,6 +8,7 @@ import BallCore.Beacons.BeaconID
 import net.kyori.adventure.text.Component
 import org.bukkit.{Location, World}
 import org.locationtech.jts.geom.{Coordinate, GeometryFactory, Polygon}
+import BallCore.Groups.GroupID
 
 val gf = GeometryFactory()
 
@@ -28,7 +29,7 @@ enum EditorAction:
 
 object EditorModel:
     def apply(beaconID: BeaconID, polygon: List[Location]): EditorModel =
-        EditorModel(beaconID, polygon, EditorModelState.idle())
+        EditorModel(beaconID, polygon, EditorModelState.idle(), None)
 
     def apply(beaconID: BeaconID, polygon: Polygon, world: World): EditorModel =
         EditorModel(
@@ -45,6 +46,7 @@ case class EditorModel(
     beaconID: BeaconID,
     polygon: List[Location],
     state: EditorModelState,
+    couldWarGroup: Option[(GroupID, BeaconID, Polygon)]
 ) extends Model[EditorModel, EditorMsg, EditorAction]:
 
     import BallCore.UI.ChatElements.*

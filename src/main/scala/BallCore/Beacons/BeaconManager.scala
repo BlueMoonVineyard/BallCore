@@ -55,6 +55,7 @@ enum PolygonAdjustmentError:
         beaconID: BeaconID,
         groupID: GroupID,
         groupName: String,
+        canDeclareWar: Boolean,
     )
     case overlapsMultiplePolygons()
 
@@ -75,8 +76,10 @@ enum PolygonAdjustmentError:
                     }
                     .mkComponent(txt", ")
                 txt"There are hearts not included in this claim at $locations"
-            case overlapsOneOtherPolygon(beaconID, groupID, groupName) =>
-                txt"This beacon area overlaps a beacon area belonging to ${txt(groupName).color(Colors.grellow)}"
+            case overlapsOneOtherPolygon(beaconID, groupID, groupName, true) =>
+                txt"This beacon area overlaps a beacon area belonging to ${txt(groupName).color(Colors.grellow)} (you could start a battle to take the land)"
+            case overlapsOneOtherPolygon(beaconID, groupID, groupName, false) =>
+                txt"This beacon area overlaps a beacon area belonging to ${txt(groupName).color(Colors.grellow)} (you can't start a battle to take the land because that would make the opposing claim not a polygon)"
             case overlapsMultiplePolygons() =>
                 txt"This beacon area overlaps multiple other beacons' areas"
 
@@ -373,16 +376,16 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
     ): IO[Either[PolygonAdjustmentError, Unit]] =
         sql.queryListIO(
             sql"""
-        SELECT ID, GroupID From CivBeacons WHERE ID != $uuid AND ST_INTERSECTS(CivBeacons.CoveredArea, ST_GeomFromGeoJSON($polygonGeojsonCodec));
+        SELECT ID, GroupID, ST_AsGeoJSON(CoveredArea) From CivBeacons WHERE ID != $uuid AND ST_INTERSECTS(CivBeacons.CoveredArea, ST_GeomFromGeoJSON($polygonGeojsonCodec));
         """,
-            (uuid *: uuid),
+            (uuid *: uuid *: polygonGeojsonCodec),
             (excluding, polygon),
         ).flatMap { beacons =>
             if beacons.size == 0 then IO.pure(Right(()))
             else if beacons.size > 1 then
                 IO.pure(Left(PolygonAdjustmentError.overlapsMultiplePolygons()))
             else
-                val (id, group) = beacons(0)
+                val (id, group, otherPolygon) = beacons(0)
                 summon[GroupManager].getGroup(group).value.map { it =>
                     Left(
                         PolygonAdjustmentError
@@ -390,6 +393,7 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
                                 id,
                                 group,
                                 it.toOption.get.metadata.name,
+                                otherPolygon.buffer(0).difference(polygon.buffer(0)).isInstanceOf[Polygon],
                             )
                     )
                 }
