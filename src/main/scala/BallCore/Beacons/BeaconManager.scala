@@ -63,7 +63,7 @@ enum PolygonAdjustmentError:
 
         this match
             case polygonTooLarge(maximum, actual) =>
-                txt"This polygon is too large; the maximum area is ${txt(maximum.toString())
+                txt"This beacon area is too large; the maximum area is ${txt(maximum.toString())
                         .color(Colors.teal)} blocks but the actual area is ${txt(df.format(actual))
                         .color(Colors.teal)}"
             case heartsNotIncludedInPolygon(at) =>
@@ -74,11 +74,11 @@ enum PolygonAdjustmentError:
                                 .color(Colors.grellow)}"
                     }
                     .mkComponent(txt", ")
-                txt"There are hearts not included in this polygon at $locations"
+                txt"There are hearts not included in this claim at $locations"
             case overlapsOneOtherPolygon(beaconID, groupID, groupName) =>
-                txt"This overlaps ${txt(groupName).color(Colors.grellow)}'s beacon"
+                txt"This beacon area overlaps a beacon area belonging to ${txt(groupName).color(Colors.grellow)}"
             case overlapsMultiplePolygons() =>
-                txt"This overlaps multiple beacons"
+                txt"This beacon area overlaps multiple other beacons' areas"
 
 class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
     sql.applyMigration(
