@@ -29,6 +29,8 @@ import java.util.concurrent.TimeUnit
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.{Future, Promise}
 import BallCore.Beacons.PolygonAdjustmentError
+import BallCore.Sigils.BattleManager
+import cats.effect.IO
 
 object PolygonEditor:
     def register()(using e: PolygonEditor, p: Plugin): Unit =
@@ -71,7 +73,12 @@ enum PlayerState:
     case editing(state: EditorModel)
     case creating(state: CreatorModel, actions: List[CreatorAction])
 
-class PolygonEditor(using p: Plugin, bm: CivBeaconManager, sql: SQLManager):
+class PolygonEditor(using
+    p: Plugin,
+    bm: CivBeaconManager,
+    sql: SQLManager,
+    battleManager: BattleManager,
+):
     private val clickPromises = TrieMap[Player, Promise[Location]]()
     private val playerPolygons = TrieMap[Player, PlayerState]()
 
@@ -183,7 +190,8 @@ class PolygonEditor(using p: Plugin, bm: CivBeaconManager, sql: SQLManager):
                         case None =>
                             txt"${txt("/done").style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Save and stop editing"
                         case Some(_) =>
-                            txt"${txt("/done").style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Save and stop editing  |  ${txt("/declare").style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Start a battle for this land"
+                            txt"${txt("/done").style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Save and stop editing  |  ${txt("/declare")
+                                    .style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Start a battle for this land"
                 )
             case lookingAt(loc) =>
                 player.sendActionBar(
@@ -291,6 +299,75 @@ class PolygonEditor(using p: Plugin, bm: CivBeaconManager, sql: SQLManager):
                 PlayerState.creating(model, actions)
             case Some(state) =>
                 state
+
+    def declare(player: Player): Unit =
+        import cats.effect.unsafe.implicits.global
+        IO {
+            declareInner(player)
+        }.unsafeRunAndForget()
+
+    def declareInner(player: Player): Unit =
+        val _ = playerPolygons.updateWith(player) { state =>
+            state.flatMap(state =>
+                state match
+                    case PlayerState.editing(model) =>
+                        model.couldWarGroup match
+                            case None =>
+                                Some(state)
+                            case Some(_) =>
+                                val jtsPolygon = gf.createPolygon(
+                                    model.polygon
+                                        .appended(model.polygon.head)
+                                        .map(point =>
+                                            Coordinate(
+                                                point.getX,
+                                                point.getZ,
+                                                point.getY,
+                                            )
+                                        )
+                                        .toArray
+                                )
+                                sql.useBlocking(
+                                    bm.updateBeaconPolygon(
+                                        model.beaconID,
+                                        model.polygon.head.getWorld,
+                                        jtsPolygon,
+                                    )
+                                ) match
+                                    case Left(
+                                            err @ PolygonAdjustmentError
+                                                .overlapsOneOtherPolygon(
+                                                    defensiveBeacon,
+                                                    defensiveGroup,
+                                                    _,
+                                                    Some(contestedArea),
+                                                )
+                                        ) =>
+                                        sql.useBlocking(
+                                            battleManager.startBattle(
+                                                model.beaconID,
+                                                defensiveBeacon,
+                                                contestedArea,
+                                                model.polygon.head.getWorld
+                                                    .getUID(),
+                                            )
+                                        )
+                                        player.sendServerMessage(
+                                            txt"A battle has been started!"
+                                        )
+                                        None
+                                    case Left(err) =>
+                                        player.sendServerMessage(err.explain)
+                                        Some(state)
+                                    case Right(_) =>
+                                        player.sendServerMessage(
+                                            txt"A battle was unnecessary to take that land; your claims have been saved."
+                                        )
+                                        None
+                    case _ =>
+                        Some(state)
+            )
+        }
 
     def done(player: Player): Unit =
         val _ = playerPolygons.updateWith(player) { state =>

@@ -40,6 +40,9 @@ import scala.concurrent.{Await, ExecutionContext}
 import scala.util.Try
 import BallCore.Sigils.SlimePillarManager
 import BallCore.Reinforcements.BustThroughTracker
+import BallCore.Sigils.BattleManager
+import BallCore.Sigils.BattleHooks
+import BallCore.Sigils.GameBattleHooks
 
 final class Main extends JavaPlugin:
     given sm: ShutdownCallbacks = ShutdownCallbacks()
@@ -97,6 +100,8 @@ final class Main extends JavaPlugin:
 
         given bam: SigilSlimeManager = SigilSlimeManager()
         given spm: SlimePillarManager = SlimePillarManager()
+        given ingameBattleHooks: BattleHooks = GameBattleHooks()
+        given battleManager: BattleManager = new BattleManager()
         given editor: PolygonEditor = new PolygonEditor()
 
         given editor3D: PolyhedraEditor = new PolyhedraEditor()
@@ -141,6 +146,7 @@ final class Main extends JavaPlugin:
         val groupCommands = GroupsCommand()
         groupCommands.node.register()
         groupCommands.invitesNode.register()
+        DeclareCommand().node.register()
         CheatCommand().node.register()
         DoneCommand().node.register()
         PlantsCommand().node.register()

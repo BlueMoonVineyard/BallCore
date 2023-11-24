@@ -12,7 +12,6 @@ import scala.concurrent.ExecutionContext
 import BallCore.Folia.LocationExecutionContext
 import org.bukkit.Location
 import org.locationtech.jts.shape.random.RandomPointsBuilder
-import org.locationtech.jts.geom.Point
 import org.bukkit.plugin.Plugin
 import org.bukkit.block.Block
 import org.bukkit.entity.ItemDisplay
@@ -24,6 +23,7 @@ import org.joml.AxisAngle4f
 import org.bukkit.entity.Interaction
 import skunk.Session
 import BallCore.Beacons.CivBeaconManager
+import org.locationtech.jts.geom.Coordinate
 
 object GameBattleHooks:
     def register()(using
@@ -96,14 +96,15 @@ class GameBattleHooks(using
             _ <- spm.addPillar(entities._1, battle)
         } yield ()
 
-    private def randomPointIn(area: Geometry): IO[Point] =
+    private def randomPointIn(area: Geometry): IO[Coordinate] =
         IO {
             val builder = RandomPointsBuilder(gf)
             builder.setExtent(area)
-            builder.getGeometry().asInstanceOf[Point]
+            builder.setNumPoints(1)
+            builder.getGeometry().getCoordinates().head
         }
 
-    private def highestBlockAt(worldID: UUID, point: Point): IO[Block] =
+    private def highestBlockAt(worldID: UUID, point: Coordinate): IO[Block] =
         val world = Bukkit.getWorld(worldID)
         IO.on(
             LocationExecutionContext(

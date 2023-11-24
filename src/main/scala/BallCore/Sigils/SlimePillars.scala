@@ -71,9 +71,9 @@ class SlimePillarManager(using
         sql.commandIO(
             sql"""
 		INSERT INTO SlimePillars (
-			BattleID, InteractionEntityID
+			BattleID, InteractionEntityID, Health
 		) VALUES (
-			$uuid, $uuid
+			$uuid, $uuid, 60
 		)
 		""",
             (battle, interaction.getUniqueId()),
