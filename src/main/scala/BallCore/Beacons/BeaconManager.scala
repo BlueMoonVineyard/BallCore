@@ -386,9 +386,9 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
                 IO.pure(Left(PolygonAdjustmentError.overlapsMultiplePolygons()))
             else
                 val (id, group, otherPolygon) = beacons(0)
-                val subtracted = otherPolygon.buffer(0).difference(polygon.buffer(0))
-                val asPolygon = if subtracted.isInstanceOf[Polygon] then
-                    Some(subtracted.asInstanceOf[Polygon])
+                val intersected = otherPolygon.buffer(0).intersection(polygon.buffer(0))
+                val asPolygon = if intersected.isInstanceOf[Polygon] then
+                    Some(intersected.asInstanceOf[Polygon])
                 else
                     None
                 summon[GroupManager].getGroup(group).value.map { it =>

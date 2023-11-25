@@ -166,6 +166,26 @@ class PolygonEditor(using
     private def renderEditor(player: Player, model: EditorModel): Unit =
         import EditorModelState.*
 
+        model.couldWarGroup match
+            case None =>
+            case Some((_, _, polygon)) =>
+                val world = model.lines(0)._1.getWorld()
+                val points =
+                    polygon.getCoordinates
+                        .map(coord =>
+                            Location(world, coord.getX, coord.getZ, coord.getY)
+                        )
+                        .toList
+                        .dropRight(1)
+                val lines =
+                    points
+                        .sliding(2, 1)
+                        .concat(List(List(points.last, points.head)))
+                        .map(pair => (pair.head, pair(1)))
+                        .toList
+                lines.foreach { (p1, p2) =>
+                    drawLine(p1, p2, player, Color.ORANGE, 0.5)
+                }
         model.lines.foreach { (p1, p2) =>
             drawLine(p1, p2, player, Color.WHITE, 0.5)
         }
