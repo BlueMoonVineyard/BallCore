@@ -150,7 +150,7 @@ class GameBattleHooks(using
             world <- IO { Bukkit.getWorld(world) }
             oldDefensiveArea <- cbm.getPolygonFor(defensiveBeacon)
             oldOffensiveArea <- cbm.getPolygonFor(offensiveBeacon)
-            _ <- cbm.sudoSetBeaconPolygon(defensiveBeacon, world, oldDefensiveArea.get.difference(contestedArea).asInstanceOf[Polygon])
-            _ <- cbm.sudoSetBeaconPolygon(offensiveBeacon, world, oldOffensiveArea.get.union(contestedArea).asInstanceOf[Polygon])
+            _ <- cbm.sudoSetBeaconPolygon(defensiveBeacon, world, oldDefensiveArea.get.buffer(0).difference(contestedArea.buffer(0)).asInstanceOf[Polygon])
+            _ <- cbm.sudoSetBeaconPolygon(offensiveBeacon, world, oldOffensiveArea.get.buffer(0).union(contestedArea.buffer(0)).asInstanceOf[Polygon])
             _ <- despawnPillarsFor(battle)
         } yield ()
