@@ -63,6 +63,7 @@ object Sigil:
         spm: SlimePillarManager,
         cem: CustomEntityManager,
         sql: SQLManager,
+        bm: BattleManager,
     ): Unit =
         registry.register(Sigil())
         registry.register(SlimeEgg())
@@ -74,6 +75,7 @@ object Sigil:
             .runAtFixedRate(p, _ => behaviours.doSlimeLooks(), 1L, 7L)
         p.getServer().getPluginManager().registerEvents(DamageListener(), p)
         p.getServer().getPluginManager().registerEvents(SigilListener(), p)
+        p.getServer().getPluginManager().registerEvents(new SlimePillarSlapDetector(), p)
         val flinger = SlimePillarFlinger()
         p.getServer()
             .getGlobalRegionScheduler()

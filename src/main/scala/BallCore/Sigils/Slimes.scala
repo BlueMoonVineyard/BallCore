@@ -154,7 +154,7 @@ val namespacedKeyCodec = text.imap { str => NamespacedKey.fromString(str) } {
     it => it.asString()
 }
 
-class CustomEntityManager(using sql: Storage.SQLManager):
+class CustomEntityManager(using sql: Storage.SQLManager, p: Plugin):
     sql.applyMigration(
         Storage.Migration(
             "Initial Custom Entity Manager",
@@ -197,6 +197,20 @@ class CustomEntityManager(using sql: Storage.SQLManager):
             IO {
                 cache(interaction.getUniqueId()) = (kind, display.getUniqueId())
             }
+        }
+
+    def deleteEntity(
+        interaction: Interaction,
+    )(using Session[IO]): IO[Unit] =
+        sql.queryUniqueIO(
+            sql"""
+            DELETE FROM CustomEntities WHERE InteractionEntityID = $uuid RETURNING DisplayEntityID;
+            """, uuid, interaction.getUniqueId()
+        ).flatMap { displayID =>
+            IO {
+                interaction.remove()
+                Bukkit.getEntity(displayID).remove()
+            }.evalOn(EntityExecutionContext(interaction))
         }
 
     def entitiesOfKind(kind: NamespacedKey)(using

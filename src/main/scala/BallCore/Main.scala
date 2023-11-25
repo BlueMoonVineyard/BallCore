@@ -96,7 +96,7 @@ final class Main extends JavaPlugin:
 
         given bm: BlockManager = KeyValBlockManager()
 
-        given cem: CustomEntityManager = CustomEntityManager()
+        given cem: CustomEntityManager = new CustomEntityManager()
 
         given bam: SigilSlimeManager = SigilSlimeManager()
         given spm: SlimePillarManager = SlimePillarManager()
