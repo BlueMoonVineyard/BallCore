@@ -330,7 +330,7 @@ class DoneCommand(using
             }: PlayerCommandExecutor)
 
 class DeclareCommand(using
-    editor: PolygonEditor,
+    editor: PolygonEditor
 ):
     val node =
         CommandTree("declare")

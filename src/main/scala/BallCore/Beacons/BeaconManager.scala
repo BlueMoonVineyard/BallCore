@@ -76,10 +76,17 @@ enum PolygonAdjustmentError:
                     }
                     .mkComponent(txt", ")
                 txt"There are hearts not included in this claim at $locations"
-            case overlapsOneOtherPolygon(beaconID, groupID, groupName, Some(_)) =>
-                txt"This beacon area overlaps a beacon area belonging to ${txt(groupName).color(Colors.grellow)} (you could start a battle to take the land)"
+            case overlapsOneOtherPolygon(
+                    beaconID,
+                    groupID,
+                    groupName,
+                    Some(_),
+                ) =>
+                txt"This beacon area overlaps a beacon area belonging to ${txt(groupName)
+                        .color(Colors.grellow)} (you could start a battle to take the land)"
             case overlapsOneOtherPolygon(beaconID, groupID, groupName, None) =>
-                txt"This beacon area overlaps a beacon area belonging to ${txt(groupName).color(Colors.grellow)} (you can't start a battle to take the land because that would make the opposing claim not a polygon)"
+                txt"This beacon area overlaps a beacon area belonging to ${txt(groupName)
+                        .color(Colors.grellow)} (you can't start a battle to take the land because that would make the opposing claim not a polygon)"
             case overlapsMultiplePolygons() =>
                 txt"This beacon area overlaps multiple other beacons' areas"
 
@@ -386,11 +393,12 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
                 IO.pure(Left(PolygonAdjustmentError.overlapsMultiplePolygons()))
             else
                 val (id, group, otherPolygon) = beacons(0)
-                val intersected = otherPolygon.buffer(0).intersection(polygon.buffer(0))
-                val asPolygon = if intersected.isInstanceOf[Polygon] then
-                    Some(intersected.asInstanceOf[Polygon])
-                else
-                    None
+                val intersected =
+                    otherPolygon.buffer(0).intersection(polygon.buffer(0))
+                val asPolygon =
+                    if intersected.isInstanceOf[Polygon] then
+                        Some(intersected.asInstanceOf[Polygon])
+                    else None
                 summon[GroupManager].getGroup(group).value.map { it =>
                     Left(
                         PolygonAdjustmentError

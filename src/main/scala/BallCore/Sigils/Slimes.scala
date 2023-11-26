@@ -200,12 +200,14 @@ class CustomEntityManager(using sql: Storage.SQLManager, p: Plugin):
         }
 
     def deleteEntity(
-        interaction: Interaction,
+        interaction: Interaction
     )(using Session[IO]): IO[Unit] =
         sql.queryUniqueIO(
             sql"""
             DELETE FROM CustomEntities WHERE InteractionEntityID = $uuid RETURNING DisplayEntityID;
-            """, uuid, interaction.getUniqueId()
+            """,
+            uuid,
+            interaction.getUniqueId(),
         ).flatMap { displayID =>
             IO {
                 interaction.remove()

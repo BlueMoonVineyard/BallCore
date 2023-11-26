@@ -389,7 +389,7 @@ class PolygonEditor(using
                     case _ =>
                         Some(state)
             }
-        val _ = playerPolygons.updateWith(player){_ => newState}
+        val _ = playerPolygons.updateWith(player) { _ => newState }
 
     def done(player: Player): Unit =
         val _ = playerPolygons.updateWith(player) { state =>
