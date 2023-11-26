@@ -7,7 +7,6 @@ import org.locationtech.jts.geom.Geometry
 import java.util.UUID
 import org.locationtech.jts.geom.GeometryFactory
 import org.bukkit.Bukkit
-import cats.effect.cps._
 import scala.concurrent.ExecutionContext
 import BallCore.Folia.LocationExecutionContext
 import org.bukkit.Location
