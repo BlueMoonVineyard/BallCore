@@ -18,6 +18,7 @@ import org.bukkit.plugin.Plugin
 import scala.collection.immutable.Range.Inclusive
 import scala.util.Random
 import scala.util.chaining.*
+import BallCore.Rest.RestManager
 
 object Mining:
     val stoneBlocks: Set[Material] =
@@ -141,6 +142,7 @@ object Mining:
         as: Acclimation.Storage,
         p: Plugin,
         sql: SQLManager,
+        rest: RestManager,
     ): Unit =
         p.getServer.getPluginManager.registerEvents(MiningListener(), p)
 
@@ -207,6 +209,7 @@ class MiningListener()(using
     ac: AntiCheeser,
     as: Acclimation.Storage,
     sql: SQLManager,
+    rest: RestManager,
 ) extends Listener:
     val randomizer: Random = scala.util.Random()
 
@@ -230,6 +233,9 @@ class MiningListener()(using
             event.getBlock.getX(),
             event.getBlock.getZ(),
         )
+        val restFactor =
+            if sql.useBlocking(rest.useRest(plr)) then 1.0
+            else 0.5
 
         val dlat = Information.similarityNeg(lat, plat)
         val dlong = Information.similarityNeg(long, plong)
@@ -255,7 +261,8 @@ class MiningListener()(using
             val baseline = maybe.chance * 0.2
             val bonus = maybe.chance * 0.8
 
-            val actual = (baseline + (bonusRateMultiplier * bonus)) * ezf
+            val actual =
+                (baseline + (bonusRateMultiplier * bonus)) * ezf * restFactor
 
             if randomizer.nextDouble() <= actual then true
             else false

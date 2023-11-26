@@ -20,7 +20,7 @@ import BallCore.PluginMessaging.Messaging
 import BallCore.PolygonEditor.PolygonEditor
 import BallCore.PolyhedraEditor.PolyhedraEditor
 import BallCore.Reinforcements.*
-import BallCore.Rest.{Rest, RestManager}
+import BallCore.Rest.{RestManager, IngameRestManagerHooks, RestManagerHooks}
 import BallCore.Shops.Order
 import BallCore.Sidebar.SidebarActor
 import BallCore.Sigils.{CustomEntityManager, Sigil, SigilSlimeManager}
@@ -109,6 +109,7 @@ final class Main extends JavaPlugin:
 
         given busts: BustThroughTracker = BustThroughTracker()
 
+        given restHooks: RestManagerHooks = IngameRestManagerHooks()
         given rest: RestManager = RestManager()
 
         sid.startListener()
@@ -122,7 +123,7 @@ final class Main extends JavaPlugin:
         Reinforcements.register()
         CustomItemListener.register()
         CraftingStations.register()
-        Rest.register()
+        Rest.Rest.register()
 
         given aa: AcclimationActor = AcclimationActor.register()
 
