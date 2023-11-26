@@ -7,6 +7,7 @@ package BallCore.DataStructures
 import java.util.concurrent.LinkedTransferQueue
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.Try
+import cats.effect.IO
 
 enum TrueMsg[Msg]:
     case inner(val msg: Msg)
@@ -17,6 +18,13 @@ class ShutdownCallbacks:
 
     def add(fn: () => Future[Unit]): Unit =
         items = items.appended(fn)
+
+    def addIO[A](fn: (A, IO[Unit])): A =
+        items = items.appended { () =>
+            import cats.effect.unsafe.implicits._
+            fn._2.unsafeToFuture()
+        }
+        fn._1
 
     def shutdown()(using ExecutionContext): Future[List[Unit]] =
         Future.sequence(items.map(_.apply()))

@@ -72,15 +72,18 @@ object Config:
         } yield Config(host, port, user, data, pass)
 
 object SQLManager:
-    def apply(config: Config): SQLManager =
-        val session: Resource[IO, Session[IO]] = Session.single(
+    def apply(config: Config): (SQLManager, IO[Unit]) =
+        val pool = Session.pooled[IO](
             host = config.host,
             port = config.port,
             user = config.user,
             database = config.database,
+            max = 5,
             password = Some(config.password),
         )
-        new SQLManager(session, "civcubed")
+        val launcher: IO[(Resource[IO, Session[IO]], IO[Unit])] = pool.allocated
+        val (resource, shutdownHook) = launcher.unsafeRunSync()
+        (new SQLManager(resource, "civcubed"), shutdownHook)
 
 class SQLManager(resource: Resource[IO, Session[IO]], val database: String):
     val session: Resource[IO, Session[IO]] = resource

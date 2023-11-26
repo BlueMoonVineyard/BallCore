@@ -37,6 +37,7 @@ import java.util.Base64
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 import scala.util.Try
+import cats.effect.IO
 
 class HTTP(apiKey: String)(using lam: LinkedAccountsManager):
     def intoResponse(r: Either[LinkedAccountError, String]): HttpResponse =
@@ -218,6 +219,7 @@ final class VelocityPlugin(
     given Logger = logger
 
     private var shutdownHTTP: () => Future[Unit] = _
+    private var shutdownSQL: IO[Unit] = _
 
     def onProxyInitialize(event: ProxyInitializeEvent): Unit =
         val loader = YamlConfigurationLoader
@@ -244,7 +246,9 @@ final class VelocityPlugin(
             case Right(value) =>
                 value
 
-        given sql: SQLManager = SQLManager(databaseConfig)
+        val (manager, shutdownHook) = SQLManager(databaseConfig)
+        shutdownSQL = shutdownHook
+        given sql: SQLManager = manager
 
         given lam: LinkedAccountsManager = LinkedAccountsManager()
 
@@ -254,4 +258,6 @@ final class VelocityPlugin(
         commandManager.register(VerifyCommand.make())
 
     def onProxyShutdown(event: ProxyShutdownEvent): Unit =
+        import cats.effect.unsafe.implicits._
+        shutdownSQL.unsafeRunSync()
         Await.result(shutdownHTTP(), Duration.Inf)

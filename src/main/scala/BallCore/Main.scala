@@ -60,7 +60,7 @@ final class Main extends JavaPlugin:
             case Right(value) =>
                 value
 
-        given sql: Storage.SQLManager = Storage.SQLManager(databaseConfig)
+        given sql: Storage.SQLManager = sm.addIO(Storage.SQLManager(databaseConfig))
 
         given keyVal: Storage.SQLKeyVal = new Storage.SQLKeyVal
 
