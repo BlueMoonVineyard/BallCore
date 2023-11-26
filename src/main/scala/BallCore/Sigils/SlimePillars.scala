@@ -33,6 +33,8 @@ import net.kyori.adventure.bossbar.BossBar
 import java.time.OffsetDateTime
 import BallCore.DataStructures.Clock
 import java.time.temporal.ChronoUnit
+import org.bukkit.Location
+import org.bukkit.Particle
 
 object SlimePillar:
     val slimePillarModel = ItemStack(Material.STICK)
@@ -231,19 +233,37 @@ class SlimePillarSlapDetector()(using
 ) extends Listener:
     val lastSlaps = TrieMap[Player, OffsetDateTime]()
 
+    def playEffect(at: Location, kind: Particle, offset: Double): Unit =
+        at.getWorld
+            .spawnParticle(
+                kind,
+                at,
+                15,
+                offset,
+                offset,
+                offset,
+                0.4,
+                null,
+            )
+
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     def onSlap(event: EntityDamageByEntityEvent): Unit =
         if !event.getEntity().isInstanceOf[Interaction] then return
         if !event.getDamager().isInstanceOf[Player] then return
 
+        val plr = event.getDamager().asInstanceOf[Player]
         val time = lastSlaps.getOrElseUpdate(
             event.getDamager().asInstanceOf[Player],
             clock.now(),
         )
         if ChronoUnit.MILLIS.between(time, clock.now()) < 750 then return
-        lastSlaps.update(event.getDamager().asInstanceOf[Player], clock.now())
+        lastSlaps.update(plr, clock.now())
 
         val intr = event.getEntity().asInstanceOf[Interaction]
+
+        val position = plr.rayTraceEntities(10).getHitPosition()
+        val location = position.toLocation(plr.getWorld(), 0, 0)
+        playEffect(location, Particle.VILLAGER_ANGRY, 0.5)
 
         val isPillar = sql.useBlocking(
             cem.entityKind(intr)
@@ -254,7 +274,7 @@ class SlimePillarSlapDetector()(using
         if !isPillar then return
 
         sql.useFireAndForget(
-            spm.slapPillar(intr, event.getDamager())
+            spm.slapPillar(intr, plr)
         )
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -265,7 +285,11 @@ class SlimePillarSlapDetector()(using
 
         val time = lastSlaps.getOrElseUpdate(event.getPlayer(), clock.now())
         if ChronoUnit.MILLIS.between(time, clock.now()) < 750 then return
-        lastSlaps.update(event.getPlayer().asInstanceOf[Player], clock.now())
+        lastSlaps.update(event.getPlayer(), clock.now())
+
+        val position = event.getPlayer().rayTraceEntities(10).getHitPosition()
+        val location = position.toLocation(event.getPlayer().getWorld(), 0, 0)
+        playEffect(location, Particle.HEART, 0.5)
 
         val isPillar = sql.useBlocking(
             cem.entityKind(intr)
