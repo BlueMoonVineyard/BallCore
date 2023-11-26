@@ -26,6 +26,7 @@ enum SidebarLine:
     case filler1
     case date
     case time
+    case rest
     case filler2
 
 class SidebarActor(using lib: ScoreboardLibrary, p: Plugin)

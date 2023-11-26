@@ -19,21 +19,17 @@ import BallCore.Plants.PlantBatchManager
 import BallCore.PluginMessaging.Messaging
 import BallCore.PolygonEditor.PolygonEditor
 import BallCore.PolyhedraEditor.PolyhedraEditor
-import BallCore.Reinforcements.{
-    ChunkStateManager,
-    EntityReinforcementManager,
-    EntityStateManager,
-    HologramManager,
-}
+import BallCore.Reinforcements.*
+import BallCore.Rest.{RestManager, IngameRestManagerHooks, RestManagerHooks}
 import BallCore.Shops.Order
 import BallCore.Sidebar.SidebarActor
 import BallCore.Sigils.{CustomEntityManager, Sigil, SigilSlimeManager}
 import BallCore.Storage.Config
+import dev.jorel.commandapi.{CommandAPI, CommandAPIBukkitConfig}
 import net.megavex.scoreboardlibrary.api.ScoreboardLibrary
 import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.{Bukkit, Server}
 import org.spongepowered.configurate.yaml.YamlConfigurationLoader
-import dev.jorel.commandapi.{CommandAPI, CommandAPIBukkitConfig}
 
 import java.nio.file.Files
 import scala.concurrent.{Await, ExecutionContext}
@@ -113,6 +109,9 @@ final class Main extends JavaPlugin:
 
         given busts: BustThroughTracker = BustThroughTracker()
 
+        given restHooks: RestManagerHooks = IngameRestManagerHooks()
+        given rest: RestManager = RestManager()
+
         sid.startListener()
 
         Datekeeping.Datekeeping.startSidebarClock()
@@ -121,9 +120,10 @@ final class Main extends JavaPlugin:
         QuadrantGear.registerItems()
         CardinalOres.registerItems()
         Furnace.registerItems()
-        Reinforcements.Reinforcements.register()
+        Reinforcements.register()
         CustomItemListener.register()
         CraftingStations.register()
+        Rest.Rest.register()
 
         given aa: AcclimationActor = AcclimationActor.register()
 

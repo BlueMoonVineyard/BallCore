@@ -6,9 +6,14 @@ package BallCore.DataStructures
 
 import java.time.OffsetDateTime
 import java.time.temporal.TemporalAmount
+import cats.effect.IO
 
 trait Clock:
     def now(): OffsetDateTime
+    def nowIO(): IO[OffsetDateTime] =
+        IO {
+            now()
+        }
 
 class WallClock extends Clock:
     override def now(): OffsetDateTime =
