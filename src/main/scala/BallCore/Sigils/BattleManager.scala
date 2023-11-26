@@ -18,6 +18,7 @@ import org.locationtech.jts.geom.Geometry
 import scala.collection.concurrent.TrieMap
 import net.kyori.adventure.bossbar.BossBar
 import net.kyori.adventure.audience.Audience
+import java.{util => ju}
 
 type BattleID = UUID
 
@@ -61,14 +62,34 @@ class BattleManager(using
 
     private def updateBossBarFor(battle: BattleID, health: Int): IO[BossBar] =
         IO {
-            bossBars.updateWith(battle) { bar =>
-                import BallCore.TextComponents._
-                bar match
-                    case None =>
-                        Some((BossBar.bossBar(txt"Battle", health.toFloat / 10.0f, BossBar.Color.RED, BossBar.Overlay.NOTCHED_10), List()))
-                    case Some(bar, audience) =>
-                        Some((bar.progress(health.toFloat / 10.0f), audience))
-            }.get._1
+            bossBars
+                .updateWith(battle) { bar =>
+                    import BallCore.TextComponents._
+                    bar match
+                        case None =>
+                            Some(
+                                (
+                                    BossBar.bossBar(
+                                        txt"Battle",
+                                        health.toFloat / 10.0f,
+                                        BossBar.Color.RED,
+                                        BossBar.Overlay.NOTCHED_10,
+                                        ju.Set.of(
+                                            BossBar.Flag.DARKEN_SCREEN,
+                                            BossBar.Flag.CREATE_WORLD_FOG,
+                                            BossBar.Flag.PLAY_BOSS_MUSIC,
+                                        ),
+                                    ),
+                                    List(),
+                                )
+                            )
+                        case Some(bar, audience) =>
+                            Some(
+                                (bar.progress(health.toFloat / 10.0f), audience)
+                            )
+                }
+                .get
+                ._1
         }
     private def removeBossBarFor(battle: BattleID): IO[Unit] =
         IO {
@@ -215,13 +236,15 @@ class BattleManager(using
                 battleDefended(battle)
             },
             { (health, offense, defense, contestedArea, world) =>
-                hooks.spawnPillarFor(
-                    battle,
-                    offense,
-                    contestedArea,
-                    world,
-                    defense,
-                ).flatTap(_ => updateBossBarFor(battle, health))
+                hooks
+                    .spawnPillarFor(
+                        battle,
+                        offense,
+                        contestedArea,
+                        world,
+                        defense,
+                    )
+                    .flatTap(_ => updateBossBarFor(battle, health))
             },
         ).map(_ => ())
     private def battleTaken(battle: BattleID)(using Session[IO]): IO[Unit] =
@@ -256,12 +279,14 @@ class BattleManager(using
                 battleTaken(battle)
             },
             { (health, offense, defense, contestedArea, world) =>
-                hooks.spawnPillarFor(
-                    battle,
-                    offense,
-                    contestedArea,
-                    world,
-                    defense,
-                ).flatTap(_ => updateBossBarFor(battle, health))
+                hooks
+                    .spawnPillarFor(
+                        battle,
+                        offense,
+                        contestedArea,
+                        world,
+                        defense,
+                    )
+                    .flatTap(_ => updateBossBarFor(battle, health))
             },
         ).map(_ => ())
