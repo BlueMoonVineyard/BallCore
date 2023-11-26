@@ -127,7 +127,7 @@ class RestManager()(using sql: SQLManager, c: Clock, hooks: RestManagerHooks):
             // 1 rest / 12 hours
             // =
             // 1 rest / (12*60) minutes
-            restGained = difference.toDouble / 12.0 * 60.0
+            restGained = difference.toDouble / (12.0 * 60.0)
             newRest = (oldTime._1 + restGained) min 1.0
             _ <- sql.commandIO(
                 sql"""
