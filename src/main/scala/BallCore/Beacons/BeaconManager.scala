@@ -27,6 +27,7 @@ import skunk.implicits.*
 import org.locationtech.jts.io.geojson.{GeoJsonReader, GeoJsonWriter}
 import java.text.DecimalFormat
 import java.util.UUID
+import cats.data.EitherT
 
 type OwnerID = UUID
 type HeartID = UUID
@@ -50,13 +51,20 @@ val df =
 enum PolygonAdjustmentError:
     case polygonTooLarge(maximum: Int, actual: Double)
     case heartsNotIncludedInPolygon(at: List[Location])
+    case overlapsOneOtherPolygon(
+        beaconID: BeaconID,
+        groupID: GroupID,
+        groupName: String,
+        canDeclareWar: Option[Polygon],
+    )
+    case overlapsMultiplePolygons()
 
     def explain: Component =
         import BallCore.UI.ChatElements.*
 
         this match
             case polygonTooLarge(maximum, actual) =>
-                txt"This polygon is too large; the maximum area is ${txt(maximum.toString())
+                txt"This beacon area is too large; the maximum area is ${txt(maximum.toString())
                         .color(Colors.teal)} blocks but the actual area is ${txt(df.format(actual))
                         .color(Colors.teal)}"
             case heartsNotIncludedInPolygon(at) =>
@@ -67,7 +75,20 @@ enum PolygonAdjustmentError:
                                 .color(Colors.grellow)}"
                     }
                     .mkComponent(txt", ")
-                txt"There are hearts not included in this polygon at $locations"
+                txt"There are hearts not included in this claim at $locations"
+            case overlapsOneOtherPolygon(
+                    beaconID,
+                    groupID,
+                    groupName,
+                    Some(_),
+                ) =>
+                txt"This beacon area overlaps a beacon area belonging to ${txt(groupName)
+                        .color(Colors.grellow)} (you could start a battle to take the land)"
+            case overlapsOneOtherPolygon(beaconID, groupID, groupName, None) =>
+                txt"This beacon area overlaps a beacon area belonging to ${txt(groupName)
+                        .color(Colors.grellow)} (you can't start a battle to take the land because that would make the opposing claim not a polygon)"
+            case overlapsMultiplePolygons() =>
+                txt"This beacon area overlaps multiple other beacons' areas"
 
 class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
     sql.applyMigration(
@@ -328,8 +349,75 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
                 .headOption
         }
 
-    def updateBeaconPolygon(beacon: BeaconID, world: World, polygon: Polygon)(
+    def sudoSetBeaconPolygon(beacon: BeaconID, world: World, polygon: Polygon)(
         using Session[IO]
+    ): IO[Unit] =
+        sql
+            .commandIO(
+                sql"""
+                UPDATE CivBeacons
+                    SET CoveredArea
+                        = ST_GeomFromGeoJSON($polygonGeojsonCodec)
+                WHERE ID = $uuid;
+                """,
+                (polygon, beacon),
+            )
+            .flatMap(_ => recomputeEntryFor(beacon))
+            .flatMap(x => getWorldData(world).map(x -> _))
+            .flatMap { (entry, data) =>
+                IO {
+                    data.beaconRTree = RTree.update(
+                        data.beaconRTree,
+                        data.beaconIDsToRTreeEntries
+                            .get(beacon)
+                            .toSeq
+                            .flatten,
+                        entry,
+                    )
+                    data.beaconIDsToRTreeEntries += beacon -> entry
+                }
+            }
+
+    private def findOverlappingBeacons(polygon: Polygon, excluding: BeaconID)(
+        using Session[IO]
+    ): IO[Either[PolygonAdjustmentError, Unit]] =
+        sql.queryListIO(
+            sql"""
+        SELECT ID, GroupID, ST_AsGeoJSON(CoveredArea) From CivBeacons WHERE ID != $uuid AND ST_INTERSECTS(CivBeacons.CoveredArea, ST_GeomFromGeoJSON($polygonGeojsonCodec));
+        """,
+            (uuid *: uuid *: polygonGeojsonCodec),
+            (excluding, polygon),
+        ).flatMap { beacons =>
+            if beacons.size == 0 then IO.pure(Right(()))
+            else if beacons.size > 1 then
+                IO.pure(Left(PolygonAdjustmentError.overlapsMultiplePolygons()))
+            else
+                val (id, group, otherPolygon) = beacons(0)
+                val intersected =
+                    otherPolygon.buffer(0).intersection(polygon.buffer(0))
+                val asPolygon =
+                    if intersected.isInstanceOf[Polygon] then
+                        Some(intersected.asInstanceOf[Polygon])
+                    else None
+                summon[GroupManager].getGroup(group).value.map { it =>
+                    Left(
+                        PolygonAdjustmentError
+                            .overlapsOneOtherPolygon(
+                                id,
+                                group,
+                                it.toOption.get.metadata.name,
+                                asPolygon,
+                            )
+                    )
+                }
+        }
+
+    private def validatePolygonWithRegardToHearts(
+        beacon: BeaconID,
+        world: World,
+        polygon: Polygon,
+    )(using
+        Session[IO]
     ): IO[Either[PolygonAdjustmentError, Unit]] =
         sql
             .queryListIO(
@@ -347,7 +435,7 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
                 int8 *: int8 *: int8,
                 (world.getUID, beacon),
             )
-            .flatMap { hearts =>
+            .map { hearts =>
                 val expectedArea =
                     populationToArea(hearts.length)
                 val actualArea =
@@ -356,56 +444,47 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
                     hearts.filterNot((x, y, z) =>
                         polygon.covers(
                             geometryFactory
-                                .createPoint(Coordinate(x.toDouble, z.toDouble, y.toDouble))
+                                .createPoint(
+                                    Coordinate(
+                                        x.toDouble,
+                                        z.toDouble,
+                                        y.toDouble,
+                                    )
+                                )
                         )
                     )
 
                 if actualArea > expectedArea then
-                    IO.pure(
-                        Left(
-                            PolygonAdjustmentError
-                                .polygonTooLarge(expectedArea, actualArea)
-                        )
+                    Left(
+                        PolygonAdjustmentError
+                            .polygonTooLarge(expectedArea, actualArea)
                     )
                 else if heartsOutsidePolygon.nonEmpty then
-                    IO.pure(
-                        Left(
-                            PolygonAdjustmentError.heartsNotIncludedInPolygon(
-                                heartsOutsidePolygon.map((x, y, z) =>
-                                    Location(
-                                        world,
-                                        x.toDouble,
-                                        y.toDouble,
-                                        z.toDouble,
-                                    )
+                    Left(
+                        PolygonAdjustmentError.heartsNotIncludedInPolygon(
+                            heartsOutsidePolygon.map((x, y, z) =>
+                                Location(
+                                    world,
+                                    x.toDouble,
+                                    y.toDouble,
+                                    z.toDouble,
                                 )
                             )
                         )
                     )
-                else
-                    sql
-                        .commandIO(
-                            sql"""
-                UPDATE CivBeacons SET CoveredArea = ST_GeomFromGeoJSON($polygonGeojsonCodec) WHERE ID = $uuid
-                """,
-                            (polygon, beacon),
-                        )
-                        .flatMap(_ => recomputeEntryFor(beacon))
-                        .flatMap(x => getWorldData(world).map(x -> _))
-                        .map { (entry, data) =>
-                            data.beaconRTree = RTree.update(
-                                data.beaconRTree,
-                                data.beaconIDsToRTreeEntries
-                                    .get(beacon)
-                                    .toSeq
-                                    .flatten,
-                                entry,
-                            )
-                            data.beaconIDsToRTreeEntries += beacon -> entry
-
-                            Right(())
-                        }
+                else Right(())
             }
+
+    def updateBeaconPolygon(beacon: BeaconID, world: World, polygon: Polygon)(
+        using Session[IO]
+    ): IO[Either[PolygonAdjustmentError, Unit]] =
+        (for {
+            _ <- EitherT(findOverlappingBeacons(polygon, beacon))
+            _ <- EitherT(
+                validatePolygonWithRegardToHearts(beacon, world, polygon)
+            )
+            _ <- EitherT.right(sudoSetBeaconPolygon(beacon, world, polygon))
+        } yield ()).value
 
     def beaconSize(beacon: BeaconID)(using Session[IO]): IO[Long] =
         sql.queryUniqueIO(

@@ -329,6 +329,15 @@ class DoneCommand(using
                 polyhedraEditor.done(plr)
             }: PlayerCommandExecutor)
 
+class DeclareCommand(using
+    editor: PolygonEditor
+):
+    val node =
+        CommandTree("declare")
+            .executesPlayer({ (sender, args) =>
+                editor.declare(sender)
+            }: PlayerCommandExecutor)
+
 class ChatCommands(using ca: ChatActor, gm: GroupManager, sql: SQLManager):
     val group =
         CommandTree("group")

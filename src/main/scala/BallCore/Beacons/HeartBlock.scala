@@ -15,6 +15,7 @@ import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.{Material, NamespacedKey}
 
 import java.util.UUID
+import BallCore.Sigils.BattleManager
 
 object HeartBlock:
     val itemStack: CustomItemStack = CustomItemStack.make(
@@ -31,6 +32,7 @@ class HeartBlock()(using
     gm: GroupManager,
     bm: BlockManager,
     sql: SQLManager,
+    battleManager: BattleManager,
 ) extends CustomItem,
       Listeners.BlockPlaced,
       Listeners.BlockRemoved,
@@ -66,11 +68,20 @@ class HeartBlock()(using
                                 txt"You cannot edit claims because ${err.explain()}"
                             )
                     case Right(_) =>
-                        editor.create(
-                            event.getPlayer,
-                            event.getClickedBlock.getWorld,
-                            beacon,
-                        )
+                        if sql.useBlocking(
+                                battleManager.isInvolvedInBattle(beacon)
+                            )
+                        then
+                            event.getPlayer
+                                .sendServerMessage(
+                                    txt"You cannot edit claims because you are currently in battle"
+                                )
+                        else
+                            editor.create(
+                                event.getPlayer,
+                                event.getClickedBlock.getWorld,
+                                beacon,
+                            )
             case None =>
                 event.getPlayer.sendServerMessage(
                     txt"You need to bind this beacon to a group in order to edit its claims."
