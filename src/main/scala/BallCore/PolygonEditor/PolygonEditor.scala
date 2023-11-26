@@ -327,8 +327,9 @@ class PolygonEditor(using
         }.unsafeRunAndForget()
 
     def declareInner(player: Player): Unit =
-        val _ = playerPolygons.updateWith(player) { state =>
-            state.flatMap(state =>
+        val oldState = playerPolygons.get(player)
+        val newState =
+            oldState.flatMap { state =>
                 state match
                     case PlayerState.editing(model) =>
                         model.couldWarGroup match
@@ -387,8 +388,8 @@ class PolygonEditor(using
                                         None
                     case _ =>
                         Some(state)
-            )
-        }
+            }
+        val _ = playerPolygons.updateWith(player){_ => newState}
 
     def done(player: Player): Unit =
         val _ = playerPolygons.updateWith(player) { state =>

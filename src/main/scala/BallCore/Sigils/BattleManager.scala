@@ -18,6 +18,8 @@ import org.locationtech.jts.geom.Geometry
 import scala.collection.concurrent.TrieMap
 import net.kyori.adventure.bossbar.BossBar
 import net.kyori.adventure.audience.Audience
+import org.bukkit.Bukkit
+import net.kyori.adventure.text.Component
 
 type BattleID = UUID
 

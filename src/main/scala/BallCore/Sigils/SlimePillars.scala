@@ -29,6 +29,8 @@ import BallCore.TextComponents._
 import org.bukkit.event.player.PlayerInteractEntityEvent
 import org.bukkit.event.Listener
 import net.kyori.adventure.audience.Audience
+import scala.collection.concurrent.TrieMap
+import net.kyori.adventure.bossbar.BossBar
 
 object SlimePillar:
     val slimePillarModel = ItemStack(Material.STICK)
@@ -74,7 +76,68 @@ class SlimePillarManager(using
         )
     )
     val _ = cbm
-    val _ = cem
+
+    private val bossBars = TrieMap[Interaction, (BossBar, List[Audience])]()
+    private val currentlyObservingBars = TrieMap[Audience, BossBar]()
+
+    private def updateBossBarFor(
+        interaction: Interaction,
+        health: Int,
+    ): IO[BossBar] =
+        IO {
+            bossBars
+                .updateWith(interaction) { bar =>
+                    import BallCore.TextComponents._
+                    bar match
+                        case None =>
+                            Some(
+                                (
+                                    BossBar.bossBar(
+                                        txt"Slime Pillar",
+                                        health.toFloat / 100.0f,
+                                        BossBar.Color.PURPLE,
+                                        BossBar.Overlay.NOTCHED_20,
+                                    ),
+                                    List(),
+                                )
+                            )
+                        case Some(bar, audience) =>
+                            Some(
+                                (
+                                    bar.progress(health.toFloat / 100.0f),
+                                    audience,
+                                )
+                            )
+                }
+                .get
+                ._1
+        }
+    private def removeBossBarFor(interaction: Interaction): IO[Unit] =
+        IO {
+            bossBars.remove(interaction) match
+                case None =>
+                case Some((bar, audience)) =>
+                    audience.foreach(bar.removeViewer)
+                    audience.foreach(currentlyObservingBars.remove)
+        }
+    private def showBossBarTo(
+        interaction: Interaction,
+        target: Audience,
+    ): IO[Unit] =
+        IO {
+            val _ = bossBars.updateWith(interaction) {
+                case Some((bar, audience)) if !audience.contains(target) =>
+                    bar.addViewer(target)
+                    val _ = currentlyObservingBars.updateWith(interaction) {
+                        case Some(oldBar) =>
+                            bar.removeViewer(target)
+                            Some(bar)
+                        case None => Some(bar)
+                    }
+                    Some((bar, target :: audience))
+                case x => x
+            }
+        }
 
     def addPillar(interaction: Interaction, battle: BattleID)(using
         Session[IO]
@@ -102,7 +165,6 @@ class SlimePillarManager(using
                 (int4 *: uuid),
                 interaction.getUniqueId(),
             )
-            _ <- battleManager.showBossBarTo(health._2, player)
             result <-
                 if health._1 < 1 then
                     for {
@@ -112,10 +174,16 @@ class SlimePillarManager(using
                         """,
                             interaction.getUniqueId(),
                         )
+                        _ <- removeBossBarFor(interaction)
                         _ <- cem.deleteEntity(interaction)
                         _ <- battleManager.pillarTaken(health._2)
                     } yield PillarResult.finished
-                else IO.pure(PillarResult.remains(health._1))
+                else
+                    for {
+                        _ <- battleManager.showBossBarTo(health._2, player)
+                        _ <- updateBossBarFor(interaction, health._1)
+                        _ <- showBossBarTo(interaction, player)
+                    } yield PillarResult.remains(health._1)
         } yield result
 
     def healPillar(
@@ -140,10 +208,16 @@ class SlimePillarManager(using
                         """,
                             interaction.getUniqueId(),
                         )
+                        _ <- removeBossBarFor(interaction)
                         _ <- cem.deleteEntity(interaction)
                         _ <- battleManager.pillarDefended(health._2)
                     } yield PillarResult.finished
-                else IO.pure(PillarResult.remains(health._1))
+                else
+                    for {
+                        _ <- battleManager.showBossBarTo(health._2, player)
+                        _ <- updateBossBarFor(interaction, health._1)
+                        _ <- showBossBarTo(interaction, player)
+                    } yield PillarResult.remains(health._1)
         } yield result
 
 class SlimePillarSlapDetector()(using
@@ -167,14 +241,16 @@ class SlimePillarSlapDetector()(using
 
         if !isPillar then return
 
-        sql.useFireAndForget(spm.slapPillar(intr, event.getDamager()).flatMap { result =>
-            IO {
-                event
-                    .getDamager()
-                    .asInstanceOf[Player]
-                    .sendServerMessage(txt"slapped: ${result}")
+        sql.useFireAndForget(
+            spm.slapPillar(intr, event.getDamager()).flatMap { result =>
+                IO {
+                    event
+                        .getDamager()
+                        .asInstanceOf[Player]
+                        .sendServerMessage(txt"slapped: ${result}")
+                }
             }
-        })
+        )
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     def onUnslap(event: PlayerInteractEntityEvent): Unit =
@@ -190,13 +266,15 @@ class SlimePillarSlapDetector()(using
 
         if !isPillar then return
 
-        sql.useFireAndForget(spm.healPillar(intr, event.getPlayer()).flatMap { result =>
-            IO {
-                event
-                    .getPlayer()
-                    .sendServerMessage(txt"unslapped: ${result}")
+        sql.useFireAndForget(
+            spm.healPillar(intr, event.getPlayer()).flatMap { result =>
+                IO {
+                    event
+                        .getPlayer()
+                        .sendServerMessage(txt"unslapped: ${result}")
+                }
             }
-        })
+        )
 
 class SlimePillarFlinger()(using
     p: Plugin,
