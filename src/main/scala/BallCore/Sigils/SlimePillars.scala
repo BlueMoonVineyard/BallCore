@@ -28,6 +28,7 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent
 import BallCore.TextComponents._
 import org.bukkit.event.player.PlayerInteractEntityEvent
 import org.bukkit.event.Listener
+import net.kyori.adventure.audience.Audience
 
 object SlimePillar:
     val slimePillarModel = ItemStack(Material.STICK)
@@ -90,7 +91,8 @@ class SlimePillarManager(using
         ).map(_ => ())
 
     def slapPillar(
-        interaction: Interaction
+        interaction: Interaction,
+        player: Audience,
     )(using battleManager: BattleManager)(using Session[IO]): IO[PillarResult] =
         for {
             health <- sql.queryUniqueIO(
@@ -100,6 +102,7 @@ class SlimePillarManager(using
                 (int4 *: uuid),
                 interaction.getUniqueId(),
             )
+            _ <- battleManager.showBossBarTo(health._2, player)
             result <-
                 if health._1 < 1 then
                     for {
@@ -116,7 +119,8 @@ class SlimePillarManager(using
         } yield result
 
     def healPillar(
-        interaction: Interaction
+        interaction: Interaction,
+        player: Audience,
     )(using battleManager: BattleManager)(using Session[IO]): IO[PillarResult] =
         for {
             health <- sql.queryUniqueIO(
@@ -126,6 +130,7 @@ class SlimePillarManager(using
                 (int4 *: uuid),
                 interaction.getUniqueId(),
             )
+            _ <- battleManager.showBossBarTo(health._2, player)
             result <-
                 if health._1 > 100 then
                     for {
@@ -162,7 +167,7 @@ class SlimePillarSlapDetector()(using
 
         if !isPillar then return
 
-        sql.useFireAndForget(spm.slapPillar(intr).flatMap { result =>
+        sql.useFireAndForget(spm.slapPillar(intr, event.getDamager()).flatMap { result =>
             IO {
                 event
                     .getDamager()
@@ -185,7 +190,7 @@ class SlimePillarSlapDetector()(using
 
         if !isPillar then return
 
-        sql.useFireAndForget(spm.healPillar(intr).flatMap { result =>
+        sql.useFireAndForget(spm.healPillar(intr, event.getPlayer()).flatMap { result =>
             IO {
                 event
                     .getPlayer()

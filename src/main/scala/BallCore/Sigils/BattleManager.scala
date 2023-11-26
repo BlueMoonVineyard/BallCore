@@ -15,6 +15,9 @@ import org.locationtech.jts.geom.Polygon
 import org.locationtech.jts.io.geojson.GeoJsonReader
 import org.locationtech.jts.io.geojson.GeoJsonWriter
 import org.locationtech.jts.geom.Geometry
+import scala.collection.concurrent.TrieMap
+import net.kyori.adventure.bossbar.BossBar
+import net.kyori.adventure.audience.Audience
 
 type BattleID = UUID
 
@@ -54,6 +57,35 @@ class BattleManager(using
     } { polygon =>
         GeoJsonWriter().write(polygon)
     }
+    private val bossBars = TrieMap[BattleID, (BossBar, List[Audience])]()
+
+    private def updateBossBarFor(battle: BattleID, health: Int): IO[BossBar] =
+        IO {
+            bossBars.updateWith(battle) { bar =>
+                import BallCore.TextComponents._
+                bar match
+                    case None =>
+                        Some((BossBar.bossBar(txt"Battle", health.toFloat / 10.0f, BossBar.Color.RED, BossBar.Overlay.NOTCHED_10), List()))
+                    case Some(bar, audience) =>
+                        Some((bar.progress(health.toFloat / 10.0f), audience))
+            }.get._1
+        }
+    private def removeBossBarFor(battle: BattleID): IO[Unit] =
+        IO {
+            bossBars.remove(battle) match
+                case None =>
+                case Some((bar, audience)) =>
+                    audience.foreach(bar.removeViewer)
+        }
+    def showBossBarTo(battle: BattleID, target: Audience): IO[Unit] =
+        IO {
+            val _ = bossBars.updateWith(battle) {
+                case Some((bar, audience)) if !audience.contains(target) =>
+                    bar.addViewer(target)
+                    Some((bar, target :: audience))
+                case x => x
+            }
+        }
 
     sql.applyMigration(
         Storage.Migration(
@@ -156,6 +188,8 @@ class BattleManager(using
                 world,
                 count,
             )
+        }.flatTap { (battleID, _) =>
+            updateBossBarFor(battleID, initialHealth)
         }.map(_._1)
     private def battleDefended(battle: BattleID)(using Session[IO]): IO[Unit] =
         sql.queryUniqueIO(
@@ -164,28 +198,30 @@ class BattleManager(using
             """,
             (uuid *: uuid),
             battle,
-        ).flatMap((offense, defense) =>
+        ).flatTap { _ =>
+            removeBossBarFor(battle)
+        }.flatMap((offense, defense) =>
             hooks.battleDefended(battle, offense, defense)
         )
     def pillarDefended(battle: BattleID)(using Session[IO]): IO[Unit] =
         sql.queryUniqueIO(
             sql"""
-    UPDATE Battles SET Health = Health + 1 WHERE BattleID = $uuid RETURNING OffensiveBeacon, DefensiveBeacon, ST_AsGeoJSON(ContestedArea), World;
+    UPDATE Battles SET Health = Health + 1 WHERE BattleID = $uuid RETURNING Health, OffensiveBeacon, DefensiveBeacon, ST_AsGeoJSON(ContestedArea), World;
     """,
-            (uuid *: uuid *: polygonGeojsonCodec *: uuid),
+            (int4 *: uuid *: uuid *: polygonGeojsonCodec *: uuid),
             battle,
         ).redeemWith(
             { case SqlState.CheckViolation(_) =>
                 battleDefended(battle)
             },
-            { (offense, defense, contestedArea, world) =>
+            { (health, offense, defense, contestedArea, world) =>
                 hooks.spawnPillarFor(
                     battle,
                     offense,
                     contestedArea,
                     world,
                     defense,
-                )
+                ).flatTap(_ => updateBossBarFor(battle, health))
             },
         ).map(_ => ())
     private def battleTaken(battle: BattleID)(using Session[IO]): IO[Unit] =
@@ -195,7 +231,9 @@ class BattleManager(using
             """,
             (uuid *: uuid *: polygonGeojsonCodec *: polygonGeojsonCodec *: uuid),
             battle,
-        ).flatMap((offense, defense, contestedArea, desiredArea, world) =>
+        ).flatTap { _ =>
+            removeBossBarFor(battle)
+        }.flatMap((offense, defense, contestedArea, desiredArea, world) =>
             hooks.battleTaken(
                 battle,
                 offense,
@@ -209,21 +247,21 @@ class BattleManager(using
     def pillarTaken(battle: BattleID)(using Session[IO]): IO[Unit] =
         sql.queryUniqueIO(
             sql"""
-    UPDATE Battles SET Health = Health - 1 WHERE BattleID = $uuid RETURNING OffensiveBeacon, DefensiveBeacon, ST_AsGeoJSON(ContestedArea), World;
+    UPDATE Battles SET Health = Health - 1 WHERE BattleID = $uuid RETURNING Health, OffensiveBeacon, DefensiveBeacon, ST_AsGeoJSON(ContestedArea), World;
     """,
-            (uuid *: uuid *: polygonGeojsonCodec *: uuid),
+            (int4 *: uuid *: uuid *: polygonGeojsonCodec *: uuid),
             battle,
         ).redeemWith(
             { case SqlState.CheckViolation(_) =>
                 battleTaken(battle)
             },
-            { (offense, defense, contestedArea, world) =>
+            { (health, offense, defense, contestedArea, world) =>
                 hooks.spawnPillarFor(
                     battle,
                     offense,
                     contestedArea,
                     world,
                     defense,
-                )
+                ).flatTap(_ => updateBossBarFor(battle, health))
             },
         ).map(_ => ())
