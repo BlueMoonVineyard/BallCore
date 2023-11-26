@@ -30,6 +30,7 @@ import net.kyori.adventure.text.format.TextDecoration
 import org.bukkit.inventory.ShapelessRecipe
 import BallCore.UI.Elements._
 import BallCore.Storage.SQLManager
+import BallCore.DataStructures.Clock
 
 object Sigil:
     enum CustomModelData(val num: Int):
@@ -64,6 +65,7 @@ object Sigil:
         cem: CustomEntityManager,
         sql: SQLManager,
         bm: BattleManager,
+        clock: Clock,
     ): Unit =
         registry.register(Sigil())
         registry.register(SlimeEgg())
