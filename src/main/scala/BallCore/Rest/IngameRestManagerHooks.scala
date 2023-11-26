@@ -13,12 +13,12 @@ class IngameRestManagerHooks(using sidebar: SidebarActor)
     private def restString(value: Double): Component =
         import BallCore.TextComponents._
         val res =
-            if value >= 0.8 then txt"Very Well Rested"
-            else if value >= 0.6 then txt"Well Rested"
-            else if value >= 0.4 then txt"Rested"
-            else if value >= 0.2 then txt"Somewhat Rested"
-            else if value >= 0.05 then txt"Barely Rested"
-            else txt"Not Rested"
+            if value >= 0.8 then txt" Very Well Rested"
+            else if value >= 0.6 then txt" Well Rested"
+            else if value >= 0.4 then txt" Rested"
+            else if value >= 0.2 then txt" Somewhat Rested"
+            else if value >= 0.05 then txt" Barely Rested"
+            else txt" Not Rested"
         res.color(TextColor.fromHexString("#8adcff"))
     def updateSidebar(playerID: ju.UUID, rest: Double): IO[Unit] =
         IO {

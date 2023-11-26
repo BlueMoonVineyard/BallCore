@@ -26,6 +26,7 @@ enum SidebarLine:
     case filler1
     case date
     case time
+    case separator
     case rest
     case filler2
 
