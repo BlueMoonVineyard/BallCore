@@ -35,7 +35,8 @@ trait BattleHooks:
         battle: BattleID,
         offensiveBeacon: BeaconID,
         defensiveBeacon: BeaconID,
-        contestedArea: Polygon,
+        areaToRemoveFromDefense: Polygon,
+        claimToSetOffenseTo: Polygon,
         world: UUID,
     )(using Session[IO]): IO[Unit]
 
@@ -64,6 +65,7 @@ class BattleManager(using
                     OffensiveBeacon UUID NOT NULL,
                     DefensiveBeacon UUID NOT NULL,
                     ContestedArea GEOMETRY(PolygonZ) NOT NULL,
+                    DesiredArea GEOMETRY(PolygonZ) NOT NULL,
                     Health INTEGER NOT NULL,
                     PillarCount INTEGER NOT NULL,
                     World UUID NOT NULL,
@@ -103,10 +105,19 @@ class BattleManager(using
     def defensiveResign(battle: BattleID)(using Session[IO]): IO[Unit] =
         battleTaken(battle)
 
+    def isInvolvedInBattle(beacon: BeaconID)(using Session[IO]): IO[Boolean] =
+        sql.queryUniqueIO(
+            sql"""
+        SELECT EXISTS(SELECT 1 FROM Battles WHERE OffensiveBeacon = $uuid OR DefensiveBeacon = $uuid);
+        """,
+            bool,
+            (beacon, beacon),
+        )
     def startBattle(
         offensive: BeaconID,
         defensive: BeaconID,
         contestedArea: Polygon,
+        desiredArea: Polygon,
         world: UUID,
     )(using
         Session[IO]
@@ -114,12 +125,13 @@ class BattleManager(using
         sql.queryUniqueIO(
             sql"""
         INSERT INTO Battles (
-            BattleID, OffensiveBeacon, DefensiveBeacon, ContestedArea, Health, PillarCount, World
+            BattleID, OffensiveBeacon, DefensiveBeacon, ContestedArea, DesiredArea, Health, PillarCount, World
         ) SELECT
             gen_random_uuid() as BattleID,
             $uuid as OffensiveBeacon,
             $uuid as DefensiveBeacon,
             ST_GeomFromGeoJSON($polygonGeojsonCodec) as ContestedArea,
+            ST_GeomFromGeoJSON($polygonGeojsonCodec) as DesiredArea,
             $int4 as Health,
             GREATEST(CEILING(ST_Area(ST_MakeValid(ST_GeomFromGeoJSON($polygonGeojsonCodec))) / 512.0), 1) as PillarCount,
             $uuid as World
@@ -130,6 +142,7 @@ class BattleManager(using
                 offensive,
                 defensive,
                 contestedArea,
+                desiredArea,
                 initialHealth,
                 contestedArea,
                 world,
@@ -178,16 +191,17 @@ class BattleManager(using
     private def battleTaken(battle: BattleID)(using Session[IO]): IO[Unit] =
         sql.queryUniqueIO(
             sql"""
-            DELETE FROM Battles WHERE BattleID = $uuid RETURNING OffensiveBeacon, DefensiveBeacon, ST_AsGeoJSON(ContestedArea), World;
+            DELETE FROM Battles WHERE BattleID = $uuid RETURNING OffensiveBeacon, DefensiveBeacon, ST_AsGeoJSON(ContestedArea), ST_AsGeoJSON(DesiredArea), World;
             """,
-            (uuid *: uuid *: polygonGeojsonCodec *: uuid),
+            (uuid *: uuid *: polygonGeojsonCodec *: polygonGeojsonCodec *: uuid),
             battle,
-        ).flatMap((offense, defense, contestedArea, world) =>
+        ).flatMap((offense, defense, contestedArea, desiredArea, world) =>
             hooks.battleTaken(
                 battle,
                 offense,
                 defense,
                 contestedArea,
+                desiredArea,
                 world,
             )
         )

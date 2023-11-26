@@ -58,6 +58,7 @@ class TestBattleHooks(using assertions: Assertions) extends BattleHooks:
         offense: BeaconID,
         defense: BeaconID,
         contestedArea: Polygon,
+        desiredArea: Polygon,
         world: UUID,
     )(using Session[IO]): IO[Unit] =
         IO {
@@ -132,6 +133,7 @@ class BattleSuite extends munit.FunSuite:
                     offensiveBeacon,
                     defensiveBeacon,
                     area2,
+                    area2,
                     world.getUID(),
                 )
             )
@@ -203,6 +205,7 @@ class BattleSuite extends munit.FunSuite:
             battleManager.startBattle(
                 offensiveBeacon,
                 defensiveBeacon,
+                area2,
                 area2,
                 world.getUID(),
             )
@@ -278,6 +281,7 @@ class BattleSuite extends munit.FunSuite:
             battleManager.startBattle(
                 offensiveBeacon,
                 defensiveBeacon,
+                area2,
                 area2,
                 world.getUID(),
             )

@@ -368,6 +368,7 @@ class PolygonEditor(using
                                                 model.beaconID,
                                                 defensiveBeacon,
                                                 contestedArea,
+                                                jtsPolygon,
                                                 model.polygon.head.getWorld
                                                     .getUID(),
                                             )
