@@ -67,7 +67,7 @@ jobs:
         cp ./velocity-plugin/target/scala-3.3.1/ballcorevelocity_3-0.1.0-SNAPSHOT.jar BallCoreVelocityPlugin.jar
     - name: Update jars
       uses: andelf/nightly-release@main
-      if: github.ref == 'ref/heads/develop'
+      if: github.ref == 'refs/heads/develop'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
