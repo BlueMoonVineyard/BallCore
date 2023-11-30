@@ -45,6 +45,8 @@ import dev.jorel.commandapi.arguments.PlayerArgument
 import BallCore.OneTimeTeleport.OTTError
 import net.kyori.adventure.text.Component
 import cats.effect.IO
+import dev.jorel.commandapi.executors.CommandExecutor
+import BallCore.RandomSpawner.RandomSpawn
 
 class OTTCommand(using sql: SQLManager, ott: OneTimeTeleporter):
     private def errorText(err: OTTError): Component =
@@ -114,6 +116,7 @@ class CheatCommand(using
     aa: AcclimationActor,
     storage: BallCore.Acclimation.Storage,
     sql: SQLManager,
+    rs: RandomSpawn,
 ):
     val node =
         CommandTree("cheat")
@@ -137,6 +140,22 @@ class CheatCommand(using
                                             txt"Gave 1 item"
                                         )
                             }: PlayerCommandExecutor)
+                    )
+            )
+            .`then`(
+                LiteralArgument("random-spawn")
+                    .`then`(
+                        PlayerArgument("player")
+                            .executes({ (sender, args) =>
+                                val target = args.getUnchecked[Player]("player")
+                                sql.useFireAndForget(
+                                    rs.randomSpawnLocation.flatMap { location =>
+                                        IO {
+                                            target.teleportAsync(location.getLocation())
+                                        }
+                                    }
+                                )
+                            }: CommandExecutor)
                     )
             )
             .`then`(

@@ -10,13 +10,17 @@ import org.bukkit.plugin.Plugin
 
 import java.util.logging.Level
 import scala.concurrent.ExecutionContext
+import org.bukkit.Bukkit
 
 class LocationExecutionContext(loc: Location)(using plugin: Plugin)
     extends ExecutionContext:
     val sched: RegionScheduler = plugin.getServer.getRegionScheduler
 
     override def execute(runnable: Runnable): Unit =
-        sched.execute(plugin, loc, runnable)
+        if Bukkit.getServer().isOwnedByCurrentRegion(loc) then
+            runnable.run()
+        else
+            sched.execute(plugin, loc, runnable)
 
     override def reportFailure(cause: Throwable): Unit =
         plugin.getLogger

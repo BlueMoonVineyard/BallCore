@@ -41,6 +41,7 @@ import BallCore.Sigils.BattleHooks
 import BallCore.Sigils.GameBattleHooks
 import BallCore.OneTimeTeleport.OneTimeTeleporter
 import BallCore.OneTimeTeleport.GameOneTimeTeleporterHooks
+import BallCore.RandomSpawner.RandomSpawn
 
 final class Main extends JavaPlugin:
     given sm: ShutdownCallbacks = ShutdownCallbacks()
@@ -132,10 +133,12 @@ final class Main extends JavaPlugin:
         Rest.Rest.register()
 
         given aa: AcclimationActor = AcclimationActor.register()
+        given rs: RandomSpawn = RandomSpawn()
 
         PolyhedraEditor.register()
         PolygonEditor.register()
         Mining.Mining.register()
+        RandomSpawner.Listener.register()
         MapCloningListener.register()
         Sigil.register()
 

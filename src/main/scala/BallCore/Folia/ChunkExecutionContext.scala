@@ -10,6 +10,7 @@ import org.bukkit.plugin.Plugin
 
 import java.util.logging.Level
 import scala.concurrent.ExecutionContext
+import org.bukkit.Bukkit
 
 class ChunkExecutionContext(cx: Int, cz: Int, world: World)(using
     plugin: Plugin
@@ -17,7 +18,10 @@ class ChunkExecutionContext(cx: Int, cz: Int, world: World)(using
     val sched: RegionScheduler = plugin.getServer.getRegionScheduler
 
     override def execute(runnable: Runnable): Unit =
-        val _ = sched.run(plugin, world, cx, cz, _ => runnable.run())
+        if Bukkit.getServer().isOwnedByCurrentRegion(world, cx, cz) then
+            runnable.run()
+        else
+            val _ = sched.run(plugin, world, cx, cz, _ => runnable.run())
 
     override def reportFailure(cause: Throwable): Unit =
         plugin.getLogger
