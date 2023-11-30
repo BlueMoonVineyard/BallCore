@@ -39,6 +39,8 @@ import BallCore.Reinforcements.BustThroughTracker
 import BallCore.Sigils.BattleManager
 import BallCore.Sigils.BattleHooks
 import BallCore.Sigils.GameBattleHooks
+import BallCore.OneTimeTeleport.OneTimeTeleporter
+import BallCore.OneTimeTeleport.GameOneTimeTeleporterHooks
 
 final class Main extends JavaPlugin:
     given sm: ShutdownCallbacks = ShutdownCallbacks()
@@ -60,7 +62,8 @@ final class Main extends JavaPlugin:
             case Right(value) =>
                 value
 
-        given sql: Storage.SQLManager = sm.addIO(Storage.SQLManager(databaseConfig))
+        given sql: Storage.SQLManager =
+            sm.addIO(Storage.SQLManager(databaseConfig))
 
         given keyVal: Storage.SQLKeyVal = new Storage.SQLKeyVal
 
@@ -99,6 +102,9 @@ final class Main extends JavaPlugin:
         given ingameBattleHooks: BattleHooks = GameBattleHooks()
         given battleManager: BattleManager = new BattleManager()
         given editor: PolygonEditor = new PolygonEditor()
+        given ott: OneTimeTeleporter = OneTimeTeleporter(
+            GameOneTimeTeleporterHooks()
+        )
 
         given editor3D: PolyhedraEditor = new PolyhedraEditor()
 
@@ -150,6 +156,7 @@ final class Main extends JavaPlugin:
         CheatCommand().node.register()
         DoneCommand().node.register()
         PlantsCommand().node.register()
+        OTTCommand().node.register()
         Messaging.register()
 
     override def onDisable(): Unit =

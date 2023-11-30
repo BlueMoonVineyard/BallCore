@@ -40,6 +40,73 @@ import dev.jorel.commandapi.arguments.OfflinePlayerArgument
 import org.bukkit.OfflinePlayer
 import BallCore.Groups.nullUUID
 import BallCore.Groups.Permissions
+import BallCore.OneTimeTeleport.OneTimeTeleporter
+import dev.jorel.commandapi.arguments.PlayerArgument
+import BallCore.OneTimeTeleport.OTTError
+import net.kyori.adventure.text.Component
+import cats.effect.IO
+
+class OTTCommand(using sql: SQLManager, ott: OneTimeTeleporter):
+    private def errorText(err: OTTError): Component =
+        err match
+            case OTTError.alreadyUsedTeleport =>
+                txt"You've already used your one-time teleport."
+            case OTTError.isNotTeleportingToYou =>
+                txt"That player isn't teleporting to you."
+            case OTTError.teleportFailed =>
+                txt"The teleport failed."
+
+    val node =
+        CommandTree("ott")
+            .`then`(
+                LiteralArgument("request")
+                    .`then`(
+                        PlayerArgument("target")
+                            .executesPlayer({ (sender, args) =>
+                                val target = args.getUnchecked[Player]("target")
+                                sql.useFireAndForget(for {
+                                    res <- ott.requestTeleportTo(sender, target)
+                                    _ <- IO {
+                                        res match
+                                            case Left(err) =>
+                                                sender.sendServerMessage(
+                                                    errorText(err)
+                                                )
+                                            case Right(_) =>
+                                                val command =
+                                                    txt"/ott accept ${sender.getName()}"
+                                                        .color(Colors.teal)
+                                                target.sendServerMessage(
+                                                    txt"${sender.displayName()} has sent you a one-time teleport request. Use $command to accept it."
+                                                )
+                                    }
+                                } yield ())
+                            }: PlayerCommandExecutor)
+                    )
+            )
+            .`then`(
+                LiteralArgument("accept")
+                    .`then`(
+                        PlayerArgument("target")
+                            .executesPlayer({ (sender, args) =>
+                                val target = args.getUnchecked[Player]("target")
+                                sql.useFireAndForget(for {
+                                    res <- ott.acceptTeleportOf(sender, target)
+                                    _ <- IO {
+                                        res match
+                                            case Left(err) =>
+                                                sender.sendServerMessage(
+                                                    errorText(err)
+                                                )
+                                            case Right(_) =>
+                                                sender.sendServerMessage(
+                                                    txt"Teleport request accepted."
+                                                )
+                                    }
+                                } yield ())
+                            }: PlayerCommandExecutor)
+                    )
+            )
 
 class CheatCommand(using
     registry: ItemRegistry,
