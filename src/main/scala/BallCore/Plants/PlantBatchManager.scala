@@ -83,10 +83,10 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin, c: Clock)
                 Periods.hour.toMillis,
                 TimeUnit.MILLISECONDS,
             )
-        sql.useBlocking(load())
+        sql.useBlocking(sql.withS(load()))
 
     protected def handleShutdown(): Unit =
-        sql.useBlocking(saveAll())
+        sql.useBlocking(sql.withS(saveAll()))
 
     sql.applyMigration(
         Storage.Migration(

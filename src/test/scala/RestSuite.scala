@@ -27,10 +27,15 @@ class RestSuite extends munit.FunSuite {
 
         val player = UUID.randomUUID()
         sql.useBlocking(
-            (1 to 2000).toList.traverse { _ => rest.useRest(player) }
+            sql.withS(
+                (1 to 2000).toList.traverse { _ => rest.useRest(player) }
+            )
         )
 
-        assert(!sql.useBlocking(rest.useRest(player)), "rest should be used up after 2000 uses")
+        assert(
+            !sql.useBlocking(sql.withS(rest.useRest(player))),
+            "rest should be used up after 2000 uses",
+        )
     }
     sql.test("rest is restored after some time") { implicit sql =>
         given hooks: RestManagerHooks = TestRestHooks()
@@ -39,17 +44,25 @@ class RestSuite extends munit.FunSuite {
 
         val player = UUID.randomUUID()
         sql.useBlocking(
-            (1 to 2000).toList.traverse { _ => rest.useRest(player) }
+            sql.withS(
+                (1 to 2000).toList.traverse { _ => rest.useRest(player) }
+            )
         )
 
-        assert(!sql.useBlocking(rest.useRest(player)), "rest should be used up after 2000 uses")
+        assert(
+            !sql.useBlocking(sql.withS(rest.useRest(player))),
+            "rest should be used up after 2000 uses",
+        )
 
-        sql.useBlocking(rest.logoff(player))
+        sql.useBlocking(sql.withS(rest.logoff(player)))
 
         clock.changeTimeBy(Duration.ofHours(12))
 
-        sql.useBlocking(rest.logon(player))
+        sql.useBlocking(sql.withS(rest.logon(player)))
 
-        assert(sql.useBlocking(rest.useRest(player)), "rest should be rejuvinated after being logged off")
+        assert(
+            sql.useBlocking(sql.withS(rest.useRest(player))),
+            "rest should be rejuvinated after being logged off",
+        )
     }
 }

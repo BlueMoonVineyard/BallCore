@@ -6,12 +6,14 @@ package BallCore.Mining
 
 import BallCore.Storage.{Migration, SQLManager}
 import cats.effect.IO
-import cats.syntax.all.*
 import org.bukkit.block.Block
 import skunk.Session
 import skunk.codec.all.*
 import skunk.data.Completion
 import skunk.implicits.*
+import scala.collection.concurrent.TrieMap
+import cats.effect.kernel.Resource
+import java.util.UUID
 
 /*
 
@@ -58,38 +60,66 @@ class AntiCheeser()(using sql: SQLManager):
         } yield b.getWorld.getBlockAt(cx0 + dx, b.getY, cz0 + dz).getType
         types.count(kind => Mining.stoneBlocks.contains(kind))
 
-    def blockBrokenPartA(b: Block)(using Session[IO]): IO[Option[Int]] =
+    private val cache = TrieMap[(Int, Int, Int, UUID), Int]()
+    private def get(b: Block)(using
+        rsrc: Resource[IO, Session[IO]]
+    ): IO[Option[Int]] =
         val cx = b.getChunk.getX
         val cz = b.getChunk.getZ
         val y = b.getY
         val world = b.getWorld.getUID
-        sql.queryOptionIO(
-            sql"""
-        SELECT Health FROM MiningAntiCheeser WHERE ChunkX = $int8 AND ChunkZ = $int8 AND Y = $int8 AND World = $uuid
-        """,
-            int4,
-            (cx, cz, y, world),
-        )
+        IO { cache.get((cx, cz, y, world)) }
+            .flatMap { opt =>
+                opt match
+                    case None =>
+                        rsrc.use { implicit session =>
+                            sql.queryOptionIO(
+                                sql"""
+                            SELECT Health FROM MiningAntiCheeser WHERE ChunkX = $int8 AND ChunkZ = $int8 AND Y = $int8 AND World = $uuid
+                            """,
+                                int4,
+                                (cx, cz, y, world),
+                            )
+                        }
+                    case Some(_) =>
+                        IO.pure(opt)
+            }
+    private def set(b: Block, h: Int)(using
+        rsrc: Resource[IO, Session[IO]]
+    ): IO[Unit] =
+        val cx = b.getChunk.getX
+        val cz = b.getChunk.getZ
+        val y = b.getY
+        val world = b.getWorld.getUID
+
+        for {
+            _ <- IO { cache.update((cx, cz, y, world), h) }
+            _ <- rsrc.use { implicit session =>
+                sql.commandIO(
+                    sql"""
+                INSERT INTO MiningAntiCheeser (
+                    Health, ChunkX, ChunkZ, Y, World
+                ) VALUES (
+                    $int4, $int8, $int8, $int8, $uuid
+                ) ON CONFLICT (ChunkX, ChunkZ, Y, World) DO UPDATE SET Health = EXCLUDED.Health;
+                """,
+                    (h, cx, cz, y, world),
+                )
+            }.start
+        } yield ()
+
+    def blockBrokenPartA(b: Block)(using
+        Resource[IO, Session[IO]]
+    ): IO[Option[Int]] =
+        get(b)
 
     def blockBrokenPartB(b: Block, it: Option[Int]): Int =
         it.getOrElse(countEligibleBlocks(b))
 
-    def blockBrokenPartC(b: Block, it: Int)(using Session[IO]): IO[Boolean] =
-        val cx = b.getChunk.getX
-        val cz = b.getChunk.getZ
-        val y = b.getY
-        val world = b.getWorld.getUID
+    def blockBrokenPartC(b: Block, it: Int)(using
+        Resource[IO, Session[IO]]
+    ): IO[Boolean] =
         val health = it - 1
-
         for {
-            _ <- sql.commandIO(
-                sql"""
-            INSERT INTO MiningAntiCheeser (
-                Health, ChunkX, ChunkZ, Y, World
-            ) VALUES (
-                $int4, $int8, $int8, $int8, $uuid
-            ) ON CONFLICT (ChunkX, ChunkZ, Y, World) DO UPDATE SET Health = EXCLUDED.Health;
-            """,
-                (health.max(0), cx, cz, y, world),
-            )
+            _ <- set(b, health)
         } yield health >= 0

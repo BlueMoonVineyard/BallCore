@@ -215,9 +215,11 @@ class MiningListener()(using
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     def onBreakBlock(event: BlockBreakEvent): Unit =
-        val it1 = sql.useBlocking(ac.blockBrokenPartA(event.getBlock))
+        val it1 =
+            sql.useBlocking(sql.withR(ac.blockBrokenPartA(event.getBlock)))
         val it2 = ac.blockBrokenPartB(event.getBlock, it1)
-        val it3 = sql.useBlocking(ac.blockBrokenPartC(event.getBlock, it2))
+        val it3 =
+            sql.useBlocking(sql.withR(ac.blockBrokenPartC(event.getBlock, it2)))
         if !it3 then return
         if !Mining.stoneBlocks.contains(event.getBlock.getType) then return
         if Mining.oceans.contains(event.getBlock.getBiome) then return
@@ -226,15 +228,15 @@ class MiningListener()(using
         val (lat, long) =
             Information.latLong(event.getBlock.getX, event.getBlock.getZ)
         val (plat, plong) = (
-            sql.useBlocking(as.getLatitude(plr)),
-            sql.useBlocking(as.getLongitude(plr)),
+            sql.useBlocking(sql.withS(as.getLatitude(plr))),
+            sql.useBlocking(sql.withS(as.getLongitude(plr))),
         )
         val ezf = Information.exclusionZoneFactor(
             event.getBlock.getX(),
             event.getBlock.getZ(),
         )
         val restFactor =
-            if sql.useBlocking(rest.useRest(plr)) then 1.0
+            if sql.useBlocking(sql.withS(rest.useRest(plr))) then 1.0
             else 0.5
 
         val dlat = Information.similarityNeg(lat, plat)

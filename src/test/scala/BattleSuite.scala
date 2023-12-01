@@ -85,7 +85,7 @@ class BattleSuite extends munit.FunSuite:
             val offensiveLocation = Location(world, 0, -10, 0)
             val (offensiveBeacon, _) =
                 sql.useBlocking(
-                    hn.placeHeart(offensiveLocation, offensiveOwner)
+                    sql.withS(hn.placeHeart(offensiveLocation, offensiveOwner))
                 ).toOption
                     .get
 
@@ -93,9 +93,11 @@ class BattleSuite extends munit.FunSuite:
             val defensiveLocation = Location(world, offset, 10, offset)
             val (defensiveBeacon, _) =
                 sql.useBlocking(
-                    hn.placeHeart(
-                        defensiveLocation,
-                        defensiveOwner,
+                    sql.withS(
+                        hn.placeHeart(
+                            defensiveLocation,
+                            defensiveOwner,
+                        )
                     )
                 ).toOption
                     .get
@@ -113,8 +115,10 @@ class BattleSuite extends munit.FunSuite:
                 "sanity check of area 1",
             )
             val res1 = sql.useBlocking(
-                sql.withTX(
-                    hn.updateBeaconPolygon(offensiveBeacon, world, area1)
+                sql.withS(
+                    sql.withTX(
+                        hn.updateBeaconPolygon(offensiveBeacon, world, area1)
+                    )
                 )
             )
             assert(res1.isRight, (res1, "setting first heart's area"))
@@ -125,30 +129,38 @@ class BattleSuite extends munit.FunSuite:
                 "sanity check of area 2",
             )
             val res2 = sql.useBlocking(
-                sql.withTX(
-                    hn.updateBeaconPolygon(defensiveBeacon, world, area2)
+                sql.withS(
+                    sql.withTX(
+                        hn.updateBeaconPolygon(defensiveBeacon, world, area2)
+                    )
                 )
             )
             assert(res2.isRight, (res2, "setting second heart's area"))
 
             for _ <- 1 to pillarCount do hooks.expectSpawn()
             val battle = sql.useBlocking(
-                sql.withTX(
-                    battleManager.startBattle(
-                        offensiveBeacon,
-                        defensiveBeacon,
-                        area2,
-                        area2,
-                        world.getUID(),
+                sql.withS(
+                    sql.withTX(
+                        battleManager.startBattle(
+                            offensiveBeacon,
+                            defensiveBeacon,
+                            area2,
+                            area2,
+                            world.getUID(),
+                        )
                     )
                 )
             )
 
             hooks.expectDefended()
-            sql.useBlocking(battleManager.offensiveResign(battle))
+            sql.useBlocking(sql.withS(battleManager.offensiveResign(battle)))
 
-            sql.useBlocking(hn.removeHeart(defensiveLocation, defensiveOwner))
-            sql.useBlocking(hn.removeHeart(offensiveLocation, offensiveOwner))
+            sql.useBlocking(
+                sql.withS(hn.removeHeart(defensiveLocation, defensiveOwner))
+            )
+            sql.useBlocking(
+                sql.withS(hn.removeHeart(offensiveLocation, offensiveOwner))
+            )
         }
     }
     sql.test("battle manager defense") { implicit sql =>
@@ -164,7 +176,7 @@ class BattleSuite extends munit.FunSuite:
         val offensiveLocation = Location(world, 0, -10, 0)
         val (offensiveBeacon, _) =
             sql.useBlocking(
-                hn.placeHeart(offensiveLocation, offensiveOwner)
+                sql.withS(hn.placeHeart(offensiveLocation, offensiveOwner))
             ).toOption
                 .get
 
@@ -172,9 +184,11 @@ class BattleSuite extends munit.FunSuite:
         val defensiveLocation = Location(world, offset, 10, offset)
         val (defensiveBeacon, _) =
             sql.useBlocking(
-                hn.placeHeart(
-                    defensiveLocation,
-                    defensiveOwner,
+                sql.withS(
+                    hn.placeHeart(
+                        defensiveLocation,
+                        defensiveOwner,
+                    )
                 )
             ).toOption
                 .get
@@ -192,7 +206,11 @@ class BattleSuite extends munit.FunSuite:
             "sanity check of area 1",
         )
         val res1 = sql.useBlocking(
-            sql.withTX(hn.updateBeaconPolygon(offensiveBeacon, world, area1))
+            sql.withS(
+                sql.withTX(
+                    hn.updateBeaconPolygon(offensiveBeacon, world, area1)
+                )
+            )
         )
         assert(res1.isRight, (res1, "setting first heart's area"))
 
@@ -202,30 +220,40 @@ class BattleSuite extends munit.FunSuite:
             "sanity check of area 2",
         )
         val res2 = sql.useBlocking(
-            sql.withTX(hn.updateBeaconPolygon(defensiveBeacon, world, area2))
+            sql.withS(
+                sql.withTX(
+                    hn.updateBeaconPolygon(defensiveBeacon, world, area2)
+                )
+            )
         )
         assert(res2.isRight, (res2, "setting second heart's area"))
 
         hooks.expectSpawn()
         val battle = sql.useBlocking(
-            battleManager.startBattle(
-                offensiveBeacon,
-                defensiveBeacon,
-                area2,
-                area2,
-                world.getUID(),
+            sql.withS(
+                battleManager.startBattle(
+                    offensiveBeacon,
+                    defensiveBeacon,
+                    area2,
+                    area2,
+                    world.getUID(),
+                )
             )
         )
 
         for _ <- battleManager.initialHealth + 1 to 10 do
             hooks.expectSpawn()
-            sql.useBlocking(battleManager.pillarDefended(battle))
+            sql.useBlocking(sql.withS(battleManager.pillarDefended(battle)))
 
         hooks.expectDefended()
-        sql.useBlocking(battleManager.pillarDefended(battle))
+        sql.useBlocking(sql.withS(battleManager.pillarDefended(battle)))
 
-        sql.useBlocking(hn.removeHeart(defensiveLocation, defensiveOwner))
-        sql.useBlocking(hn.removeHeart(offensiveLocation, offensiveOwner))
+        sql.useBlocking(
+            sql.withS(hn.removeHeart(defensiveLocation, defensiveOwner))
+        )
+        sql.useBlocking(
+            sql.withS(hn.removeHeart(offensiveLocation, offensiveOwner))
+        )
     }
     sql.test("battle manager conquest") { implicit sql =>
         given gm: GroupManager = GroupManager()
@@ -240,7 +268,7 @@ class BattleSuite extends munit.FunSuite:
         val offensiveLocation = Location(world, 0, -10, 0)
         val (offensiveBeacon, _) =
             sql.useBlocking(
-                hn.placeHeart(offensiveLocation, offensiveOwner)
+                sql.withS(hn.placeHeart(offensiveLocation, offensiveOwner))
             ).toOption
                 .get
 
@@ -248,9 +276,11 @@ class BattleSuite extends munit.FunSuite:
         val defensiveLocation = Location(world, offset, 10, offset)
         val (defensiveBeacon, _) =
             sql.useBlocking(
-                hn.placeHeart(
-                    defensiveLocation,
-                    defensiveOwner,
+                sql.withS(
+                    hn.placeHeart(
+                        defensiveLocation,
+                        defensiveOwner,
+                    )
                 )
             ).toOption
                 .get
@@ -268,7 +298,11 @@ class BattleSuite extends munit.FunSuite:
             "sanity check of area 1",
         )
         val res1 = sql.useBlocking(
-            sql.withTX(hn.updateBeaconPolygon(offensiveBeacon, world, area1))
+            sql.withS(
+                sql.withTX(
+                    hn.updateBeaconPolygon(offensiveBeacon, world, area1)
+                )
+            )
         )
         assert(res1.isRight, (res1, "setting first heart's area"))
 
@@ -278,28 +312,38 @@ class BattleSuite extends munit.FunSuite:
             "sanity check of area 2",
         )
         val res2 = sql.useBlocking(
-            sql.withTX(hn.updateBeaconPolygon(defensiveBeacon, world, area2))
+            sql.withS(
+                sql.withTX(
+                    hn.updateBeaconPolygon(defensiveBeacon, world, area2)
+                )
+            )
         )
         assert(res2.isRight, (res2, "setting second heart's area"))
 
         hooks.expectSpawn()
         val battle = sql.useBlocking(
-            battleManager.startBattle(
-                offensiveBeacon,
-                defensiveBeacon,
-                area2,
-                area2,
-                world.getUID(),
+            sql.withS(
+                battleManager.startBattle(
+                    offensiveBeacon,
+                    defensiveBeacon,
+                    area2,
+                    area2,
+                    world.getUID(),
+                )
             )
         )
 
         for _ <- 1 to battleManager.initialHealth - 1 do
             hooks.expectSpawn()
-            sql.useBlocking(battleManager.pillarTaken(battle))
+            sql.useBlocking(sql.withS(battleManager.pillarTaken(battle)))
 
         hooks.expectTaken()
-        sql.useBlocking(battleManager.pillarTaken(battle))
+        sql.useBlocking(sql.withS(battleManager.pillarTaken(battle)))
 
-        sql.useBlocking(hn.removeHeart(defensiveLocation, defensiveOwner))
-        sql.useBlocking(hn.removeHeart(offensiveLocation, offensiveOwner))
+        sql.useBlocking(
+            sql.withS(hn.removeHeart(defensiveLocation, defensiveOwner))
+        )
+        sql.useBlocking(
+            sql.withS(hn.removeHeart(offensiveLocation, offensiveOwner))
+        )
     }

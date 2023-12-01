@@ -119,19 +119,25 @@ class Listener(using
         permission: Permissions,
     ): Either[GroupError, Boolean] =
         sql
-            .useBlocking(cbm.beaconContaining(location))
-            .flatMap(id => sql.useBlocking(cbm.getGroup(id)))
+            .useBlocking(sql.withS(cbm.beaconContaining(location)))
+            .flatMap(id => sql.useBlocking(sql.withS(cbm.getGroup(id))))
             .map(group => {
                 val sgid = sql
-                    .useBlocking(sql.withTX(gm.getSubclaims(group)))
+                    .useBlocking(sql.withS(sql.withTX(gm.getSubclaims(group))))
                     .getOrElse(Map())
                     .find(_._2.contains(location))
                     .map(_._1)
                     .getOrElse(nullUUID)
                 sql.useBlocking(
-                    sql.withTX(
-                        gm.check(player.getUniqueId, group, sgid, permission)
-                            .value
+                    sql.withS(
+                        sql.withTX(
+                            gm.check(
+                                player.getUniqueId,
+                                group,
+                                sgid,
+                                permission,
+                            ).value
+                        )
                     )
                 )
             })
@@ -393,10 +399,12 @@ class Listener(using
         r: Location,
     ): Boolean =
         sql.useBlocking {
-            for {
-                lBeacon <- cbm.beaconContaining(l)
-                rBeacon <- cbm.beaconContaining(r)
-            } yield lBeacon == rBeacon
+            sql.withS(
+                for {
+                    lBeacon <- cbm.beaconContaining(l)
+                    rBeacon <- cbm.beaconContaining(r)
+                } yield lBeacon == rBeacon
+            )
         }
 
     // prevent pistons from pushing blocks
@@ -430,7 +438,11 @@ class Listener(using
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     def preventZombies(event: EntityChangeBlockEvent): Unit =
         if sql
-                .useBlocking(cbm.beaconContaining(event.getBlock.getLocation()))
+                .useBlocking(
+                    sql.withS(
+                        cbm.beaconContaining(event.getBlock.getLocation())
+                    )
+                )
                 .isDefined
         then event.setCancelled(true)
 
@@ -440,8 +452,10 @@ class Listener(using
         if event.getEntityType != EntityType.FALLING_BLOCK then return
         if sql
                 .useBlocking(
-                    cbm.beaconContaining(
-                        event.getLocation.getBlock.getLocation()
+                    sql.withS(
+                        cbm.beaconContaining(
+                            event.getLocation.getBlock.getLocation()
+                        )
                     )
                 )
                 .isDefined
@@ -456,7 +470,9 @@ class Listener(using
         then return
         if sql
                 .useBlocking(
-                    cbm.beaconContaining(event.getBlock.getLocation())
+                    sql.withS(
+                        cbm.beaconContaining(event.getBlock.getLocation())
+                    )
                 )
                 .isDefined
         then event.setCancelled(true)
@@ -479,6 +495,7 @@ class Listener(using
         while it.hasNext do
             val block = it.next()
             val loc = BlockAdjustment.adjustBlock(block)
-            if sql.useBlocking(cbm.beaconContaining(loc.getLocation()))
-                    .isDefined
+            if sql.useBlocking(
+                    sql.withS(cbm.beaconContaining(loc.getLocation()))
+                ).isDefined
             then it.remove()

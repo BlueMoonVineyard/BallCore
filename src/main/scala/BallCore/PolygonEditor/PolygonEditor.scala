@@ -96,7 +96,7 @@ class PolygonEditor(using
 
     def create(player: Player, world: World, beaconID: BeaconID): Unit =
         import BallCore.UI.ChatElements.*
-        sql.useBlocking(bm.getPolygonFor(beaconID)) match
+        sql.useBlocking(sql.withS(bm.getPolygonFor(beaconID))) match
             case None =>
                 player.sendServerMessage(
                     txt"You'll be defining your claim as 4 points"
@@ -253,11 +253,13 @@ class PolygonEditor(using
                                 .toArray
                         )
                         sql.useBlocking(
-                            sql.withTX(
-                                bm.updateBeaconPolygon(
-                                    model.beaconID,
-                                    model.polygon.head.getWorld,
-                                    jtsPolygon,
+                            sql.withS(
+                                sql.withTX(
+                                    bm.updateBeaconPolygon(
+                                        model.beaconID,
+                                        model.polygon.head.getWorld,
+                                        jtsPolygon,
+                                    )
                                 )
                             )
                         ) match
@@ -351,11 +353,13 @@ class PolygonEditor(using
                                         .toArray
                                 )
                                 sql.useBlocking(
-                                    sql.withTX(
-                                        bm.updateBeaconPolygon(
-                                            model.beaconID,
-                                            model.polygon.head.getWorld,
-                                            jtsPolygon,
+                                    sql.withS(
+                                        sql.withTX(
+                                            bm.updateBeaconPolygon(
+                                                model.beaconID,
+                                                model.polygon.head.getWorld,
+                                                jtsPolygon,
+                                            )
                                         )
                                     )
                                 ) match
@@ -369,13 +373,15 @@ class PolygonEditor(using
                                                 )
                                         ) =>
                                         sql.useBlocking(
-                                            battleManager.startBattle(
-                                                model.beaconID,
-                                                defensiveBeacon,
-                                                contestedArea,
-                                                jtsPolygon,
-                                                model.polygon.head.getWorld
-                                                    .getUID(),
+                                            sql.withS(
+                                                battleManager.startBattle(
+                                                    model.beaconID,
+                                                    defensiveBeacon,
+                                                    contestedArea,
+                                                    jtsPolygon,
+                                                    model.polygon.head.getWorld
+                                                        .getUID(),
+                                                )
                                             )
                                         )
                                         player.sendServerMessage(

@@ -62,7 +62,7 @@ class FurnaceListener(using
                 (2, OreTier.Ingot)
 
     def tier(of: Block): FurnaceTier =
-        val furnaceItem = sql.useBlocking(bm.getCustomItem(of))
+        val furnaceItem = sql.useBlocking(sql.withS(bm.getCustomItem(of)))
         furnaceItem match
             case Some(furnace) if furnaceItem.get.isInstanceOf[Furnace] =>
                 furnaceItem.get.asInstanceOf[Furnace].tier

@@ -59,119 +59,122 @@ class EntityStateManager()(using
 
     private def save(key: UUID, value: ReinforcementState): Unit =
         sql.useBlocking {
-            sql.txIO { tx =>
-                if value.deleted then
-                    sql
-                        .queryOptionIO(
-                            sql"""
+            sql.withS {
+                sql.txIO { tx =>
+                    if value.deleted then
+                        sql
+                            .queryOptionIO(
+                                sql"""
                     DELETE FROM EntityReinforcements
                         WHERE EntityID = $uuid
                     RETURNING ReinforcementID;
                     """,
-                            uuid,
-                            key,
-                        )
-                        .flatMap { id =>
-                            id.map { it =>
-                                sql
-                                    .commandIO(
-                                        sql"""
+                                uuid,
+                                key,
+                            )
+                            .flatMap { id =>
+                                id.map { it =>
+                                    sql
+                                        .commandIO(
+                                            sql"""
                             DELETE FROM Reinforcements WHERE ID = $uuid;
                             """,
-                                        it,
-                                    )
-                                    .map(_ => ())
-                            }.getOrElse(IO.unit)
-                        }
-                else if value.dirty then
-                    for {
-                        id <- sql.queryOptionIO(
-                            sql"""
+                                            it,
+                                        )
+                                        .map(_ => ())
+                                }.getOrElse(IO.unit)
+                            }
+                    else if value.dirty then
+                        for {
+                            id <- sql.queryOptionIO(
+                                sql"""
                               SELECT ReinforcementID FROM EntityReinforcements
                                   WHERE EntityID = $uuid;
                               """,
-                            uuid,
-                            key,
-                        )
-                        _ <- id match
-                            case Some(id) =>
-                                sql.commandIO(
-                                    sql"""
+                                uuid,
+                                key,
+                            )
+                            _ <- id match
+                                case Some(id) =>
+                                    sql.commandIO(
+                                        sql"""
                                 UPDATE Reinforcements SET GroupID = $uuid, Owner = $uuid, Health = $int4, ReinforcementKind = $text, PlacedAt = $timestamptz WHERE ID = $uuid;
                                 """,
-                                    (
-                                        value.group,
-                                        value.owner,
-                                        value.health,
-                                        value.kind.into(),
-                                        value.placedAt,
-                                        id,
-                                    ),
-                                )
-                            case None =>
-                                val newID = UUID.randomUUID()
-                                for {
-                                    _ <- sql.commandIO(
-                                        sql"""
-                                    INSERT INTO Reinforcements
-                                        (ID, GroupID, Owner, Health, ReinforcementKind, PlacedAt)
-                                    VALUES
-                                        ($uuid, $uuid, $uuid, $int4, $text, $timestamptz)
-                                    """,
                                         (
-                                            newID,
                                             value.group,
                                             value.owner,
                                             value.health,
                                             value.kind.into(),
                                             value.placedAt,
+                                            id,
                                         ),
                                     )
-                                    _ <- sql.commandIO(
-                                        sql"""
+                                case None =>
+                                    val newID = UUID.randomUUID()
+                                    for {
+                                        _ <- sql.commandIO(
+                                            sql"""
+                                    INSERT INTO Reinforcements
+                                        (ID, GroupID, Owner, Health, ReinforcementKind, PlacedAt)
+                                    VALUES
+                                        ($uuid, $uuid, $uuid, $int4, $text, $timestamptz)
+                                    """,
+                                            (
+                                                newID,
+                                                value.group,
+                                                value.owner,
+                                                value.health,
+                                                value.kind.into(),
+                                                value.placedAt,
+                                            ),
+                                        )
+                                        _ <- sql.commandIO(
+                                            sql"""
                                     INSERT INTO EntityReinforcements
                                         (ReinforcementID, EntityID)
                                     VALUES
                                         ($uuid, $uuid)
                                     """,
-                                        (newID, key),
-                                    )
-                                } yield ()
-                    } yield ()
-                else IO.unit
+                                            (newID, key),
+                                        )
+                                    } yield ()
+                        } yield ()
+                    else IO.unit
+                }
             }
         }
 
     private def load(key: UUID): Unit =
         val item =
             sql.useBlocking(
-                sql
-                    .queryOptionIO(
-                        sql"""
+                sql.withS(
+                    sql
+                        .queryOptionIO(
+                            sql"""
             SELECT GroupID, SubgroupID, Owner, Health, ReinforcementKind, PlacedAt FROM EntityReinforcements
                 LEFT JOIN Reinforcements
                        ON Reinforcements.ID = EntityReinforcements.ReinforcementID
 
                 WHERE EntityID = $uuid;
             """,
-                        uuid *: uuid *: uuid *: int4 *: text *: timestamptz,
-                        key,
-                    )
-                    .map { opt =>
-                        opt.map { it =>
-                            val (gid, sgid, owner, health, kind, date) = it
-                            ReinforcementState(
-                                gid,
-                                sgid,
-                                owner,
-                                false,
-                                false,
-                                health,
-                                ReinforcementTypes.from(kind).get,
-                                date,
-                            )
-                        }
+                            uuid *: uuid *: uuid *: int4 *: text *: timestamptz,
+                            key,
+                        )
+                ).map { opt =>
+                    opt.map { it =>
+                        val (gid, sgid, owner, health, kind, date) = it
+                        ReinforcementState(
+                            gid,
+                            sgid,
+                            owner,
+                            false,
+                            false,
+                            health,
+                            ReinforcementTypes.from(kind).get,
+                            date,
+                        )
                     }
+                }
             )
 
         item.foreach(cache(key) = _)

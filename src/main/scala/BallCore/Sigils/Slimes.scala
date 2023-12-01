@@ -266,8 +266,8 @@ class SlimeBehaviours()(using
     val randomizer = scala.util.Random()
 
     def doSlimeLooks(): Unit =
-        sql.useBlocking(cem.entitiesOfKind(Slimes.entityKind)).foreach {
-            entity =>
+        sql.useBlocking(sql.withS(cem.entitiesOfKind(Slimes.entityKind)))
+            .foreach { entity =>
                 val interaction = Bukkit
                     .getEntity(entity.interaction)
                     .asInstanceOf[Interaction]
@@ -298,7 +298,7 @@ class SlimeBehaviours()(using
                                 .getEntity(entity.display)
                                 .setRotation(loc.getYaw(), 0)
                     }
-        }
+            }
 
 class SlimeEgg(using
     cem: CustomEntityManager,
@@ -313,7 +313,7 @@ class SlimeEgg(using
     override def onItemUsedOnBlock(event: PlayerInteractEvent): Unit =
         val beacon =
             sql.useBlocking(
-                hnm.getBeaconFor(event.getPlayer().getUniqueId())
+                sql.withS(hnm.getBeaconFor(event.getPlayer().getUniqueId()))
             ) match
                 case None =>
                     import BallCore.UI.ChatElements._
@@ -357,6 +357,10 @@ class SlimeEgg(using
         interaction.setResponsive(true)
 
         sql.useBlocking(
-            cem.addEntity(interaction, itemDisplay, Slimes.entityKind)
+            sql.withS(
+                cem.addEntity(interaction, itemDisplay, Slimes.entityKind)
+            )
         )
-        sql.useBlocking(ssm.addSlime(interaction.getUniqueId(), beacon))
+        sql.useBlocking(
+            sql.withS(ssm.addSlime(interaction.getUniqueId(), beacon))
+        )

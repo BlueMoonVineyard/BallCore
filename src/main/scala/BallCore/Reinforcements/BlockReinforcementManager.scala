@@ -70,15 +70,17 @@ class BlockReinforcementManager()(using
             case None =>
                 hoist(
                     sql.useBlocking(
-                        sql.withTX(
-                            gsm
-                                .checkE(
-                                    as,
-                                    group,
-                                    subgroup,
-                                    Groups.Permissions.AddReinforcements,
-                                )
-                                .value
+                        sql.withS(
+                            sql.withTX(
+                                gsm
+                                    .checkE(
+                                        as,
+                                        group,
+                                        subgroup,
+                                        Groups.Permissions.AddReinforcements,
+                                    )
+                                    .value
+                            )
                         )
                     )
                 ).map { _ =>
@@ -115,15 +117,17 @@ class BlockReinforcementManager()(using
                 else
                     hoist(
                         sql.useBlocking(
-                            sql.withTX(
-                                gsm
-                                    .checkE(
-                                        as,
-                                        value.group,
-                                        value.subgroup,
-                                        Groups.Permissions.RemoveReinforcements,
-                                    )
-                                    .value
+                            sql.withS(
+                                sql.withTX(
+                                    gsm
+                                        .checkE(
+                                            as,
+                                            value.group,
+                                            value.subgroup,
+                                            Groups.Permissions.RemoveReinforcements,
+                                        )
+                                        .value
+                                )
                             )
                         )
                     ).map { _ =>

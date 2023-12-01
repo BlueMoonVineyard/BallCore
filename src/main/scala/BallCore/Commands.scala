@@ -67,7 +67,9 @@ class OTTCommand(using sql: SQLManager, ott: OneTimeTeleporter):
                             .executesPlayer({ (sender, args) =>
                                 val target = args.getUnchecked[Player]("target")
                                 sql.useFireAndForget(for {
-                                    res <- ott.requestTeleportTo(sender, target)
+                                    res <- sql.withS(
+                                        ott.requestTeleportTo(sender, target)
+                                    )
                                     _ <- IO {
                                         res match
                                             case Left(err) =>
@@ -93,7 +95,9 @@ class OTTCommand(using sql: SQLManager, ott: OneTimeTeleporter):
                             .executesPlayer({ (sender, args) =>
                                 val target = args.getUnchecked[Player]("target")
                                 sql.useFireAndForget(for {
-                                    res <- ott.acceptTeleportOf(sender, target)
+                                    res <- sql.withS(
+                                        ott.acceptTeleportOf(sender, target)
+                                    )
                                     _ <- IO {
                                         res match
                                             case Left(err) =>
@@ -190,12 +194,12 @@ class CheatCommand(using
                         val plr = sender.asInstanceOf[Player]
                         val uuid = sender.asInstanceOf[Player].getUniqueId
                         val (aElevation, aLatitude, aLongitude, aTemperature) =
-                            sql.useBlocking(for {
+                            sql.useBlocking(sql.withS(for {
                                 elevation <- storage.getElevation(uuid)
                                 latitude <- storage.getLatitude(uuid)
                                 longitude <- storage.getLongitude(uuid)
                                 temperature <- storage.getTemperature(uuid)
-                            } yield (elevation, latitude, longitude, temperature))
+                            } yield (elevation, latitude, longitude, temperature)))
                         import Information.*
                         sender.sendServerMessage(
                             txt"Your current elevation: ${elevation(plr.getLocation().getY.toInt).toComponent
@@ -249,7 +253,7 @@ private def suggestGroups(using sql: SQLManager, gm: GroupManager)(
     val player = context.sender().asInstanceOf[Player]
 
     sql.useFuture {
-        sql.withTX(gm.userGroups(player.getUniqueId).value)
+        sql.withS(sql.withTX(gm.userGroups(player.getUniqueId).value))
             .map(_.toOption.get)
             .map { groups =>
                 groups
@@ -280,7 +284,7 @@ private def withGroupArgument(using sql: SQLManager, gm: GroupManager)(
 
     sql
         .useBlocking {
-            sql.withTX(gm.userGroups(sender.getUniqueId).value)
+            sql.withS(sql.withTX(gm.userGroups(sender.getUniqueId).value))
         }
         .map(_.find(_.name == group)) match
         case Left(err) =>
@@ -315,7 +319,7 @@ class GroupsCommand(using
                                 txt"That player has never joined CivCubed"
                             )
                         sql.useBlocking(
-                            sql.withTX(gm.getGroup(group.id).value)
+                            sql.withS(sql.withTX(gm.getGroup(group.id).value))
                         ) match
                             case Left(err) =>
                                 sender.sendServerMessage(
@@ -338,10 +342,12 @@ class GroupsCommand(using
                                         )
                                     else
                                         sql.useBlocking(
-                                            gm.invites.inviteToGroup(
-                                                sender.getUniqueId,
-                                                target.getUniqueId,
-                                                group.id,
+                                            sql.withS(
+                                                gm.invites.inviteToGroup(
+                                                    sender.getUniqueId,
+                                                    target.getUniqueId,
+                                                    group.id,
+                                                )
                                             )
                                         )
                                         sender.sendServerMessage(

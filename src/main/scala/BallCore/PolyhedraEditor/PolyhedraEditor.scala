@@ -582,7 +582,7 @@ class PolyhedraEditor(using p: Plugin, sql: SQLManager, gm: GroupManager):
         group: GroupID,
         subgroup: SubgroupID,
     ): Unit =
-        sql.useBlocking(sql.withTX(gm.getSubclaims(group))) match
+        sql.useBlocking(sql.withS(sql.withTX(gm.getSubclaims(group)))) match
             case Left(err) =>
                 player.sendServerMessage(
                     txt"I could not start the subclaim editor because ${err.explain()}"
@@ -627,12 +627,14 @@ class PolyhedraEditor(using p: Plugin, sql: SQLManager, gm: GroupManager):
         }
 
         sql.useBlocking(
-            sql.withTX(
-                gm.setSubclaims(
-                    player.getUniqueId,
-                    state.group,
-                    state.subgroup,
-                    Subclaims(volumes),
+            sql.withS(
+                sql.withTX(
+                    gm.setSubclaims(
+                        player.getUniqueId,
+                        state.group,
+                        state.subgroup,
+                        Subclaims(volumes),
+                    )
                 )
             )
         ) match

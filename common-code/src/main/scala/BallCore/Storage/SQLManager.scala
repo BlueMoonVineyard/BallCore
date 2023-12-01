@@ -154,39 +154,37 @@ class SQLManager(resource: Resource[IO, Session[IO]], val database: String):
             fn(using tx)
         }
 
-    /** Runs IO code that requires a database connection
-      *
-      * @param fn
-      *   the IO code to execute that requires a [[skunk.Session]]
-      */
-    def useIO[T](fn: Session[IO] ?=> IO[T]): IO[T] =
-        session.use { implicit session => fn }
+    def withS[A](fn: Session[IO] ?=> IO[A]): IO[A] =
+        session.use { session =>
+            fn(using session)
+        }
 
-    /** Runs IO code that requires a database connection and returns a
-      * [[scala.concurrent.Future]]
+    def withR[A](fn: Resource[IO, Session[IO]] ?=> IO[A]): IO[A] =
+        fn(using session)
+
+    /** Runs IO code and returns a [[scala.concurrent.Future]]
       *
       * @see
       *   useIO
       */
-    def useFuture[T](fn: Session[IO] ?=> IO[T]): Future[T] =
-        session.use { implicit session => fn }.unsafeToFuture()
+    def useFuture[T](fn: => IO[T]): Future[T] =
+        fn.unsafeToFuture()
 
-    /** Runs IO code that requires a database connection synchronously
+    /** Runs IO code synchronously
       *
       * @see
       *   useIO
       */
-    def useBlocking[T](fn: Session[IO] ?=> IO[T]): T =
-        session.use { implicit session => fn }.unsafeRunSync()
+    def useBlocking[T](fn: => IO[T]): T =
+        fn.unsafeRunSync()
 
-    /** Runs IO code that requires a database connection asynchronously without
-      * returning any values
+    /** Runs IO code asynchronously without returning any values
       *
       * @see
       *   useIO
       */
-    def useFireAndForget[T](fn: Session[IO] ?=> IO[T]): Unit =
-        session.use { implicit session => fn }.unsafeRunAndForget()
+    def useFireAndForget[T](fn: => IO[T]): Unit =
+        fn.unsafeRunAndForget()
 
     /** Executes a valueless SQL query with the given parameters
       *

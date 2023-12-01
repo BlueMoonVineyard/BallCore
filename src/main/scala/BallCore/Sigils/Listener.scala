@@ -118,11 +118,14 @@ class SigilListener(using
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     def onPlayerMove(event: PlayerMoveEvent): Unit =
         val banished =
-            sql.useBlocking(hnm.beaconContaining(event.getTo)).exists { gid =>
-                sql.useBlocking(
-                    ssm.isBanished(event.getPlayer.getUniqueId, gid)
-                )
-            }
+            sql.useBlocking(sql.withS(hnm.beaconContaining(event.getTo)))
+                .exists { gid =>
+                    sql.useBlocking(
+                        sql.withS(
+                            ssm.isBanished(event.getPlayer.getUniqueId, gid)
+                        )
+                    )
+                }
         if banished then event.setCancelled(true)
 
     private def doSigilBinding(killed: Player, on: List[UUID]): Unit =

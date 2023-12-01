@@ -59,13 +59,15 @@ class EntityListener()(using
             return
 
         sql.useBlocking(
-            sql.withTX(
-                gm.check(
-                    ent.asInstanceOf[Player].getUniqueId,
-                    reinf.group,
-                    reinf.subgroup,
-                    Permissions.Entities,
-                ).value
+            sql.withS(
+                sql.withTX(
+                    gm.check(
+                        ent.asInstanceOf[Player].getUniqueId,
+                        reinf.group,
+                        reinf.subgroup,
+                        Permissions.Entities,
+                    ).value
+                )
             )
         ) match
             case Right(ok) if ok =>
@@ -81,13 +83,15 @@ class EntityListener()(using
         if rein.isEmpty then return
         val reinf = rein.get
         sql.useBlocking(
-            sql.withTX(
-                gm.check(
-                    event.getPlayer.getUniqueId,
-                    reinf.group,
-                    reinf.subgroup,
-                    Permissions.Entities,
-                ).value
+            sql.withS(
+                sql.withTX(
+                    gm.check(
+                        event.getPlayer.getUniqueId,
+                        reinf.group,
+                        reinf.subgroup,
+                        Permissions.Entities,
+                    ).value
+                )
             )
         ) match
             case Right(ok) if ok =>

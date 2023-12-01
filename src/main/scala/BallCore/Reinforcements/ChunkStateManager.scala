@@ -69,11 +69,13 @@ class ChunkStateManager()(using sql: Storage.SQLManager):
     private val cache = LRUCache[ChunkKey, ChunkState](1000, evict)
 
     def evictAll(): Unit =
-        sql.useBlocking(cache.toList.traverse { (x, y) => set(x, y) })
+        sql.useBlocking(cache.toList.traverse { (x, y) =>
+            sql.withS(set(x, y))
+        })
         cache.clear()
 
     private def evict(key: ChunkKey, value: ChunkState): Unit =
-        sql.useBlocking(set(key, value))
+        sql.useBlocking(sql.withS(set(key, value)))
 
     private def load(key: ChunkKey)(using Session[IO]): IO[Unit] =
         sql
@@ -122,7 +124,7 @@ class ChunkStateManager()(using sql: Storage.SQLManager):
             }
 
     def get(key: ChunkKey): ChunkState =
-        if !cache.contains(key) then sql.useBlocking(load(key))
+        if !cache.contains(key) then sql.useBlocking(sql.withS(load(key)))
         cache(key)
 
     def set(key: ChunkKey, value: ChunkState)(using Session[IO]): IO[Unit] =

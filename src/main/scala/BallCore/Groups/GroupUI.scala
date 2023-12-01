@@ -109,14 +109,17 @@ class GroupManagementProgram(using
 
     private def canBindToHeart(self: UserID): Boolean =
         sql
-            .useBlocking(cbm.getBeaconFor(self))
-            .map(beaconID => sql.useBlocking(cbm.beaconSize(beaconID)))
+            .useBlocking(sql.withS(cbm.getBeaconFor(self)))
+            .map(beaconID =>
+                sql.useBlocking(sql.withS(cbm.beaconSize(beaconID)))
+            )
             .contains(1)
 
     override def init(flags: Flags): Model =
         val group =
-            sql.useBlocking(sql.withTX(gm.getGroup(flags.groupID).value))
-                .toOption
+            sql.useBlocking(
+                sql.withS(sql.withTX(gm.getGroup(flags.groupID).value))
+            ).toOption
                 .get
         Model(
             group,
@@ -305,10 +308,13 @@ class GroupManagementProgram(using
             case Message.View(what) =>
                 model.copy(viewing = what)
             case Message.BindToHeart =>
-                sql.useBlocking(cbm.getBeaconFor(model.userID)).map { beacon =>
-                    sql.useBlocking(
-                        cbm.setGroup(beacon, model.group.metadata.id)
-                    ).isRight
+                sql.useBlocking(sql.withS(cbm.getBeaconFor(model.userID))).map {
+                    beacon =>
+                        sql.useBlocking(
+                            sql.withS(
+                                cbm.setGroup(beacon, model.group.metadata.id)
+                            )
+                        ).isRight
                 } match
                     case None =>
                         services.notify(
@@ -342,10 +348,12 @@ class GroupManagementProgram(using
                                 )
                             case Some(plr) =>
                                 sql.useBlocking(
-                                    gm.invites.inviteToGroup(
-                                        model.userID,
-                                        plr.getUniqueId,
-                                        model.group.metadata.id,
+                                    sql.withS(
+                                        gm.invites.inviteToGroup(
+                                            model.userID,
+                                            plr.getUniqueId,
+                                            model.group.metadata.id,
+                                        )
                                     )
                                 )
                                 services.notify(
@@ -372,12 +380,14 @@ class GroupManagementProgram(using
                     .prompt("What do you want to call the subgroup?")
                     .map { name =>
                         sql.useBlocking(
-                            sql.withTX(
-                                gm.createSubgroup(
-                                    model.userID,
-                                    model.group.metadata.id,
-                                    name,
-                                ).value
+                            sql.withS(
+                                sql.withTX(
+                                    gm.createSubgroup(
+                                        model.userID,
+                                        model.group.metadata.id,
+                                        name,
+                                    ).value
+                                )
                             )
                         ) match
                             case Left(err) =>
@@ -390,8 +400,11 @@ class GroupManagementProgram(using
                                 )
                         val group = sql
                             .useBlocking(
-                                sql.withTX(
-                                    gm.getGroup(model.group.metadata.id).value
+                                sql.withS(
+                                    sql.withTX(
+                                        gm.getGroup(model.group.metadata.id)
+                                            .value
+                                    )
                                 )
                             )
                             .toOption
@@ -412,11 +425,13 @@ class GroupManagementProgram(using
                     )(), {
                         val services = summon[UIServices]
                         sql.useBlocking(
-                            sql.withTX(
-                                gm.deleteGroup(
-                                    model.userID,
-                                    model.group.metadata.id,
-                                ).value
+                            sql.withS(
+                                sql.withTX(
+                                    gm.deleteGroup(
+                                        model.userID,
+                                        model.group.metadata.id,
+                                    ).value
+                                )
                             )
                         ) match
                             case Left(err) =>
@@ -454,10 +469,12 @@ class GroupManagementProgram(using
                     )(), {
                         val services = summon[UIServices]
                         sql.useBlocking(
-                            sql.withTX(
-                                gm.leaveGroup(
-                                    model.userID,
-                                    model.group.metadata.id,
+                            sql.withS(
+                                sql.withTX(
+                                    gm.leaveGroup(
+                                        model.userID,
+                                        model.group.metadata.id,
+                                    )
                                 )
                             )
                         ) match
@@ -501,8 +518,9 @@ class SubgroupManagementProgram(using
 
     override def init(flags: Flags): Model =
         val group =
-            sql.useBlocking(sql.withTX(gm.getGroup(flags.groupID).value))
-                .toOption
+            sql.useBlocking(
+                sql.withS(sql.withTX(gm.getGroup(flags.groupID).value))
+            ).toOption
                 .get
         val subgroup = group.subgroups.find(_.id == flags.subgroupID).get
         Model(group, subgroup, flags.userID)
@@ -520,12 +538,14 @@ class SubgroupManagementProgram(using
                 model
             case Message.DeleteSubgroup =>
                 sql.useBlocking(
-                    sql.withTX(
-                        gm.deleteSubgroup(
-                            model.userID,
-                            model.group.metadata.id,
-                            model.subgroup.id,
-                        ).value
+                    sql.withS(
+                        sql.withTX(
+                            gm.deleteSubgroup(
+                                model.userID,
+                                model.group.metadata.id,
+                                model.subgroup.id,
+                            ).value
+                        )
                     )
                 ) match
                     case Left(err) =>
@@ -658,8 +678,9 @@ class RoleManagementProgram(using
 
     override def init(flags: Flags): Model =
         val group =
-            sql.useBlocking(sql.withTX(gm.getGroup(flags.groupID).value))
-                .toOption
+            sql.useBlocking(
+                sql.withS(sql.withTX(gm.getGroup(flags.groupID).value))
+            ).toOption
                 .get
         val role = group.roles.find(_.id == flags.roleID).get
         val subgroup =
@@ -686,12 +707,14 @@ class RoleManagementProgram(using
         msg match
             case Message.DeleteRole =>
                 sql.useBlocking(
-                    sql.withTX(
-                        gm.deleteRole(
-                            model.userID,
-                            model.role.id,
-                            model.groupID,
-                        ).value
+                    sql.withS(
+                        sql.withTX(
+                            gm.deleteRole(
+                                model.userID,
+                                model.role.id,
+                                model.groupID,
+                            ).value
+                        )
                     )
                 ) match
                     case Left(err) =>
@@ -720,13 +743,15 @@ class RoleManagementProgram(using
                 model.subgroup match
                     case None =>
                         sql.useBlocking(
-                            sql.withTX(
-                                gm.setRolePermissions(
-                                    model.userID,
-                                    model.groupID,
-                                    model.role.id,
-                                    newPermissions,
-                                ).value
+                            sql.withS(
+                                sql.withTX(
+                                    gm.setRolePermissions(
+                                        model.userID,
+                                        model.groupID,
+                                        model.role.id,
+                                        newPermissions,
+                                    ).value
+                                )
                             )
                         ) match
                             case Left(err) =>
@@ -742,14 +767,16 @@ class RoleManagementProgram(using
                                 )
                     case Some(subgroup) =>
                         sql.useBlocking(
-                            sql.withTX(
-                                gm.setSubgroupRolePermissions(
-                                    model.userID,
-                                    model.groupID,
-                                    subgroup.id,
-                                    model.role.id,
-                                    newPermissions,
-                                ).value
+                            sql.withS(
+                                sql.withTX(
+                                    gm.setSubgroupRolePermissions(
+                                        model.userID,
+                                        model.groupID,
+                                        subgroup.id,
+                                        model.role.id,
+                                        newPermissions,
+                                    ).value
+                                )
                             )
                         ) match
                             case Left(err) =>
@@ -918,9 +945,9 @@ class InvitesListProgram(using
 
     private def computeInvites(userID: UserID): List[(UserID, GroupState)] =
         sql
-            .useBlocking(gm.invites.getInvitesFor(userID))
+            .useBlocking(sql.withS(gm.invites.getInvitesFor(userID)))
             .flatMap { (uid, gid) =>
-                sql.useBlocking(sql.withTX(gm.getGroup(gid).value))
+                sql.useBlocking(sql.withS(sql.withTX(gm.getGroup(gid).value)))
                     .toOption
                     .map((uid, _))
             }
@@ -941,14 +968,18 @@ class InvitesListProgram(using
                 )
             case Message.AcceptInvite(group) =>
                 sql.useBlocking(
-                    sql.withTX(gm.invites.acceptInvite(model.userID, group))
+                    sql.withS(
+                        sql.withTX(gm.invites.acceptInvite(model.userID, group))
+                    )
                 )
                 model.copy(
                     mode = Mode.List,
                     invites = computeInvites(model.userID),
                 )
             case Message.DenyInvite(group) =>
-                sql.useBlocking(gm.invites.deleteInvite(model.userID, group))
+                sql.useBlocking(
+                    sql.withS(gm.invites.deleteInvite(model.userID, group))
+                )
                 model.copy(
                     mode = Mode.List,
                     invites = computeInvites(model.userID),
@@ -1064,7 +1095,7 @@ class GroupListProgram(using
             flags.userID,
             sql
                 .useBlocking {
-                    sql.withTX(gm.userGroups(flags.userID).value)
+                    sql.withS(sql.withTX(gm.userGroups(flags.userID).value))
                 }
                 .toOption
                 .get,
@@ -1086,10 +1117,10 @@ class GroupListProgram(using
                 val answer =
                     services.prompt("What do you want to call the group?")
                 answer.map { result =>
-                    val newGroups = sql.useBlocking(sql.withTX(for {
+                    val newGroups = sql.useBlocking(sql.withS(sql.withTX(for {
                         _ <- gm.createGroup(model.userID, result)
                         userGroups <- gm.userGroups(model.userID).value
-                    } yield userGroups.toOption.get))
+                    } yield userGroups.toOption.get)))
                     model.copy(groups = newGroups)
                 }
 

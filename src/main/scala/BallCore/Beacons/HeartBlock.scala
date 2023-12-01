@@ -43,25 +43,29 @@ class HeartBlock()(using
     def template: CustomItemStack = HeartBlock.itemStack
 
     private def playerHeartCoords(p: Player): Option[(Long, Long, Long)] =
-        sql.useBlocking(hn.getBeaconLocationFor(p.getUniqueId))
+        sql.useBlocking(sql.withS(hn.getBeaconLocationFor(p.getUniqueId)))
 
     def onBlockClicked(event: PlayerInteractEvent): Unit =
         sql
-            .useBlocking(hn.heartAt(event.getClickedBlock.getLocation()))
+            .useBlocking(
+                sql.withS(hn.heartAt(event.getClickedBlock.getLocation()))
+            )
             .map(_._2)
             .flatMap(beacon =>
-                sql.useBlocking(hn.getGroup(beacon))
+                sql.useBlocking(sql.withS(hn.getGroup(beacon)))
                     .map(group => (beacon, group))
             ) match
             case Some((beacon, group)) =>
                 sql.useBlocking {
-                    sql.withTX(
-                        gm.checkE(
-                            event.getPlayer.getUniqueId,
-                            group,
-                            nullUUID,
-                            Permissions.ManageClaims,
-                        ).value
+                    sql.withS(
+                        sql.withTX(
+                            gm.checkE(
+                                event.getPlayer.getUniqueId,
+                                group,
+                                nullUUID,
+                                Permissions.ManageClaims,
+                            ).value
+                        )
                     )
                 } match
                     case Left(err) =>
@@ -71,7 +75,9 @@ class HeartBlock()(using
                             )
                     case Right(_) =>
                         if sql.useBlocking(
-                                battleManager.isInvolvedInBattle(beacon)
+                                sql.withS(
+                                    battleManager.isInvolvedInBattle(beacon)
+                                )
                             )
                         then
                             event.getPlayer
@@ -101,16 +107,20 @@ class HeartBlock()(using
                 return
 
         sql.useBlocking(
-            bm.store(
-                event.getBlock,
-                "owner",
-                event.getPlayer.getUniqueId,
+            sql.withS(
+                bm.store(
+                    event.getBlock,
+                    "owner",
+                    event.getPlayer.getUniqueId,
+                )
             )
         )
         sql.useBlocking(
-            hn.placeHeart(
-                event.getBlock.getLocation(),
-                event.getPlayer.getUniqueId,
+            sql.withS(
+                hn.placeHeart(
+                    event.getBlock.getLocation(),
+                    event.getPlayer.getUniqueId,
+                )
             )
         ) match
             case Right((_, x)) if x == 1 =>
@@ -135,11 +145,10 @@ class HeartBlock()(using
                 ()
 
     def onBlockRemoved(event: BlockBreakEvent): Unit =
-        val owner =
-            sql.useBlocking(bm.retrieve[UUID](event.getBlock, "owner")).get
-        sql.useBlocking(
-            hn.removeHeart(event.getBlock.getLocation(), owner)
-        ) match
+        sql.useBlocking(sql.withS(for {
+            owner <- bm.retrieve[UUID](event.getBlock, "owner")
+            res <- hn.removeHeart(event.getBlock.getLocation, owner.get)
+        } yield res)) match
             case Some(_) =>
                 event.getPlayer
                     .sendServerMessage(

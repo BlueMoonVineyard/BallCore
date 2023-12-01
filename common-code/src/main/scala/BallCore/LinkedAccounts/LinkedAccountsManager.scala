@@ -53,23 +53,27 @@ class LinkedAccountsManager()(using sql: SQLManager):
 
     private def isAlreadyLinked(discordID: String): Boolean =
         sql.useBlocking(
-            sql.queryUniqueIO(
-                sql"""
+            sql.withS(
+                sql.queryUniqueIO(
+                    sql"""
 		SELECT EXISTS(SELECT 1 FROM DiscordLinkages WHERE DiscordID = $text);
 		""",
-                bool,
-                discordID,
+                    bool,
+                    discordID,
+                )
             )
         )
 
     private def isAlreadyLinked(mcuuid: UUID): Boolean =
         sql.useBlocking(
-            sql.queryUniqueIO(
-                sql"""
+            sql.withS(
+                sql.queryUniqueIO(
+                    sql"""
 		SELECT EXISTS(SELECT 1 FROM DiscordLinkages WHERE MinecraftUUID = $uuid);
 		""",
-                bool,
-                mcuuid,
+                    bool,
+                    mcuuid,
+                )
             )
         )
 
@@ -83,27 +87,29 @@ class LinkedAccountsManager()(using sql: SQLManager):
 
         Right(
             sql.useBlocking(
-                sql
-                    .commandIO(
-                        sql"""
+                sql.withS(
+                    sql
+                        .commandIO(
+                            sql"""
 		INSERT INTO PendingDiscordLinkages (
 			DiscordID, LinkCode
 		) VALUES (
 			$text, $text
 		);
 		""",
-                        (user, code),
-                    )
-                    .map(_ => code)
-                    .recoverWith { case SqlState.UniqueViolation(_) =>
-                        sql.queryUniqueIO(
-                            sql"""
+                            (user, code),
+                        )
+                        .map(_ => code)
+                        .recoverWith { case SqlState.UniqueViolation(_) =>
+                            sql.queryUniqueIO(
+                                sql"""
 				SELECT LinkCode FROM PendingDiscordLinkages WHERE DiscordID = $text
 				""",
-                            text,
-                            user,
-                        )
-                    }
+                                text,
+                                user,
+                            )
+                        }
+                )
             )
         )
 
@@ -117,27 +123,29 @@ class LinkedAccountsManager()(using sql: SQLManager):
 
         Right(
             sql.useBlocking(
-                sql
-                    .commandIO(
-                        sql"""
+                sql.withS(
+                    sql
+                        .commandIO(
+                            sql"""
 		INSERT INTO PendingDiscordLinkages (
 			MinecraftUUID, LinkCode
 		) VALUES (
 			$uuid, $text
 		);
 		""",
-                        (user, code),
-                    )
-                    .map(_ => code)
-                    .recoverWith { case SqlState.UniqueViolation(_) =>
-                        sql.queryUniqueIO(
-                            sql"""
+                            (user, code),
+                        )
+                        .map(_ => code)
+                        .recoverWith { case SqlState.UniqueViolation(_) =>
+                            sql.queryUniqueIO(
+                                sql"""
 				SELECT LinkCode FROM PendingDiscordLinkages WHERE MinecraftUUID = $uuid
 				""",
-                            text,
-                            user,
-                        )
-                    }
+                                text,
+                                user,
+                            )
+                        }
+                )
             )
         )
 
@@ -173,12 +181,14 @@ class LinkedAccountsManager()(using sql: SQLManager):
         discordID: String,
     ): Either[LinkedAccountError, Unit] =
         sql.useBlocking(
-            sql.queryOptionIO(
-                sql"""
+            sql.withS(
+                sql.queryOptionIO(
+                    sql"""
 		SELECT MinecraftUUID FROM PendingDiscordLinkages WHERE LinkCode = $text
 		""",
-                uuid.opt,
-                linkCode.toLowerCase(),
+                    uuid.opt,
+                    linkCode.toLowerCase(),
+                )
             )
         ) match
             case None =>
@@ -186,19 +196,21 @@ class LinkedAccountsManager()(using sql: SQLManager):
             case Some(None) =>
                 Left(LinkedAccountError.linkCodeWasNotStartedFromMinecraft)
             case Some(Some(mcuuid)) =>
-                sql.useBlocking(insertLinkage(discordID, mcuuid))
+                sql.useBlocking(sql.withS(insertLinkage(discordID, mcuuid)))
 
     def finishLinkProcessFromMinecraft(
         linkCode: String,
         mcuuid: UUID,
     ): Either[LinkedAccountError, Unit] =
         sql.useBlocking(
-            sql.queryOptionIO(
-                sql"""
+            sql.withS(
+                sql.queryOptionIO(
+                    sql"""
 		SELECT DiscordID FROM PendingDiscordLinkages WHERE LinkCode = $text
 		""",
-                text.opt,
-                linkCode.toLowerCase(),
+                    text.opt,
+                    linkCode.toLowerCase(),
+                )
             )
         ) match
             case None =>
@@ -206,4 +218,4 @@ class LinkedAccountsManager()(using sql: SQLManager):
             case Some(None) =>
                 Left(LinkedAccountError.linkCodeWasNotStartedFromDiscord)
             case Some(Some(discordID)) =>
-                sql.useBlocking(insertLinkage(discordID, mcuuid))
+                sql.useBlocking(sql.withS(insertLinkage(discordID, mcuuid)))

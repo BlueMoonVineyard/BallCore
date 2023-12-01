@@ -266,7 +266,7 @@ class SlimePillarSlapDetector()(using
         playEffect(location, Particle.VILLAGER_ANGRY, 0.5)
 
         val isPillar = sql.useBlocking(
-            cem.entityKind(intr)
+            sql.withS(cem.entityKind(intr))
         ) match
             case Some((ent, _)) if ent == SlimePillar.entityKind => true
             case _ => false
@@ -274,7 +274,7 @@ class SlimePillarSlapDetector()(using
         if !isPillar then return
 
         sql.useFireAndForget(
-            spm.slapPillar(intr, plr)
+            sql.withS(spm.slapPillar(intr, plr))
         )
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -292,7 +292,7 @@ class SlimePillarSlapDetector()(using
         playEffect(location, Particle.HEART, 0.5)
 
         val isPillar = sql.useBlocking(
-            cem.entityKind(intr)
+            sql.withS(cem.entityKind(intr))
         ) match
             case Some((ent, _)) if ent == SlimePillar.entityKind => true
             case _ => false
@@ -300,7 +300,7 @@ class SlimePillarSlapDetector()(using
         if !isPillar then return
 
         sql.useFireAndForget(
-            spm.healPillar(intr, event.getPlayer())
+            sql.withS(spm.healPillar(intr, event.getPlayer()))
         )
 
 class SlimePillarFlinger()(using
@@ -311,8 +311,8 @@ class SlimePillarFlinger()(using
     val randomizer = scala.util.Random()
 
     def doFlings(): Unit =
-        sql.useBlocking(cem.entitiesOfKind(SlimePillar.entityKind)).foreach {
-            entity =>
+        sql.useBlocking(sql.withS(cem.entitiesOfKind(SlimePillar.entityKind)))
+            .foreach { entity =>
                 val interaction = Bukkit
                     .getEntity(entity.interaction)
                     .asInstanceOf[Interaction]
@@ -342,11 +342,11 @@ class SlimePillarFlinger()(using
                                 plr.setVelocity(velocity)
                             }
                     }
-        }
+            }
 
     def doLooks(): Unit =
-        sql.useBlocking(cem.entitiesOfKind(SlimePillar.entityKind)).foreach {
-            entity =>
+        sql.useBlocking(sql.withS(cem.entitiesOfKind(SlimePillar.entityKind)))
+            .foreach { entity =>
                 val interaction = Bukkit
                     .getEntity(entity.interaction)
                     .asInstanceOf[Interaction]
@@ -377,4 +377,4 @@ class SlimePillarFlinger()(using
                                 .getEntity(entity.display)
                                 .setRotation(loc.getYaw(), 0)
                     }
-        }
+            }

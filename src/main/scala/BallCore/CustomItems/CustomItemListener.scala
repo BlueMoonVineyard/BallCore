@@ -46,12 +46,14 @@ class CustomItemListener(using
                         case _ => false
 
                 if cancelled then return
-                sql.useBlocking(bm.setCustomItem(event.getBlockPlaced, item))
+                sql.useBlocking(
+                    sql.withS(bm.setCustomItem(event.getBlockPlaced, item))
+                )
             case _ => ()
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     def onBlockBreak(event: BlockBreakEvent): Unit =
-        sql.useBlocking(bm.getCustomItem(event.getBlock)) match
+        sql.useBlocking(sql.withS(bm.getCustomItem(event.getBlock))) match
             case Some(item) =>
                 val cancelled =
                     item match
@@ -61,7 +63,7 @@ class CustomItemListener(using
                         case _ => false
 
                 if cancelled then return
-                sql.useBlocking(bm.clearCustomItem(event.getBlock))
+                sql.useBlocking(sql.withS(bm.clearCustomItem(event.getBlock)))
                 event.setDropItems(false)
                 event.getBlock.getState() match
                     case it: Chest =>
@@ -121,7 +123,7 @@ class CustomItemListener(using
         if event.getPlayer.isSneaking then return
 
         sql.useBlocking(
-            bm.getCustomItem(event.getClickedBlock)
+            sql.withS(bm.getCustomItem(event.getClickedBlock))
         ) match
             case Some(item) =>
                 val cancel =

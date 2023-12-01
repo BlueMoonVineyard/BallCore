@@ -52,7 +52,9 @@ class AcclimationNoter()(using s: Storage, sql: SQLManager) extends Listener:
     def onPlayerQuit(event: PlayerQuitEvent): Unit =
         val player = event.getPlayer
         val loc = player.getLocation()
-        sql.useFireAndForget(s.setLastSeenLocation(player.getUniqueId, loc))
+        sql.useFireAndForget(
+            sql.withS(s.setLastSeenLocation(player.getUniqueId, loc))
+        )
 
 class AcclimationActor(using
     s: Storage,
@@ -94,10 +96,18 @@ class AcclimationActor(using
                             val player = x.getPlayer
                             val loc = player.getLocation()
                             sql.useFireAndForget(
-                                s.setLastSeenLocation(player.getUniqueId, loc)
+                                sql.withS(
+                                    s.setLastSeenLocation(
+                                        player.getUniqueId,
+                                        loc,
+                                    )
+                                )
                             )
                             x.getPlayer.getLocation()
-                        else sql.useBlocking(s.getLastSeenLocation(uuid))
+                        else
+                            sql.useBlocking(
+                                sql.withS(s.getLastSeenLocation(uuid))
+                            )
 
                     given ec: ExecutionContext =
                         LocationExecutionContext(location)
@@ -117,10 +127,14 @@ class AcclimationActor(using
                     val elevation = Information.elevation(location.getY.toInt)
 
                     val adjustFactor =
-                        sql.useBlocking(hnm.getBeaconFor(uuid)) match
+                        sql.useBlocking(sql.withS(hnm.getBeaconFor(uuid))) match
                             case Some(beacon)
                                 if sql
-                                    .useBlocking(hnm.beaconContaining(location))
+                                    .useBlocking(
+                                        sql.withS(
+                                            hnm.beaconContaining(location)
+                                        )
+                                    )
                                     .contains(beacon) =>
                                 BoostFactors.boosted
                             case Some(beacon) =>
@@ -128,7 +142,7 @@ class AcclimationActor(using
                             case None =>
                                 BoostFactors.nonBoosted
 
-                    sql.useFireAndForget(for {
+                    sql.useFireAndForget(sql.withS(for {
                         latitude <- s.getLatitude(uuid)
                         _ <- s.setLatitude(
                             uuid,
@@ -149,5 +163,5 @@ class AcclimationActor(using
                             uuid,
                             lerp(currentElevation, elevation, adjustFactor),
                         )
-                    } yield ())
+                    } yield ()))
                 }

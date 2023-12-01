@@ -175,7 +175,7 @@ class PluginMessaging()(using p: Plugin, gm: GroupManager, sql: SQLManager)
         params: GetGroupsRequest,
     ): IO[Either[RPCError, GetGroupsResponse]] =
         val _ = params
-        sql.useIO {
+        sql.withS {
             sql.withTX(gm.userGroups(player.getUniqueId).value).map {
                 case Left(err) =>
                     Left(RPCError(-32000, err.explain(), err.asJson))
