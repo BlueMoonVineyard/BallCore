@@ -30,11 +30,17 @@ class Listener(using rs: RandomSpawn, sql: SQLManager, p: Plugin)
                 task => {
                     if player.getHealth() > 0 then
                         if player.getBedSpawnLocation() == null then
-                            val block = sql.useBlocking(rs.randomSpawnLocation)
-                            player.teleportAsync(block.getLocation())
-                            player.sendServerMessage(
-                                txt"You've woken up in an unfamiliar place..."
-                            )
+                            sql.useFireAndForget(for {
+                                block <- rs.randomSpawnLocation
+                                _ <- IO.fromCompletableFuture(IO {
+                                    player.teleportAsync(block.getLocation())
+                                })
+                                _ <- IO {
+                                    player.sendServerMessage(
+                                        txt"You've woken up in an unfamiliar place..."
+                                    )
+                                }
+                            } yield ())
                         val _ = task.cancel()
                 },
                 () => (),
