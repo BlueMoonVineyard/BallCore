@@ -8,6 +8,7 @@ import BallCore.CustomItems.{CustomItemStack, ItemGroup, ItemRegistry}
 import BallCore.UI.Elements.*
 import org.bukkit.inventory.ItemStack
 import org.bukkit.{Material, NamespacedKey, Server}
+import scala.util.chaining._
 
 object CardinalOres:
 
@@ -22,6 +23,7 @@ object CardinalOres:
             Material.LAPIS_LAZULI,
             txt"Sapphire",
         )
+        sapphire.setItemMeta(sapphire.getItemMeta().tap(_.setCustomModelData(1)))
 
         // south
         val sillicon: OreVariants =
@@ -31,6 +33,7 @@ object CardinalOres:
             Material.DIAMOND,
             txt"Diamond",
         )
+        diamond.setItemMeta(diamond.getItemMeta().tap(_.setCustomModelData(1)))
 
         // east
         val cobalt: OreVariants =
@@ -40,6 +43,7 @@ object CardinalOres:
             Material.AMETHYST_SHARD,
             txt"Plutonium",
         )
+        plutonium.setItemMeta(plutonium.getItemMeta().tap(_.setCustomModelData(1)))
 
         // west
         val lead: OreVariants = ironLike("lead", "Lead", OreTypes.lead.num)
@@ -48,6 +52,7 @@ object CardinalOres:
             Material.EMERALD,
             txt"Emerald",
         )
+        emerald.setItemMeta(emerald.getItemMeta().tap(_.setCustomModelData(1)))
 
     val group: ItemGroup = ItemGroup(
         NamespacedKey("ballcore", "cardinal_ores"),
