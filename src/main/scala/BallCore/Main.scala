@@ -133,6 +133,7 @@ final class Main extends JavaPlugin:
         CraftingStations.register()
         Rest.Rest.register()
         SpawnBook.register()
+        SpawnInventory.Listener.register()
 
         given aa: AcclimationActor = AcclimationActor.register()
         given rs: RandomSpawn = RandomSpawn()

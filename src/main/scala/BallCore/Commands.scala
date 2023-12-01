@@ -47,6 +47,7 @@ import net.kyori.adventure.text.Component
 import cats.effect.IO
 import dev.jorel.commandapi.executors.CommandExecutor
 import BallCore.RandomSpawner.RandomSpawn
+import BallCore.SpawnInventory.InventorySetter
 
 class OTTCommand(using sql: SQLManager, ott: OneTimeTeleporter):
     private def errorText(err: OTTError): Component =
@@ -145,6 +146,12 @@ class CheatCommand(using
                                         )
                             }: PlayerCommandExecutor)
                     )
+            )
+            .`then`(
+                LiteralArgument("spawn-inventory")
+                    .executesPlayer({ (sender, args) =>
+                        InventorySetter.giveSpawnInventory(sender)
+                    }: PlayerCommandExecutor)
             )
             .`then`(
                 LiteralArgument("spawnbook")
