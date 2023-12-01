@@ -157,7 +157,9 @@ class CheatCommand(using
                                 sql.useFireAndForget(
                                     rs.randomSpawnLocation.flatMap { location =>
                                         IO {
-                                            target.teleportAsync(location.getLocation())
+                                            target.teleportAsync(
+                                                location.getLocation()
+                                            )
                                         }
                                     }
                                 )
@@ -247,8 +249,7 @@ private def suggestGroups(using sql: SQLManager, gm: GroupManager)(
     val player = context.sender().asInstanceOf[Player]
 
     sql.useFuture {
-        gm.userGroups(player.getUniqueId)
-            .value
+        sql.withTX(gm.userGroups(player.getUniqueId).value)
             .map(_.toOption.get)
             .map { groups =>
                 groups
@@ -279,7 +280,7 @@ private def withGroupArgument(using sql: SQLManager, gm: GroupManager)(
 
     sql
         .useBlocking {
-            gm.userGroups(sender.getUniqueId).value
+            sql.withTX(gm.userGroups(sender.getUniqueId).value)
         }
         .map(_.find(_.name == group)) match
         case Left(err) =>
@@ -313,7 +314,9 @@ class GroupsCommand(using
                             sender.sendServerMessage(
                                 txt"That player has never joined CivCubed"
                             )
-                        sql.useBlocking(gm.getGroup(group.id).value) match
+                        sql.useBlocking(
+                            sql.withTX(gm.getGroup(group.id).value)
+                        ) match
                             case Left(err) =>
                                 sender.sendServerMessage(
                                     txt"Could not invite ${target

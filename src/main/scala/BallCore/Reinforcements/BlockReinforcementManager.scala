@@ -70,14 +70,16 @@ class BlockReinforcementManager()(using
             case None =>
                 hoist(
                     sql.useBlocking(
-                        gsm
-                            .checkE(
-                                as,
-                                group,
-                                subgroup,
-                                Groups.Permissions.AddReinforcements,
-                            )
-                            .value
+                        sql.withTX(
+                            gsm
+                                .checkE(
+                                    as,
+                                    group,
+                                    subgroup,
+                                    Groups.Permissions.AddReinforcements,
+                                )
+                                .value
+                        )
                     )
                 ).map { _ =>
                     state.blocks(bkey) = ReinforcementState(
@@ -113,14 +115,16 @@ class BlockReinforcementManager()(using
                 else
                     hoist(
                         sql.useBlocking(
-                            gsm
-                                .checkE(
-                                    as,
-                                    value.group,
-                                    value.subgroup,
-                                    Groups.Permissions.RemoveReinforcements,
-                                )
-                                .value
+                            sql.withTX(
+                                gsm
+                                    .checkE(
+                                        as,
+                                        value.group,
+                                        value.subgroup,
+                                        Groups.Permissions.RemoveReinforcements,
+                                    )
+                                    .value
+                            )
                         )
                     ).map { _ =>
                         state.blocks(bkey) = value.copy(deleted = true)

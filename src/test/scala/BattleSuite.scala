@@ -113,7 +113,9 @@ class BattleSuite extends munit.FunSuite:
                 "sanity check of area 1",
             )
             val res1 = sql.useBlocking(
-                hn.updateBeaconPolygon(offensiveBeacon, world, area1)
+                sql.withTX(
+                    hn.updateBeaconPolygon(offensiveBeacon, world, area1)
+                )
             )
             assert(res1.isRight, (res1, "setting first heart's area"))
 
@@ -123,18 +125,22 @@ class BattleSuite extends munit.FunSuite:
                 "sanity check of area 2",
             )
             val res2 = sql.useBlocking(
-                hn.updateBeaconPolygon(defensiveBeacon, world, area2)
+                sql.withTX(
+                    hn.updateBeaconPolygon(defensiveBeacon, world, area2)
+                )
             )
             assert(res2.isRight, (res2, "setting second heart's area"))
 
             for _ <- 1 to pillarCount do hooks.expectSpawn()
             val battle = sql.useBlocking(
-                battleManager.startBattle(
-                    offensiveBeacon,
-                    defensiveBeacon,
-                    area2,
-                    area2,
-                    world.getUID(),
+                sql.withTX(
+                    battleManager.startBattle(
+                        offensiveBeacon,
+                        defensiveBeacon,
+                        area2,
+                        area2,
+                        world.getUID(),
+                    )
                 )
             )
 
@@ -186,7 +192,7 @@ class BattleSuite extends munit.FunSuite:
             "sanity check of area 1",
         )
         val res1 = sql.useBlocking(
-            hn.updateBeaconPolygon(offensiveBeacon, world, area1)
+            sql.withTX(hn.updateBeaconPolygon(offensiveBeacon, world, area1))
         )
         assert(res1.isRight, (res1, "setting first heart's area"))
 
@@ -196,7 +202,7 @@ class BattleSuite extends munit.FunSuite:
             "sanity check of area 2",
         )
         val res2 = sql.useBlocking(
-            hn.updateBeaconPolygon(defensiveBeacon, world, area2)
+            sql.withTX(hn.updateBeaconPolygon(defensiveBeacon, world, area2))
         )
         assert(res2.isRight, (res2, "setting second heart's area"))
 
@@ -262,7 +268,7 @@ class BattleSuite extends munit.FunSuite:
             "sanity check of area 1",
         )
         val res1 = sql.useBlocking(
-            hn.updateBeaconPolygon(offensiveBeacon, world, area1)
+            sql.withTX(hn.updateBeaconPolygon(offensiveBeacon, world, area1))
         )
         assert(res1.isRight, (res1, "setting first heart's area"))
 
@@ -272,7 +278,7 @@ class BattleSuite extends munit.FunSuite:
             "sanity check of area 2",
         )
         val res2 = sql.useBlocking(
-            hn.updateBeaconPolygon(defensiveBeacon, world, area2)
+            sql.withTX(hn.updateBeaconPolygon(defensiveBeacon, world, area2))
         )
         assert(res2.isRight, (res2, "setting second heart's area"))
 

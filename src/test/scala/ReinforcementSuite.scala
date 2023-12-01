@@ -34,8 +34,8 @@ class ReinforcementSuite extends munit.FunSuite {
         val u2 = ju.UUID.randomUUID()
         val world = ju.UUID.randomUUID()
 
-        val gid = sql.useBlocking(gm.createGroup(u1, "test"))
-        sql.useBlocking(gm.addToGroup(u2, gid).value)
+        val gid = sql.useBlocking(sql.withTX(gm.createGroup(u1, "test")))
+        sql.useBlocking(sql.withTX(gm.addToGroup(u2, gid).value))
 
         val res1 = rm.reinforce(
             u2,
@@ -69,13 +69,15 @@ class ReinforcementSuite extends munit.FunSuite {
         assert(res2 == Right(()), res2)
 
         val rid = sql
-            .useBlocking(gm.roles(gid).value)
+            .useBlocking(sql.withTX(gm.roles(gid).value))
             .getOrElse(List())
             .find { x => x.name == "Admin" }
             .get
             .id
         assert(
-            sql.useBlocking(gm.assignRole(u1, u2, gid, rid, true).value).isRight
+            sql.useBlocking(
+                sql.withTX(gm.assignRole(u1, u2, gid, rid, true).value)
+            ).isRight
         )
 
         val res3 = rm.reinforce(
@@ -113,8 +115,8 @@ class ReinforcementSuite extends munit.FunSuite {
         val u2 = ju.UUID.randomUUID()
         val world = ju.UUID.randomUUID()
 
-        val gid = sql.useBlocking(gm.createGroup(u1, "test"))
-        sql.useBlocking(gm.addToGroup(u2, gid).value)
+        val gid = sql.useBlocking(sql.withTX(gm.createGroup(u1, "test")))
+        sql.useBlocking(sql.withTX(gm.addToGroup(u2, gid).value))
 
         val res1 = rm.reinforce(
             u1,
@@ -162,8 +164,8 @@ class ReinforcementSuite extends munit.FunSuite {
         val u2 = ju.UUID.randomUUID()
         val world = ju.UUID.randomUUID()
 
-        val gid = sql.useBlocking(gm.createGroup(u1, "test"))
-        sql.useBlocking(gm.addToGroup(u2, gid).value)
+        val gid = sql.useBlocking(sql.withTX(gm.createGroup(u1, "test")))
+        sql.useBlocking(sql.withTX(gm.addToGroup(u2, gid).value))
 
         val res1 =
             rm.reinforce(

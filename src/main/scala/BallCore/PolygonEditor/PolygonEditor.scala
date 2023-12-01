@@ -253,10 +253,12 @@ class PolygonEditor(using
                                 .toArray
                         )
                         sql.useBlocking(
-                            bm.updateBeaconPolygon(
-                                model.beaconID,
-                                model.polygon.head.getWorld,
-                                jtsPolygon,
+                            sql.withTX(
+                                bm.updateBeaconPolygon(
+                                    model.beaconID,
+                                    model.polygon.head.getWorld,
+                                    jtsPolygon,
+                                )
                             )
                         ) match
                             case Left(
@@ -349,10 +351,12 @@ class PolygonEditor(using
                                         .toArray
                                 )
                                 sql.useBlocking(
-                                    bm.updateBeaconPolygon(
-                                        model.beaconID,
-                                        model.polygon.head.getWorld,
-                                        jtsPolygon,
+                                    sql.withTX(
+                                        bm.updateBeaconPolygon(
+                                            model.beaconID,
+                                            model.polygon.head.getWorld,
+                                            jtsPolygon,
+                                        )
                                     )
                                 ) match
                                     case Left(

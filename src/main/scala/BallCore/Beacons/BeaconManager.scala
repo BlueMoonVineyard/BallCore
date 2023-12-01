@@ -28,6 +28,7 @@ import org.locationtech.jts.io.geojson.{GeoJsonReader, GeoJsonWriter}
 import java.text.DecimalFormat
 import java.util.UUID
 import cats.data.EitherT
+import skunk.Transaction
 
 type OwnerID = UUID
 type HeartID = UUID
@@ -379,7 +380,9 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
             }
 
     private def findOverlappingBeacons(polygon: Polygon, excluding: BeaconID)(
-        using Session[IO]
+        using
+        Session[IO],
+        Transaction[IO],
     ): IO[Either[PolygonAdjustmentError, Unit]] =
         sql.queryListIO(
             sql"""
@@ -476,7 +479,9 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
             }
 
     def updateBeaconPolygon(beacon: BeaconID, world: World, polygon: Polygon)(
-        using Session[IO]
+        using
+        Session[IO],
+        Transaction[IO],
     ): IO[Either[PolygonAdjustmentError, Unit]] =
         (for {
             _ <- EitherT(findOverlappingBeacons(polygon, beacon))

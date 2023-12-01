@@ -55,7 +55,9 @@ class HeartSuite extends munit.FunSuite {
 
         assertEquals(
             sql.useBlocking(
-                hn.updateBeaconPolygon(beaconID, world, validPolygon)
+                sql.withTX(
+                    hn.updateBeaconPolygon(beaconID, world, validPolygon)
+                )
             ),
             Right(()),
         )
@@ -75,7 +77,11 @@ class HeartSuite extends munit.FunSuite {
         )
 
         sql
-            .useBlocking(hn.updateBeaconPolygon(beaconID, world, tooBigPolygon))
+            .useBlocking(
+                sql.withTX(
+                    hn.updateBeaconPolygon(beaconID, world, tooBigPolygon)
+                )
+            )
             .pipe { res =>
                 assert(
                     res match
@@ -105,10 +111,12 @@ class HeartSuite extends munit.FunSuite {
 
         sql
             .useBlocking(
-                hn.updateBeaconPolygon(
-                    beaconID,
-                    world,
-                    polygonNotContainingHeart,
+                sql.withTX(
+                    hn.updateBeaconPolygon(
+                        beaconID,
+                        world,
+                        polygonNotContainingHeart,
+                    )
                 )
             )
             .pipe { res =>
@@ -194,7 +202,9 @@ class HeartSuite extends munit.FunSuite {
             area1.covers(gf.createPoint(Coordinate(0, 0, -10))),
             "sanity check of area 1",
         )
-        val res1 = sql.useBlocking(hn.updateBeaconPolygon(hid1, world, area1))
+        val res1 = sql.useBlocking(
+            sql.withTX(hn.updateBeaconPolygon(hid1, world, area1))
+        )
         assert(res1.isRight, (res1, "setting first heart's area"))
 
         val area2 = rectangleCenteredAt(gf, 100, 100, 10, 5)
@@ -202,7 +212,9 @@ class HeartSuite extends munit.FunSuite {
             area2.covers(gf.createPoint(Coordinate(100, 100, 10))),
             "sanity check of area 2",
         )
-        val res2 = sql.useBlocking(hn.updateBeaconPolygon(hid2, world, area2))
+        val res2 = sql.useBlocking(
+            sql.withTX(hn.updateBeaconPolygon(hid2, world, area2))
+        )
         assert(res2.isRight, (res2, "setting second heart's area"))
 
         val covered1 =
@@ -224,7 +236,8 @@ class HeartSuite extends munit.FunSuite {
                 .toOption
                 .get
 
-        val group = sql.useBlocking(gm.createGroup(id1, "The Group"))
+        val group =
+            sql.useBlocking(sql.withTX(gm.createGroup(id1, "The Group")))
         assert(
             sql.useBlocking(hn.setGroup(hid1, group)).isRight,
             "binding group",
@@ -244,7 +257,9 @@ class HeartSuite extends munit.FunSuite {
             area1.covers(gf.createPoint(Coordinate(0, 0, -10))),
             "sanity check of area 1",
         )
-        val res1 = sql.useBlocking(hn.updateBeaconPolygon(hid1, world, area1))
+        val res1 = sql.useBlocking(
+            sql.withTX(hn.updateBeaconPolygon(hid1, world, area1))
+        )
         assert(res1.isRight, (res1, "setting first heart's area"))
 
         val area2 = rectangleCenteredAt(gf, 3, 0, 10, 5)
@@ -252,7 +267,9 @@ class HeartSuite extends munit.FunSuite {
             area2.covers(gf.createPoint(Coordinate(0, 0, 10))),
             "sanity check of area 2",
         )
-        val res2 = sql.useBlocking(hn.updateBeaconPolygon(hid2, world, area2))
+        val res2 = sql.useBlocking(
+            sql.withTX(hn.updateBeaconPolygon(hid2, world, area2))
+        )
         assert(
             res2 match
                 case Left(
@@ -289,7 +306,8 @@ class HeartSuite extends munit.FunSuite {
                 .toOption
                 .get
 
-        val group = sql.useBlocking(gm.createGroup(id1, "The Group"))
+        val group =
+            sql.useBlocking(sql.withTX(gm.createGroup(id1, "The Group")))
         assert(
             sql.useBlocking(hn.setGroup(hid1, group)).isRight,
             "binding group",
@@ -321,7 +339,9 @@ class HeartSuite extends munit.FunSuite {
             area1.covers(gf.createPoint(Coordinate(0, 0, -10))),
             "sanity check of area 1",
         )
-        val res1 = sql.useBlocking(hn.updateBeaconPolygon(hid1, world, area1))
+        val res1 = sql.useBlocking(
+            sql.withTX(hn.updateBeaconPolygon(hid1, world, area1))
+        )
         assert(res1.isRight, (res1, "setting first heart's area"))
 
         val area2 = rectangleCenteredAt(gf, 100, 100, 10, 5)
@@ -329,11 +349,15 @@ class HeartSuite extends munit.FunSuite {
             area2.covers(gf.createPoint(Coordinate(100, 100, 10))),
             "sanity check of area 2",
         )
-        val res2 = sql.useBlocking(hn.updateBeaconPolygon(hid2, world, area2))
+        val res2 = sql.useBlocking(
+            sql.withTX(hn.updateBeaconPolygon(hid2, world, area2))
+        )
         assert(res2.isRight, (res2, "setting second heart's area"))
 
         val area3 = rectangleCenteredAt(gf, 0, 0, 10, 200)
-        val res3 = sql.useBlocking(hn.updateBeaconPolygon(hid3, world, area3))
+        val res3 = sql.useBlocking(
+            sql.withTX(hn.updateBeaconPolygon(hid3, world, area3))
+        )
         assertEquals(
             res3,
             Left(PolygonAdjustmentError.overlapsMultiplePolygons()),

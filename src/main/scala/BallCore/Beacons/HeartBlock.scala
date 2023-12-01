@@ -55,12 +55,14 @@ class HeartBlock()(using
             ) match
             case Some((beacon, group)) =>
                 sql.useBlocking {
-                    gm.checkE(
-                        event.getPlayer.getUniqueId,
-                        group,
-                        nullUUID,
-                        Permissions.ManageClaims,
-                    ).value
+                    sql.withTX(
+                        gm.checkE(
+                            event.getPlayer.getUniqueId,
+                            group,
+                            nullUUID,
+                            Permissions.ManageClaims,
+                        ).value
+                    )
                 } match
                     case Left(err) =>
                         event.getPlayer

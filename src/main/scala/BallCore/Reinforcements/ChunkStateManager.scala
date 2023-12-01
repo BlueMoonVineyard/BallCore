@@ -242,6 +242,7 @@ class ChunkStateManager()(using sql: Storage.SQLManager):
                             if value.dirty then value.copy(dirty = false)
                             else value
                         )
+                        ()
                     }
                 }
         }

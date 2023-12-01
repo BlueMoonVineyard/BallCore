@@ -14,6 +14,7 @@ import skunk.data.Completion
 import skunk.implicits.*
 
 import java.util.UUID
+import skunk.Transaction
 
 class InviteManager()(using sql: Storage.SQLManager, gm: GroupManager):
     sql.applyMigration(
@@ -76,13 +77,12 @@ class InviteManager()(using sql: Storage.SQLManager, gm: GroupManager):
         )
 
     def acceptInvite(invitee: UserID, group: GroupID)(using
-        s: Session[IO]
+        Session[IO],
+        Transaction[IO],
     ): IO[Either[GroupError, Unit]] =
-        s.transaction.use { tx =>
-            EitherT
-                .right(deleteInvite(invitee, group))
-                .flatMap { _ =>
-                    gm.addToGroup(invitee, group)
-                }
-                .value
-        }
+        EitherT
+            .right(deleteInvite(invitee, group))
+            .flatMap { _ =>
+                gm.addToGroup(invitee, group)
+            }
+            .value

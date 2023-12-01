@@ -103,7 +103,7 @@ class ChatActor(using gm: GroupManager, sql: SQLManager)
                     case PlayerState.groupChat(group) =>
                         sql
                             .useBlocking {
-                                gm.groupAudience(group).value
+                                sql.withTX(gm.groupAudience(group).value)
                             }
                             .foreach { (name, aud) =>
                                 aud.sendMessage(

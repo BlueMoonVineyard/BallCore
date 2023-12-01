@@ -149,6 +149,11 @@ class SQLManager(resource: Resource[IO, Session[IO]], val database: String):
             fn(tx)
         }
 
+    def withTX[A](fn: Transaction[IO] ?=> IO[A])(using s: Session[IO]): IO[A] =
+        s.transaction.use { tx =>
+            fn(using tx)
+        }
+
     /** Runs IO code that requires a database connection
       *
       * @param fn

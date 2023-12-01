@@ -123,13 +123,16 @@ class Listener(using
             .flatMap(id => sql.useBlocking(cbm.getGroup(id)))
             .map(group => {
                 val sgid = sql
-                    .useBlocking(gm.getSubclaims(group))
+                    .useBlocking(sql.withTX(gm.getSubclaims(group)))
                     .getOrElse(Map())
                     .find(_._2.contains(location))
                     .map(_._1)
                     .getOrElse(nullUUID)
                 sql.useBlocking(
-                    gm.check(player.getUniqueId, group, sgid, permission).value
+                    sql.withTX(
+                        gm.check(player.getUniqueId, group, sgid, permission)
+                            .value
+                    )
                 )
             })
             .getOrElse(Right(true)) match

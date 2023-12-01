@@ -25,6 +25,7 @@ import skunk.implicits.*
 
 import java.util as ju
 import scala.jdk.CollectionConverters.*
+import skunk.Transaction
 
 case class GroupStates(id: ju.UUID, name: String):
     def save()(using sql: SQLManager)(using Session[IO]): IO[Unit] =
@@ -273,7 +274,8 @@ class GroupManager()(using sql: Storage.SQLManager):
     //         case Some(value) => Right(value)
     //         case None => Left(GroupError.GroupNotFound)
     def createGroup(owner: UserID, name: String)(using
-        Session[IO]
+        Session[IO],
+        Transaction[IO],
     ): IO[GroupID] =
         val newGroupID = ju.UUID.randomUUID()
         val roles: List[RoleState] = List(
@@ -324,49 +326,51 @@ class GroupManager()(using sql: Storage.SQLManager):
                 ),
             ),
         )
-        sql.txIO { tx =>
-            var ord = ""
-            for {
-                _ <- GroupStates(newGroupID, name).save()
-                _ <- GroupMemberships(newGroupID, owner).save()
-                _ <- GroupOwnerships(newGroupID, owner).save()
-                _ <- roles.traverse { role =>
-                    ord = Lexorank.rank(ord, "")
-                    GroupRoles(
-                        newGroupID,
-                        role.id,
-                        role.name,
-                        role.hoist,
-                        role.permissions,
-                        ord,
-                    ).save()
-                }
-            } yield newGroupID
-        }
+        var ord = ""
+        for {
+            _ <- GroupStates(newGroupID, name).save()
+            _ <- GroupMemberships(newGroupID, owner).save()
+            _ <- GroupOwnerships(newGroupID, owner).save()
+            _ <- roles.traverse { role =>
+                ord = Lexorank.rank(ord, "")
+                GroupRoles(
+                    newGroupID,
+                    role.id,
+                    role.name,
+                    role.hoist,
+                    role.permissions,
+                    ord,
+                ).save()
+            }
+        } yield newGroupID
 
     def leaveGroup(as: UserID, group: GroupID)(using
-        s: Session[IO]
+        Session[IO],
+        Transaction[IO],
     ): IO[Either[GroupError, Unit]] =
-        getGroup(group)
-            .guard(GroupError.MustNotBeOwner) {
-                !_.owners.contains(as)
-            }
-            .guard(GroupError.TargetNotInGroup) {
-                _.users.contains(as)
-            }
-            .flatMap { _ =>
-                EitherT.right(
-                    sql.commandIO(
-                        sql"DELETE FROM GroupMemberships WHERE GroupID = $uuid AND UserID = $uuid",
-                        (group, as),
+        sql.txIO { tx =>
+            getGroup(group)
+                .guard(GroupError.MustNotBeOwner) {
+                    !_.owners.contains(as)
+                }
+                .guard(GroupError.TargetNotInGroup) {
+                    _.users.contains(as)
+                }
+                .flatMap { _ =>
+                    EitherT.right(
+                        sql.commandIO(
+                            sql"DELETE FROM GroupMemberships WHERE GroupID = $uuid AND UserID = $uuid",
+                            (group, as),
+                        )
                     )
-                )
-            }
-            .map(_ => ())
-            .value
+                }
+                .map(_ => ())
+                .value
+        }
 
     def deleteGroup(as: UserID, group: GroupID)(using
-        s: Session[IO]
+        Session[IO],
+        Transaction[IO],
     ): EitherT[IO, GroupError, Unit] =
         EitherT
             .right(getGroupOwners(group))
@@ -409,7 +413,7 @@ class GroupManager()(using sql: Storage.SQLManager):
 
     private def getSubgroups(
         group: GroupID
-    )(using Session[IO]): IO[List[SubgroupState]] =
+    )(using Session[IO], Transaction[IO]): IO[List[SubgroupState]] =
         sql
             .queryListIO(
                 sql"""
@@ -476,14 +480,14 @@ class GroupManager()(using sql: Storage.SQLManager):
 
     private def getAll(
         group: GroupID
-    )(using s: Session[IO]): EitherT[IO, GroupError, GroupState] =
+    )(using Session[IO], Transaction[IO]): EitherT[IO, GroupError, GroupState] =
         for {
             gs <- groupStateIO(group)
             gm <- EitherT.right(
                 sql.queryListIO(
                     sql"""
-                SELECT GroupID, UserID FROM GroupMemberships WHERE GroupID = $uuid;
-                """,
+            SELECT GroupID, UserID FROM GroupMemberships WHERE GroupID = $uuid;
+            """,
                     (uuid *: uuid).to[GroupMemberships],
                     group,
                 )
@@ -492,8 +496,8 @@ class GroupManager()(using sql: Storage.SQLManager):
             grm <- EitherT.right(
                 sql.queryListIO(
                     sql"""
-                SELECT GroupID, RoleID, UserID FROM GroupRoleMemberships WHERE GroupID = $uuid;
-                """,
+            SELECT GroupID, RoleID, UserID FROM GroupRoleMemberships WHERE GroupID = $uuid;
+            """,
                     (uuid *: uuid *: uuid).to[GroupRoleMemberships],
                     group,
                 )
@@ -501,8 +505,8 @@ class GroupManager()(using sql: Storage.SQLManager):
             gro <- EitherT.right(
                 sql.queryListIO(
                     sql"""
-                SELECT GroupID, UserID FROM GroupOwnerships WHERE GroupID = $uuid;
-                """,
+            SELECT GroupID, UserID FROM GroupOwnerships WHERE GroupID = $uuid;
+            """,
                     (uuid *: uuid).to[GroupOwnerships],
                     group,
                 )
@@ -524,7 +528,8 @@ class GroupManager()(using sql: Storage.SQLManager):
         )
 
     def promoteToOwner(as: UserID, target: UserID, group: GroupID)(using
-        s: Session[IO]
+        Session[IO],
+        Transaction[IO],
     ): EitherT[IO, GroupError, Unit] =
         (for {
             owners <- EitherT.right(getGroupOwners(group))
@@ -553,7 +558,8 @@ class GroupManager()(using sql: Storage.SQLManager):
             }
 
     def giveUpOwnership(as: UserID, group: GroupID)(using
-        s: Session[IO]
+        Session[IO],
+        Transaction[IO],
     ): EitherT[IO, GroupError, Unit] =
         EitherT
             .right(getGroupOwners(group))
@@ -593,7 +599,7 @@ class GroupManager()(using sql: Storage.SQLManager):
         groupID: GroupID,
         roleID: RoleID,
         permissions: Map[Permissions, RuleMode],
-    )(using s: Session[IO]): EitherT[IO, GroupError, Unit] =
+    )(using Session[IO], Transaction[IO]): EitherT[IO, GroupError, Unit] =
         getAll(groupID)
             .guard(GroupError.NoPermissions) {
                 _.check(Permissions.ManageRoles, as, nullUUID)
@@ -621,7 +627,7 @@ class GroupManager()(using sql: Storage.SQLManager):
         subgroupID: SubgroupID,
         roleID: RoleID,
         permissions: Map[Permissions, RuleMode],
-    )(using s: Session[IO]): EitherT[IO, GroupError, Unit] =
+    )(using Session[IO], Transaction[IO]): EitherT[IO, GroupError, Unit] =
         getAll(groupID)
             .guard(GroupError.NoPermissions) {
                 _.check(Permissions.ManageSubgroups, as, subgroupID)
@@ -649,7 +655,12 @@ class GroupManager()(using sql: Storage.SQLManager):
                 ) ON CONFLICT (SubgroupID, RoleID) DO UPDATE SET
                     Permissions = EXCLUDED.Permissions;
                 """,
-                            (groupID, subgroupID, roleID, permissions.asJson),
+                            (
+                                groupID,
+                                subgroupID,
+                                roleID,
+                                permissions.asJson,
+                            ),
                         )
                         .map(_ => ())
                 )
@@ -657,14 +668,18 @@ class GroupManager()(using sql: Storage.SQLManager):
 
     def roles(
         group: GroupID
-    )(using s: Session[IO]): EitherT[IO, GroupError, List[RoleState]] =
+    )(using
+        Session[IO],
+        Transaction[IO],
+    ): EitherT[IO, GroupError, List[RoleState]] =
         for {
             gs <- groupStateIO(group)
             roles <- EitherT.right(rolesIO(group))
         } yield roles
 
     def createRole(as: UserID, group: GroupID, name: String)(using
-        s: Session[IO]
+        Session[IO],
+        Transaction[IO],
     ): EitherT[IO, GroupError, RoleID] =
         getAll(group)
             .guard(GroupError.NoPermissions) {
@@ -697,7 +712,8 @@ class GroupManager()(using sql: Storage.SQLManager):
             }
 
     def createSubgroup(as: UserID, group: GroupID, name: String)(using
-        s: Session[IO]
+        Session[IO],
+        Transaction[IO],
     ): EitherT[IO, GroupError, SubgroupID] =
         getAll(group)
             .guard(GroupError.NoPermissions) {
@@ -723,7 +739,8 @@ class GroupManager()(using sql: Storage.SQLManager):
             }
 
     def deleteSubgroup(as: UserID, group: GroupID, subgroup: SubgroupID)(using
-        s: Session[IO]
+        Session[IO],
+        Transaction[IO],
     ): EitherT[IO, GroupError, Unit] =
         getAll(group)
             .guard(GroupError.NoPermissions) {
@@ -743,7 +760,8 @@ class GroupManager()(using sql: Storage.SQLManager):
             }
 
     def deleteRole(as: UserID, role: RoleID, group: GroupID)(using
-        s: Session[IO]
+        Session[IO],
+        Transaction[IO],
     ): EitherT[IO, GroupError, Unit] =
         getAll(group)
             .guard(GroupError.NoPermissions) {
@@ -775,7 +793,7 @@ class GroupManager()(using sql: Storage.SQLManager):
         group: GroupID,
         role: RoleID,
         has: Boolean,
-    )(using s: Session[IO]): EitherT[IO, GroupError, Unit] =
+    )(using Session[IO], Transaction[IO]): EitherT[IO, GroupError, Unit] =
         getAll(group)
             .guard(GroupError.NoPermissions) {
                 _.check(Permissions.ManageUserRoles, as, nullUUID)
@@ -813,7 +831,8 @@ class GroupManager()(using sql: Storage.SQLManager):
 
     // TODO: invites/passwords
     def addToGroup(user: UserID, group: GroupID)(using
-        s: Session[IO]
+        Session[IO],
+        Transaction[IO],
     ): EitherT[IO, GroupError, Unit] =
         EitherT
             .right(getGroupMembers(group))
@@ -835,7 +854,10 @@ class GroupManager()(using sql: Storage.SQLManager):
 
     def groupAudience(
         groupID: GroupID
-    )(using s: Session[IO]): EitherT[IO, GroupError, (String, Audience)] =
+    )(using
+        Session[IO],
+        Transaction[IO],
+    ): EitherT[IO, GroupError, (String, Audience)] =
         for {
             gs <- groupStateIO(groupID)
             members <- EitherT.right(
@@ -852,7 +874,10 @@ class GroupManager()(using sql: Storage.SQLManager):
 
     def userGroups(
         userID: UserID
-    )(using s: Session[IO]): EitherT[IO, GroupError, List[GroupStates]] =
+    )(using
+        Session[IO],
+        Transaction[IO],
+    ): EitherT[IO, GroupError, List[GroupStates]] =
         EitherT.right(
             sql.queryListIO(
                 sql"""
@@ -874,7 +899,7 @@ class GroupManager()(using sql: Storage.SQLManager):
         group: GroupID,
         subgroup: SubgroupID,
         claims: Subclaims,
-    )(using s: Session[IO]): IO[Either[GroupError, Unit]] =
+    )(using Session[IO], Transaction[IO]): IO[Either[GroupError, Unit]] =
         getAll(group)
             .guard(GroupError.NoPermissions) {
                 _.check(Permissions.ManageClaims, as, subgroup)
@@ -900,23 +925,27 @@ class GroupManager()(using sql: Storage.SQLManager):
     def getSubclaims(
         groupID: GroupID
     )(using
-        s: Session[IO]
+        Session[IO],
+        Transaction[IO],
     ): IO[Either[GroupError, Map[SubgroupID, Subclaims]]] =
-        EitherT
-            .right(
-                sql.queryListIO(
-                    sql"""
-        SELECT SubgroupID, Claims FROM SubgroupClaims WHERE GroupID = $uuid;
-        """,
-                    uuid *: jsonb[Subclaims],
-                    groupID,
+        sql.txIO { tx =>
+            EitherT
+                .right(
+                    sql.queryListIO(
+                        sql"""
+            SELECT SubgroupID, Claims FROM SubgroupClaims WHERE GroupID = $uuid;
+            """,
+                        uuid *: jsonb[Subclaims],
+                        groupID,
+                    )
                 )
-            )
-            .map { x => x.toMap }
-            .value
+                .map { x => x.toMap }
+                .value
+        }
 
     def getGroup(groupID: GroupID)(using
-        s: Session[IO]
+        Session[IO],
+        Transaction[IO],
     ): EitherT[IO, GroupError, GroupState] =
         getAll(groupID)
 
@@ -925,7 +954,7 @@ class GroupManager()(using sql: Storage.SQLManager):
         group: GroupID,
         subgroup: SubgroupID,
         permission: Permissions,
-    )(using s: Session[IO]): EitherT[IO, GroupError, Boolean] =
+    )(using Session[IO], Transaction[IO]): EitherT[IO, GroupError, Boolean] =
         getAll(group).map(_.check(permission, user, subgroup))
 
     def checkE(
@@ -933,7 +962,7 @@ class GroupManager()(using sql: Storage.SQLManager):
         group: GroupID,
         subgroup: SubgroupID,
         permission: Permissions,
-    )(using s: Session[IO]): EitherT[IO, GroupError, Unit] =
+    )(using Session[IO], Transaction[IO]): EitherT[IO, GroupError, Unit] =
         getAll(group)
             .guard(GroupError.NoPermissions) {
                 _.check(permission, user, subgroup)

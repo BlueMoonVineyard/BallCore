@@ -35,14 +35,16 @@ class EntityReinforcementManager()(using
             case None =>
                 hoist(
                     sql.useBlocking(
-                        gsm
-                            .checkE(
-                                as,
-                                group,
-                                subgroup,
-                                Groups.Permissions.AddReinforcements,
-                            )
-                            .value
+                        sql.withTX(
+                            gsm
+                                .checkE(
+                                    as,
+                                    group,
+                                    subgroup,
+                                    Groups.Permissions.AddReinforcements,
+                                )
+                                .value
+                        )
                     )
                 ).map { _ =>
                     esm.set(
@@ -75,14 +77,16 @@ class EntityReinforcementManager()(using
                 else
                     hoist(
                         sql.useBlocking(
-                            gsm
-                                .checkE(
-                                    as,
-                                    value.group,
-                                    value.subgroup,
-                                    Groups.Permissions.RemoveReinforcements,
-                                )
-                                .value
+                            sql.withTX(
+                                gsm
+                                    .checkE(
+                                        as,
+                                        value.group,
+                                        value.subgroup,
+                                        Groups.Permissions.RemoveReinforcements,
+                                    )
+                                    .value
+                            )
                         )
                     ).map { _ =>
                         esm.set(entity, value.copy(deleted = true))
