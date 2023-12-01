@@ -143,6 +143,12 @@ class CheatCommand(using
                     )
             )
             .`then`(
+                LiteralArgument("spawnbook")
+                    .executesPlayer({ (sender, args) =>
+                        sender.openBook(SpawnInventory.Book.book)
+                    }: PlayerCommandExecutor)
+            )
+            .`then`(
                 LiteralArgument("random-spawn")
                     .`then`(
                         PlayerArgument("player")

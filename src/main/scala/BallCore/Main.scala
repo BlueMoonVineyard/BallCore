@@ -42,6 +42,7 @@ import BallCore.Sigils.GameBattleHooks
 import BallCore.OneTimeTeleport.OneTimeTeleporter
 import BallCore.OneTimeTeleport.GameOneTimeTeleporterHooks
 import BallCore.RandomSpawner.RandomSpawn
+import BallCore.SpawnInventory.SpawnBook
 
 final class Main extends JavaPlugin:
     given sm: ShutdownCallbacks = ShutdownCallbacks()
@@ -131,6 +132,7 @@ final class Main extends JavaPlugin:
         CustomItemListener.register()
         CraftingStations.register()
         Rest.Rest.register()
+        SpawnBook.register()
 
         given aa: AcclimationActor = AcclimationActor.register()
         given rs: RandomSpawn = RandomSpawn()
