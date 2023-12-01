@@ -9,8 +9,8 @@ import org.locationtech.jts.shape.random.RandomPointsBuilder
 import BallCore.Folia.LocationExecutionContext
 import org.bukkit.plugin.Plugin
 import org.bukkit.block.Block
-import cats.data.OptionT
 import org.bukkit.block.BlockFace
+import fs2.Stream
 
 class RandomSpawn()(using p: Plugin):
     val gf = GeometryFactory()
@@ -51,4 +51,4 @@ class RandomSpawn()(using p: Plugin):
     private def randomBlock: IO[Option[Block]] = randomPoint.flatMap(topBlockAt)
 
     def randomSpawnLocation: IO[Block] =
-        OptionT(randomBlock).getOrElseF(randomSpawnLocation)
+        Stream.eval(randomBlock).repeat.dropWhile(_.isEmpty).take(1).compile.onlyOrError.map(_.get)

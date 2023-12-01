@@ -1,7 +1,6 @@
 package BallCore.RandomSpawner
 
 import BallCore.Storage.SQLManager
-import org.bukkit.event.player.PlayerRespawnEvent
 import BallCore.TextComponents._
 import org.bukkit.event.EventHandler
 import org.bukkit.event.player.PlayerJoinEvent
@@ -49,22 +48,10 @@ class Listener(using rs: RandomSpawn, sql: SQLManager, p: Plugin)
             )
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
-    def onPlayerRespawn(event: PlayerRespawnEvent): Unit =
-        val player = event.getPlayer()
-
-        if player.getBedSpawnLocation() != null then
-            event.setRespawnLocation(player.getBedSpawnLocation())
-            return ()
-
-        val block = sql.useBlocking(rs.randomSpawnLocation)
-        event.setRespawnLocation(block.getLocation())
-        player.sendServerMessage(txt"You've woken up in an unfamiliar place...")
-
-    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     def onPlayerJoin(event: PlayerJoinEvent): Unit =
         val player = event.getPlayer()
         if player.hasPlayedBefore() then return ()
-        val block = sql.useBlocking(rs.randomSpawnLocation)
-        sql.useFireAndForget(IO {
-            val _ = player.teleportAsync(block.getLocation())
-        })
+        sql.useFireAndForget(for {
+            block <- rs.randomSpawnLocation
+            _ <- IO.fromCompletableFuture(IO { player.teleportAsync(block.getLocation()) })
+        } yield ())
