@@ -53,7 +53,7 @@ class ShopChest(using ItemRegistry)
             case _ =>
                 return ()
 
-        if event.getItem == null || event.getItem.getType == Material.AIR then
+        if event.getItem == null || event.getItem.getType.isAir() then
             val orders = SellOrderDescription
                 .enumerateFrom(inv.getStorageContents.iterator)
                 .toList
