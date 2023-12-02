@@ -173,6 +173,7 @@ final class Main extends JavaPlugin:
         Messaging.register()
         GammaCommand().node.register()
         OneTimeAdaptation().node.register()
+        RestartTimer().register()
         val msg = MessageCommand()
         msg.node.`override`()
         msg.replyNode.register()
