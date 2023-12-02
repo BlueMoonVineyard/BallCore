@@ -171,6 +171,7 @@ final class Main extends JavaPlugin:
         PlantsCommand().node.register()
         OTTCommand().node.register()
         Messaging.register()
+        GammaCommand().node.register()
 
     override def onDisable(): Unit =
         CommandAPI.onDisable()

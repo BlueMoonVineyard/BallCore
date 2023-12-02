@@ -20,7 +20,7 @@ class TestRestHooks extends RestManagerHooks:
 class RestSuite extends munit.FunSuite {
     val sql: FunFixture[SQLManager] =
         FunFixture[SQLManager](TestDatabase.setup, TestDatabase.teardown)
-    sql.test("rest can be used up within 2000 actions") { implicit sql =>
+    sql.test("rest can be used up within 4000 actions") { implicit sql =>
         given hooks: RestManagerHooks = TestRestHooks()
         given clock: TestClock = TestClock(OffsetDateTime.now())
         given rest: RestManager = RestManager()
@@ -28,13 +28,13 @@ class RestSuite extends munit.FunSuite {
         val player = UUID.randomUUID()
         sql.useBlocking(
             sql.withS(
-                (1 to 2000).toList.traverse { _ => rest.useRest(player) }
+                (1 to 4000).toList.traverse { _ => rest.useRest(player) }
             )
         )
 
         assert(
             !sql.useBlocking(sql.withS(rest.useRest(player))),
-            "rest should be used up after 2000 uses",
+            "rest should be used up after 4000 uses",
         )
     }
     sql.test("rest is restored after some time") { implicit sql =>
@@ -45,13 +45,13 @@ class RestSuite extends munit.FunSuite {
         val player = UUID.randomUUID()
         sql.useBlocking(
             sql.withS(
-                (1 to 2000).toList.traverse { _ => rest.useRest(player) }
+                (1 to 4000).toList.traverse { _ => rest.useRest(player) }
             )
         )
 
         assert(
             !sql.useBlocking(sql.withS(rest.useRest(player))),
-            "rest should be used up after 2000 uses",
+            "rest should be used up after 4000 uses",
         )
 
         sql.useBlocking(sql.withS(rest.logoff(player)))

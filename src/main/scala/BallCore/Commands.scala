@@ -52,6 +52,8 @@ import BallCore.Plants.Climate
 import BallCore.SpawnInventory.OresAndYou
 import cats.data.OptionT
 import BallCore.Beacons.HeartBlock
+import org.bukkit.potion.PotionEffect
+import org.bukkit.potion.PotionEffectType
 
 class OTTCommand(using sql: SQLManager, ott: OneTimeTeleporter):
     private def errorText(err: OTTError): Component =
@@ -532,6 +534,21 @@ class DeclareCommand(using
                 editor.declare(sender)
             }: PlayerCommandExecutor)
 
+class GammaCommand():
+    val node =
+        CommandTree("gamma").withAliases("fullbright")
+            .`then`(
+                LiteralArgument("on")
+                    .executesPlayer({ (sender, args) =>
+                        val _ = sender.addPotionEffect(PotionEffect(PotionEffectType.NIGHT_VISION, PotionEffect.INFINITE_DURATION, 0, true, false))
+                    }: PlayerCommandExecutor)
+            )
+            .`then`(
+                LiteralArgument("off")
+                    .executesPlayer({ (sender, args) =>
+                        sender.removePotionEffect(PotionEffectType.NIGHT_VISION)
+                    }: PlayerCommandExecutor)
+            )
 class ChatCommands(using ca: ChatActor, gm: GroupManager, sql: SQLManager):
     val group =
         CommandTree("group").withAliases("g")
