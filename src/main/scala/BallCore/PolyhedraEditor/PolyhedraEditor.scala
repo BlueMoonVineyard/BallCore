@@ -23,6 +23,8 @@ import java.util.Arrays
 import java.util.concurrent.TimeUnit
 import scala.collection.concurrent.TrieMap
 import scala.util.chaining.*
+import cats.data.EitherT
+import BallCore.Beacons.CivBeaconManager
 
 val brightRed = Color.fromRGB(0xe9, 0x3d, 0x58)
 val dullRed = Color.fromRGB(108, 66, 72)
@@ -455,6 +457,7 @@ case class State(
     state: EditingState,
     group: GroupID,
     subgroup: SubgroupID,
+    polygon: List[List[(Location, Location)]],
 ):
 
     import EditingState.*
@@ -513,6 +516,11 @@ case class State(
                         copy(state = lookingAt(index))
 
     def render(player: Player): Unit =
+        polygon.foreach { lines =>
+            lines.foreach { (p1, p2) =>
+                drawLine(p1, p2, player, Color.TEAL, 0.5)
+            }
+        }
         state match
             case nothing() =>
                 volumes.foreach { volume =>
@@ -562,7 +570,12 @@ case class State(
 
 // notes: block locations are the center of the top face
 
-class PolyhedraEditor(using p: Plugin, sql: SQLManager, gm: GroupManager):
+class PolyhedraEditor(using
+    p: Plugin,
+    sql: SQLManager,
+    gm: GroupManager,
+    cbm: CivBeaconManager,
+):
     private val playerPolygons = TrieMap[Player, State]()
 
     p.getServer.getAsyncScheduler
@@ -583,12 +596,32 @@ class PolyhedraEditor(using p: Plugin, sql: SQLManager, gm: GroupManager):
         group: GroupID,
         subgroup: SubgroupID,
     ): Unit =
-        sql.useBlocking(sql.withS(sql.withTX(gm.getSubclaims(group)))) match
+        sql.useBlocking(sql.withS(sql.withTX((for {
+            subclaim <- EitherT(gm.getSubclaims(group))
+            polygons <- EitherT.right(cbm.getPolygonsFor(group))
+        } yield (subclaim, polygons)).value))) match
             case Left(err) =>
                 player.sendServerMessage(
                     txt"I could not start the subclaim editor because ${err.explain()}"
                 )
-            case Right(claims) =>
+            case Right((claims, polygons)) =>
+                val drawingPolygons = polygons.map { polygon =>
+                    val points =
+                        polygon.getCoordinates
+                            .map(coord =>
+                                Location(world, coord.getX, coord.getZ, coord.getY)
+                            )
+                            .toList
+                            .dropRight(1)
+                    val lines =
+                        points
+                            .sliding(2, 1)
+                            .concat(List(List(points.last, points.head)))
+                            .map(pair => (pair.head.clone().add(0.5, 1.0, 0.5), pair(1).clone().add(0.5, 1.0, 0.5)))
+                            .toList
+
+                    lines
+                }
                 val volumes =
                     claims.getOrElse(subgroup, Subclaims(Nil)).volumes.map {
                         volume =>
@@ -600,7 +633,7 @@ class PolyhedraEditor(using p: Plugin, sql: SQLManager, gm: GroupManager):
                             Volume(into(volume.cornerA), into(volume.cornerB))
                     }
                 playerPolygons(player) =
-                    State(volumes, EditingState.nothing(), group, subgroup)
+                    State(volumes, EditingState.nothing(), group, subgroup, drawingPolygons)
 
     def render(): Unit =
         playerPolygons.foreach { (player, model) =>

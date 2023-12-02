@@ -268,6 +268,21 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
             )
             .map(_.map(triangulate(id, _)).getOrElse(IndexedSeq()))
 
+    def getPolygonsFor(group: GroupID)(using Session[IO]): IO[List[Polygon]] =
+        sql
+            .queryListIO(
+                sql"""
+                SELECT
+                    ST_AsGeoJSON(CoveredArea)
+                FROM
+                    CivBeacons
+                WHERE
+                    GroupID = $uuid AND CoveredArea IS NOT NULL;
+            """,
+                polygonGeojsonCodec,
+                (group),
+            )
+
     def getPolygonFor(id: BeaconID)(using Session[IO]): IO[Option[Polygon]] =
         sql
             .queryOptionIO(
