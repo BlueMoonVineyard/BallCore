@@ -277,6 +277,24 @@ class BookCommand(using
                     }: PlayerCommandExecutor)
             )
 
+class InformationGiver():
+    private val informations = List(
+        txt"[CivCubed] Consider helping us keep the lights on by donating to https://opencollective.net/civcubed!",
+        txt"[CivCubed] Browse the selection of ${txt("/book").color(Colors.teal)} and learn more about the server!",
+        txt"[CivCubed] Rest accumulates when you log off and come back the next day!",
+        txt"[CivCubed] See what plants grow in your area with ${txt("/plants").color(Colors.teal)}!",
+        txt"[CivCubed] The more time you spend somewhere, the more ores you'll get when you mine!",
+        txt"[CivCubed] Join the Discord at https://discord.civcubed.net!",
+    ).map(_.replaceText(ChatActor.urlReplacer))
+    private var informationCounter = 0
+
+    private def sendInformation(): Unit =
+        Bukkit.getServer().sendServerMessage(informations(informationCounter))
+        informationCounter = (informationCounter + 1) % informations.size
+
+    def register()(using p: Plugin): Unit =
+        val _ = p.getServer().getAsyncScheduler().runAtFixedRate(p, _ => this.sendInformation(), 1, 13, TimeUnit.MINUTES)
+
 class RestartTimer():
     private var duration: Int = -1
     private var time: Int = -1

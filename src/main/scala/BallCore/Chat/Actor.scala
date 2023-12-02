@@ -42,25 +42,12 @@ enum PlayerState:
     case groupChat(group: GroupID)
     case chattingWith(target: Player)
 
-class ChatActor(using gm: GroupManager, sql: SQLManager)
-    extends Actor[ChatMessage]:
-
-    import BallCore.UI.ChatElements.*
-
-    var states: Map[Player, PlayerState] =
-        Map[Player, PlayerState]().withDefaultValue(PlayerState.globalChat)
-    private val globalGrey: TextColor = TextColor.fromHexString("#686b6f")
-    private val groupGrey: TextColor = TextColor.fromHexString("#9b9ea2")
-    private val localGrey: TextColor = TextColor.fromHexString("#b6b9bd")
-    private val urlColor: TextColor = TextColor.fromHexString("#2aa1bf")
-    private val whisperColor: TextColor = TextColor.fromHexString("#ff8255")
-
-    private val playerReplies = TrieMap[Player, Player]()
-
-    private val urlRegex: Pattern = Pattern.compile(
+object ChatActor:
+    val urlRegex: Pattern = Pattern.compile(
         "https?:\\/\\/(?:www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b(?:[-a-zA-Z0-9()@:%_\\+.~#?&\\/=]*)"
     )
-    private val urlReplacer: TextReplacementConfig =
+    private val urlColor: TextColor = TextColor.fromHexString("#2aa1bf")
+    val urlReplacer: TextReplacementConfig =
         TextReplacementConfig
             .builder()
             .`match`(urlRegex)
@@ -71,6 +58,20 @@ class ChatActor(using gm: GroupManager, sql: SQLManager)
             )
             .build()
 
+class ChatActor(using gm: GroupManager, sql: SQLManager)
+    extends Actor[ChatMessage]:
+
+    import BallCore.UI.ChatElements.*
+
+    var states: Map[Player, PlayerState] =
+        Map[Player, PlayerState]().withDefaultValue(PlayerState.globalChat)
+    private val globalGrey: TextColor = TextColor.fromHexString("#686b6f")
+    private val groupGrey: TextColor = TextColor.fromHexString("#9b9ea2")
+    private val localGrey: TextColor = TextColor.fromHexString("#b6b9bd")
+    private val whisperColor: TextColor = TextColor.fromHexString("#ff8255")
+
+    private val playerReplies = TrieMap[Player, Player]()
+
     protected def handleInit(): Unit =
         ()
 
@@ -78,14 +79,16 @@ class ChatActor(using gm: GroupManager, sql: SQLManager)
         ()
 
     private def preprocess(playerMessage: Component): Component =
-        playerMessage.replaceText(urlReplacer)
+        playerMessage.replaceText(ChatActor.urlReplacer)
 
     private def dm(from: Player, to: Player, msg: Component): Unit =
         to.sendMessage(
-            txt"[DMs] from ${from.displayName()}: ${msg.color(NamedTextColor.WHITE)}".color(whisperColor)
+            txt"[DMs] from ${from.displayName()}: ${msg.color(NamedTextColor.WHITE)}"
+                .color(whisperColor)
         )
         from.sendMessage(
-            txt"[DMs] to ${to.displayName()}: ${msg.color(NamedTextColor.WHITE)}".color(whisperColor)
+            txt"[DMs] to ${to.displayName()}: ${msg.color(NamedTextColor.WHITE)}"
+                .color(whisperColor)
         )
         playerReplies(to) = from
 
@@ -171,13 +174,16 @@ class ChatActor(using gm: GroupManager, sql: SQLManager)
             case ChatMessage.replyToPlayer(from, m) =>
                 playerReplies.get(from) match
                     case None =>
-                        from.sendServerMessage(txt"You have nobody to reply to.")
+                        from.sendServerMessage(
+                            txt"You have nobody to reply to."
+                        )
                     case Some(target) =>
                         dm(from, target, m)
             case ChatMessage.chattingWithPlayer(from, target) =>
                 states += from -> PlayerState.chattingWith(target)
                 from.sendMessage(
-                    txt"You are now chatting with ${target.displayName()}".color(
-                        NamedTextColor.GREEN
-                    )
+                    txt"You are now chatting with ${target.displayName()}"
+                        .color(
+                            NamedTextColor.GREEN
+                        )
                 )

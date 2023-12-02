@@ -137,6 +137,7 @@ final class Main extends JavaPlugin:
         SpawnInventory.Listener.register()
         Alloys.Tier1.register()
         Tier1Gear.registerItems()
+        InformationGiver().register()
 
         given aa: AcclimationActor = AcclimationActor.register()
         given rs: RandomSpawn = RandomSpawn()
