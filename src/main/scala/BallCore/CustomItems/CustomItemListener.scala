@@ -37,7 +37,7 @@ class CustomItemListener(using
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     def onBlockPlace(event: BlockPlaceEvent): Unit =
         reg.lookup(event.getItemInHand) match
-            case Some(item) =>
+            case Some(item) if item.template.getType().isBlock() =>
                 val cancelled =
                     item match
                         case place: Listeners.BlockPlaced =>
