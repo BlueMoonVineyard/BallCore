@@ -102,7 +102,7 @@ object HerbivoreKitchen {
 }
 
 class HerbivoreKitchen()(using act: CraftingActor, p: Plugin, prompts: Prompts)
-    extends CraftingStation(RailManufactory.recipes):
+    extends CraftingStation(HerbivoreKitchen.recipes):
     def group: ItemGroup = CraftingStations.group
 
     def template: CustomItemStack = HerbivoreKitchen.template
