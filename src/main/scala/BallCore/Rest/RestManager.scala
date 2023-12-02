@@ -36,7 +36,7 @@ class RestManager()(using sql: SQLManager, c: Clock, hooks: RestManagerHooks):
         )
     )
 
-    private val restConsumptionAmount = 1.0 / 2000.0
+    private val restConsumptionAmount = 1.0 / 4000.0
     private val cache = TrieMap[UUID, Double]()
     private def getOrElseUpdateF(
         key: UUID
