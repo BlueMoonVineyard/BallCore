@@ -91,6 +91,12 @@ enum PolygonAdjustmentError:
             case overlapsMultiplePolygons() =>
                 txt"This beacon area overlaps multiple other beacons' areas"
 
+object CivBeaconManager:
+    def populationToArea(count: Int): Int =
+        if count == 1 then (32 * 32) * count
+        else if count < 10 then ((32 * 32) * 2 * count) - 1024
+        else ((32 * 32) * count) + 9 * 1024
+
 class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
     sql.applyMigration(
         Storage.Migration(
@@ -169,11 +175,6 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
                 worldData(w.getUID)
             }
         else IO.pure(worldData(w.getUID))
-
-    private def populationToArea(count: Int): Int =
-        if count == 1 then (32 * 32) * count
-        else if count < 10 then ((32 * 32) * 2 * count) - 1024
-        else ((32 * 32) * count) + 9 * 1024
 
     def getBeaconFor(player: OwnerID)(using Session[IO]): IO[Option[BeaconID]] =
         sql.queryOptionIO(
@@ -455,7 +456,7 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
             )
             .map { hearts =>
                 val expectedArea =
-                    populationToArea(hearts.length)
+                    CivBeaconManager.populationToArea(hearts.length)
                 val actualArea =
                     polygon.getArea
                 val heartsOutsidePolygon =
