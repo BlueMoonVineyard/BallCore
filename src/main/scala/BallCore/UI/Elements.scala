@@ -64,6 +64,8 @@ object Elements extends TextComponents:
     )(using cb: Object => InventoryClickEvent => Unit): ChestGui =
         val chest = ChestGui(rows, ComponentHolder.of(title))
         Accumulator.run(inner, cb).foreach(x => chest.addPane(x))
+        chest.setOnGlobalClick(ev => ev.setCancelled(true))
+        chest.setOnGlobalDrag(ev => ev.setCancelled(true))
         chest
 
     def OutlinePane(
