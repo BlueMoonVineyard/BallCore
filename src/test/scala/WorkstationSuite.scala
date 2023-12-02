@@ -16,6 +16,9 @@ import org.bukkit.NamespacedKey
 import org.bukkit.Material
 import org.bukkit.inventory.RecipeChoice.ExactChoice
 import BallCore.Ores.QuadrantOres.ItemStacks
+import BallCore.CustomItems.ItemRegistry
+import BallCore.CustomItems.BasicItemRegistry
+import org.bukkit.Server
 
 class WorkstationSuite extends munit.FunSuite:
     val server = mockServerSingleton
@@ -34,6 +37,8 @@ class WorkstationSuite extends munit.FunSuite:
     }
     test("create workstations") {
         given Plugin = MockBukkit.createMockPlugin()
+        given Server = server
+        given ItemRegistry = BasicItemRegistry()
         given CraftingActor = CraftingActor()
         given Prompts = Prompts()
 
