@@ -71,7 +71,7 @@ object OresAndYou:
                        |
                        |Aluminum and Palladiumm make Pallalumin.
                        |Aluminum makes an Aluminum Furnace.""".stripMargin,
-                    s"""<b>Northwest Ores</b>
+                    s"""<b>Northeast Ores</b>
                        |Zinc spawns from y=-64 to 320.
                        |Magnesium spawns from y=-64 to 32.
                        |Meteorite spawns from y=-16 to 112.
