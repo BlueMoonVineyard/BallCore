@@ -55,25 +55,29 @@ object OresAndYou:
                        |Gold spawns from y=-64 to 32.
                        |Orichalcum spawns from y=-16 to 112.
                        |
-                       |Iron and Gold make Gilded Iron.""".stripMargin,
+                       |Iron and Gold make Gilded Iron.
+                       |Iron makes an Iron Furnace.""".stripMargin,
                     s"""<b>Southwest Ores</b>
                        |Tin spawns from y=-64 to 320.
                        |Silver spawns from y=-64 to 32.
                        |Copper spawns from y=-16 to 112.
                        |
-                       |Tin and Copper make Bronze.""".stripMargin,
+                       |Tin and Copper make Bronze.
+                       |Tin makes a Tin Furnace.""".stripMargin,
                     s"""<b>Northwest Ores</b>
                        |Aluminum spawns from y=-64 to 320.
                        |Palladium spawns from y=-64 to 32.
                        |Hihi'irogane spawns from y=-16 to 112.
                        |
-                       |Aluminum and Palladiumm make Pallalumin.""".stripMargin,
+                       |Aluminum and Palladiumm make Pallalumin.
+                       |Aluminum makes an Aluminum Furnace.""".stripMargin,
                     s"""<b>Northwest Ores</b>
                        |Zinc spawns from y=-64 to 320.
                        |Magnesium spawns from y=-64 to 32.
                        |Meteorite spawns from y=-16 to 112.
                        |
-                       |Magnesium and Meteorite make Magnox.""".stripMargin,
+                       |Magnesium and Meteorite make Magnox.
+                       |Zinc makes an Zinc Furnace.""".stripMargin,
                     s"""<b>North Ores</b>
                        |Sulfur spawns from y=0 to 320.
                        |Sapphire spawns from y=-64 to 16.""".stripMargin,
