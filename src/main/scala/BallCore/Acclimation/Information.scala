@@ -7,7 +7,7 @@ package BallCore.Acclimation
 import org.bukkit.Bukkit
 
 object Information:
-    private val WorldRadiusBlocks = 2000.0
+    private val WorldRadiusBlocks = 5000.0
     private val ExclusionZoneSize = 200.0
     private val SeaLevel = 67
 
