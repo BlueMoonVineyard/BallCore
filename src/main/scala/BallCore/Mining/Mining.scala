@@ -121,8 +121,8 @@ object Mining:
     }.concat {
         // red quadrant ores
         val ores = List(
-            Quadrant.southeast -> QuadrantOres.ItemStacks.copper.raw,
-            Quadrant.southwest -> QuadrantOres.ItemStacks.orichalcum.raw,
+            Quadrant.southeast -> QuadrantOres.ItemStacks.orichalcum.raw,
+            Quadrant.southwest -> QuadrantOres.ItemStacks.copper.raw,
             Quadrant.northwest -> QuadrantOres.ItemStacks.hihiirogane.raw,
             Quadrant.northeast -> QuadrantOres.ItemStacks.meteorite.raw,
         )
@@ -243,7 +243,7 @@ class MiningListener()(using
         val dlong = Information.similarityNeg(long, plong)
 
         // multiplier of the bonus on top of baseline rate
-        val bonusRateMultiplier = (dlat + dlong) / 2.0
+        val bonusRateMultiplier = ((dlat + dlong) / 2.0).abs
 
         // figure out what could possibly drop
         val possibleDrops = Mining.drops

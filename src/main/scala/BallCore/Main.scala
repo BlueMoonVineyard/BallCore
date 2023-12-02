@@ -161,6 +161,7 @@ final class Main extends JavaPlugin:
         val groupCommands = GroupsCommand()
         groupCommands.node.register()
         groupCommands.invitesNode.register()
+        BookCommand().node.register()
         DeclareCommand().node.register()
         CheatCommand().node.register()
         DoneCommand().node.register()

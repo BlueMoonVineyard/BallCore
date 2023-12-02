@@ -49,6 +49,7 @@ import dev.jorel.commandapi.executors.CommandExecutor
 import BallCore.RandomSpawner.RandomSpawn
 import BallCore.SpawnInventory.InventorySetter
 import BallCore.Plants.Climate
+import BallCore.SpawnInventory.OresAndYou
 
 class OTTCommand(using sql: SQLManager, ott: OneTimeTeleporter):
     private def errorText(err: OTTError): Component =
@@ -114,6 +115,29 @@ class OTTCommand(using sql: SQLManager, ott: OneTimeTeleporter):
                                 } yield ())
                             }: PlayerCommandExecutor)
                     )
+            )
+
+class BookCommand(using
+    storage: BallCore.Acclimation.Storage,
+    sql: SQLManager,
+    p: Plugin,
+):
+    val node =
+        CommandTree("book")
+            .`then`(
+                LiteralArgument("ores-and-you")
+                    .executesPlayer({ (sender, args) =>
+                        sql.useFireAndForget(for {
+                            book <- sql.withS(OresAndYou.viewForPlayer(sender))
+                            _ <- IO { sender.openBook(book) }
+                        } yield ())
+                    }: PlayerCommandExecutor)
+            )
+            .`then`(
+                LiteralArgument("spawnbook")
+                    .executesPlayer({ (sender, args) =>
+                        sender.openBook(SpawnInventory.Book.book)
+                    }: PlayerCommandExecutor)
             )
 
 class CheatCommand(using
