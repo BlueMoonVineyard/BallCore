@@ -79,7 +79,7 @@ object Mining:
             Drops(
                 -64 to 16,
                 1 to 3,
-                0.0010854,
+                0.003,
                 ore,
                 WorldLocation.cardinal(cardinal),
             )
@@ -113,7 +113,7 @@ object Mining:
             Drops(
                 -64 to 32,
                 1 to 4,
-                0.002874,
+                0.012,
                 ore,
                 WorldLocation.quadrant(quadrant),
             )
