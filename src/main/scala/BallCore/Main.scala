@@ -172,6 +172,7 @@ final class Main extends JavaPlugin:
         OTTCommand().node.register()
         Messaging.register()
         GammaCommand().node.register()
+        OneTimeAdaptation().node.register()
         val msg = MessageCommand()
         msg.node.`override`()
         msg.replyNode.register()
