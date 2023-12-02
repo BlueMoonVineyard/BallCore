@@ -534,7 +534,7 @@ class DeclareCommand(using
 
 class ChatCommands(using ca: ChatActor, gm: GroupManager, sql: SQLManager):
     val group =
-        CommandTree("group")
+        CommandTree("group").withAliases("g")
             .`then`(
                 GreedyStringArgument("group-to-chat-in")
                     .replaceSuggestions(suggestGroups(false))
@@ -554,7 +554,7 @@ class ChatCommands(using ca: ChatActor, gm: GroupManager, sql: SQLManager):
             }: PlayerCommandExecutor)
 
     val local =
-        CommandTree("local")
+        CommandTree("local").withAliases("l")
             .executesPlayer({ (sender, args) =>
                 ca.send(ChatMessage.chattingInLocal(sender))
             }: PlayerCommandExecutor)
