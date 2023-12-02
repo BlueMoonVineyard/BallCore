@@ -16,6 +16,10 @@ import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.{Material, NamespacedKey, Server}
 
 import scala.util.chaining.*
+import BallCore.Ores.QuadrantOres.ItemStacks
+import org.bukkit.inventory.RecipeChoice.MaterialChoice
+import org.bukkit.inventory.ShapedRecipe
+import org.bukkit.inventory.RecipeChoice.ExactChoice
 
 enum FurnaceTier:
     // tier 0 (vanilla furnace)
@@ -122,8 +126,13 @@ object Furnace:
         tierOneLore,
     )
 
-    private val tierOne: List[CustomItemStack] =
-        List(ironFurnace, tinFurnace, aluminumFurnace, zincFurnace)
+    private val tierOne: List[(CustomItemStack, CustomItemStack)] =
+        List(
+            (ironFurnace, ItemStacks.iron.ingot),
+            (tinFurnace, ItemStacks.tin.ingot),
+            (aluminumFurnace, ItemStacks.aluminum.ingot),
+            (zincFurnace, ItemStacks.zinc.ingot),
+        )
 
     private val tierTwoLore =
         txt"Capable of smelting ores with astounding efficiency"
@@ -170,13 +179,29 @@ object Furnace:
         sql: SQLManager,
     ): Unit =
         server.getPluginManager.registerEvents(FurnaceListener(), plugin)
+        val _ = (tierTwo, tierThree)
         List(
-            (FurnaceTier.One, tierOne),
-            (FurnaceTier.Two, tierTwo),
-            (FurnaceTier.Three, tierThree),
+            (FurnaceTier.One, tierOne)
         )
             .foreach { (tier, items) =>
-                items.foreach { item => registry.register(Furnace(tier, item)) }
+                items.foreach { item =>
+                    val recipe = ShapedRecipe(
+                        NamespacedKey(
+                            item._1.itemID.namespace(),
+                            item._1.itemID.value(),
+                        ),
+                        item._1,
+                    )
+                    recipe.shape(
+                        "III",
+                        "IFI",
+                        "III",
+                    )
+                    recipe.setIngredient('I', ExactChoice(item._2))
+                    recipe.setIngredient('F', MaterialChoice(Material.FURNACE))
+                    registry.register(Furnace(tier, item._1))
+                    registry.addRecipe(recipe)
+                }
             }
 
 class Furnace(furnaceTier: FurnaceTier, items: CustomItemStack)
