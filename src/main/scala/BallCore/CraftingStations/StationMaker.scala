@@ -161,6 +161,19 @@ object StationMaker:
             30,
             1,
         ),
+        Recipe(
+            "Make Economist",
+            List(
+                (Vanilla(Material.CARTOGRAPHY_TABLE), 1),
+                (Vanilla(Material.CHEST), 4),
+                (Vanilla(Material.PAPER), 4),
+            ),
+            List(
+                Economist.template
+            ),
+            30,
+            1,
+        ),
     )
     val template: CustomItemStack = CustomItemStack.make(
         NamespacedKey("ballcore", "station_maker"),
