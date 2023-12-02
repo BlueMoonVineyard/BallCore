@@ -50,6 +50,7 @@ import BallCore.RandomSpawner.RandomSpawn
 import BallCore.SpawnInventory.InventorySetter
 import BallCore.Plants.Climate
 import BallCore.SpawnInventory.OresAndYou
+import cats.data.OptionT
 
 class OTTCommand(using sql: SQLManager, ott: OneTimeTeleporter):
     private def errorText(err: OTTError): Component =
@@ -115,6 +116,41 @@ class OTTCommand(using sql: SQLManager, ott: OneTimeTeleporter):
                                 } yield ())
                             }: PlayerCommandExecutor)
                     )
+            )
+
+class BindHeartCommand(using
+    gm: GroupManager,
+    sql: SQLManager,
+    cbm: CivBeaconManager,
+):
+    val node =
+        CommandTree("bind-heart")
+            .`then`(
+                TextArgument("group")
+                    .replaceSuggestions(suggestGroups(true))
+                    .executesPlayer(withGroupArgument("group") {
+                        (sender, args, group) =>
+                            sql.useFireAndForget(for {
+                                result <- sql.withS(OptionT(cbm.getBeaconFor(sender.getUniqueId)).flatMap { beacon =>
+                                    OptionT.liftF(cbm.setGroup(beacon, group.id))
+                                }.value)
+                                _ <- IO {
+                                    result match
+                                        case None =>
+                                            sender.sendServerMessage(
+                                                txt"You don't have a Civilization Beacon to bind ${group.name} to!"
+                                            )
+                                        case Some(Left(_)) =>
+                                            sender.sendServerMessage(
+                                                txt"Failed to bind ${group.name} to your Civilization Beacon!"
+                                            )
+                                        case Some(Right(_)) =>
+                                            sender.sendServerMessage(
+                                                txt"Bound ${group.name} to your Civilization Beacon!"
+                                            )
+                                }
+                            } yield ())
+                    })
             )
 
 class BookCommand(using
