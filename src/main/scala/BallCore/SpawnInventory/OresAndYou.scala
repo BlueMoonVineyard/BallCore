@@ -42,7 +42,10 @@ object OresAndYou:
                        |- <link:12>East Ores</link>""".stripMargin,
                     s"""<b>Adaptation</b>
                        |Your adaptation to your current location is: ${percent(bonusRateMultiplier)}
-                       |(ore probabilities are multipled by your adaptation)""".stripMargin,
+                       |(ore probabilities are multipled by your adaptation)
+                       |
+                       |Adaption Point: ${(plat*Information.WorldRadiusBlocks).toInt}, ${(plong*Information.WorldRadiusBlocks).toInt}
+                       |Current Location: ${plr.getX.toInt}, ${plr.getZ.toInt}""".stripMargin,
                     s"""Adaptation Speeds:
                        |- 7 days within your heart's claim
                        |- 14 days if you have no heart
