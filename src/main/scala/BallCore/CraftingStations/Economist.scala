@@ -40,6 +40,6 @@ object Economist:
     )
 
 class Economist()(using act: CraftingActor, p: Plugin, prompts: Prompts)
-    extends CraftingStation(Slimer.recipes):
+    extends CraftingStation(Economist.recipes):
     def group: ItemGroup = CraftingStations.group
     def template: CustomItemStack = Economist.template
