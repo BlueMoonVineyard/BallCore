@@ -172,6 +172,9 @@ final class Main extends JavaPlugin:
         OTTCommand().node.register()
         Messaging.register()
         GammaCommand().node.register()
+        val msg = MessageCommand()
+        msg.node.`override`()
+        msg.replyNode.register()
 
     override def onDisable(): Unit =
         CommandAPI.onDisable()

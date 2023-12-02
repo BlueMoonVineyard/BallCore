@@ -54,6 +54,7 @@ import cats.data.OptionT
 import BallCore.Beacons.HeartBlock
 import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
+import dev.jorel.commandapi.arguments.AdventureChatArgument
 
 class OTTCommand(using sql: SQLManager, ott: OneTimeTeleporter):
     private def errorText(err: OTTError): Component =
@@ -125,7 +126,8 @@ class GetHeart:
     val node =
         CommandTree("get-heart")
             .executesPlayer({ (sender, args) =>
-                val _ = sender.getInventory().addItem(HeartBlock.itemStack.clone())
+                val _ =
+                    sender.getInventory().addItem(HeartBlock.itemStack.clone())
             }: PlayerCommandExecutor)
 
 class BindHeartCommand(using
@@ -138,28 +140,33 @@ class BindHeartCommand(using
             .`then`(
                 TextArgument("group")
                     .replaceSuggestions(suggestGroups(true))
-                    .executesPlayer(withGroupArgument("group") {
-                        (sender, args, group) =>
-                            sql.useFireAndForget(for {
-                                result <- sql.withS(OptionT(cbm.getBeaconFor(sender.getUniqueId)).flatMap { beacon =>
-                                    OptionT.liftF(cbm.setGroup(beacon, group.id))
-                                }.value)
-                                _ <- IO {
-                                    result match
-                                        case None =>
-                                            sender.sendServerMessage(
-                                                txt"You don't have a Civilization Beacon to bind ${group.name} to!"
-                                            )
-                                        case Some(Left(_)) =>
-                                            sender.sendServerMessage(
-                                                txt"Failed to bind ${group.name} to your Civilization Beacon!"
-                                            )
-                                        case Some(Right(_)) =>
-                                            sender.sendServerMessage(
-                                                txt"Bound ${group.name} to your Civilization Beacon!"
-                                            )
-                                }
-                            } yield ())
+                    .executesPlayer(withGroupArgument("group") { (sender, args, group) =>
+                        sql.useFireAndForget(for {
+                            result <- sql.withS(
+                                OptionT(
+                                    cbm.getBeaconFor(sender.getUniqueId)
+                                ).flatMap { beacon =>
+                                    OptionT.liftF(
+                                        cbm.setGroup(beacon, group.id)
+                                    )
+                                }.value
+                            )
+                            _ <- IO {
+                                result match
+                                    case None =>
+                                        sender.sendServerMessage(
+                                            txt"You don't have a Civilization Beacon to bind ${group.name} to!"
+                                        )
+                                    case Some(Left(_)) =>
+                                        sender.sendServerMessage(
+                                            txt"Failed to bind ${group.name} to your Civilization Beacon!"
+                                        )
+                                    case Some(Right(_)) =>
+                                        sender.sendServerMessage(
+                                            txt"Bound ${group.name} to your Civilization Beacon!"
+                                        )
+                            }
+                        } yield ())
                     })
             )
 
@@ -534,13 +541,64 @@ class DeclareCommand(using
                 editor.declare(sender)
             }: PlayerCommandExecutor)
 
+class MessageCommand(using ca: ChatActor):
+    val node =
+        CommandTree("msg")
+            .withAliases("w", "whisper", "message")
+            .`then`(
+                PlayerArgument("player")
+                    .executesPlayer({ (sender, args) =>
+                        ca.send(
+                            ChatMessage.chattingWithPlayer(
+                                sender,
+                                args.getUnchecked[Player]("player"),
+                            )
+                        )
+                    }: PlayerCommandExecutor)
+                    .`then`(
+                        AdventureChatArgument("message")
+                            .executesPlayer({ (sender, args) =>
+                                ca.send(
+                                    ChatMessage.sendToPlayer(
+                                        sender,
+                                        args.getUnchecked[Component]("message"),
+                                        args.getUnchecked[Player]("player"),
+                                    )
+                                )
+                            }: PlayerCommandExecutor)
+                    )
+            )
+
+    val replyNode =
+        CommandTree("reply").withAliases("r")
+            .`then`(
+                AdventureChatArgument("message")
+                    .executesPlayer({ (sender, args) =>
+                        ca.send(
+                            ChatMessage.replyToPlayer(
+                                sender,
+                                args.getUnchecked[Component]("message"),
+                            )
+                        )
+                    }: PlayerCommandExecutor)
+            )
+
 class GammaCommand():
     val node =
-        CommandTree("gamma").withAliases("fullbright")
+        CommandTree("gamma")
+            .withAliases("fullbright")
             .`then`(
                 LiteralArgument("on")
                     .executesPlayer({ (sender, args) =>
-                        val _ = sender.addPotionEffect(PotionEffect(PotionEffectType.NIGHT_VISION, PotionEffect.INFINITE_DURATION, 0, true, false))
+                        val _ = sender.addPotionEffect(
+                            PotionEffect(
+                                PotionEffectType.NIGHT_VISION,
+                                PotionEffect.INFINITE_DURATION,
+                                0,
+                                true,
+                                false,
+                            )
+                        )
                     }: PlayerCommandExecutor)
             )
             .`then`(
@@ -551,7 +609,8 @@ class GammaCommand():
             )
 class ChatCommands(using ca: ChatActor, gm: GroupManager, sql: SQLManager):
     val group =
-        CommandTree("group").withAliases("g")
+        CommandTree("group")
+            .withAliases("g")
             .`then`(
                 GreedyStringArgument("group-to-chat-in")
                     .replaceSuggestions(suggestGroups(false))
@@ -571,7 +630,8 @@ class ChatCommands(using ca: ChatActor, gm: GroupManager, sql: SQLManager):
             }: PlayerCommandExecutor)
 
     val local =
-        CommandTree("local").withAliases("l")
+        CommandTree("local")
+            .withAliases("l")
             .executesPlayer({ (sender, args) =>
                 ca.send(ChatMessage.chattingInLocal(sender))
             }: PlayerCommandExecutor)
