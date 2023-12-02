@@ -14,9 +14,9 @@ import net.kyori.adventure.text.format.{NamedTextColor, TextColor}
 import scala.concurrent.Future
 
 class PlantListProgram extends UIProgram:
-    case class Flags()
+    case class Flags(climate: Climate)
 
-    case class Model()
+    case class Model(climate: Climate)
 
     case class Message()
 
@@ -48,7 +48,7 @@ class PlantListProgram extends UIProgram:
     val coldHumid = txt"$cold and $humid"
 
     override def init(flags: Flags): Model =
-        Model()
+        Model(flags.climate)
 
     override def view(model: Model): Callback ?=> Gui =
         Root(txt"Plants", 6) {
@@ -90,6 +90,8 @@ class PlantListProgram extends UIProgram:
                                     coldHumid
                                 case GrowingClimate.allClimates => allClimates
                             } climates".color(NamedTextColor.GRAY))
+                        if plant.growingClimate.growsWithin(model.climate) then
+                            Lore(txt"Grows in the current climate".color(NamedTextColor.GREEN))
                         plant.plant match
                             case PlantType.ageable(_, hoursBetweenStages) =>
                                 Lore(

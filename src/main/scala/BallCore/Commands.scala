@@ -48,6 +48,7 @@ import cats.effect.IO
 import dev.jorel.commandapi.executors.CommandExecutor
 import BallCore.RandomSpawner.RandomSpawn
 import BallCore.SpawnInventory.InventorySetter
+import BallCore.Plants.Climate
 
 class OTTCommand(using sql: SQLManager, ott: OneTimeTeleporter):
     private def errorText(err: OTTError): Component =
@@ -419,8 +420,13 @@ class PlantsCommand(using prompts: UI.Prompts, plugin: Plugin):
             .executesPlayer({ (sender, args) =>
                 given ExecutionContext = EntityExecutionContext(sender)
                 FireAndForget {
+                    val climate = Climate.climateAt(
+                        sender.getX().toInt,
+                        sender.getY().toInt,
+                        sender.getZ().toInt,
+                    )
                     val p = PlantListProgram()
-                    val runner = UIProgramRunner(p, p.Flags(), sender)
+                    val runner = UIProgramRunner(p, p.Flags(climate), sender)
                     runner.render()
                 }
             }: PlayerCommandExecutor)
