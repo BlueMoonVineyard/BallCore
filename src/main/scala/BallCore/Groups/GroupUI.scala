@@ -675,6 +675,8 @@ class RoleManagementProgram(using
         case DeleteRole
         case TogglePermission(val perm: Permissions)
         case GoBack
+        case AssignToMember
+        case RevokeFromMember
 
     override def init(flags: Flags): Model =
         val group =
@@ -796,6 +798,60 @@ class RoleManagementProgram(using
                                         )
                                     )
                                 )
+            case Message.AssignToMember =>
+                services
+                    .prompt("Who do you want to assign this role to?")
+                    .map { username =>
+                        Option(Bukkit.getOfflinePlayerIfCached(username)) match
+                            case None =>
+                                services.notify(
+                                    "I couldn't find a player with that username"
+                                )
+                            case Some(plr) =>
+                                sql.useBlocking(
+                                    sql.withS(
+                                        sql.withTX(
+                                            gm.assignRole(model.userID, plr.getUniqueId, model.group.metadata.id, model.role.id, true).value
+                                        )
+                                    )
+                                ) match
+                                    case Left(err) =>
+                                        services.notify(
+                                            s"Couldn't assign role because ${err.explain()}"
+                                        )
+                                    case Right(_) =>
+                                        services.notify(
+                                            s"Assigned role!"
+                                        )
+                        model
+                    }
+            case Message.RevokeFromMember =>
+                services
+                    .prompt("Who do you want to revoke this role from?")
+                    .map { username =>
+                        Option(Bukkit.getOfflinePlayerIfCached(username)) match
+                            case None =>
+                                services.notify(
+                                    "I couldn't find a player with that username"
+                                )
+                            case Some(plr) =>
+                                sql.useBlocking(
+                                    sql.withS(
+                                        sql.withTX(
+                                            gm.assignRole(model.userID, plr.getUniqueId, model.group.metadata.id, model.role.id, false).value
+                                        )
+                                    )
+                                ) match
+                                    case Left(err) =>
+                                        services.notify(
+                                            s"Couldn't revoke role because ${err.explain()}"
+                                        )
+                                    case Right(_) =>
+                                        services.notify(
+                                            s"Revoked role!"
+                                        )
+                        model
+                    }
             case Message.GoBack =>
                 back(model)
 
@@ -821,6 +877,17 @@ class RoleManagementProgram(using
                         Material.LAVA_BUCKET,
                         txt"Delete Role".style(NamedTextColor.GREEN),
                         Message.DeleteRole,
+                    )()
+                if model.subgroup.isEmpty then
+                    Button(
+                        Material.GREEN_CONCRETE,
+                        txt"Assign to Member".style(NamedTextColor.WHITE),
+                        Message.AssignToMember,
+                    )()
+                    Button(
+                        Material.RED_CONCRETE_POWDER,
+                        txt"Revoke from Member".style(NamedTextColor.WHITE),
+                        Message.RevokeFromMember,
                     )()
             }
             OutlinePane(1, 0, 1, 6, priority = Priority.LOWEST, repeat = true) {
