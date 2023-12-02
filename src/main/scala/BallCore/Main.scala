@@ -162,6 +162,7 @@ final class Main extends JavaPlugin:
         groupCommands.node.register()
         groupCommands.invitesNode.register()
         BindHeartCommand().node.register()
+        GetHeart().node.register()
         BookCommand().node.register()
         CancelCommand().node.register()
         DeclareCommand().node.register()

@@ -51,6 +51,7 @@ import BallCore.SpawnInventory.InventorySetter
 import BallCore.Plants.Climate
 import BallCore.SpawnInventory.OresAndYou
 import cats.data.OptionT
+import BallCore.Beacons.HeartBlock
 
 class OTTCommand(using sql: SQLManager, ott: OneTimeTeleporter):
     private def errorText(err: OTTError): Component =
@@ -117,6 +118,13 @@ class OTTCommand(using sql: SQLManager, ott: OneTimeTeleporter):
                             }: PlayerCommandExecutor)
                     )
             )
+
+class GetHeart:
+    val node =
+        CommandTree("get-heart")
+            .executesPlayer({ (sender, args) =>
+                val _ = sender.getInventory().addItem(HeartBlock.itemStack.clone())
+            }: PlayerCommandExecutor)
 
 class BindHeartCommand(using
     gm: GroupManager,

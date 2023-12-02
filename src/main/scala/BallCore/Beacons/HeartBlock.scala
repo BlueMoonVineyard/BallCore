@@ -136,6 +136,10 @@ class HeartBlock()(using
                     .sendServerMessage(
                         txt"Bind a group to this beacon, and you'll unlock the ability to claim land and allow other players to join your beacon!"
                     )
+                event.getPlayer
+                    .sendServerMessage(
+                        txt"(use /bind-heart to bind a group to this beacon)"
+                    )
             case Right((_, x)) =>
                 event.getPlayer
                     .sendServerMessage(
