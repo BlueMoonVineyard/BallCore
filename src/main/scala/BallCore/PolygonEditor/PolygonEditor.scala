@@ -208,10 +208,12 @@ class PolygonEditor(using
                 player.sendActionBar(
                     model.couldWarGroup match
                         case None =>
-                            txt"${txt("/done").style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Save and stop editing"
+                            txt"${txt("/done").style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Save and stop editing  |  ${txt("/cancel")
+                            .style(NamedTextColor.GOLD, TextDecoration.BOLD)}"
                         case Some(_) =>
                             txt"${txt("/done").style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Save and stop editing  |  ${txt("/declare")
-                                    .style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Start a battle for this land"
+                                    .style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Start a battle for this land  |  ${txt("/cancel")
+                            .style(NamedTextColor.GOLD, TextDecoration.BOLD)}"
                 )
             case lookingAt(loc) =>
                 player.sendActionBar(
@@ -400,6 +402,13 @@ class PolygonEditor(using
                         Some(state)
             }
         val _ = playerPolygons.updateWith(player) { _ => newState }
+
+    def cancel(player: Player): Unit =
+        clickPromises.remove(player) match
+            case None =>
+            case Some(value) =>
+                value.failure(null)
+        val _ = playerPolygons.remove(player)
 
     def done(player: Player): Unit =
         val _ = playerPolygons.updateWith(player) { state =>

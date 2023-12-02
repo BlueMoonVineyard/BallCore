@@ -535,7 +535,8 @@ case class State(
             case nothing() =>
                 player.sendActionBar(
                     txt"${keybind("key.use").style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Place a rectangle  |  ${txt("/done")
-                            .style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Save and stop editing"
+                            .style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Save and stop editing  |  ${txt("/cancel")
+                            .style(NamedTextColor.GOLD, TextDecoration.BOLD)}"
                 )
             case lookingAt(volumeIndex) =>
                 player.sendActionBar(
@@ -613,6 +614,9 @@ class PolyhedraEditor(using p: Plugin, sql: SQLManager, gm: GroupManager):
                     null,
                 )
         }
+
+    def cancel(player: Player): Unit =
+        val _ = playerPolygons.remove(player)
 
     def done(player: Player): Unit =
         val state = playerPolygons.get(player) match

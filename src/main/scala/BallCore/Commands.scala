@@ -455,6 +455,18 @@ class PlantsCommand(using prompts: UI.Prompts, plugin: Plugin):
                 }
             }: PlayerCommandExecutor)
 
+class CancelCommand(using
+    editor: PolygonEditor,
+    polyhedraEditor: PolyhedraEditor,
+):
+    val node =
+        CommandTree("cancel")
+            .executesPlayer({ (sender, args) =>
+                val plr = sender.asInstanceOf[Player]
+                editor.cancel(plr)
+                polyhedraEditor.cancel(plr)
+            }: PlayerCommandExecutor)
+
 class DoneCommand(using
     editor: PolygonEditor,
     polyhedraEditor: PolyhedraEditor,
