@@ -7,20 +7,20 @@ package BallCore.CraftingStations
 import BallCore.CustomItems.{CustomItemStack, ItemGroup}
 import BallCore.UI.Elements.*
 import BallCore.UI.Prompts
-import org.bukkit.inventory.RecipeChoice.MaterialChoice
 import org.bukkit.plugin.Plugin
 import org.bukkit.{Material, NamespacedKey}
+import RecipeIngredient.*
 
 object StationMaker:
     val recipes: List[Recipe] = List(
         Recipe(
             "Make Dye Vat",
             List(
-                (MaterialChoice(Material.CAULDRON), 1),
-                (MaterialChoice(Material.CYAN_DYE), 32),
-                (MaterialChoice(Material.YELLOW_DYE), 32),
-                (MaterialChoice(Material.MAGENTA_DYE), 32),
-                (MaterialChoice(Material.BLACK_DYE), 16),
+                (Vanilla(Material.CAULDRON), 1),
+                (Vanilla(Material.CYAN_DYE), 32),
+                (Vanilla(Material.YELLOW_DYE), 32),
+                (Vanilla(Material.MAGENTA_DYE), 32),
+                (Vanilla(Material.BLACK_DYE), 16),
             ),
             List(
                 DyeVat.template
@@ -31,11 +31,11 @@ object StationMaker:
         Recipe(
             "Make Glazing Kiln",
             List(
-                (MaterialChoice(Material.SMOKER), 1),
-                (MaterialChoice(Material.CYAN_DYE), 32),
-                (MaterialChoice(Material.YELLOW_DYE), 32),
-                (MaterialChoice(Material.MAGENTA_DYE), 32),
-                (MaterialChoice(Material.BLACK_DYE), 16),
+                (Vanilla(Material.SMOKER), 1),
+                (Vanilla(Material.CYAN_DYE), 32),
+                (Vanilla(Material.YELLOW_DYE), 32),
+                (Vanilla(Material.MAGENTA_DYE), 32),
+                (Vanilla(Material.BLACK_DYE), 16),
             ),
             List(
                 GlazingKiln.template
@@ -46,10 +46,10 @@ object StationMaker:
         Recipe(
             "Make Kiln",
             List(
-                (MaterialChoice(Material.SMOKER), 1),
-                (MaterialChoice(Material.SAND, Material.RED_SAND), 32),
-                (MaterialChoice(Material.GRAVEL), 32),
-                (MaterialChoice(Material.CLAY), 32),
+                (Vanilla(Material.SMOKER), 1),
+                (Vanilla(Material.SAND, Material.RED_SAND), 32),
+                (Vanilla(Material.GRAVEL), 32),
+                (Vanilla(Material.CLAY), 32),
             ),
             List(
                 Kiln.template
@@ -60,9 +60,9 @@ object StationMaker:
         Recipe(
             "Make Woodcutter",
             List(
-                (MaterialChoice(Material.STONECUTTER), 1),
-                (MaterialChoice(Material.CHEST), 8),
-                (MaterialChoice(Material.STONE_AXE), 1),
+                (Vanilla(Material.STONECUTTER), 1),
+                (Vanilla(Material.CHEST), 8),
+                (Vanilla(Material.STONE_AXE), 1),
             ),
             List(
                 Woodcutter.template
@@ -73,9 +73,9 @@ object StationMaker:
         Recipe(
             "Make Concrete Mixer",
             List(
-                (MaterialChoice(Material.DECORATED_POT), 1),
-                (MaterialChoice(Material.SAND), 64),
-                (MaterialChoice(Material.GRAVEL), 64),
+                (Vanilla(Material.DECORATED_POT), 1),
+                (Vanilla(Material.SAND), 64),
+                (Vanilla(Material.GRAVEL), 64),
             ),
             List(
                 ConcreteMixer.template
@@ -86,9 +86,9 @@ object StationMaker:
         Recipe(
             "Make Rail Manufactory",
             List(
-                (MaterialChoice(Material.PISTON), 1),
-                (MaterialChoice(Material.RAIL), 32),
-                (MaterialChoice(Material.REDSTONE), 16),
+                (Vanilla(Material.PISTON), 1),
+                (Vanilla(Material.RAIL), 32),
+                (Vanilla(Material.REDSTONE), 16),
             ),
             List(
                 RailManufactory.template
@@ -99,9 +99,9 @@ object StationMaker:
         Recipe(
             "Make Redstone Maker",
             List(
-                (MaterialChoice(Material.PISTON), 1),
-                (MaterialChoice(Material.REDSTONE), 64),
-                (MaterialChoice(Material.QUARTZ), 32),
+                (Vanilla(Material.PISTON), 1),
+                (Vanilla(Material.REDSTONE), 64),
+                (Vanilla(Material.QUARTZ), 32),
             ),
             List(
                 RedstoneMaker.template
@@ -112,11 +112,11 @@ object StationMaker:
         Recipe(
             "Make Carnivore Kitchen",
             List(
-                (MaterialChoice(Material.SMOKER), 1),
-                (MaterialChoice(Material.BEEF), 16),
-                (MaterialChoice(Material.CHICKEN), 16),
-                (MaterialChoice(Material.PORKCHOP), 16),
-                (MaterialChoice(Material.MUTTON), 16),
+                (Vanilla(Material.SMOKER), 1),
+                (Vanilla(Material.BEEF), 16),
+                (Vanilla(Material.CHICKEN), 16),
+                (Vanilla(Material.PORKCHOP), 16),
+                (Vanilla(Material.MUTTON), 16),
             ),
             List(
                 CarnivoreKitchen.template
@@ -127,11 +127,24 @@ object StationMaker:
         Recipe(
             "Make Herbivore Kitchen",
             List(
-                (MaterialChoice(Material.SMOKER), 1),
-                (MaterialChoice(Material.BREAD), 64),
+                (Vanilla(Material.SMOKER), 1),
+                (Vanilla(Material.BREAD), 64),
             ),
             List(
                 HerbivoreKitchen.template
+            ),
+            30,
+            1,
+        ),
+        Recipe(
+            "Make Alloyer",
+            List(
+                (Vanilla(Material.BLAST_FURNACE), 1),
+                (Vanilla(Material.STONE), 64),
+                (Vanilla(Material.LAVA_BUCKET), 1),
+            ),
+            List(
+                Tier1Alloyer.template
             ),
             30,
             1,

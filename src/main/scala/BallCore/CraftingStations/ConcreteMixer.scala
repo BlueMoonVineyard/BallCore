@@ -8,9 +8,9 @@ import BallCore.CustomItems.{CustomItemStack, ItemGroup}
 import BallCore.UI.Elements.*
 import BallCore.UI.Prompts
 import org.bukkit.inventory.ItemStack
-import org.bukkit.inventory.RecipeChoice.MaterialChoice
 import org.bukkit.plugin.Plugin
 import org.bukkit.{Material, NamespacedKey}
+import RecipeIngredient.*
 
 object ConcreteMixer:
     val pairs: List[(Material, Material, Material, String, String)] = List(
@@ -127,9 +127,9 @@ object ConcreteMixer:
             Recipe(
                 concretePowderName,
                 List(
-                    (MaterialChoice(dye), 4),
-                    (MaterialChoice(Material.SAND), 16),
-                    (MaterialChoice(Material.GRAVEL), 16),
+                    (Vanilla(dye), 4),
+                    (Vanilla(Material.SAND), 16),
+                    (Vanilla(Material.GRAVEL), 16),
                 ),
                 List(ItemStack(concretePowder, 64)),
                 10,
@@ -138,7 +138,7 @@ object ConcreteMixer:
             Recipe(
                 concreteName,
                 List(
-                    (MaterialChoice(concretePowder), 64)
+                    (Vanilla(concretePowder), 64)
                 ),
                 List(ItemStack(concrete, 64)),
                 30,

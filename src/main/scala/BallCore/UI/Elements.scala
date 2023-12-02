@@ -124,6 +124,40 @@ object Elements extends TextComponents:
         Item(is, displayName)(inner)
 
     def Button[Msg](
+        stack: ItemStack,
+        displayName: Component,
+        onClick: Msg,
+    )(inner: LoreAccumulator ?=> Unit)(using an: ItemAccumulator): Unit =
+        val is = stack.clone()
+        val im = is.getItemMeta
+        val baked = an.extra(onClick.asInstanceOf[Object])
+
+        im.displayName(displayName.style(x => {
+            x.decorationIfAbsent(TextDecoration.ITALIC, State.FALSE)
+            ()
+        }))
+        val poki = Box[Option[OfflinePlayer]](None)
+        im.lore(
+            Accumulator
+                .run(inner, poki)
+                .map(line =>
+                    line.style(x => {
+                        x.decorationIfAbsent(TextDecoration.ITALIC, State.FALSE)
+                        ()
+                    })
+                )
+                .asJava
+        )
+
+        poki.it match
+            case Some(x) if im.isInstanceOf[SkullMeta] =>
+                im.asInstanceOf[SkullMeta].setOwningPlayer(x)
+            case _ =>
+
+        is.setItemMeta(im)
+        an add GuiItem(is, ev => baked(ev))
+
+    def Button[Msg](
         id: Material,
         displayName: Component,
         onClick: Msg,

@@ -8,9 +8,9 @@ import BallCore.CustomItems.{CustomItemStack, ItemGroup}
 import BallCore.UI.Elements.*
 import BallCore.UI.Prompts
 import org.bukkit.inventory.ItemStack
-import org.bukkit.inventory.RecipeChoice.MaterialChoice
 import org.bukkit.plugin.Plugin
 import org.bukkit.{Material, NamespacedKey, Tag}
+import RecipeIngredient.*
 
 object Woodcutter:
     private val woods: List[(Tag[Material], Material)] = List(
@@ -31,21 +31,21 @@ object Woodcutter:
         List(
             Recipe(
                 "Process logs into planks (low players, low efficiency)",
-                List((MaterialChoice(input), 64)),
+                List((TagList(input), 64)),
                 List(ItemStack(output, 64 * 5)),
                 10,
                 1,
             ),
             Recipe(
                 "Process logs into planks (medium players, medium efficiency)",
-                List((MaterialChoice(input), 64)),
+                List((TagList(input), 64)),
                 List(ItemStack(output, 64 * 6)),
                 10,
                 2,
             ),
             Recipe(
                 "Process logs into planks (high players, high efficiency)",
-                List((MaterialChoice(input), 64)),
+                List((TagList(input), 64)),
                 List(ItemStack(output, 64 * 8)),
                 20,
                 4,

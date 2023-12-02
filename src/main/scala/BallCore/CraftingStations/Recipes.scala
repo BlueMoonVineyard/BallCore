@@ -6,11 +6,31 @@ package BallCore.CraftingStations
 
 import org.bukkit.block.Block
 import org.bukkit.entity.Player
-import org.bukkit.inventory.{ItemStack, RecipeChoice}
+import org.bukkit.inventory.{ItemStack}
+import org.bukkit.Material
+import BallCore.CustomItems.CustomItemStack
+import org.bukkit.Tag
+import BallCore.CustomItems.ItemRegistry
+
+enum RecipeIngredient:
+    case Vanilla(oneOf: Material*)
+    case Custom(oneOf: CustomItemStack*)
+    case TagList(tag: Tag[Material])
+
+    def test(stack: ItemStack)(using ir: ItemRegistry): Boolean =
+        this match
+            case Vanilla(oneOf: _*) =>
+                oneOf.contains(stack.getType())
+            case Custom(oneOf: _*) =>
+                oneOf.exists { possibility =>
+                    Some(possibility.id) == ir.lookup(stack).map(_.id)
+                }
+            case TagList(tag) =>
+                tag.isTagged(stack.getType())
 
 case class Recipe(
     name: String,
-    inputs: List[(RecipeChoice, Int)],
+    inputs: List[(RecipeIngredient, Int)],
     outputs: List[ItemStack],
     /// amount of player "work" needed to craft this recipe, in ticks
     ///

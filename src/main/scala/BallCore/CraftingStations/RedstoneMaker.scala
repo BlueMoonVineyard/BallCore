@@ -4,10 +4,9 @@ import BallCore.CustomItems.{CustomItemStack, ItemGroup}
 import BallCore.TextComponents.txt
 import BallCore.UI.Prompts
 import org.bukkit.inventory.ItemStack
-import org.bukkit.inventory.RecipeChoice.MaterialChoice
 import org.bukkit.plugin.Plugin
 import org.bukkit.{Material, NamespacedKey, Tag}
-
+import RecipeIngredient.*
 import scala.List
 
 object RedstoneMaker {
@@ -15,9 +14,9 @@ object RedstoneMaker {
         Recipe(
             "Make Observer",
             List(
-                (MaterialChoice(Material.REDSTONE), 8),
-                (MaterialChoice(Material.COBBLESTONE), 24),
-                (MaterialChoice(Material.QUARTZ), 4),
+                (Vanilla(Material.REDSTONE), 8),
+                (Vanilla(Material.COBBLESTONE), 24),
+                (Vanilla(Material.QUARTZ), 4),
             ),
             List(
                 ItemStack(Material.OBSERVER, 64)
@@ -28,9 +27,9 @@ object RedstoneMaker {
         Recipe(
             "Make Redstone Repeater",
             List(
-                (MaterialChoice(Material.STONE), 12),
-                (MaterialChoice(Material.REDSTONE_TORCH), 8),
-                (MaterialChoice(Material.REDSTONE), 4),
+                (Vanilla(Material.STONE), 12),
+                (Vanilla(Material.REDSTONE_TORCH), 8),
+                (Vanilla(Material.REDSTONE), 4),
             ),
             List(ItemStack(Material.REPEATER, 64)),
             20,
@@ -39,9 +38,9 @@ object RedstoneMaker {
         Recipe(
             "Make Redstone Comparator",
             List(
-                (MaterialChoice(Material.REDSTONE_TORCH), 12),
-                (MaterialChoice(Material.QUARTZ), 4),
-                (MaterialChoice(Material.STONE), 12),
+                (Vanilla(Material.REDSTONE_TORCH), 12),
+                (Vanilla(Material.QUARTZ), 4),
+                (Vanilla(Material.STONE), 12),
             ),
             List(ItemStack(Material.COMPARATOR, 64)),
             20,
@@ -50,10 +49,10 @@ object RedstoneMaker {
         Recipe(
             "Make Piston",
             List(
-                (MaterialChoice(Tag.PLANKS), 12),
-                (MaterialChoice(Material.STONE), 16),
-                (MaterialChoice(Material.IRON_INGOT), 4),
-                (MaterialChoice(Material.REDSTONE), 4),
+                (TagList(Tag.PLANKS), 12),
+                (Vanilla(Material.STONE), 16),
+                (Vanilla(Material.IRON_INGOT), 4),
+                (Vanilla(Material.REDSTONE), 4),
             ),
             List(ItemStack(Material.PISTON, 64)),
             20,
@@ -62,8 +61,8 @@ object RedstoneMaker {
         Recipe(
             "Make Sticky Piston",
             List(
-                (MaterialChoice(Material.PISTON), 32),
-                (MaterialChoice(Material.SLIME_BALL), 8),
+                (Vanilla(Material.PISTON), 32),
+                (Vanilla(Material.SLIME_BALL), 8),
             ),
             List(ItemStack(Material.STICKY_PISTON, 32)),
             10,
@@ -72,10 +71,10 @@ object RedstoneMaker {
         Recipe(
             "Make Dispenser",
             List(
-                (MaterialChoice(Material.STICK), 12),
-                (MaterialChoice(Material.STRING), 12),
-                (MaterialChoice(Material.COBBLESTONE), 28),
-                (MaterialChoice(Material.REDSTONE), 4),
+                (Vanilla(Material.STICK), 12),
+                (Vanilla(Material.STRING), 12),
+                (Vanilla(Material.COBBLESTONE), 28),
+                (Vanilla(Material.REDSTONE), 4),
             ),
             List(ItemStack(Material.DISPENSER, 64)),
             20,
@@ -84,8 +83,8 @@ object RedstoneMaker {
         Recipe(
             "Make Dropper",
             List(
-                (MaterialChoice(Material.COBBLESTONE), 28),
-                (MaterialChoice(Material.REDSTONE), 4),
+                (Vanilla(Material.COBBLESTONE), 28),
+                (Vanilla(Material.REDSTONE), 4),
             ),
             List(ItemStack(Material.DROPPER, 64)),
             20,
@@ -94,8 +93,8 @@ object RedstoneMaker {
         Recipe(
             "Make Hopper",
             List(
-                (MaterialChoice(Material.IRON_INGOT), 20),
-                (MaterialChoice(Tag.PLANKS), 32),
+                (Vanilla(Material.IRON_INGOT), 20),
+                (TagList(Tag.PLANKS), 32),
             ),
             List(ItemStack(Material.HOPPER, 64)),
             20,
@@ -104,8 +103,8 @@ object RedstoneMaker {
         Recipe(
             "Make Redstone Lamp",
             List(
-                (MaterialChoice(Material.GLOWSTONE), 4),
-                (MaterialChoice(Material.REDSTONE), 16),
+                (Vanilla(Material.GLOWSTONE), 4),
+                (Vanilla(Material.REDSTONE), 16),
             ),
             List(ItemStack(Material.REDSTONE_LAMP, 64)),
             20,

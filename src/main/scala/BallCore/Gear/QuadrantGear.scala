@@ -286,7 +286,7 @@ object QuadrantGear:
             magnesium.name,
             magnesium.id,
             GoldToolSetCustomModelDatas.magnesium,
-            (Enchantment.DIG_SPEED, 10),
+            (Enchantment.DIG_SPEED, 5),
             (Enchantment.DURABILITY, 2),
         )
         sword(

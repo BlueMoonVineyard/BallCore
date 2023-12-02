@@ -8,9 +8,9 @@ import BallCore.CustomItems.{CustomItemStack, ItemGroup}
 import BallCore.UI.Elements.*
 import BallCore.UI.Prompts
 import org.bukkit.inventory.ItemStack
-import org.bukkit.inventory.RecipeChoice.MaterialChoice
 import org.bukkit.plugin.Plugin
 import org.bukkit.{Material, NamespacedKey}
+import RecipeIngredient.*
 
 object Kiln:
     val pairs: List[(Material, Material, (Int, Int), String)] = List(
@@ -61,7 +61,7 @@ object Kiln:
             val (mult, div) = ratio
             Recipe(
                 name,
-                List((MaterialChoice(in), 64)),
+                List((Vanilla(in), 64)),
                 List(ItemStack(out, (64 * mult) / div)),
                 10,
                 1,
@@ -72,7 +72,7 @@ object Kiln:
                 "Smelt Glass",
                 List(
                     (
-                        MaterialChoice(
+                        Vanilla(
                             Material.SAND,
                             Material.RED_SAND,
                             Material.SOUL_SAND,

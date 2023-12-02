@@ -8,9 +8,9 @@ import BallCore.CustomItems.{CustomItemStack, ItemGroup}
 import BallCore.UI.Elements.*
 import BallCore.UI.Prompts
 import org.bukkit.inventory.ItemStack
-import org.bukkit.inventory.RecipeChoice.MaterialChoice
 import org.bukkit.plugin.Plugin
 import org.bukkit.{Material, NamespacedKey}
+import RecipeIngredient.*
 
 object GlazingKiln:
     val pairs: List[(Material, Material, String)] = List(
@@ -140,8 +140,8 @@ object GlazingKiln:
         Recipe(
             name,
             List(
-                (MaterialChoice(dye), 4),
-                (MaterialChoice(Material.TERRACOTTA), 64),
+                (Vanilla(dye), 4),
+                (Vanilla(Material.TERRACOTTA), 64),
             ),
             List(ItemStack(terracotta, 64)),
             10,

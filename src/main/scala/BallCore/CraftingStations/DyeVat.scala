@@ -8,9 +8,9 @@ import BallCore.CustomItems.{CustomItemStack, ItemGroup}
 import BallCore.UI.Elements.*
 import BallCore.UI.Prompts
 import org.bukkit.inventory.ItemStack
-import org.bukkit.inventory.RecipeChoice.MaterialChoice
 import org.bukkit.plugin.Plugin
 import org.bukkit.{Material, NamespacedKey}
+import RecipeIngredient.*
 
 object DyeVat:
     val pairs: List[(Material, Material, String)] = List(
@@ -43,8 +43,8 @@ object DyeVat:
         Recipe(
             name,
             List(
-                (MaterialChoice(dye), 4),
-                (MaterialChoice(Material.WHITE_WOOL), 64),
+                (Vanilla(dye), 4),
+                (Vanilla(Material.WHITE_WOOL), 64),
             ),
             List(ItemStack(wool, 64)),
             10,

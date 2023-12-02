@@ -12,8 +12,8 @@ import net.kyori.adventure.text.format.{NamedTextColor, TextDecoration}
 import org.bukkit.Material
 import org.bukkit.block.Block
 import org.bukkit.entity.Player
-import org.bukkit.inventory.RecipeChoice.{ExactChoice, MaterialChoice}
-import org.bukkit.inventory.{ItemStack, RecipeChoice}
+import org.bukkit.inventory.ItemStack
+import scala.util.chaining._
 
 import scala.concurrent.Future
 import scala.jdk.CollectionConverters.*
@@ -58,26 +58,31 @@ class RecipeSelectorProgram(recipes: List[Recipe])(using actor: CraftingActor)
             case Message.prevPage =>
                 model.copy(page = (model.page - 1).max(0))
 
-    private def choiceToString(input: RecipeChoice): Component =
+    private def choiceToString(input: RecipeIngredient): Component =
+        import RecipeIngredient._
+
         input match
-            case m: MaterialChoice =>
-                m.getChoices.asScala
-                    .map(mat =>
+            case Vanilla(choices: _*) =>
+                choices.map(mat =>
                         nameOf(ItemStack(mat))
                             .style(NamedTextColor.GRAY, TextDecoration.BOLD)
                     )
                     .toList
                     .mkComponent(txt" or ")
-            case e: ExactChoice =>
-                e.getChoices.asScala
-                    .map(it =>
-                        nameOf(it)
+            case Custom(choices: _*) =>
+                choices.map(mat =>
+                        nameOf(mat)
                             .style(NamedTextColor.GRAY, TextDecoration.BOLD)
                     )
                     .toList
                     .mkComponent(txt" or ")
-            case _ =>
-                txt"TODO: $input"
+            case TagList(tag) =>
+                tag.getValues.asScala.map(mat =>
+                        nameOf(ItemStack(mat))
+                            .style(NamedTextColor.GRAY, TextDecoration.BOLD)
+                    )
+                    .toList
+                    .mkComponent(txt" or ")
 
     private def nameOf(s: ItemStack): Component =
         if s.getItemMeta.hasDisplayName then s.getItemMeta.displayName()
@@ -88,7 +93,7 @@ class RecipeSelectorProgram(recipes: List[Recipe])(using actor: CraftingActor)
             OutlinePane(0, 0, 9, 5) {
                 paginated(model.page).foreach { (recipe, idx) =>
                     Button(
-                        recipe.outputs.head.getType,
+                        recipe.outputs.head.clone().tap(_.setAmount(1)),
                         txt"${recipe.name}".color(NamedTextColor.GREEN),
                         Message.selectRecipe(idx),
                     ) {

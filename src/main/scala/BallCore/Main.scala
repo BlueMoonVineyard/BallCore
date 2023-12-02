@@ -43,6 +43,7 @@ import BallCore.OneTimeTeleport.OneTimeTeleporter
 import BallCore.OneTimeTeleport.GameOneTimeTeleporterHooks
 import BallCore.RandomSpawner.RandomSpawn
 import BallCore.SpawnInventory.SpawnBook
+import BallCore.Gear.Tier1Gear
 
 final class Main extends JavaPlugin:
     given sm: ShutdownCallbacks = ShutdownCallbacks()
@@ -134,6 +135,8 @@ final class Main extends JavaPlugin:
         Rest.Rest.register()
         SpawnBook.register()
         SpawnInventory.Listener.register()
+        Alloys.Tier1.register()
+        Tier1Gear.registerItems()
 
         given aa: AcclimationActor = AcclimationActor.register()
         given rs: RandomSpawn = RandomSpawn()

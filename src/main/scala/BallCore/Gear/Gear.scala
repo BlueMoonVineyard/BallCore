@@ -30,6 +30,10 @@ enum IronToolSetCustomModelDatas(val num: Int) extends CustomModelDatas:
     case hihiirogane extends IronToolSetCustomModelDatas(6)
     case zinc extends IronToolSetCustomModelDatas(7)
     case meteorite extends IronToolSetCustomModelDatas(8)
+    case bronze extends IronToolSetCustomModelDatas(9)
+    case gildedIron extends IronToolSetCustomModelDatas(10)
+    case magnox extends IronToolSetCustomModelDatas(11)
+    case pallalumin extends IronToolSetCustomModelDatas(12)
 
 enum GoldToolSetCustomModelDatas(val num: Int) extends CustomModelDatas:
     case gold extends GoldToolSetCustomModelDatas(1)

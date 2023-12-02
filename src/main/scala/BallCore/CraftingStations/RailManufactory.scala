@@ -8,24 +8,22 @@ import BallCore.CustomItems.{CustomItemStack, ItemGroup}
 import BallCore.Ores.QuadrantOres.ItemStacks.{goldLikes, ironLikes}
 import BallCore.UI.Elements.*
 import BallCore.UI.Prompts
-import org.bukkit.inventory.RecipeChoice.{ExactChoice, MaterialChoice}
-import org.bukkit.inventory.{ItemStack, RecipeChoice}
+import org.bukkit.inventory.ItemStack
 import org.bukkit.plugin.Plugin
 import org.bukkit.{Material, NamespacedKey}
-
-import scala.jdk.CollectionConverters.*
+import RecipeIngredient.*
 
 object RailManufactory:
-    private val ironChoice: ExactChoice = ExactChoice(
-        ironLikes.map(_.ingot).asJava
+    private val ironChoice: RecipeIngredient = Custom(
+        ironLikes.map(_.ingot): _*
     )
-    private val goldChoice: ExactChoice = ExactChoice(
-        goldLikes.map(_.ingot).asJava
+    private val goldChoice: RecipeIngredient = Custom(
+        goldLikes.map(_.ingot): _*
     )
-    val pairs: List[(List[(RecipeChoice, Int)], Material, (Int, Int), String)] =
+    val pairs: List[(List[(RecipeIngredient, Int)], Material, (Int, Int), String)] =
         List(
             (
-                List(ironChoice -> 64, MaterialChoice(Material.STICK) -> 8),
+                List(ironChoice -> 64, Vanilla(Material.STICK) -> 8),
                 Material.RAIL,
                 (256, 342),
                 "Make Rail",
@@ -33,8 +31,8 @@ object RailManufactory:
             (
                 List(
                     goldChoice -> 64,
-                    MaterialChoice(Material.STICK) -> 8,
-                    MaterialChoice(Material.REDSTONE) -> 8,
+                    Vanilla(Material.STICK) -> 8,
+                    Vanilla(Material.REDSTONE) -> 8,
                 ),
                 Material.POWERED_RAIL,
                 (256, 342),
@@ -43,8 +41,8 @@ object RailManufactory:
             (
                 List(
                     ironChoice -> 32,
-                    MaterialChoice(Material.STONE_PRESSURE_PLATE) -> 8,
-                    MaterialChoice(Material.REDSTONE) -> 8,
+                    Vanilla(Material.STONE_PRESSURE_PLATE) -> 8,
+                    Vanilla(Material.REDSTONE) -> 8,
                 ),
                 Material.DETECTOR_RAIL,
                 (8, 16),
