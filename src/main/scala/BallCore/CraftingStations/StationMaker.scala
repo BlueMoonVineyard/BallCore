@@ -149,6 +149,18 @@ object StationMaker:
             30,
             1,
         ),
+        Recipe(
+            "Make Slimer",
+            List(
+                (Vanilla(Material.CRAFTING_TABLE), 1),
+                (Vanilla(Material.SLIME_BALL), 1),
+            ),
+            List(
+                Slimer.template
+            ),
+            30,
+            1,
+        ),
     )
     val template: CustomItemStack = CustomItemStack.make(
         NamespacedKey("ballcore", "station_maker"),

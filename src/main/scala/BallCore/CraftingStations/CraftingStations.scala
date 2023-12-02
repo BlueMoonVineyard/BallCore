@@ -39,6 +39,7 @@ object CraftingStations:
         registry.register(CarnivoreKitchen())
         registry.register(HerbivoreKitchen())
         registry.register(Tier1Alloyer())
+        registry.register(Slimer())
 
         val smRecipe = ShapedRecipe(
             NamespacedKey("ballcore", "craft_station_maker"),
