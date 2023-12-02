@@ -23,7 +23,6 @@ import org.bukkit.plugin.Plugin
 import java.util.concurrent.TimeUnit
 import scala.concurrent.ExecutionContext
 import scala.util.chaining.*
-import org.bukkit.Bukkit
 import BallCore.CustomItems.ItemRegistry
 
 enum CraftingMessage:
@@ -116,12 +115,9 @@ class CraftingActor(using p: Plugin, ir: ItemRegistry) extends Actor[CraftingMes
         inventory: Inventory,
     ): Boolean =
         var rezept = recipe
-        Bukkit.getServer().sendMessage(txt"incoming: ${rezept}")
         inventory.getStorageContents.foreach { is =>
             if is != null then
-                Bukkit.getServer().sendMessage(txt"  itemstack: ${is}")
                 rezept = updateFirst(rezept)((ingredient, amount) =>
-                    Bukkit.getServer().sendMessage(txt"    comparing: ${ingredient}: ${ingredient.test(is)}")
                     ingredient.test(is) && amount > 0
                 ) { (ingredient, amount) =>
                     val targeted =
@@ -130,7 +126,6 @@ class CraftingActor(using p: Plugin, ir: ItemRegistry) extends Actor[CraftingMes
                     (ingredient, amount - targeted.getAmount)
                 }
         }
-        Bukkit.getServer().sendMessage(txt"outgoing: ${rezept}")
         rezept.forall(_._2 <= 0)
 
     private def completeJob(job: Job): Unit =
