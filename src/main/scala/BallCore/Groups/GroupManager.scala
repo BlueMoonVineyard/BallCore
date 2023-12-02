@@ -348,25 +348,23 @@ class GroupManager()(using sql: Storage.SQLManager):
         Session[IO],
         Transaction[IO],
     ): IO[Either[GroupError, Unit]] =
-        sql.txIO { tx =>
-            getGroup(group)
-                .guard(GroupError.MustNotBeOwner) {
-                    !_.owners.contains(as)
-                }
-                .guard(GroupError.TargetNotInGroup) {
-                    _.users.contains(as)
-                }
-                .flatMap { _ =>
-                    EitherT.right(
-                        sql.commandIO(
-                            sql"DELETE FROM GroupMemberships WHERE GroupID = $uuid AND UserID = $uuid",
-                            (group, as),
-                        )
+        getGroup(group)
+            .guard(GroupError.MustNotBeOwner) {
+                !_.owners.contains(as)
+            }
+            .guard(GroupError.TargetNotInGroup) {
+                _.users.contains(as)
+            }
+            .flatMap { _ =>
+                EitherT.right(
+                    sql.commandIO(
+                        sql"DELETE FROM GroupMemberships WHERE GroupID = $uuid AND UserID = $uuid",
+                        (group, as),
                     )
-                }
-                .map(_ => ())
-                .value
-        }
+                )
+            }
+            .map(_ => ())
+            .value
 
     def deleteGroup(as: UserID, group: GroupID)(using
         Session[IO],
@@ -928,20 +926,18 @@ class GroupManager()(using sql: Storage.SQLManager):
         Session[IO],
         Transaction[IO],
     ): IO[Either[GroupError, Map[SubgroupID, Subclaims]]] =
-        sql.txIO { tx =>
-            EitherT
-                .right(
-                    sql.queryListIO(
-                        sql"""
-            SELECT SubgroupID, Claims FROM SubgroupClaims WHERE GroupID = $uuid;
-            """,
-                        uuid *: jsonb[Subclaims],
-                        groupID,
-                    )
+        EitherT
+            .right(
+                sql.queryListIO(
+                    sql"""
+        SELECT SubgroupID, Claims FROM SubgroupClaims WHERE GroupID = $uuid;
+        """,
+                    uuid *: jsonb[Subclaims],
+                    groupID,
                 )
-                .map { x => x.toMap }
-                .value
-        }
+            )
+            .map { x => x.toMap }
+            .value
 
     def getGroup(groupID: GroupID)(using
         Session[IO],
