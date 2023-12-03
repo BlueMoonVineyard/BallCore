@@ -44,6 +44,7 @@ import BallCore.OneTimeTeleport.GameOneTimeTeleporterHooks
 import BallCore.RandomSpawner.RandomSpawn
 import BallCore.SpawnInventory.SpawnBook
 import BallCore.Gear.Tier1Gear
+import BallCore.Elevator.Elevators
 
 final class Main extends JavaPlugin:
     given sm: ShutdownCallbacks = ShutdownCallbacks()
@@ -175,6 +176,7 @@ final class Main extends JavaPlugin:
         GammaCommand().node.register()
         OneTimeAdaptation().node.register()
         RestartTimer().register()
+        Elevators.register()
         val msg = MessageCommand()
         msg.node.`override`()
         msg.replyNode.register()
