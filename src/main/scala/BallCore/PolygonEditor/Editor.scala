@@ -72,6 +72,18 @@ case class EditorModel(
             case e: IllegalArgumentException =>
                 false
 
+    lazy val polygonArea: Int =
+        try
+            val jtsPolygon = gf.createPolygon(
+                polygon
+                    .appended(polygon.head)
+                    .map(point => Coordinate(point.getX, point.getZ))
+                    .toArray
+            )
+            jtsPolygon.getArea().toInt
+        catch
+            case e: IllegalArgumentException =>
+                0
     lazy val lines: List[(Location, Location)] =
         polygon
             .sliding(2, 1)

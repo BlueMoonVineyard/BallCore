@@ -31,6 +31,8 @@ import scala.concurrent.{Future, Promise}
 import BallCore.Beacons.PolygonAdjustmentError
 import BallCore.Sigils.BattleManager
 import cats.effect.IO
+import net.kyori.adventure.bossbar.BossBar
+import net.kyori.adventure.text.Component
 
 object PolygonEditor:
     def register()(using e: PolygonEditor, p: Plugin): Unit =
@@ -70,8 +72,12 @@ class EditorListener()(using e: PolygonEditor) extends Listener:
         e.leave(event.getPlayer)
 
 enum PlayerState:
-    case editing(state: EditorModel)
-    case creating(state: CreatorModel, actions: List[CreatorAction])
+    case editing(state: EditorModel, bar: BossBar, maxArea: Int)
+    case creating(
+        state: CreatorModel,
+        actions: List[CreatorAction],
+        maxArea: Int,
+    )
 
 class PolygonEditor(using
     p: Plugin,
@@ -94,9 +100,37 @@ class PolygonEditor(using
     def leave(player: Player): Unit =
         val _ = playerPolygons.remove(player)
 
+    private def createBossBar(actualArea: Int, maxArea: Int, player: Player): BossBar =
+        val bar = BossBar.bossBar(
+            Component.text(s"Area Used: ${actualArea} / ${maxArea}"),
+            (actualArea.toFloat / maxArea.toFloat).min(1f).max(0f),
+            if actualArea > maxArea then BossBar.Color.RED
+            else BossBar.Color.GREEN,
+            BossBar.Overlay.PROGRESS,
+        )
+        bar.addViewer(player)
+        bar
+
+    private def updateBossBar(
+        actualArea: Int,
+        maxArea: Int,
+        bar: BossBar,
+    ): Unit =
+        bar.name(Component.text(s"Area Used: ${actualArea} / ${maxArea}"))
+        bar.color(
+            if actualArea > maxArea then BossBar.Color.RED
+            else BossBar.Color.GREEN
+        )
+        bar.progress((actualArea.toFloat / maxArea.toFloat).min(1f).max(0f))
+        ()
+
     def create(player: Player, world: World, beaconID: BeaconID): Unit =
         import BallCore.UI.ChatElements.*
-        sql.useBlocking(sql.withS(bm.getPolygonFor(beaconID))) match
+        sql.useBlocking(sql.withS((for {
+            existingPolygon <- bm.getPolygonFor(beaconID)
+            population <- bm.beaconSize(beaconID)
+            area = CivBeaconManager.populationToArea(population.toInt)
+        } yield existingPolygon match
             case None =>
                 player.sendServerMessage(
                     txt"You'll be defining your claim as 4 points"
@@ -104,13 +138,18 @@ class PolygonEditor(using
                 playerPolygons(player) = PlayerState.creating(
                     CreatorModel(beaconID, CreatorModelState.definingPointA()),
                     List(),
+                    area,
                 )
             case Some(polygon) =>
                 player.sendServerMessage(
                     txt"You've started editing your claims"
                 )
-                playerPolygons(player) =
-                    PlayerState.editing(EditorModel(beaconID, polygon, world))
+                playerPolygons(player) = PlayerState.editing(
+                    EditorModel(beaconID, polygon, world),
+                    createBossBar(polygon.getArea().toInt, area, player),
+                    area,
+                )
+        )))
 
     def render(): Unit =
         playerPolygons.foreach { (player, model) =>
@@ -119,9 +158,10 @@ class PolygonEditor(using
                     p,
                     _ => {
                         model match
-                            case PlayerState.editing(state) =>
-                                renderEditor(player, state)
-                            case PlayerState.creating(state, actions) =>
+                            case PlayerState.editing(state, bar, maxArea) =>
+                                renderEditor(player, state, bar, maxArea)
+                            case PlayerState
+                                    .creating(state, actions, maxArea) =>
                                 renderCreator(player, state, actions)
                     },
                     null,
@@ -163,9 +203,15 @@ class PolygonEditor(using
                     txt"${keybind("key.use").style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Place Point 4"
                 )
 
-    private def renderEditor(player: Player, model: EditorModel): Unit =
+    private def renderEditor(
+        player: Player,
+        model: EditorModel,
+        bar: BossBar,
+        maxArea: Int,
+    ): Unit =
         import EditorModelState.*
 
+        updateBossBar(model.polygonArea, maxArea, bar)
         model.couldWarGroup match
             case None =>
             case Some((_, _, polygon)) =>
@@ -209,11 +255,11 @@ class PolygonEditor(using
                     model.couldWarGroup match
                         case None =>
                             txt"${txt("/done").style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Save and stop editing  |  ${txt("/cancel")
-                            .style(NamedTextColor.GOLD, TextDecoration.BOLD)}"
+                                    .style(NamedTextColor.GOLD, TextDecoration.BOLD)}"
                         case Some(_) =>
                             txt"${txt("/done").style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Save and stop editing  |  ${txt("/declare")
                                     .style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Start a battle for this land  |  ${txt("/cancel")
-                            .style(NamedTextColor.GOLD, TextDecoration.BOLD)}"
+                                    .style(NamedTextColor.GOLD, TextDecoration.BOLD)}"
                 )
             case lookingAt(loc) =>
                 player.sendActionBar(
@@ -229,6 +275,8 @@ class PolygonEditor(using
         player: Player,
         model: EditorModel,
         actions: List[EditorAction],
+        bar: BossBar,
+        maxArea: Int,
     ): Option[PlayerState] =
         val done = actions
             .filter { action =>
@@ -290,16 +338,18 @@ class PolygonEditor(using
             }
         done.lastOption match
             case None =>
-                Some(PlayerState.editing(model))
+                Some(PlayerState.editing(model, bar, maxArea))
             case Some(None) =>
+                bar.removeViewer(player)
                 None
             case Some(Some(newModel)) =>
-                Some(PlayerState.editing(newModel))
+                Some(PlayerState.editing(newModel, bar, maxArea))
 
     private def handleCreator(
         player: Player,
         model: CreatorModel,
         actions: List[CreatorAction],
+        maxArea: Int,
     ): PlayerState =
         val done = actions
             .filter { action =>
@@ -313,16 +363,34 @@ class PolygonEditor(using
             .flatMap { action =>
                 action match
                     case CreatorAction.finished(points) =>
+                        val area =
+                            try
+                                val jtsPolygon = gf.createPolygon(
+                                    points
+                                        .appended(points.head)
+                                        .map(point =>
+                                            Coordinate(point.getX, point.getZ)
+                                        )
+                                        .toArray
+                                )
+                                jtsPolygon.getArea().toInt
+                            catch
+                                case e: IllegalArgumentException =>
+                                    0
                         Some(
                             PlayerState
-                                .editing(EditorModel(model.beaconID, points))
+                                .editing(
+                                    EditorModel(model.beaconID, points),
+                                    createBossBar(area, maxArea, player),
+                                    maxArea,
+                                )
                         )
                     case _ =>
                         None
             }
         done.lastOption match
             case None =>
-                PlayerState.creating(model, actions)
+                PlayerState.creating(model, actions, maxArea)
             case Some(state) =>
                 state
 
@@ -337,7 +405,7 @@ class PolygonEditor(using
         val newState =
             oldState.flatMap { state =>
                 state match
-                    case PlayerState.editing(model) =>
+                    case PlayerState.editing(model, _, _) =>
                         model.couldWarGroup match
                             case None =>
                                 Some(state)
@@ -408,15 +476,18 @@ class PolygonEditor(using
             case None =>
             case Some(value) =>
                 value.failure(null)
-        val _ = playerPolygons.remove(player)
+        playerPolygons.remove(player) match
+            case Some(PlayerState.editing(_, bar, _)) =>
+                val _ = bar.removeViewer(player)
+            case _ =>
 
     def done(player: Player): Unit =
         val _ = playerPolygons.updateWith(player) { state =>
             state.flatMap(state =>
                 state match
-                    case PlayerState.editing(state) =>
+                    case PlayerState.editing(state, bar, maxArea) =>
                         val (model, actions) = state.update(EditorMsg.done())
-                        handleEditor(player, model, actions)
+                        handleEditor(player, model, actions, bar, maxArea)
                     case _ =>
                         Some(state)
             )
@@ -427,10 +498,10 @@ class PolygonEditor(using
             playerPolygons.updateWith(player) { state =>
                 state.flatMap(state =>
                     state match
-                        case PlayerState.editing(state) =>
+                        case PlayerState.editing(state, bar, maxArea) =>
                             val (model, actions) =
                                 state.update(EditorMsg.leftClick())
-                            handleEditor(player, model, actions)
+                            handleEditor(player, model, actions, bar, maxArea)
                         case _ =>
                             Some(state)
                 )
@@ -447,14 +518,14 @@ class PolygonEditor(using
             val _ = playerPolygons.updateWith(player) { state =>
                 state.flatMap(state =>
                     state match
-                        case PlayerState.editing(state) =>
+                        case PlayerState.editing(state, bar, maxArea) =>
                             val (model, actions) =
                                 state.update(EditorMsg.rightClick())
-                            handleEditor(player, model, actions)
-                        case PlayerState.creating(state, _) =>
+                            handleEditor(player, model, actions, bar, maxArea)
+                        case PlayerState.creating(state, _, maxArea) =>
                             val (model, actions) =
                                 state.update(CreatorMsg.click(on))
-                            Some(handleCreator(player, model, actions))
+                            Some(handleCreator(player, model, actions, maxArea))
                 )
             }
             true
@@ -466,10 +537,10 @@ class PolygonEditor(using
         val _ = playerPolygons.updateWith(player) { state =>
             state.flatMap(state =>
                 state match
-                    case PlayerState.editing(state) =>
+                    case PlayerState.editing(state, bar, maxArea) =>
                         val (model, actions) =
                             state.update(EditorMsg.look(targetLoc))
-                        handleEditor(player, model, actions)
+                        handleEditor(player, model, actions, bar, maxArea)
                     case _ =>
                         Some(state)
             )
