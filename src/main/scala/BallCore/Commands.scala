@@ -424,12 +424,16 @@ class CheatCommand(using
             )
             .`then`(
                 LiteralArgument("tick-plants")
-                    .executesPlayer({ (sender, args) =>
-                        pbm.send(PlantMsg.tickPlants)
-                        sender.sendServerMessage(
-                            txt"An hour of ingame time has passed"
-                        )
-                    }: PlayerCommandExecutor)
+                    .`then`(
+                        IntegerArgument("amount")
+                            .executesPlayer({ (sender, args) =>
+                                for _ <- 1 to args.getUnchecked[Integer]("amount").intValue() do
+                                    pbm.send(PlantMsg.tickPlants)
+                                    sender.sendServerMessage(
+                                        txt"An hour of ingame time has passed"
+                                    )
+                            }: PlayerCommandExecutor)
+                    )
             )
             .`then`(
                 LiteralArgument("tick-acclimation")

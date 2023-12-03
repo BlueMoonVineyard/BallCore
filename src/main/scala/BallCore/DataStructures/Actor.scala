@@ -42,7 +42,14 @@ trait Actor[Msg]:
         val _ = this.queue.add(TrueMsg.inner(m))
 
     def startListener()(using cb: ShutdownCallbacks): Unit =
-        Thread.startVirtualThread(() => this.mainLoop())
+        val thread = Thread.startVirtualThread(() =>
+            try
+                println(s"Actor Thread for ${this.getClass().getSimpleName()} is starting")
+                this.mainLoop()
+            finally
+                println(s"Actor Thread for ${this.getClass().getSimpleName()} is shutting down")
+        )
+        thread.setName(s"Actor Thread: ${this.getClass().getSimpleName()}")
         cb.add(this.shutdown)
 
     def shutdown(): Future[Unit] =

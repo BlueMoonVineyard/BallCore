@@ -326,7 +326,7 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin, c: Clock)
                                 )
                             case (true, true) =>
                                 player.sendServerMessage(
-                                    txt"This plant is in the right season and climate!"
+                                    txt"This plant is in the right season and climate! It is ${plant.inner.ageIngameHours} hours old."
                                 )
                     }
                 }
@@ -417,10 +417,11 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin, c: Clock)
 
                                 1.to(data.inner.incompleteGrowthAdvancements)
                                     .exists { _ =>
-                                        PlantGrower.grow(
+                                        val result = PlantGrower.grow(
                                             block,
                                             data.inner.what.plant,
                                         )
+                                        result.isSuccess && result.get
                                     }
                             }
                         this.send(
