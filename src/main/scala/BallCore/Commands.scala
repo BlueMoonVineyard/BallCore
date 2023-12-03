@@ -63,6 +63,11 @@ import java.util.concurrent.TimeUnit
 import BallCore.Fingerprints.FingerprintManager
 import BallCore.SpawnInventory.FingerprintsAndYou
 import BallCore.SpawnInventory.WorkstationsAndYou
+import BallCore.CraftingStations.CraftingStation
+import BallCore.CraftingStations.{StationListProgram, RecipeViewerProgram}
+import dev.jorel.commandapi.arguments.GreedyStringArgument
+import dev.jorel.commandapi.arguments.ArgumentSuggestions
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer
 
 class OTTCommand(using sql: SQLManager, ott: OneTimeTeleporter):
     private def errorText(err: OTTError): Component =
@@ -150,8 +155,12 @@ class MyFingerprintCommand(using
                         fingerprints.fingerprintFor(sender.getUniqueId)
                     )
                     _ <- IO {
-                        sender.sendServerMessage(txt"Your fingerprint ID is ${print}")
-                        sender.sendServerMessage(txt"Remember: once you share it with other players, you can't unshare it!")
+                        sender.sendServerMessage(
+                            txt"Your fingerprint ID is ${print}"
+                        )
+                        sender.sendServerMessage(
+                            txt"Remember: once you share it with other players, you can't unshare it!"
+                        )
                     }
                 } yield ()))
             }: PlayerCommandExecutor)
@@ -268,6 +277,54 @@ class OneTimeAdaptation(using
                     }: PlayerCommandExecutor)
             )
 
+class StationCommand(using
+    stations: List[CraftingStation],
+    p: Plugin,
+    prompts: UI.Prompts,
+):
+    import scala.jdk.CollectionConverters._
+
+    private def stringify(c: Component) =
+        PlainTextComponentSerializer.plainText().serialize(c)
+    val node =
+        CommandTree("workstations")
+            .executesPlayer({ (sender, args) =>
+                given ExecutionContext = EntityExecutionContext(sender)
+                FireAndForget {
+                    val p = StationListProgram(stations)
+                    val runner = UIProgramRunner(
+                        p,
+                        p.Flags(0),
+                        sender,
+                    )
+                    runner.render()
+                }
+            }: PlayerCommandExecutor)
+            .`then`(
+                GreedyStringArgument("workstation")
+                    .replaceSuggestions(
+                        ArgumentSuggestions.strings(
+                            stations.map(x => stringify(x.template.getItemMeta().displayName())).asJava
+                        )
+                    )
+                    .executesPlayer({ (sender, args) =>
+                        val arg = args.getUnchecked[String]("workstation")
+                        stations.find(station =>
+                            stringify(station.template.getItemMeta().displayName()) == arg
+                        ) match
+                            case None =>
+                                sender.sendServerMessage(txt"I couldn't find a workstation with that name!")
+                            case Some(station) =>
+                                val p = RecipeViewerProgram(stations, station.recipes)
+                                val runner = UIProgramRunner(
+                                    p,
+                                    p.Flags(0),
+                                    sender,
+                                )
+                                runner.render()
+                    }: PlayerCommandExecutor)
+            )
+
 class BookCommand(using
     storage: BallCore.Acclimation.Storage,
     sql: SQLManager,
@@ -288,7 +345,9 @@ class BookCommand(using
                 LiteralArgument("workstations-and-you")
                     .executesPlayer({ (sender, args) =>
                         sql.useFireAndForget(for {
-                            book <- sql.withS(WorkstationsAndYou.viewForPlayer(sender))
+                            book <- sql.withS(
+                                WorkstationsAndYou.viewForPlayer(sender)
+                            )
                             _ <- IO { sender.openBook(book) }
                         } yield ())
                     }: PlayerCommandExecutor)
@@ -327,6 +386,7 @@ class InformationGiver():
                 .color(Colors.teal)}!",
         txt"[CivCubed] The more time you spend somewhere, the more ores you'll get when you mine!",
         txt"[CivCubed] Join the Discord at https://discord.civcubed.net!",
+        txt"[CivCubed] Use ${txt("/workstations").color(Colors.teal)} to view the list of workstations!",
     ).map(_.replaceText(ChatActor.urlReplacer))
     private var informationCounter = 0
 
@@ -863,13 +923,21 @@ class ChatCommands(using ca: ChatActor, gm: GroupManager, sql: SQLManager):
                     })
                     .`then`(
                         AdventureChatArgument("message")
-                            .executesPlayer(withGroupArgument("group-to-chat-in") {
-                                (sender, args, group) =>
-                                    ca.send(
-                                        ChatMessage
-                                            .sendToGroup(sender, args.getUnchecked[Component]("message"), group.id)
-                                    )
-                            })
+                            .executesPlayer(
+                                withGroupArgument("group-to-chat-in") {
+                                    (sender, args, group) =>
+                                        ca.send(
+                                            ChatMessage
+                                                .sendToGroup(
+                                                    sender,
+                                                    args.getUnchecked[
+                                                        Component
+                                                    ]("message"),
+                                                    group.id,
+                                                )
+                                        )
+                                }
+                            )
                     )
             )
 
@@ -883,7 +951,10 @@ class ChatCommands(using ca: ChatActor, gm: GroupManager, sql: SQLManager):
                     .executesPlayer({ (sender, args) =>
                         ca.send(
                             ChatMessage
-                                .sendToGlobal(sender, args.getUnchecked[Component]("message"))
+                                .sendToGlobal(
+                                    sender,
+                                    args.getUnchecked[Component]("message"),
+                                )
                         )
                     }: PlayerCommandExecutor)
             )
@@ -899,7 +970,10 @@ class ChatCommands(using ca: ChatActor, gm: GroupManager, sql: SQLManager):
                     .executesPlayer({ (sender, args) =>
                         ca.send(
                             ChatMessage
-                                .sendToLocal(sender, args.getUnchecked[Component]("message"))
+                                .sendToLocal(
+                                    sender,
+                                    args.getUnchecked[Component]("message"),
+                                )
                         )
                     }: PlayerCommandExecutor)
             )

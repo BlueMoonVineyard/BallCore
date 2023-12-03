@@ -46,6 +46,7 @@ import BallCore.SpawnInventory.SpawnBook
 import BallCore.Gear.Tier1Gear
 import BallCore.Elevator.Elevators
 import BallCore.Fingerprints.FingerprintManager
+import BallCore.CraftingStations.CraftingStation
 
 final class Main extends JavaPlugin:
     given sm: ShutdownCallbacks = ShutdownCallbacks()
@@ -135,7 +136,7 @@ final class Main extends JavaPlugin:
         Furnace.registerItems()
         Reinforcements.register()
         CustomItemListener.register()
-        CraftingStations.register()
+        given List[CraftingStation] = CraftingStations.register()
         Rest.Rest.register()
         SpawnBook.register()
         SpawnInventory.Listener.register()
@@ -185,6 +186,7 @@ final class Main extends JavaPlugin:
         msg.replyNode.register()
         msg.meNode.`override`()
         MyFingerprintCommand().node.register()
+        StationCommand().node.register()
 
     override def onDisable(): Unit =
         CommandAPI.onDisable()

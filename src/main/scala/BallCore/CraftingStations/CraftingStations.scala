@@ -26,24 +26,27 @@ object CraftingStations:
         prompts: Prompts,
         sm: ShutdownCallbacks,
         sql: SQLManager,
-    ): Unit =
+    ): List[CraftingStation] =
         given act: CraftingActor = CraftingActor()
 
         act.startListener()
-        registry.register(DyeVat())
-        registry.register(GlazingKiln())
-        registry.register(Kiln())
-        registry.register(StationMaker())
-        registry.register(ConcreteMixer())
-        registry.register(RailManufactory())
-        registry.register(Woodcutter())
-        registry.register(RedstoneMaker())
-        registry.register(CarnivoreKitchen())
-        registry.register(HerbivoreKitchen())
-        registry.register(Tier1Alloyer())
-        registry.register(Slimer())
-        registry.register(Economist())
-        registry.register(IceBox())
+        val stations = List(
+            DyeVat(),
+            GlazingKiln(),
+            Kiln(),
+            StationMaker(),
+            ConcreteMixer(),
+            RailManufactory(),
+            Woodcutter(),
+            RedstoneMaker(),
+            CarnivoreKitchen(),
+            HerbivoreKitchen(),
+            Tier1Alloyer(),
+            Slimer(),
+            Economist(),
+            IceBox(),
+        )
+        stations.foreach(registry.register(_))
 
         val smRecipe = ShapedRecipe(
             NamespacedKey("ballcore", "craft_station_maker"),
@@ -56,7 +59,9 @@ object CraftingStations:
         smRecipe.setIngredient('I', MaterialChoice(Material.CRAFTING_TABLE))
         registry.addRecipe(smRecipe)
 
-abstract class CraftingStation(recipes: List[Recipe])(using
+        stations
+
+abstract class CraftingStation(val recipes: List[Recipe])(using
     act: CraftingActor,
     p: Plugin,
     prompts: Prompts,
