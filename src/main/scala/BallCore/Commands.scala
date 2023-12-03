@@ -62,6 +62,7 @@ import org.bukkit.Bukkit
 import java.util.concurrent.TimeUnit
 import BallCore.Fingerprints.FingerprintManager
 import BallCore.SpawnInventory.FingerprintsAndYou
+import BallCore.SpawnInventory.WorkstationsAndYou
 
 class OTTCommand(using sql: SQLManager, ott: OneTimeTeleporter):
     private def errorText(err: OTTError): Component =
@@ -279,6 +280,15 @@ class BookCommand(using
                     .executesPlayer({ (sender, args) =>
                         sql.useFireAndForget(for {
                             book <- sql.withS(OresAndYou.viewForPlayer(sender))
+                            _ <- IO { sender.openBook(book) }
+                        } yield ())
+                    }: PlayerCommandExecutor)
+            )
+            .`then`(
+                LiteralArgument("workstations-and-you")
+                    .executesPlayer({ (sender, args) =>
+                        sql.useFireAndForget(for {
+                            book <- sql.withS(WorkstationsAndYou.viewForPlayer(sender))
                             _ <- IO { sender.openBook(book) }
                         } yield ())
                     }: PlayerCommandExecutor)
