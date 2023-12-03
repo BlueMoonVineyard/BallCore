@@ -12,7 +12,7 @@ enum BustResult:
     case busting
 
 class BustThroughTracker(using c: Clock):
-    val blockHealth = 150
+    val blockHealth = 250
     val expiryMinutes = 10
 
     private val breakTracker =
