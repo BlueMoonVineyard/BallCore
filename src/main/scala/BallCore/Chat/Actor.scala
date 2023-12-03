@@ -25,6 +25,7 @@ import scala.collection.concurrent.TrieMap
 enum ChatMessage:
     case send(p: Player, m: Component)
     case sendToPlayer(from: Player, m: Component, target: Player)
+    case sendMe(p: Player, m: Component)
 
     case replyToPlayer(from: Player, m: Component)
 
@@ -81,15 +82,25 @@ class ChatActor(using gm: GroupManager, sql: SQLManager)
     private def preprocess(playerMessage: Component): Component =
         playerMessage.replaceText(ChatActor.urlReplacer)
 
-    private def dm(from: Player, to: Player, msg: Component): Unit =
-        to.sendMessage(
-            txt"[DMs] from ${from.displayName()}: ${msg.color(NamedTextColor.WHITE)}"
-                .color(whisperColor)
-        )
-        from.sendMessage(
-            txt"[DMs] to ${to.displayName()}: ${msg.color(NamedTextColor.WHITE)}"
-                .color(whisperColor)
-        )
+    private def dm(from: Player, to: Player, msg: Component, isMe: Boolean): Unit =
+        if isMe then
+            to.sendMessage(
+                txt"[DMs] from * ${from.displayName()} ${msg.color(NamedTextColor.WHITE)}"
+                    .color(whisperColor)
+            )
+            from.sendMessage(
+                txt"[DMs] to ${to.displayName()}: me ${msg.color(NamedTextColor.WHITE)}"
+                    .color(whisperColor)
+            )
+        else
+            to.sendMessage(
+                txt"[DMs] from ${from.displayName()} ${msg.color(NamedTextColor.WHITE)}"
+                    .color(whisperColor)
+            )
+            from.sendMessage(
+                txt"[DMs] to ${to.displayName()}: ${msg.color(NamedTextColor.WHITE)}"
+                    .color(whisperColor)
+            )
         playerReplies(to) = from
 
     def handle(m: ChatMessage): Unit =
@@ -135,7 +146,49 @@ class ChatActor(using gm: GroupManager, sql: SQLManager)
                                 )
                             }
                     case PlayerState.chattingWith(target) =>
-                        dm(p, target, m)
+                        dm(p, target, m, false)
+            case ChatMessage.sendMe(p, m_) =>
+                val m = preprocess(m_)
+                states(p) match
+                    case PlayerState.globalChat =>
+                        Bukkit.getServer
+                            .sendMessage(
+                                txt"[!] * ${p.displayName()} ${m.color(NamedTextColor.WHITE)}"
+                                    .color(globalGrey)
+                            )
+                    case PlayerState.localChat =>
+                        val nearby = Bukkit.getOnlinePlayers.asScala
+                            .filter { plr =>
+                                plr.getWorld == p.getWorld
+                            }
+                            .filter { plr =>
+                                plr.getLocation()
+                                    .distanceSquared(
+                                        p.getLocation()
+                                    ) < 500 * 500
+                            }
+                            .asJava
+                        Audience
+                            .audience(nearby)
+                            .sendMessage(
+                                txt"[Local] * ${p.displayName()} ${m.color(NamedTextColor.WHITE)}"
+                                    .color(localGrey)
+                            )
+                    case PlayerState.groupChat(group) =>
+                        sql
+                            .useBlocking {
+                                sql.withS(
+                                    sql.withTX(gm.groupAudience(group).value)
+                                )
+                            }
+                            .foreach { (name, aud) =>
+                                aud.sendMessage(
+                                    txt"[$name] * ${p.displayName()} ${m.color(NamedTextColor.WHITE)}"
+                                        .color(groupGrey)
+                                )
+                            }
+                    case PlayerState.chattingWith(target) =>
+                        dm(p, target, m, true)
             case ChatMessage.joined(p) =>
                 Bukkit.getServer
                     .sendMessage(
@@ -170,7 +223,7 @@ class ChatActor(using gm: GroupManager, sql: SQLManager)
                     )
                 )
             case ChatMessage.sendToPlayer(from, m, target) =>
-                dm(from, target, m)
+                dm(from, target, m, false)
             case ChatMessage.replyToPlayer(from, m) =>
                 playerReplies.get(from) match
                     case None =>
@@ -178,7 +231,7 @@ class ChatActor(using gm: GroupManager, sql: SQLManager)
                             txt"You have nobody to reply to."
                         )
                     case Some(target) =>
-                        dm(from, target, m)
+                        dm(from, target, m, false)
             case ChatMessage.chattingWithPlayer(from, target) =>
                 states += from -> PlayerState.chattingWith(target)
                 from.sendMessage(

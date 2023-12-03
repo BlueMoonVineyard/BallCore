@@ -713,6 +713,20 @@ class DeclareCommand(using
             }: PlayerCommandExecutor)
 
 class MessageCommand(using ca: ChatActor):
+    val meNode =
+        CommandTree("me")
+            .`then`(
+                AdventureChatArgument("message")
+                    .executesPlayer({ (sender, args) =>
+                        ca.send(
+                            ChatMessage.sendMe(
+                                sender,
+                                args.getUnchecked[Component]("message"),
+                            )
+                        )
+                    }: PlayerCommandExecutor)
+            )
+
     val node =
         CommandTree("msg")
             .withAliases("w", "whisper", "message")

@@ -178,6 +178,7 @@ final class Main extends JavaPlugin:
         val msg = MessageCommand()
         msg.node.`override`()
         msg.replyNode.register()
+        msg.meNode.`override`()
 
     override def onDisable(): Unit =
         CommandAPI.onDisable()
