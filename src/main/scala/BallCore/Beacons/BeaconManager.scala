@@ -200,9 +200,10 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
         Session[IO]
     ): IO[Either[Unit, Unit]] =
         for {
+            existingGroup <- getGroup(beacon)
             size <- beaconSize(beacon)
             result <-
-                if size != 1 then IO.pure(Left(()))
+                if size != 1 && existingGroup.isDefined then IO.pure(Left(()))
                 else
                     sql
                         .commandIO(
