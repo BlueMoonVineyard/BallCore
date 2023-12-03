@@ -93,9 +93,9 @@ enum PolygonAdjustmentError:
 
 object CivBeaconManager:
     def populationToArea(count: Int): Int =
-        if count == 1 then (32 * 32) * count
-        else if count < 10 then ((32 * 32) * 2 * count) - 1024
-        else ((32 * 32) * count) + 9 * 1024
+        if count == 1 then (64 * 64) * count
+        else if count < 10 then ((64 * 64) * 2 * count) - (64*64)
+        else ((64 * 64) * count) + 9 * (64*64)
 
 class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
     sql.applyMigration(
