@@ -471,10 +471,12 @@ class Listener(using
         if sql
                 .useBlocking(
                     sql.withS(
-                        cbm.beaconContaining(event.getBlock.getLocation())
+                        for {
+                            fromBlock <- cbm.beaconContaining(event.getBlock.getLocation())
+                            toBlock <- cbm.beaconContaining(event.getToBlock.getLocation())
+                        } yield fromBlock != toBlock
                     )
                 )
-                .isDefined
         then event.setCancelled(true)
 
     // prevent plants from breaking reinforced blocks
