@@ -21,6 +21,8 @@ import org.bukkit.entity.Player
 import java.util.regex.Pattern
 import scala.jdk.CollectionConverters.*
 import scala.collection.concurrent.TrieMap
+import com.github.tommyettinger.colorful.pure.oklab.ColorTools
+import scala.util.Random
 
 enum ChatMessage:
     case send(p: Player, m: Component)
@@ -67,7 +69,13 @@ class ChatActor(using gm: GroupManager, sql: SQLManager)
     var states: Map[Player, PlayerState] =
         Map[Player, PlayerState]().withDefaultValue(PlayerState.globalChat)
     private val globalGrey: TextColor = TextColor.fromHexString("#686b6f")
-    private val groupGrey: TextColor = TextColor.fromHexString("#9b9ea2")
+    private def groupColor(name: String): TextColor =
+        val rand = Random(name.hashCode())
+        val range = 0.2f
+        val a = rand.between(0.5f - range, 0.5f + range)
+        val b = rand.between(0.5f - range, 0.5f + range)
+        val oklab = ColorTools.oklab(0.6f, a, b, 1.0f)
+        TextColor.color(ColorTools.red(oklab), ColorTools.green(oklab), ColorTools.blue(oklab))
     private val localGrey: TextColor = TextColor.fromHexString("#b6b9bd")
     private val whisperColor: TextColor = TextColor.fromHexString("#ff8255")
 
@@ -142,7 +150,7 @@ class ChatActor(using gm: GroupManager, sql: SQLManager)
                             .foreach { (name, aud) =>
                                 aud.sendMessage(
                                     txt"[$name] ${p.displayName()}: ${m.color(NamedTextColor.WHITE)}"
-                                        .color(groupGrey)
+                                        .color(groupColor(name))
                                 )
                             }
                     case PlayerState.chattingWith(target) =>
@@ -184,7 +192,7 @@ class ChatActor(using gm: GroupManager, sql: SQLManager)
                             .foreach { (name, aud) =>
                                 aud.sendMessage(
                                     txt"[$name] * ${p.displayName()} ${m.color(NamedTextColor.WHITE)}"
-                                        .color(groupGrey)
+                                        .color(groupColor(name))
                                 )
                             }
                     case PlayerState.chattingWith(target) =>
