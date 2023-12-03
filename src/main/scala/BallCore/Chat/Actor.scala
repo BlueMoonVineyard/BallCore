@@ -26,8 +26,12 @@ import scala.util.Random
 
 enum ChatMessage:
     case send(p: Player, m: Component)
-    case sendToPlayer(from: Player, m: Component, target: Player)
     case sendMe(p: Player, m: Component)
+
+    case sendToGroup(from: Player, m: Component, group: GroupID)
+    case sendToGlobal(from: Player, m: Component)
+    case sendToPlayer(from: Player, m: Component, target: Player)
+    case sendToLocal(from: Player, m: Component)
 
     case replyToPlayer(from: Player, m: Component)
 
@@ -75,7 +79,11 @@ class ChatActor(using gm: GroupManager, sql: SQLManager)
         val a = rand.between(0.5f - range, 0.5f + range)
         val b = rand.between(0.5f - range, 0.5f + range)
         val oklab = ColorTools.oklab(0.6f, a, b, 1.0f)
-        TextColor.color(ColorTools.red(oklab), ColorTools.green(oklab), ColorTools.blue(oklab))
+        TextColor.color(
+            ColorTools.red(oklab),
+            ColorTools.green(oklab),
+            ColorTools.blue(oklab),
+        )
     private val localGrey: TextColor = TextColor.fromHexString("#b6b9bd")
     private val whisperColor: TextColor = TextColor.fromHexString("#ff8255")
 
@@ -90,7 +98,12 @@ class ChatActor(using gm: GroupManager, sql: SQLManager)
     private def preprocess(playerMessage: Component): Component =
         playerMessage.replaceText(ChatActor.urlReplacer)
 
-    private def dm(from: Player, to: Player, msg: Component, isMe: Boolean): Unit =
+    private def dm(
+        from: Player,
+        to: Player,
+        msg: Component,
+        isMe: Boolean,
+    ): Unit =
         if isMe then
             to.sendMessage(
                 txt"[DMs] from * ${from.displayName()} ${msg.color(NamedTextColor.WHITE)}"
@@ -111,90 +124,97 @@ class ChatActor(using gm: GroupManager, sql: SQLManager)
             )
         playerReplies(to) = from
 
+    private def global(from: Player, msg: Component, isMe: Boolean): Unit =
+        if isMe then
+            Bukkit.getServer
+                .sendMessage(
+                    txt"[!] * ${from.displayName()} ${msg.color(NamedTextColor.WHITE)}"
+                        .color(globalGrey)
+                )
+        else
+            Bukkit.getServer
+                .sendMessage(
+                    txt"[!] ${from.displayName()}: ${msg.color(NamedTextColor.WHITE)}"
+                        .color(globalGrey)
+                )
+
+    private def local(from: Player, msg: Component, isMe: Boolean): Unit =
+        val nearby = Bukkit.getOnlinePlayers.asScala
+            .filter { plr =>
+                plr.getWorld == from.getWorld
+            }
+            .filter { plr =>
+                plr.getLocation()
+                    .distanceSquared(
+                        from.getLocation()
+                    ) < 500 * 500
+            }
+            .asJava
+        if isMe then
+            Audience
+                .audience(nearby)
+                .sendMessage(
+                    txt"[Local] * ${from.displayName()} ${msg.color(NamedTextColor.WHITE)}"
+                        .color(localGrey)
+                )
+        else
+            Audience
+                .audience(nearby)
+                .sendMessage(
+                    txt"[Local] ${from.displayName()}: ${msg.color(NamedTextColor.WHITE)}"
+                        .color(localGrey)
+                )
+
+    private def sendGroup(
+        from: Player,
+        msg: Component,
+        group: GroupID,
+        isMe: Boolean,
+    ): Unit =
+        val audience = sql
+            .useBlocking {
+                sql.withS(
+                    sql.withTX(gm.groupAudience(group).value)
+                )
+            }
+
+        if isMe then
+            audience.foreach { (name, aud) =>
+                aud.sendMessage(
+                    txt"[$name] * ${from.displayName()} ${msg.color(NamedTextColor.WHITE)}"
+                        .color(groupColor(name))
+                )
+            }
+        else
+            audience.foreach { (name, aud) =>
+                aud.sendMessage(
+                    txt"[$name] ${from.displayName()}: ${msg.color(NamedTextColor.WHITE)}"
+                        .color(groupColor(name))
+                )
+            }
+
     def handle(m: ChatMessage): Unit =
         m match
             case ChatMessage.send(p, m_) =>
                 val m = preprocess(m_)
                 states(p) match
                     case PlayerState.globalChat =>
-                        Bukkit.getServer
-                            .sendMessage(
-                                txt"[!] ${p.displayName()}: ${m.color(NamedTextColor.WHITE)}"
-                                    .color(globalGrey)
-                            )
+                        global(p, m, false)
                     case PlayerState.localChat =>
-                        val nearby = Bukkit.getOnlinePlayers.asScala
-                            .filter { plr =>
-                                plr.getWorld == p.getWorld
-                            }
-                            .filter { plr =>
-                                plr.getLocation()
-                                    .distanceSquared(
-                                        p.getLocation()
-                                    ) < 500 * 500
-                            }
-                            .asJava
-                        Audience
-                            .audience(nearby)
-                            .sendMessage(
-                                txt"[Local] ${p.displayName()}: ${m.color(NamedTextColor.WHITE)}"
-                                    .color(localGrey)
-                            )
+                        local(p, m, false)
                     case PlayerState.groupChat(group) =>
-                        sql
-                            .useBlocking {
-                                sql.withS(
-                                    sql.withTX(gm.groupAudience(group).value)
-                                )
-                            }
-                            .foreach { (name, aud) =>
-                                aud.sendMessage(
-                                    txt"[$name] ${p.displayName()}: ${m.color(NamedTextColor.WHITE)}"
-                                        .color(groupColor(name))
-                                )
-                            }
+                        sendGroup(p, m, group, false)
                     case PlayerState.chattingWith(target) =>
                         dm(p, target, m, false)
             case ChatMessage.sendMe(p, m_) =>
                 val m = preprocess(m_)
                 states(p) match
                     case PlayerState.globalChat =>
-                        Bukkit.getServer
-                            .sendMessage(
-                                txt"[!] * ${p.displayName()} ${m.color(NamedTextColor.WHITE)}"
-                                    .color(globalGrey)
-                            )
+                        global(p, m, true)
                     case PlayerState.localChat =>
-                        val nearby = Bukkit.getOnlinePlayers.asScala
-                            .filter { plr =>
-                                plr.getWorld == p.getWorld
-                            }
-                            .filter { plr =>
-                                plr.getLocation()
-                                    .distanceSquared(
-                                        p.getLocation()
-                                    ) < 500 * 500
-                            }
-                            .asJava
-                        Audience
-                            .audience(nearby)
-                            .sendMessage(
-                                txt"[Local] * ${p.displayName()} ${m.color(NamedTextColor.WHITE)}"
-                                    .color(localGrey)
-                            )
+                        local(p, m, true)
                     case PlayerState.groupChat(group) =>
-                        sql
-                            .useBlocking {
-                                sql.withS(
-                                    sql.withTX(gm.groupAudience(group).value)
-                                )
-                            }
-                            .foreach { (name, aud) =>
-                                aud.sendMessage(
-                                    txt"[$name] * ${p.displayName()} ${m.color(NamedTextColor.WHITE)}"
-                                        .color(groupColor(name))
-                                )
-                            }
+                        sendGroup(p, m, group, true)
                     case PlayerState.chattingWith(target) =>
                         dm(p, target, m, true)
             case ChatMessage.joined(p) =>
@@ -232,6 +252,12 @@ class ChatActor(using gm: GroupManager, sql: SQLManager)
                 )
             case ChatMessage.sendToPlayer(from, m, target) =>
                 dm(from, target, m, false)
+            case ChatMessage.sendToGroup(from, m, group) =>
+                sendGroup(from, m, group, false)
+            case ChatMessage.sendToLocal(from, m) =>
+                local(from, m, false)
+            case ChatMessage.sendToGlobal(from, m) =>
+                global(from, m, false)
             case ChatMessage.replyToPlayer(from, m) =>
                 playerReplies.get(from) match
                     case None =>

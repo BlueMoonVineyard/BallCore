@@ -23,7 +23,6 @@ import dev.jorel.commandapi.arguments.NamespacedKeyArgument
 import dev.jorel.commandapi.CommandTree
 import dev.jorel.commandapi.arguments.LiteralArgument
 import dev.jorel.commandapi.executors.PlayerCommandExecutor
-import dev.jorel.commandapi.arguments.GreedyStringArgument
 import scala.jdk.FutureConverters._
 import scala.concurrent.ExecutionContext
 import BallCore.Folia.EntityExecutionContext
@@ -843,8 +842,8 @@ class ChatCommands(using ca: ChatActor, gm: GroupManager, sql: SQLManager):
         CommandTree("group")
             .withAliases("g")
             .`then`(
-                GreedyStringArgument("group-to-chat-in")
-                    .replaceSuggestions(suggestGroups(false))
+                TextArgument("group-to-chat-in")
+                    .replaceSuggestions(suggestGroups(true))
                     .executesPlayer(withGroupArgument("group-to-chat-in") {
                         (sender, args, group) =>
                             ca.send(
@@ -852,6 +851,16 @@ class ChatCommands(using ca: ChatActor, gm: GroupManager, sql: SQLManager):
                                     .chattingInGroup(sender, group.id)
                             )
                     })
+                    .`then`(
+                        AdventureChatArgument("message")
+                            .executesPlayer(withGroupArgument("group-to-chat-in") {
+                                (sender, args, group) =>
+                                    ca.send(
+                                        ChatMessage
+                                            .sendToGroup(sender, args.getUnchecked[Component]("message"), group.id)
+                                    )
+                            })
+                    )
             )
 
     val global =
@@ -859,6 +868,15 @@ class ChatCommands(using ca: ChatActor, gm: GroupManager, sql: SQLManager):
             .executesPlayer({ (sender, args) =>
                 ca.send(ChatMessage.chattingInGlobal(sender))
             }: PlayerCommandExecutor)
+            .`then`(
+                AdventureChatArgument("message")
+                    .executesPlayer({ (sender, args) =>
+                        ca.send(
+                            ChatMessage
+                                .sendToGlobal(sender, args.getUnchecked[Component]("message"))
+                        )
+                    }: PlayerCommandExecutor)
+            )
 
     val local =
         CommandTree("local")
@@ -866,3 +884,12 @@ class ChatCommands(using ca: ChatActor, gm: GroupManager, sql: SQLManager):
             .executesPlayer({ (sender, args) =>
                 ca.send(ChatMessage.chattingInLocal(sender))
             }: PlayerCommandExecutor)
+            .`then`(
+                AdventureChatArgument("message")
+                    .executesPlayer({ (sender, args) =>
+                        ca.send(
+                            ChatMessage
+                                .sendToLocal(sender, args.getUnchecked[Component]("message"))
+                        )
+                    }: PlayerCommandExecutor)
+            )
