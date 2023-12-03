@@ -67,6 +67,37 @@ object WorkChestUtils:
         // ensure any double chests across chunk seams are loaded
         sides.foreach(face => b.getRelative(face))
 
+private def updateFirst[A](l: List[A])(p: A => Boolean)(
+    update: A => A
+): List[A] =
+    val found = l.zipWithIndex.find { case (item, _) => p(item) }
+    found match
+        case Some((item, idx)) => l.updated(idx, update(item))
+        case None => l
+
+object CraftingActor:
+    def inventoryContains(
+        recipe: List[(RecipeIngredient, Int)],
+        inventory: Inventory,
+    )(using ir: ItemRegistry): Boolean =
+        var rezept = recipe
+        inventory.getStorageContents.foreach { is =>
+            if is != null then
+                rezept = updateFirst(rezept)((ingredient, amount) =>
+                    ingredient.test(is) && amount > 0
+                )((ingredient, amount) => (ingredient, amount - is.getAmount))
+        }
+        rezept.forall(_._2 <= 0)
+
+    def validateJob(
+        recipe: Recipe,
+        workstation: Block
+    )(using ItemRegistry): Boolean =
+        WorkChestUtils.findWorkChest(workstation) match
+            case None => false
+            case Some((_, chest)) =>
+                inventoryContains(recipe.inputs, chest)
+
 class CraftingActor(using p: Plugin, ir: ItemRegistry) extends Actor[CraftingMessage]:
     private var jobs: Map[Block, Job] = Map[Block, Job]()
     private val sides: List[BlockFace] =
@@ -88,27 +119,6 @@ class CraftingActor(using p: Plugin, ir: ItemRegistry) extends Actor[CraftingMes
     private def ensureLoaded(b: Block): Unit =
         // ensure any double chests across chunk seams are loaded
         sides.foreach(face => b.getRelative(face))
-
-    private def updateFirst[A](l: List[A])(p: A => Boolean)(
-        update: A => A
-    ): List[A] =
-        val found = l.zipWithIndex.find { case (item, _) => p(item) }
-        found match
-            case Some((item, idx)) => l.updated(idx, update(item))
-            case None => l
-
-    def inventoryContains(
-        recipe: List[(RecipeIngredient, Int)],
-        inventory: Inventory,
-    ): Boolean =
-        var rezept = recipe
-        inventory.getStorageContents.foreach { is =>
-            if is != null then
-                rezept = updateFirst(rezept)((ingredient, amount) =>
-                    ingredient.test(is) && amount > 0
-                )((ingredient, amount) => (ingredient, amount - is.getAmount))
-        }
-        rezept.forall(_._2 <= 0)
 
     private def removeFrom(
         recipe: List[(RecipeIngredient, Int)],

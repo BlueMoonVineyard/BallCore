@@ -11,6 +11,8 @@ import org.bukkit.inventory.ItemStack
 import org.bukkit.plugin.Plugin
 import org.bukkit.{Material, NamespacedKey, Tag}
 import RecipeIngredient.*
+import BallCore.Storage.SQLManager
+import BallCore.CustomItems.ItemRegistry
 
 object Woodcutter:
     private val woods: List[(Tag[Material], Material)] = List(
@@ -59,7 +61,7 @@ object Woodcutter:
         txt"Processes logs with greater efficiency",
     )
 
-class Woodcutter()(using act: CraftingActor, p: Plugin, prompts: Prompts)
+class Woodcutter()(using CraftingActor, Plugin, Prompts, SQLManager, ItemRegistry)
     extends CraftingStation(Woodcutter.recipes):
     def group: ItemGroup = CraftingStations.group
 

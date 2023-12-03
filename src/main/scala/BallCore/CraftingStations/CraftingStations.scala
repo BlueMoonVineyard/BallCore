@@ -12,6 +12,7 @@ import org.bukkit.inventory.RecipeChoice.MaterialChoice
 import org.bukkit.inventory.{ItemStack, ShapedRecipe}
 import org.bukkit.plugin.Plugin
 import org.bukkit.{Material, NamespacedKey}
+import BallCore.Storage.SQLManager
 
 object CraftingStations:
     val group: ItemGroup = ItemGroup(
@@ -24,6 +25,7 @@ object CraftingStations:
         registry: ItemRegistry,
         prompts: Prompts,
         sm: ShutdownCallbacks,
+        sql: SQLManager,
     ): Unit =
         given act: CraftingActor = CraftingActor()
 
@@ -57,6 +59,8 @@ abstract class CraftingStation(recipes: List[Recipe])(using
     act: CraftingActor,
     p: Plugin,
     prompts: Prompts,
+    sql: SQLManager,
+    ir: ItemRegistry,
 ) extends CustomItem,
       Listeners.BlockClicked:
     def onBlockClicked(event: PlayerInteractEvent): Unit =

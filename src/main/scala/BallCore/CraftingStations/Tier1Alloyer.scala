@@ -11,6 +11,8 @@ import org.bukkit.Material
 import org.bukkit.plugin.Plugin
 import BallCore.UI.Prompts
 import BallCore.CustomItems.ItemGroup
+import BallCore.Storage.SQLManager
+import BallCore.CustomItems.ItemRegistry
 
 object Tier1Alloyer:
     val alloys = List(
@@ -39,7 +41,7 @@ object Tier1Alloyer:
         txt"Alloys ores together into more valuable ores",
     )
 
-class Tier1Alloyer()(using act: CraftingActor, p: Plugin, prompts: Prompts)
+class Tier1Alloyer()(using CraftingActor, Plugin, Prompts, SQLManager, ItemRegistry)
     extends CraftingStation(Tier1Alloyer.recipes):
     def group: ItemGroup = CraftingStations.group
     def template: CustomItemStack = Tier1Alloyer.template

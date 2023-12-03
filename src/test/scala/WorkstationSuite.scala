@@ -19,6 +19,7 @@ import BallCore.Ores.QuadrantOres.ItemStacks
 import BallCore.CustomItems.ItemRegistry
 import BallCore.CustomItems.BasicItemRegistry
 import org.bukkit.Server
+import BallCore.Storage.SQLManager
 
 class WorkstationSuite extends munit.FunSuite:
     val server = mockServerSingleton
@@ -41,6 +42,7 @@ class WorkstationSuite extends munit.FunSuite:
         given ItemRegistry = BasicItemRegistry()
         given CraftingActor = CraftingActor()
         given Prompts = Prompts()
+        given SQLManager = null
 
         DyeVat()
         GlazingKiln()

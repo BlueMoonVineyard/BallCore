@@ -11,6 +11,8 @@ import org.bukkit.inventory.ItemStack
 import org.bukkit.plugin.Plugin
 import org.bukkit.{Material, NamespacedKey}
 import RecipeIngredient.*
+import BallCore.Storage.SQLManager
+import BallCore.CustomItems.ItemRegistry
 
 object Kiln:
     val pairs: List[(Material, Material, (Int, Int), String)] = List(
@@ -92,7 +94,7 @@ object Kiln:
         txt"Smelts nonmetals more efficiently than normal smelting",
     )
 
-class Kiln()(using act: CraftingActor, p: Plugin, prompts: Prompts)
+class Kiln()(using CraftingActor, Plugin, Prompts, SQLManager, ItemRegistry)
     extends CraftingStation(Kiln.recipes):
     def group: ItemGroup = CraftingStations.group
 

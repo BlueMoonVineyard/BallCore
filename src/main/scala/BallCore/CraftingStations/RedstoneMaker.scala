@@ -8,6 +8,8 @@ import org.bukkit.plugin.Plugin
 import org.bukkit.{Material, NamespacedKey, Tag}
 import RecipeIngredient.*
 import scala.List
+import BallCore.Storage.SQLManager
+import BallCore.CustomItems.ItemRegistry
 
 object RedstoneMaker {
     val recipes: List[Recipe] = List(
@@ -120,7 +122,7 @@ object RedstoneMaker {
     )
 }
 
-class RedstoneMaker()(using act: CraftingActor, p: Plugin, prompts: Prompts)
+class RedstoneMaker()(using CraftingActor, Plugin, Prompts, SQLManager, ItemRegistry)
     extends CraftingStation(RedstoneMaker.recipes):
     def group: ItemGroup = CraftingStations.group
 

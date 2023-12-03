@@ -11,6 +11,8 @@ import org.bukkit.inventory.ItemStack
 import org.bukkit.plugin.Plugin
 import org.bukkit.{Material, NamespacedKey}
 import RecipeIngredient.*
+import BallCore.Storage.SQLManager
+import BallCore.CustomItems.ItemRegistry
 
 object GlazingKiln:
     val pairs: List[(Material, Material, String)] = List(
@@ -155,7 +157,7 @@ object GlazingKiln:
         txt"Dyes and glazes more terracotta with less dyes than normal crafting",
     )
 
-class GlazingKiln()(using act: CraftingActor, p: Plugin, prompts: Prompts)
+class GlazingKiln()(using CraftingActor, Plugin, Prompts, SQLManager, ItemRegistry)
     extends CraftingStation(GlazingKiln.recipes):
     def group: ItemGroup = CraftingStations.group
 

@@ -17,9 +17,19 @@ import scala.util.chaining._
 
 import scala.concurrent.Future
 import scala.jdk.CollectionConverters.*
+import BallCore.Storage.SQLManager
+import cats.effect.IO
+import BallCore.CraftingStations.CraftingActor.validateJob
+import BallCore.CustomItems.ItemRegistry
+import BallCore.Folia.LocationExecutionContext
+import org.bukkit.plugin.Plugin
 
-class RecipeSelectorProgram(recipes: List[Recipe])(using actor: CraftingActor)
-    extends UIProgram:
+class RecipeSelectorProgram(recipes: List[Recipe])(using
+    actor: CraftingActor,
+    sql: SQLManager,
+    ir: ItemRegistry,
+    p: Plugin,
+) extends UIProgram:
 
     import io.circe.generic.auto.*
 
@@ -44,15 +54,34 @@ class RecipeSelectorProgram(recipes: List[Recipe])(using actor: CraftingActor)
     ): Future[Model] =
         msg match
             case Message.selectRecipe(index) =>
-                actor.send(
-                    CraftingMessage.startWorking(
-                        model.player,
-                        model.factory,
-                        recipes(index),
-                    )
-                )
-                services.notify("You've started working on that recipe!")
-                model
+                sql.useFuture(for {
+                    ok <- IO { validateJob(recipes(index), model.factory) }
+                        .evalOn(
+                            LocationExecutionContext(
+                                model.factory.getLocation()
+                            )
+                        )
+                    _ <-
+                        if ok then
+                            IO {
+                                actor.send(
+                                    CraftingMessage.startWorking(
+                                        model.player,
+                                        model.factory,
+                                        recipes(index),
+                                    )
+                                )
+                                services.notify(
+                                    "You've started working on that recipe!"
+                                )
+                            }
+                        else
+                            IO {
+                                services.notify(
+                                    "You don't have the ingredients for that recipe! Make sure they're in a chest adjacent to the workstation."
+                                )
+                            }
+                } yield model)
             case Message.nextPage =>
                 model.copy(page = (model.page + 1).min(numPages - 1))
             case Message.prevPage =>
@@ -63,21 +92,24 @@ class RecipeSelectorProgram(recipes: List[Recipe])(using actor: CraftingActor)
 
         input match
             case Vanilla(choices: _*) =>
-                choices.map(mat =>
+                choices
+                    .map(mat =>
                         nameOf(ItemStack(mat))
                             .style(NamedTextColor.GRAY, TextDecoration.BOLD)
                     )
                     .toList
                     .mkComponent(txt" or ")
             case Custom(choices: _*) =>
-                choices.map(mat =>
+                choices
+                    .map(mat =>
                         nameOf(mat)
                             .style(NamedTextColor.GRAY, TextDecoration.BOLD)
                     )
                     .toList
                     .mkComponent(txt" or ")
             case TagList(tag) =>
-                tag.getValues.asScala.map(mat =>
+                tag.getValues.asScala
+                    .map(mat =>
                         nameOf(ItemStack(mat))
                             .style(NamedTextColor.GRAY, TextDecoration.BOLD)
                     )

@@ -11,6 +11,8 @@ import org.bukkit.inventory.ItemStack
 import org.bukkit.plugin.Plugin
 import org.bukkit.{Material, NamespacedKey}
 import RecipeIngredient.*
+import BallCore.Storage.SQLManager
+import BallCore.CustomItems.ItemRegistry
 
 object DyeVat:
     val pairs: List[(Material, Material, String)] = List(
@@ -58,7 +60,7 @@ object DyeVat:
         txt"Dyes more wools with less dyes than normal crafting",
     )
 
-class DyeVat()(using act: CraftingActor, p: Plugin, prompts: Prompts)
+class DyeVat()(using CraftingActor, Plugin, Prompts, SQLManager, ItemRegistry)
     extends CraftingStation(DyeVat.recipes):
     def group: ItemGroup = CraftingStations.group
 

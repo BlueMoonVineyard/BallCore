@@ -12,6 +12,8 @@ import org.bukkit.inventory.ItemStack
 import org.bukkit.plugin.Plugin
 import org.bukkit.{Material, NamespacedKey}
 import RecipeIngredient.*
+import BallCore.Storage.SQLManager
+import BallCore.CustomItems.ItemRegistry
 
 object RailManufactory:
     private val ironChoice: RecipeIngredient = Custom(
@@ -82,7 +84,7 @@ object RailManufactory:
         txt"Crafts metals into rails at bulk rates",
     )
 
-class RailManufactory()(using act: CraftingActor, p: Plugin, prompts: Prompts)
+class RailManufactory()(using CraftingActor, Plugin, Prompts, SQLManager, ItemRegistry)
     extends CraftingStation(RailManufactory.recipes):
     def group: ItemGroup = CraftingStations.group
 

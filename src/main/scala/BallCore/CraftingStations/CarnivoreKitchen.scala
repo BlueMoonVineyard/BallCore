@@ -7,6 +7,8 @@ import org.bukkit.inventory.ItemStack
 import org.bukkit.plugin.Plugin
 import org.bukkit.{Material, NamespacedKey}
 import RecipeIngredient.*
+import BallCore.Storage.SQLManager
+import BallCore.CustomItems.ItemRegistry
 
 object CarnivoreKitchen {
     private val meats: List[(Material, Material)] = List(
@@ -78,7 +80,7 @@ object CarnivoreKitchen {
     )
 }
 
-class CarnivoreKitchen()(using act: CraftingActor, p: Plugin, prompts: Prompts)
+class CarnivoreKitchen()(using CraftingActor, Plugin, Prompts, SQLManager, ItemRegistry)
     extends CraftingStation(CarnivoreKitchen.recipes):
     def group: ItemGroup = CraftingStations.group
 

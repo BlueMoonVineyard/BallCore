@@ -10,6 +10,8 @@ import BallCore.UI.Prompts
 import org.bukkit.plugin.Plugin
 import org.bukkit.{Material, NamespacedKey}
 import RecipeIngredient.*
+import BallCore.Storage.SQLManager
+import BallCore.CustomItems.ItemRegistry
 
 object StationMaker:
     val recipes: List[Recipe] = List(
@@ -182,7 +184,7 @@ object StationMaker:
         txt"Allows creating improved crafting stations",
     )
 
-class StationMaker()(using act: CraftingActor, p: Plugin, prompts: Prompts)
+class StationMaker()(using CraftingActor, Plugin, Prompts, SQLManager, ItemRegistry)
     extends CraftingStation(StationMaker.recipes):
     def group: ItemGroup = CraftingStations.group
 

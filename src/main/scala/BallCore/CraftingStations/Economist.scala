@@ -10,6 +10,8 @@ import BallCore.UI.Prompts
 import BallCore.CustomItems.ItemGroup
 import BallCore.Shops.SellOrder
 import BallCore.Shops.ShopChest
+import BallCore.Storage.SQLManager
+import BallCore.CustomItems.ItemRegistry
 
 object Economist:
     val recipes = List(
@@ -39,7 +41,7 @@ object Economist:
         txt"Creates shop chests and orders",
     )
 
-class Economist()(using act: CraftingActor, p: Plugin, prompts: Prompts)
+class Economist()(using CraftingActor, Plugin, Prompts, SQLManager, ItemRegistry)
     extends CraftingStation(Economist.recipes):
     def group: ItemGroup = CraftingStations.group
     def template: CustomItemStack = Economist.template

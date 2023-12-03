@@ -11,6 +11,8 @@ import BallCore.TextComponents._
 import org.bukkit.NamespacedKey
 import BallCore.UI.Prompts
 import BallCore.CustomItems.ItemGroup
+import BallCore.Storage.SQLManager
+import BallCore.CustomItems.ItemRegistry
 
 object Slimer:
     val recipes = List(
@@ -43,7 +45,7 @@ object Slimer:
         txt"Creates sigils and sigil slimes",
     )
 
-class Slimer()(using act: CraftingActor, p: Plugin, prompts: Prompts)
+class Slimer()(using CraftingActor, Plugin, Prompts, SQLManager, ItemRegistry)
     extends CraftingStation(Slimer.recipes):
     def group: ItemGroup = CraftingStations.group
     def template: CustomItemStack = Slimer.template

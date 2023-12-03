@@ -7,6 +7,8 @@ import org.bukkit.inventory.ItemStack
 import org.bukkit.plugin.Plugin
 import org.bukkit.{Material, NamespacedKey}
 import RecipeIngredient.*
+import BallCore.Storage.SQLManager
+import BallCore.CustomItems.ItemRegistry
 
 object HerbivoreKitchen {
     val pairs
@@ -101,7 +103,7 @@ object HerbivoreKitchen {
     )
 }
 
-class HerbivoreKitchen()(using act: CraftingActor, p: Plugin, prompts: Prompts)
+class HerbivoreKitchen()(using CraftingActor, Plugin, Prompts, SQLManager, ItemRegistry)
     extends CraftingStation(HerbivoreKitchen.recipes):
     def group: ItemGroup = CraftingStations.group
 
