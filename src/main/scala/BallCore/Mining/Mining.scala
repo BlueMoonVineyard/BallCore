@@ -61,8 +61,8 @@ object Mining:
         ores.map((cardinal, ore) =>
             Drops(
                 0 to 320,
-                1 to 4,
-                0.004,
+                1 to 3,
+                0.01,
                 ore,
                 WorldLocation.cardinal(cardinal),
             )
@@ -78,8 +78,8 @@ object Mining:
         ores.map((cardinal, ore) =>
             Drops(
                 -64 to 16,
-                1 to 3,
-                0.003,
+                1 to 2,
+                0.01,
                 ore,
                 WorldLocation.cardinal(cardinal),
             )
@@ -95,8 +95,8 @@ object Mining:
         ores.map((quadrant, ore) =>
             Drops(
                 -64 to 320,
-                1 to 4,
-                0.014,
+                1 to 2,
+                0.012,
                 ore,
                 WorldLocation.quadrant(quadrant),
             )
@@ -112,7 +112,7 @@ object Mining:
         ores.map((quadrant, ore) =>
             Drops(
                 -64 to 32,
-                1 to 4,
+                1 to 2,
                 0.012,
                 ore,
                 WorldLocation.quadrant(quadrant),
