@@ -171,6 +171,9 @@ class BindHeartCommand(using
                                         sender.sendServerMessage(
                                             txt"Bound ${group.name} to your Civilization Beacon!"
                                         )
+                                        sender.sendServerMessage(
+                                            txt"You can now right-click it to set up an area of protection!"
+                                        )
                             }
                         } yield ())
                     })

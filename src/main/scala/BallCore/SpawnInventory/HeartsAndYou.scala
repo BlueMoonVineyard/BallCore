@@ -21,14 +21,19 @@ object HeartsAndYou:
                  |<b>Table of Contents</b>
                  |- <link:2>Hearts vs. Beacons</link>
                  |- <link:3>Binding Hearts</link>
-                 |- <link:4>Expanding Beacons</link>
-                 |- <link:5>Subgroup Claims</link>
-                 |- <link:7>Table Of Beacon Sizes</link>""".stripMargin,
+                 |- <link:4>Protection Areas</link>
+                 |- <link:5>Expanding Beacons</link>
+                 |- <link:6>Subgroup Claims</link>
+                 |- <link:8>Table Of Beacon Sizes</link>""".stripMargin,
               s"""<b>Hearts vs. Beacon</b>
                  |A heart is a standalone block, whilst a beacon is the structure of one or more hearts that can protect land.""".stripMargin,
               s"""<b>Binding Hearts</b>
                  |A heart can be bound to a group, using either the Groups UI or the /bind-heart command.
                  |This will turn it into a beacon, which can protect land.""".stripMargin,
+              s"""<b>Protection Areas</b>
+                 |Once bound to a group, beacons can be right-clicked to create or edit their coverage area.
+                 |Group permissions are applied in the coverage area.
+                 |By default, this prevents outsiders from building and using chests, among other things.""".stripMargin,
               s"""<b>Expanding Beacons</b>
                  |After one player binds a heart, other player can place their hearts on the faces of the existing beacon to expand it.
                  |This increases the area it can cover.""".stripMargin,

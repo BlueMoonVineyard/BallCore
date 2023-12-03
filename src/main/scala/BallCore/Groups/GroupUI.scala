@@ -325,6 +325,9 @@ class GroupManagementProgram(using
                             services.notify(
                                 s"Bound ${model.group.metadata.name} to your Civilization Beacon!"
                             )
+                            services.notify(
+                                s"You can now right-click it to set up an area of protection!"
+                            )
                         else
                             services.notify(
                                 s"Failed to bind ${model.group.metadata.name} to your Civilization Beacon!"
