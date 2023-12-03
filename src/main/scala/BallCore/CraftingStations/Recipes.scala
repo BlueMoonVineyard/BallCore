@@ -31,7 +31,7 @@ enum RecipeIngredient:
 case class Recipe(
     name: String,
     inputs: List[(RecipeIngredient, Int)],
-    outputs: List[ItemStack],
+    outputs: List[(ItemStack, Int)],
     /// amount of player "work" needed to craft this recipe, in ticks
     ///
     /// a player can only dedicate "work" to one factory at a time,

@@ -3,7 +3,6 @@ package BallCore.CraftingStations
 import BallCore.Alloys.Tier1
 import BallCore.Ores.QuadrantOres.ItemStacks
 import RecipeIngredient.*
-import scala.util.chaining._
 import BallCore.TextComponents._
 import BallCore.CustomItems.CustomItemStack
 import org.bukkit.NamespacedKey
@@ -28,7 +27,7 @@ object Tier1Alloyer:
                 (Custom(a.ingot), 32),
                 (Custom(b.ingot), 32),
             ),
-            List(alloy.stack.clone().tap(_.setAmount(32))),
+            List((alloy.stack, 32)),
             10,
             1,
         )

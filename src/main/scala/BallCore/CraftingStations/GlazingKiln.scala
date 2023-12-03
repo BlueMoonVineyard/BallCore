@@ -145,7 +145,7 @@ object GlazingKiln:
                 (Vanilla(dye), 4),
                 (Vanilla(Material.TERRACOTTA), 64),
             ),
-            List(ItemStack(terracotta, 64)),
+            List((ItemStack(terracotta), 64)),
             10,
             1,
         )

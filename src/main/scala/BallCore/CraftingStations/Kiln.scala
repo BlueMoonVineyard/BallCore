@@ -64,7 +64,7 @@ object Kiln:
             Recipe(
                 name,
                 List((Vanilla(in), 64)),
-                List(ItemStack(out, (64 * mult) / div)),
+                List((ItemStack(out), (64 * mult) / div)),
                 10,
                 1,
             )
@@ -82,7 +82,7 @@ object Kiln:
                         64,
                     )
                 ),
-                List(ItemStack(Material.GLASS, 64)),
+                List((ItemStack(Material.GLASS), 64)),
                 10,
                 1,
             )

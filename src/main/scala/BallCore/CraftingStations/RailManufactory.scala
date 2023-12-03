@@ -64,14 +64,14 @@ object RailManufactory:
                 Recipe(
                     s"$name (low people, low efficiency)",
                     ingredients,
-                    List(ItemStack(output, lo)),
+                    List((ItemStack(output), lo)),
                     10,
                     1,
                 ),
                 Recipe(
                     s"$name (high people, high efficiency)",
                     ingredients,
-                    List(ItemStack(output, hi)),
+                    List((ItemStack(output), hi)),
                     15,
                     2,
                 ),

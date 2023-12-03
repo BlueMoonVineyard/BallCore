@@ -38,7 +38,7 @@ object CarnivoreKitchen {
                     (Vanilla(Material.BOWL), 4),
                 ),
                 List(
-                    ItemStack(Material.RABBIT_STEW, 16)
+                    (ItemStack(Material.RABBIT_STEW), 16)
                 ),
                 20,
                 1,
@@ -51,21 +51,21 @@ object CarnivoreKitchen {
             Recipe(
                 "Cook meat (low players, low efficiency)",
                 List((Vanilla(input), 32)),
-                List(ItemStack(output, 64)), // 32 * 2
+                List((ItemStack(output), 64)), // 32 * 2
                 10,
                 1,
             ),
             Recipe(
                 "Cook meat (medium players, medium efficiency)",
                 List((Vanilla(input), 32)),
-                List(ItemStack(output, 96)), // 32 * 3
+                List((ItemStack(output), 96)), // 32 * 3
                 10,
                 2,
             ),
             Recipe(
                 "Cook meat (high players, high efficiency)",
                 List((Vanilla(input), 32)),
-                List(ItemStack(output, 160)), // 32 * 5
+                List((ItemStack(output), 160)), // 32 * 5
                 20,
                 4,
             ),

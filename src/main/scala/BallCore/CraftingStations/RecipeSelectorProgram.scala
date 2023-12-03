@@ -125,7 +125,7 @@ class RecipeSelectorProgram(recipes: List[Recipe])(using
             OutlinePane(0, 0, 9, 5) {
                 paginated(model.page).foreach { (recipe, idx) =>
                     Button(
-                        recipe.outputs.head.clone().tap(_.setAmount(1)),
+                        recipe.outputs.head._1.clone().tap(_.setAmount(1)),
                         txt"${recipe.name}".color(NamedTextColor.GREEN),
                         Message.selectRecipe(idx),
                     ) {
@@ -154,13 +154,13 @@ class RecipeSelectorProgram(recipes: List[Recipe])(using
                         )
                         recipe.outputs.foreach { output =>
                             Lore(
-                                txt" - ${nameOf(output)
-                                        .style(NamedTextColor.GRAY, TextDecoration.BOLD)} × ${output.getAmount}"
+                                txt" - ${nameOf(output._1)
+                                        .style(NamedTextColor.GRAY, TextDecoration.BOLD)} × ${output._2}"
                                     .color(NamedTextColor.WHITE)
                             )
-                            if output.getItemMeta.hasLore then
+                            if output._1.getItemMeta.hasLore then
                                 Lore(
-                                    txt"   (${output.getItemMeta.lore().get(0)})"
+                                    txt"   (${output._1.getItemMeta.lore().get(0)})"
                                         .color(NamedTextColor.DARK_PURPLE)
                                 )
                         }

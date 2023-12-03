@@ -4,7 +4,6 @@ import RecipeIngredient.*
 import org.bukkit.Material
 import BallCore.Sigils.Slimes
 import BallCore.Sigils.Sigil
-import scala.util.chaining._
 import BallCore.CustomItems.CustomItemStack
 import org.bukkit.plugin.Plugin
 import BallCore.TextComponents._
@@ -22,7 +21,7 @@ object Slimer:
                 (Vanilla(Material.EGG), 1),
                 (Vanilla(Material.SLIME_BALL), 1),
             ),
-            List(Slimes.slimeEggStack),
+            List((Slimes.slimeEggStack, 1)),
             10,
             2,
         ),
@@ -33,7 +32,7 @@ object Slimer:
                 (Vanilla(Material.RED_DYE), 2),
                 (Vanilla(Material.ENDER_PEARL), 1),
             ),
-            List(Sigil.itemStack.clone().tap(_.setAmount(4))),
+            List((Sigil.itemStack, 4)),
             10, 2,
         ),
     )

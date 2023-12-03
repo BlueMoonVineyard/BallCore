@@ -133,7 +133,7 @@ object ConcreteMixer:
                     (Vanilla(Material.SAND), 16),
                     (Vanilla(Material.GRAVEL), 16),
                 ),
-                List(ItemStack(concretePowder, 64)),
+                List((ItemStack(concretePowder), 64)),
                 10,
                 1,
             ),
@@ -142,7 +142,7 @@ object ConcreteMixer:
                 List(
                     (Vanilla(concretePowder), 64)
                 ),
-                List(ItemStack(concrete, 64)),
+                List((ItemStack(concrete), 64)),
                 30,
                 1,
             ),

@@ -25,7 +25,7 @@ object StationMaker:
                 (Vanilla(Material.BLACK_DYE), 16),
             ),
             List(
-                DyeVat.template
+                (DyeVat.template, 1)
             ),
             30,
             1,
@@ -40,7 +40,7 @@ object StationMaker:
                 (Vanilla(Material.BLACK_DYE), 16),
             ),
             List(
-                GlazingKiln.template
+                (GlazingKiln.template, 1)
             ),
             30,
             1,
@@ -54,7 +54,7 @@ object StationMaker:
                 (Vanilla(Material.CLAY), 32),
             ),
             List(
-                Kiln.template
+                (Kiln.template, 1)
             ),
             30,
             1,
@@ -67,7 +67,7 @@ object StationMaker:
                 (Vanilla(Material.STONE_AXE), 1),
             ),
             List(
-                Woodcutter.template
+                (Woodcutter.template, 1)
             ),
             30,
             1,
@@ -80,7 +80,7 @@ object StationMaker:
                 (Vanilla(Material.GRAVEL), 64),
             ),
             List(
-                ConcreteMixer.template
+                (ConcreteMixer.template, 1)
             ),
             30,
             1,
@@ -93,7 +93,7 @@ object StationMaker:
                 (Vanilla(Material.REDSTONE), 16),
             ),
             List(
-                RailManufactory.template
+                (RailManufactory.template, 1)
             ),
             30,
             1,
@@ -106,7 +106,7 @@ object StationMaker:
                 (Vanilla(Material.QUARTZ), 32),
             ),
             List(
-                RedstoneMaker.template
+                (RedstoneMaker.template, 1)
             ),
             30,
             1,
@@ -121,7 +121,7 @@ object StationMaker:
                 (Vanilla(Material.MUTTON), 16),
             ),
             List(
-                CarnivoreKitchen.template
+                (CarnivoreKitchen.template, 1)
             ),
             30,
             1,
@@ -133,7 +133,7 @@ object StationMaker:
                 (Vanilla(Material.BREAD), 64),
             ),
             List(
-                HerbivoreKitchen.template
+                (HerbivoreKitchen.template, 1)
             ),
             30,
             1,
@@ -146,7 +146,7 @@ object StationMaker:
                 (Vanilla(Material.LAVA_BUCKET), 1),
             ),
             List(
-                Tier1Alloyer.template
+                (Tier1Alloyer.template, 1)
             ),
             30,
             1,
@@ -158,7 +158,7 @@ object StationMaker:
                 (Vanilla(Material.SLIME_BALL), 1),
             ),
             List(
-                Slimer.template
+                (Slimer.template, 1)
             ),
             30,
             1,
@@ -171,7 +171,7 @@ object StationMaker:
                 (Vanilla(Material.PAPER), 4),
             ),
             List(
-                Economist.template
+                (Economist.template, 1)
             ),
             30,
             1,

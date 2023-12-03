@@ -20,7 +20,7 @@ object Economist:
             List(
                 (Vanilla(Material.CHEST), 1),
             ),
-            List(ShopChest.template),
+            List((ShopChest.template, 1)),
             5,
             1,
         ),
@@ -29,7 +29,7 @@ object Economist:
             List(
                 (Vanilla(Material.PAPER), 1),
             ),
-            List(SellOrder.template),
+            List((SellOrder.template, 1)),
             1, 1,
         ),
     )

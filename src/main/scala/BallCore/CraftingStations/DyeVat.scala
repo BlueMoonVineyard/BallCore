@@ -48,7 +48,7 @@ object DyeVat:
                 (Vanilla(dye), 4),
                 (Vanilla(Material.WHITE_WOOL), 64),
             ),
-            List(ItemStack(wool, 64)),
+            List((ItemStack(wool), 64)),
             10,
             1,
         )

@@ -69,7 +69,7 @@ object HerbivoreKitchen {
                 s"Make $name (low players, low efficiency)",
                 recipe,
                 output.map { (material, count) =>
-                    ItemStack(material, count * 2)
+                    (ItemStack(material), count * 2)
                 },
                 10,
                 1,
@@ -78,7 +78,7 @@ object HerbivoreKitchen {
                 s"Make $name (medium players, medium efficiency)",
                 recipe,
                 output.map { (material, count) =>
-                    ItemStack(material, count * 3)
+                    (ItemStack(material), count * 3)
                 },
                 10,
                 2,
@@ -87,7 +87,7 @@ object HerbivoreKitchen {
                 s"Make $name (high players, high efficiency)",
                 recipe,
                 output.map { (material, count) =>
-                    ItemStack(material, count * 5)
+                    (ItemStack(material), count * 5)
                 },
                 20,
                 4,

@@ -46,13 +46,13 @@ class FurnaceListener(using
     registry: ItemRegistry,
     sql: SQLManager,
 ) extends Listener:
-    def spawn(it: ItemStack, by: Block): Unit =
+    def spawn(it: ItemStack, num: Int, by: Block): Unit =
         val loc = by.getLocation().clone().add(0, 1, 0)
         WorkChestUtils.findWorkChest(by) match
             case None =>
-                by.getWorld.dropItem(loc, it); ()
+                by.getWorld.dropItem(loc, it.clone().tap(_.setAmount(num))); ()
             case Some((chest, inv)) =>
-                WorkChestUtils.insertInto(List(it), inv, chest)
+                WorkChestUtils.insertInto(List((it, num)), inv, chest)
 
     private def oreSmeltingResult(furnaceTier: FurnaceTier): (Int, OreTier) =
         furnaceTier match
@@ -83,8 +83,7 @@ class FurnaceListener(using
 
         // WORKAROUND: bukkit code doesn't seem to like custom items all that much
         event.setCancelled(true)
-        val result = ore.variants.ore(kind).clone().tap(_.setAmount(num))
-        spawn(result, event.getBlock)
+        spawn(ore.variants.ore(kind), num, event.getBlock)
 
         val furnaceState = event.getBlock.getState(false).asInstanceOf[BFurnace]
         val inputSlot = furnaceState.getInventory.getSmelting

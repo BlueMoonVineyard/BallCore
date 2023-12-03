@@ -53,14 +53,23 @@ object WorkChestUtils:
                     case _ => None
             }
 
+    private def splitinate(inputs: (ItemStack, Int)): List[ItemStack] =
+        if inputs._2 <= 64 then
+            List(inputs._1.clone().tap(_.setAmount(inputs._2)))
+        else
+            inputs._1.clone().tap(_.setAmount(64)) :: splitinate((inputs._1, inputs._2 - 64))
+
     def insertInto(
-        outputs: List[ItemStack],
+        outputs: List[(ItemStack, Int)],
         inventory: Inventory,
         at: Block,
     ): Unit =
         outputs.foreach { output =>
-            if !inventory.addItem(output).isEmpty then
-                val _ = at.getWorld.dropItemNaturally(at.getLocation(), output)
+            splitinate(output).foreach { stack =>
+                inventory.addItem(stack).forEach { (_, extra) =>
+                    val _ = at.getWorld.dropItemNaturally(at.getLocation(), stack)
+                }
+            }
         }
 
     def ensureLoaded(b: Block): Unit =
