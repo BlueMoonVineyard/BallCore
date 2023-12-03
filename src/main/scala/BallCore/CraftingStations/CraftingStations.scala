@@ -43,6 +43,7 @@ object CraftingStations:
         registry.register(Tier1Alloyer())
         registry.register(Slimer())
         registry.register(Economist())
+        registry.register(IceBox())
 
         val smRecipe = ShapedRecipe(
             NamespacedKey("ballcore", "craft_station_maker"),

@@ -176,6 +176,20 @@ object StationMaker:
             30,
             1,
         ),
+        Recipe(
+            "Make Ice Box",
+            List(
+                (Vanilla(Material.CAULDRON), 1),
+                (Vanilla(Material.ICE), 256),
+                (Vanilla(Material.PACKED_ICE), 32),
+                (Vanilla(Material.BLUE_ICE), 16),
+            ),
+            List(
+                (IceBox.template, 1)
+            ),
+            30,
+            1,
+        ),
     )
     val template: CustomItemStack = CustomItemStack.make(
         NamespacedKey("ballcore", "station_maker"),
