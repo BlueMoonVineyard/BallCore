@@ -185,16 +185,17 @@ object Datekeeping:
                     txt" ${date.toTimeString}"
                 ),
             )
-            p.getServer.getGlobalRegionScheduler
-                .execute(
-                    p,
-                    () => {
-                        val minute = (date.hour * 60 + date.minute) * 16.6666
-                        Bukkit.getServer
-                            .getWorld("world")
-                            .setTime(minute.floor.toLong + 18000)
-                    },
-                )
+            if p.isEnabled() then
+                p.getServer.getGlobalRegionScheduler
+                    .execute(
+                        p,
+                        () => {
+                            val minute = (date.hour * 60 + date.minute) * 16.6666
+                            Bukkit.getServer
+                                .getWorld("world")
+                                .setTime(minute.floor.toLong + 18000)
+                        },
+                    )
         }
         val _ = p.getServer.getAsyncScheduler
             .runAtFixedRate(p, handler, 0, 1000, TimeUnit.MILLISECONDS)

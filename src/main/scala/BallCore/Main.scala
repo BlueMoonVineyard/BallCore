@@ -32,7 +32,6 @@ import org.bukkit.{Bukkit, Server}
 import org.spongepowered.configurate.yaml.YamlConfigurationLoader
 
 import java.nio.file.Files
-import scala.concurrent.{Await, ExecutionContext}
 import scala.util.Try
 import BallCore.Sigils.SlimePillarManager
 import BallCore.Reinforcements.BustThroughTracker
@@ -47,6 +46,18 @@ import BallCore.Gear.Tier1Gear
 import BallCore.Elevator.Elevators
 import BallCore.Fingerprints.FingerprintManager
 import BallCore.CraftingStations.CraftingStation
+import io.sentry.Sentry
+import org.bukkit.event.Listener
+import org.bukkit.event.EventHandler
+import com.destroystokyo.paper.event.server.ServerExceptionEvent
+import cats.effect.IO
+
+class ExceptionLogger extends Listener:
+    @EventHandler
+    def serverExceptionEvent(event: ServerExceptionEvent): Unit =
+        event.getException().printStackTrace()
+        Sentry.captureException(event.getException())
+        ()
 
 final class Main extends JavaPlugin:
     given sm: ShutdownCallbacks = ShutdownCallbacks()
@@ -63,6 +74,13 @@ final class Main extends JavaPlugin:
                 .build()
             Files.createDirectories(dataDirectory)
             val config = Try(loader.load()).get
+
+            Sentry.init(options => {
+                options.setDsn(config.node("sentry", "dsn").getString())
+                options.setTracesSampleRate(0.2)
+                options.setDebug(true)
+            })
+
             val databaseConfig = Config.from(config.node("database")) match
                 case Left(err) =>
                     throw Exception(s"failed to read config because $err")
@@ -128,6 +146,7 @@ final class Main extends JavaPlugin:
                 Fingerprints.Fingerprints.register()
 
             sid.startListener()
+            getServer().getPluginManager().registerEvents(ExceptionLogger(), this)
 
             Datekeeping.Datekeeping.startSidebarClock()
             Beacons.registerItems()
@@ -189,12 +208,19 @@ final class Main extends JavaPlugin:
             MyFingerprintCommand().node.register()
             StationCommand().node.register()
         catch
-            case _ =>
-                getSLF4JLogger().error("Failed to start BallCore, shutting down...")
+            case e: Throwable =>
+                getSLF4JLogger().error("Failed to start BallCore, shutting down...", e)
                 Bukkit.getServer().shutdown()
 
     override def onDisable(): Unit =
         CommandAPI.onDisable()
-        import scala.concurrent.ExecutionContext.Implicits.global
-        val _ =
-            Await.ready(sm.shutdown(), scala.concurrent.duration.Duration.Inf)
+        import cats.effect.unsafe.implicits.global
+        sm.shutdown().redeemWith({
+            case exception: Throwable =>
+                IO {
+                    Sentry.captureException(exception)
+                    getSLF4JLogger().error("Failed to shut down BallCore", exception)
+                }
+        }, { _ =>
+            IO { getSLF4JLogger().info("Successfully shut down BallCore") }
+        }).unsafeRunSync()

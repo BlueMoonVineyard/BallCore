@@ -33,6 +33,8 @@ import scala.collection.mutable
 import scala.concurrent.duration.*
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.chaining.*
+import io.sentry.Sentry
+import io.sentry.SpanStatus
 
 enum PlantMsg:
     case startGrowing(what: Plant, where: Block)
@@ -52,6 +54,7 @@ case class DBPlantData(
     what: Plant,
     ageIngameHours: Int,
     incompleteGrowthAdvancements: Int,
+    isInValidClimate: Boolean,
 )
 
 case class Dirty[A](
@@ -84,9 +87,14 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin, c: Clock)
                 TimeUnit.MILLISECONDS,
             )
         sql.useBlocking(sql.withS(load()))
+        val count = plants.foldLeft(0)((sum, map) => map._2.size + sum)
+        println(s"Loaded ${count} plants")
 
     protected def handleShutdown(): Unit =
+        val count = plants.foldLeft(0)((sum, map) => map._2.size + sum)
+        println(s"Saving ${count} plants")
         sql.useBlocking(sql.withS(saveAll()))
+        println(s"Saved ${count} plants!")
 
     sql.applyMigration(
         Storage.Migration(
@@ -115,6 +123,29 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin, c: Clock)
         )
     )
 
+    sql.applyMigration(
+        Storage.Migration(
+            "Cache Plant Being Valid In The Database",
+            List(
+                sql"""
+                ALTER TABLE Plants ADD COLUMN ValidClimate BOOLEAN;
+                """.command,
+                sql"""
+                UPDATE Plants SET ValidClimate = 't';
+                """.command,
+                sql"""
+                ALTER TABLE Plants ALTER COLUMN ValidClimate SET NOT NULL;
+                """.command,
+            ),
+            List(
+                sql"""
+                DROP TABLE Plants;
+                """.command
+            ),
+        )
+    )
+
+
     private def toOffsets(x: Int, z: Int): (Int, Int, Int, Int) =
         (x / 16, z / 16, x % 16, z % 16)
 
@@ -139,9 +170,9 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin, c: Clock)
         for {
             plants <- sql.queryListIO(
                 sql"""
-			SELECT ChunkX, ChunkZ, World, OffsetX, OffsetZ, Y, Kind, AgeIngameHours, IncompleteGrowthAdvancements FROM Plants
+			SELECT ChunkX, ChunkZ, World, OffsetX, OffsetZ, Y, Kind, AgeIngameHours, IncompleteGrowthAdvancements, ValidClimate FROM Plants
 			""",
-                (int4 *: int4 *: uuid *: int4 *: int4 *: int4 *: plantKindCodec *: int4 *: int4)
+                (int4 *: int4 *: uuid *: int4 *: int4 *: int4 *: plantKindCodec *: int4 *: int4 *: bool)
                     .to[DBPlantData],
                 skunk.Void,
             )
@@ -161,6 +192,7 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin, c: Clock)
 
     private def save(value: Dirty[DBPlantData])(using Session[IO]): IO[Unit] =
         if value.deleted then
+            IO.println("saving deleted plant") *>
             sql
                 .commandIO(
                     sql"""
@@ -183,13 +215,14 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin, c: Clock)
                 )
                 .map(_ => ())
         else
+            IO.println("saving non-deleted plant") *>
             sql
                 .commandIO(
                     sql"""
-			INSERT OR REPLACE INTO Plants
-				(ChunkX, ChunkZ, World, OffsetX, OffsetZ, Y, Kind, AgeIngameHours, IncompleteGrowthAdvancements)
+			INSERT INTO Plants
+				(ChunkX, ChunkZ, World, OffsetX, OffsetZ, Y, Kind, AgeIngameHours, IncompleteGrowthAdvancements, ValidClimate)
 			VALUES
-				($int4, $int4, $uuid, $int4, $int4, $int4, $plantKindCodec, $int4, $int4)
+				($int4, $int4, $uuid, $int4, $int4, $int4, $plantKindCodec, $int4, $int4, $bool)
 			ON CONFLICT (ChunkX, ChunkZ, World, OffsetX, OffsetZ, Y) DO UPDATE SET
 				Kind = EXCLUDED.Kind, AgeIngameHours = EXCLUDED.AgeIngameHours, IncompleteGrowthAdvancements = EXCLUDED.IncompleteGrowthAdvancements;
 			""",
@@ -203,6 +236,7 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin, c: Clock)
                         value.inner.what,
                         value.inner.ageIngameHours,
                         value.inner.incompleteGrowthAdvancements,
+                        value.inner.isInValidClimate
                     ),
                 )
                 .map(_ => ())
@@ -240,6 +274,25 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin, c: Clock)
                 val (cx, cz, ox, oz) = toOffsets(where.getX, where.getZ)
                 val y = where.getY
                 val world = where.getWorld.getUID
+
+                given ec: ExecutionContext = ChunkExecutionContext(
+                    cx,
+                    cz,
+                    where.getWorld,
+                )
+                val rightClimate =
+                    what.growingClimate growsWithin Await
+                        .result(
+                            Future {
+                                Climate.climateAt(
+                                    where.getX,
+                                    where.getY,
+                                    where.getZ,
+                                )
+                            },
+                            1.seconds,
+                        )
+
                 set(
                     cx,
                     cz,
@@ -248,7 +301,7 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin, c: Clock)
                     oz,
                     y,
                     Dirty(
-                        DBPlantData(cx, cz, world, ox, oz, y, what, 0, 0),
+                        DBPlantData(cx, cz, world, ox, oz, y, what, 0, 0, rightClimate),
                         true,
                         false,
                     ),
@@ -331,104 +384,98 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin, c: Clock)
                     }
                 }
             case PlantMsg.tickPlants =>
-                // increment plant ages and their growth ticks if necessary
-                plants.mapValuesInPlace { (key, map) =>
-                    map.map { (plantKey, plant) =>
-                        if plant.deleted then plantKey -> plant
-                        else
-                            val (x, z) = fromOffsets(
-                                plant.inner.chunkX,
-                                plant.inner.chunkZ,
-                                plant.inner.offsetX,
-                                plant.inner.offsetZ,
-                            )
+                val transaction = Sentry.startTransaction("PlantMsg.tickPlants", "operation")
 
-                            given ec: ExecutionContext = ChunkExecutionContext(
-                                plant.inner.chunkX,
-                                plant.inner.chunkZ,
-                                Bukkit.getWorld(plant.inner.world),
-                            )
-
-                            val rightSeason =
-                                plant.inner.what.growingSeason growsWithin Datekeeping
-                                    .time()
-                                    .month
-                                    .toInt
-                                    .pipe(Month.fromOrdinal)
-                                    .season
-                            val rightClimate =
-                                plant.inner.what.growingClimate growsWithin Await
-                                    .result(
-                                        Future {
-                                            Climate.climateAt(
-                                                x,
-                                                plant.inner.yPos,
-                                                z,
-                                            )
-                                        },
-                                        1.seconds,
-                                    )
-                            val timePassed =
-                                (plant.inner.ageIngameHours + 1) % plant.inner.what.plant
-                                    .hours() == 0
-                            val incrBy =
-                                if rightSeason && rightClimate && timePassed
-                                then 1
-                                else 0
-                            plantKey -> plant.copy(
-                                inner = plant.inner.copy(
-                                    ageIngameHours =
-                                        plant.inner.ageIngameHours + 1,
-                                    incompleteGrowthAdvancements =
-                                        plant.inner.incompleteGrowthAdvancements + incrBy,
-                                ),
-                                dirty = true,
-                            )
-                    }
-                }
-
-                // dispatch plants with growth ticks to be grown in the world
-                plants.foreach { (key, map) =>
-                    val (cx, cz, worldID) = key
-                    val world = Bukkit.getWorld(worldID)
-
-                    given ec: ChunkExecutionContext =
-                        ChunkExecutionContext(cx, cz, world)
-
-                    FireAndForget {
-                        val (done, notDone) = map
-                            .filter(!_._2.deleted)
-                            .view
-                            .mapValues { data =>
+                try
+                    // increment plant ages and their growth ticks if necessary
+                    val mapInPlaceSpan = transaction.startChild("computation", "mapping values in place")
+                    plants.mapValuesInPlace { (key, map) =>
+                        map.map { (plantKey, plant) =>
+                            if plant.deleted then plantKey -> plant
+                            else
                                 val (x, z) = fromOffsets(
-                                    data.inner.chunkX,
-                                    data.inner.chunkZ,
-                                    data.inner.offsetX,
-                                    data.inner.offsetZ,
+                                    plant.inner.chunkX,
+                                    plant.inner.chunkZ,
+                                    plant.inner.offsetX,
+                                    plant.inner.offsetZ,
                                 )
-                                val block =
-                                    world.getBlockAt(x, data.inner.yPos, z)
-
-                                (data, block)
-                            }
-                            .toList
-                            .partition { (_, in) =>
-                                val (data, block) = in
-
-                                1.to(data.inner.incompleteGrowthAdvancements)
-                                    .exists { _ =>
-                                        val result = PlantGrower.grow(
-                                            block,
-                                            data.inner.what.plant,
-                                        )
-                                        result.isSuccess && result.get
-                                    }
-                            }
-                        this.send(
-                            PlantMsg.plantsFinishedGrowing(done.map(_._2._2))
-                        )
-                        this.send(
-                            PlantMsg.plantsGrewPartially(notDone.map(_._2._2))
-                        )
+                                val rightSeason =
+                                    plant.inner.what.growingSeason growsWithin Datekeeping
+                                        .time()
+                                        .month
+                                        .toInt
+                                        .pipe(Month.fromOrdinal)
+                                        .season
+                                val timePassed =
+                                    (plant.inner.ageIngameHours + 1) % plant.inner.what.plant
+                                        .hours() == 0
+                                val incrBy =
+                                    if rightSeason && plant.inner.isInValidClimate && timePassed
+                                    then 1
+                                    else 0
+                                plantKey -> plant.copy(
+                                    inner = plant.inner.copy(
+                                        ageIngameHours =
+                                            plant.inner.ageIngameHours + 1,
+                                        incompleteGrowthAdvancements =
+                                            plant.inner.incompleteGrowthAdvancements + incrBy,
+                                    ),
+                                    dirty = true,
+                                )
+                        }
                     }
-                }
+                    mapInPlaceSpan.finish()
+
+                    val plantDispatchSpan = transaction.startChild("dispatching", "dispatching plants to be grown")
+                    // dispatch plants with growth ticks to be grown in the world
+                    plants.foreach { (key, map) =>
+                        val (cx, cz, worldID) = key
+                        val world = Bukkit.getWorld(worldID)
+
+                        given ec: ChunkExecutionContext =
+                            ChunkExecutionContext(cx, cz, world)
+
+                        FireAndForget {
+                            val (done, notDone) = map
+                                .filter(!_._2.deleted)
+                                .view
+                                .mapValues { data =>
+                                    val (x, z) = fromOffsets(
+                                        data.inner.chunkX,
+                                        data.inner.chunkZ,
+                                        data.inner.offsetX,
+                                        data.inner.offsetZ,
+                                    )
+                                    val block =
+                                        world.getBlockAt(x, data.inner.yPos, z)
+
+                                    (data, block)
+                                }
+                                .toList
+                                .partition { (_, in) =>
+                                    val (data, block) = in
+
+                                    1.to(data.inner.incompleteGrowthAdvancements)
+                                        .exists { _ =>
+                                            val result = PlantGrower.grow(
+                                                block,
+                                                data.inner.what.plant,
+                                            )
+                                            result.isSuccess && result.get
+                                        }
+                                }
+                            this.send(
+                                PlantMsg.plantsFinishedGrowing(done.map(_._2._2))
+                            )
+                            this.send(
+                                PlantMsg.plantsGrewPartially(notDone.map(_._2._2))
+                            )
+                        }
+                    }
+                    plantDispatchSpan.finish()
+                catch
+                    case e: Throwable =>
+                        transaction.setThrowable(e)
+                        transaction.setStatus(SpanStatus.NOT_FOUND)
+                finally
+                    transaction.finish()

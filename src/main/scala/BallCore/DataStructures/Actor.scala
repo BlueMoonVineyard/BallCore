@@ -5,29 +5,38 @@
 package BallCore.DataStructures
 
 import java.util.concurrent.LinkedTransferQueue
-import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.concurrent.{Future, Promise}
 import scala.util.Try
 import cats.effect.IO
+import io.sentry.Sentry
+import cats.syntax.all._
 
 enum TrueMsg[Msg]:
     case inner(val msg: Msg)
     case shutdown(val promise: Promise[Unit])
 
 class ShutdownCallbacks:
-    var items: List[() => Future[Unit]] = List[() => Future[Unit]]()
+    var items: List[IO[Unit]] = List[IO[Unit]]()
+    var resources: List[IO[Unit]] = List[IO[Unit]]()
 
     def add(fn: () => Future[Unit]): Unit =
-        items = items.appended(fn)
+        items = items.appended(IO.fromFuture { IO { fn() } })
 
     def addIO[A](fn: (A, IO[Unit])): A =
-        items = items.appended { () =>
-            import cats.effect.unsafe.implicits._
-            fn._2.unsafeToFuture()
-        }
+        resources = resources.appended(fn._2)
         fn._1
 
-    def shutdown()(using ExecutionContext): Future[List[Unit]] =
-        Future.sequence(items.map(_.apply()))
+    def shutdown(): IO[Unit] =
+        items.concat(resources).map { cb =>
+            cb.recoverWith {
+                case e: Throwable =>
+                    IO {
+                        Sentry.captureException(e)
+                        println(s"Failed to run shutdown callback")
+                        e.printStackTrace()
+                    }
+            }
+        }.sequence_
 
 trait Actor[Msg]:
     def handle(m: Msg): Unit
@@ -46,6 +55,9 @@ trait Actor[Msg]:
             try
                 println(s"Actor Thread for ${this.getClass().getSimpleName()} is starting")
                 this.mainLoop()
+            catch case e: Throwable =>
+                Sentry.captureException(e)
+                e.printStackTrace()
             finally
                 println(s"Actor Thread for ${this.getClass().getSimpleName()} is shutting down")
         )
@@ -64,8 +76,14 @@ trait Actor[Msg]:
             msg match
                 case TrueMsg.inner(msg) =>
                     try handle(msg)
-                    catch case e: Exception => e.printStackTrace()
+                    catch case e: Throwable =>
+                        Sentry.captureException(e)
+                        e.printStackTrace()
                 case TrueMsg.shutdown(promise) =>
                     promise.complete(Try {
                         handleShutdown()
+                    }.recover {
+                        case e =>
+                            Sentry.captureException(e)
+                            e.printStackTrace()
                     })
