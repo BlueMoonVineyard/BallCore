@@ -61,6 +61,8 @@ import dev.jorel.commandapi.arguments.IntegerArgument
 import net.kyori.adventure.bossbar.BossBar
 import org.bukkit.Bukkit
 import java.util.concurrent.TimeUnit
+import BallCore.Fingerprints.FingerprintManager
+import BallCore.SpawnInventory.FingerprintsAndYou
 
 class OTTCommand(using sql: SQLManager, ott: OneTimeTeleporter):
     private def errorText(err: OTTError): Component =
@@ -134,6 +136,24 @@ class GetHeart:
             .executesPlayer({ (sender, args) =>
                 val _ =
                     sender.getInventory().addItem(HeartBlock.itemStack.clone())
+            }: PlayerCommandExecutor)
+
+class MyFingerprintCommand(using
+    sql: SQLManager,
+    fingerprints: FingerprintManager,
+):
+    val node =
+        CommandTree("fingerprint")
+            .executesPlayer({ (sender, args) =>
+                sql.useFireAndForget(sql.withS(for {
+                    print <- sql.withTX(
+                        fingerprints.fingerprintFor(sender.getUniqueId)
+                    )
+                    _ <- IO {
+                        sender.sendServerMessage(txt"Your fingerprint ID is ${print}")
+                        sender.sendServerMessage(txt"Remember: once you share it with other players, you can't unshare it!")
+                    }
+                } yield ()))
             }: PlayerCommandExecutor)
 
 class BindHeartCommand(using
@@ -274,6 +294,15 @@ class BookCommand(using
                     }: PlayerCommandExecutor)
             )
             .`then`(
+                LiteralArgument("fingerprints-and-you")
+                    .executesPlayer({ (sender, args) =>
+                        sql.useFireAndForget(for {
+                            book <- FingerprintsAndYou.viewForPlayer(sender)
+                            _ <- IO { sender.openBook(book) }
+                        } yield ())
+                    }: PlayerCommandExecutor)
+            )
+            .`then`(
                 LiteralArgument("spawnbook")
                     .executesPlayer({ (sender, args) =>
                         sender.openBook(SpawnInventory.Book.book)
@@ -285,7 +314,8 @@ class InformationGiver():
         txt"[CivCubed] Consider helping us keep the lights on by donating to https://opencollective.net/civcubed!",
         txt"[CivCubed] Browse the selection of ${txt("/book").color(Colors.teal)} and learn more about the server!",
         txt"[CivCubed] Rest accumulates when you log off and come back the next day!",
-        txt"[CivCubed] See what plants grow in your area with ${txt("/plants").color(Colors.teal)}!",
+        txt"[CivCubed] See what plants grow in your area with ${txt("/plants")
+                .color(Colors.teal)}!",
         txt"[CivCubed] The more time you spend somewhere, the more ores you'll get when you mine!",
         txt"[CivCubed] Join the Discord at https://discord.civcubed.net!",
     ).map(_.replaceText(ChatActor.urlReplacer))
@@ -296,7 +326,16 @@ class InformationGiver():
         informationCounter = (informationCounter + 1) % informations.size
 
     def register()(using p: Plugin): Unit =
-        val _ = p.getServer().getAsyncScheduler().runAtFixedRate(p, _ => this.sendInformation(), 1, 13, TimeUnit.MINUTES)
+        val _ = p
+            .getServer()
+            .getAsyncScheduler()
+            .runAtFixedRate(
+                p,
+                _ => this.sendInformation(),
+                1,
+                13,
+                TimeUnit.MINUTES,
+            )
 
 class RestartTimer():
     private var duration: Int = -1
@@ -430,7 +469,10 @@ class CheatCommand(using
                     .`then`(
                         IntegerArgument("amount")
                             .executesPlayer({ (sender, args) =>
-                                for _ <- 1 to args.getUnchecked[Integer]("amount").intValue() do
+                                for _ <- 1 to args
+                                        .getUnchecked[Integer]("amount")
+                                        .intValue()
+                                do
                                     pbm.send(PlantMsg.tickPlants)
                                     sender.sendServerMessage(
                                         txt"An hour of ingame time has passed"

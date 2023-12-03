@@ -26,6 +26,11 @@ import org.bukkit.{Location, Material, Particle}
 
 import scala.jdk.CollectionConverters.*
 import scala.util.chaining.*
+import BallCore.Fingerprints.FingerprintManager
+import BallCore.Fingerprints.FingerprintReason
+import cats.effect.IO
+import BallCore.TextComponents._
+import scala.util.Random
 
 object Listener:
     private def centered(at: Location): Location =
@@ -96,6 +101,7 @@ class Listener(using
     gm: GroupManager,
     sql: SQLManager,
     busts: BustThroughTracker,
+    fingerprints: FingerprintManager,
 ) extends org.bukkit.event.Listener:
 
     import Listener.*
@@ -117,6 +123,7 @@ class Listener(using
         location: Location,
         player: Player,
         permission: Permissions,
+        breaking: Boolean,
     ): Either[GroupError, Boolean] =
         sql
             .useBlocking(sql.withS(cbm.beaconContaining(location)))
@@ -137,38 +144,78 @@ class Listener(using
                                 sgid,
                                 permission,
                             ).value
+                                .map(_.map(ok => (group, ok)))
                         )
                     )
                 )
             })
-            .getOrElse(Right(true)) match
-            case Right(false) =>
+            .getOrElse(Right(null, true)) match
+            case Right((group, false)) if breaking =>
                 busts.bust(location) match
                     case BustResult.alreadyBusted =>
                         Right(true)
                     case BustResult.justBusted =>
+                        sql.useFireAndForget(
+                            sql.withS(
+                                sql.withTX(
+                                    for {
+                                        _ <- fingerprints.storeFingerprintAt(
+                                            location.getX.toInt,
+                                            location.getY.toInt,
+                                            location.getZ.toInt,
+                                            location.getWorld.getUID,
+                                            player.getUniqueId,
+                                            FingerprintReason.bustedThrough,
+                                        )
+                                        audience <- gm
+                                            .groupAudience(group)
+                                            .value
+                                        _ <- IO {
+                                            val xOffset = Random.between(-3, 3)
+                                            val zOffset = Random.between(-3, 3)
+                                            val x =
+                                                location.getBlockX() + xOffset
+                                            val z =
+                                                location.getBlockZ() + zOffset
+                                            audience.foreach((name, aud) =>
+                                                aud.sendServerMessage(
+                                                    txt"[$name] Someone busted through your beacon approximately around ${x} ± 3 / ${location.getBlockY} / ${z} ± 3"
+                                                )
+                                            )
+                                        }
+                                    } yield ()
+                                )
+                            )
+                        )
                         playBreakEffect(location, ReinforcementTypes.IronLike)
                         Right(false)
                     case BustResult.busting =>
                         playDamageEffect(location, ReinforcementTypes.IronLike)
                         Right(false)
             case it =>
-                it
+                it.map(_._2)
 
     private inline def checkAt(
         location: Block,
         player: Player,
         permission: Permissions,
+        breaking: Boolean = false,
     ): Either[GroupError, Boolean] =
         checkAt(
             BlockAdjustment.adjustBlock(location).getLocation(),
             player,
             permission,
+            breaking,
         )
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     def onBlockPlace(event: BlockPlaceEvent): Unit =
-        checkAt(event.getBlockPlaced, event.getPlayer, Permissions.Build) match
+        checkAt(
+            event.getBlockPlaced,
+            event.getPlayer,
+            Permissions.Build,
+            true,
+        ) match
             case Right(ok) if ok =>
                 ()
             case _ =>
@@ -176,7 +223,7 @@ class Listener(using
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     def onBreak(event: BlockBreakEvent): Unit =
-        checkAt(event.getBlock, event.getPlayer, Permissions.Build) match
+        checkAt(event.getBlock, event.getPlayer, Permissions.Build, true) match
             case Right(ok) if ok =>
                 ()
             case _ =>
@@ -185,6 +232,20 @@ class Listener(using
     //
     //// Stuff that enforces reinforcements in the face of permissions; i.e. chest opening prevention
     //
+
+    // prevent harvesting fingerprints
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    def preventFingerprintHarvesting(event: PlayerInteractEvent): Unit =
+        if !event.hasItem || event
+                .getItem()
+                .getType() != Material.BRUSH || event.getAction != Action.RIGHT_CLICK_BLOCK
+        then return ()
+
+        checkAt(event.getClickedBlock, event.getPlayer, Permissions.Build) match
+            case Right(ok) if ok =>
+                ()
+            case _ =>
+                event.setCancelled(true)
 
     // prevent opening reinforced items
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
@@ -472,8 +533,12 @@ class Listener(using
                 .useBlocking(
                     sql.withS(
                         for {
-                            fromBlock <- cbm.beaconContaining(event.getBlock.getLocation())
-                            toBlock <- cbm.beaconContaining(event.getToBlock.getLocation())
+                            fromBlock <- cbm.beaconContaining(
+                                event.getBlock.getLocation()
+                            )
+                            toBlock <- cbm.beaconContaining(
+                                event.getToBlock.getLocation()
+                            )
                         } yield fromBlock != toBlock
                     )
                 )

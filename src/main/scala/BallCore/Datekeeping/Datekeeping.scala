@@ -21,7 +21,20 @@ case class GameDate(
     day: Long, // 24*60 minutes
     hour: Long, // 60 minutes
     minute: Long,
-)
+):
+    def toDateString: String =
+        val monat = Month.fromOrdinal(month.toInt)
+        val suffixed = s"${day}" +
+            ((if day < 20 then day else day % 10) match
+                case 1 => "st"
+                case 2 => "nd"
+                case 3 => "rd"
+                case _ => "th"
+            )
+        s"$suffixed of ${monat.displayName}, ${year}"
+
+    def toTimeString: String =
+        s"$hour:${minute.toString.reverse.padTo(2, '0').reverse}"
 
 enum Season:
     case spring
@@ -131,9 +144,9 @@ object Datekeeping:
             ZoneOffset.UTC,
         )
 
-    def time()(using clock: Clock): GameDate =
+    def timeFrom(date: OffsetDateTime): GameDate =
         // the only thing in IRL units
-        val diff = Duration.between(epoch, clock.now()).toMillis
+        val diff = Duration.between(epoch, date).toMillis
 
         // ingame minutes that have elapsed since the epoch
         val minutes = diff / 2500
@@ -150,6 +163,9 @@ object Datekeeping:
 
         GameDate(dateYear, dateMonth, dateDay + 1, dateHour, dateMinutes)
 
+    def time()(using clock: Clock): GameDate =
+        timeFrom(clock.now())
+
     def startSidebarClock()(using
         sid: SidebarActor,
         c: Clock,
@@ -159,22 +175,14 @@ object Datekeeping:
 
         val handler: Consumer[ScheduledTask] = { _ =>
             val date = time()
-            val monat = Month.fromOrdinal(date.month.toInt)
-            val suffixed = s"${date.day}" +
-                ((if date.day < 20 then date.day else date.day % 10) match
-                    case 1 => "st"
-                    case 2 => "nd"
-                    case 3 => "rd"
-                    case _ => "th"
-                )
             sid.setAll(
                 SidebarLine.date,
-                Some(txt" $suffixed of ${monat.displayName}, ${date.year}"),
+                Some(txt" ${date.toDateString}"),
             )
             sid.setAll(
                 SidebarLine.time,
                 Some(
-                    txt" ${date.hour}:${date.minute.toString.reverse.padTo(2, '0').reverse}"
+                    txt" ${date.toTimeString}"
                 ),
             )
             p.getServer.getGlobalRegionScheduler
