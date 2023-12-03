@@ -27,6 +27,7 @@ lazy val dependencyPlugin = project
         resolvers += "codemc-repo" at "https://repo.codemc.io/repository/maven-public/",
         resolvers += "jitpack.io" at "https://jitpack.io/",
         resolvers += "akka" at "https://repo.akka.io/maven",
+        libraryDependencies += "io.sentry" % "sentry" % "7.0.0",
         libraryDependencies += "dev.folia" % "folia-api" % foliaVersion % "provided", // intransitive()
         libraryDependencies += "com.velocitypowered" % "velocity-api" % "3.2.0-SNAPSHOT" % "provided",
         libraryDependencies += "com.github.plokhotnyuk.rtree2d" %% "rtree2d-core" % "0.11.12",
