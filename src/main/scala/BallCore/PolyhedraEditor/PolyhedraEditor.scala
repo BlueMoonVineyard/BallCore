@@ -25,6 +25,8 @@ import scala.collection.concurrent.TrieMap
 import scala.util.chaining.*
 import cats.data.EitherT
 import BallCore.Beacons.CivBeaconManager
+import org.locationtech.jts.geom.GeometryFactory
+import org.locationtech.jts.geom.Coordinate
 
 val brightRed = Color.fromRGB(0xe9, 0x3d, 0x58)
 val dullRed = Color.fromRGB(108, 66, 72)
@@ -577,6 +579,7 @@ class PolyhedraEditor(using
     cbm: CivBeaconManager,
 ):
     private val playerPolygons = TrieMap[Player, State]()
+    val gf = GeometryFactory()
 
     p.getServer.getAsyncScheduler
         .runAtFixedRate(
@@ -609,7 +612,12 @@ class PolyhedraEditor(using
                     val points =
                         polygon.getCoordinates
                             .map(coord =>
-                                Location(world, coord.getX, coord.getZ, coord.getY)
+                                Location(
+                                    world,
+                                    coord.getX,
+                                    coord.getZ,
+                                    coord.getY,
+                                )
                             )
                             .toList
                             .dropRight(1)
@@ -617,7 +625,12 @@ class PolyhedraEditor(using
                         points
                             .sliding(2, 1)
                             .concat(List(List(points.last, points.head)))
-                            .map(pair => (pair.head.clone().add(0.5, 1.0, 0.5), pair(1).clone().add(0.5, 1.0, 0.5)))
+                            .map(pair =>
+                                (
+                                    pair.head.clone().add(0.5, 1.0, 0.5),
+                                    pair(1).clone().add(0.5, 1.0, 0.5),
+                                )
+                            )
                             .toList
 
                     lines
@@ -632,8 +645,13 @@ class PolyhedraEditor(using
 
                             Volume(into(volume.cornerA), into(volume.cornerB))
                     }
-                playerPolygons(player) =
-                    State(volumes, EditingState.nothing(), group, subgroup, drawingPolygons)
+                playerPolygons(player) = State(
+                    volumes,
+                    EditingState.nothing(),
+                    group,
+                    subgroup,
+                    drawingPolygons,
+                )
 
     def render(): Unit =
         playerPolygons.foreach { (player, model) =>
@@ -666,12 +684,32 @@ class PolyhedraEditor(using
         sql.useBlocking(
             sql.withS(
                 sql.withTX(
-                    gm.setSubclaims(
-                        player.getUniqueId,
-                        state.group,
-                        state.subgroup,
-                        Subclaims(volumes),
-                    )
+                    (for {
+                        _ <- EitherT(
+                            gm.setSubclaims(
+                                player.getUniqueId,
+                                state.group,
+                                state.subgroup,
+                                Subclaims(volumes),
+                            )
+                        )
+                        areas <- EitherT.right(cbm.getPolygonsFor(state.group))
+                        exceedsGroupAreas: Boolean =
+                            volumes.exists { volume =>
+                                val coordinates =
+                                    Array(
+                                        Coordinate(volume.cornerA.x, volume.cornerA.z),
+                                        Coordinate(volume.cornerA.x, volume.cornerB.z),
+                                        Coordinate(volume.cornerB.x, volume.cornerB.z),
+                                        Coordinate(volume.cornerB.x, volume.cornerA.z),
+                                        Coordinate(volume.cornerA.x, volume.cornerA.z),
+                                    )
+                                val volumeProjection = gf.createPolygon(coordinates)
+                                !areas.exists { polygon =>
+                                    volumeProjection.coveredBy(polygon)
+                                }
+                            }
+                    } yield exceedsGroupAreas).value
                 )
             )
         ) match
@@ -679,11 +717,21 @@ class PolyhedraEditor(using
                 player.sendServerMessage(
                     txt"I could not save the claims because ${err.explain()}"
                 )
-            case Right(_) =>
+            case Right(exceedsGroupAreas) =>
                 player.sendServerMessage(
                     txt"Claims have been successfully updated!"
                 )
                 playerPolygons.remove(player, state)
+                if exceedsGroupAreas then
+                    player.sendServerMessage(
+                        txt"Warning: some of your subclaims are outside the coverage of your group's beacons."
+                    )
+                    player.sendServerMessage(
+                        txt"They will not be enforced outside of their coverage."
+                    )
+                    player.sendServerMessage(
+                        txt"Adjust the claims to fit within the beacons or adjust the beacon coverage areas to include them."
+                    )
                 ()
 
     def leftClicked(player: Player, on: Block): Boolean =
