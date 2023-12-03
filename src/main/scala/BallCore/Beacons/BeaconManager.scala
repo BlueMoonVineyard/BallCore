@@ -217,7 +217,7 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
     def getGroup(beacon: BeaconID)(using Session[IO]): IO[Option[GroupID]] =
         sql.queryOptionIO(
             sql"""
-        SELECT GroupID FROM CivBeacons WHERE ID = $uuid;
+        SELECT GroupID FROM CivBeacons WHERE ID = $uuid AND GroupID IS NOT NULL;
         """,
             uuid,
             beacon,
