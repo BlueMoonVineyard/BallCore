@@ -332,6 +332,7 @@ class SlimeEgg(using
         val world = block.getWorld()
 
         val targetXZ = block.getLocation().clone().tap(_.add(0.5, 1, 0.5))
+        event.getItem().setAmount(event.getItem().getAmount() - 1)
 
         val targetModelLocation =
             targetXZ.clone().tap(_.add(0, Slimes.heightBlocks, 0))
