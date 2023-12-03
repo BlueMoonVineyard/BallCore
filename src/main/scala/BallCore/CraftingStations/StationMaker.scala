@@ -103,7 +103,6 @@ object StationMaker:
             List(
                 (Vanilla(Material.PISTON), 1),
                 (Vanilla(Material.REDSTONE), 64),
-                (Vanilla(Material.QUARTZ), 32),
             ),
             List(
                 (RedstoneMaker.template, 1)
