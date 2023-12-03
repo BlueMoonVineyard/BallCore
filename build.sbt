@@ -103,6 +103,7 @@ lazy val actualPlugin = project
         resolvers += "minecraft" at "https://libraries.minecraft.net",
         libraryDependencies += "org.scalameta" %% "munit" % "0.7.29" % Test,
         libraryDependencies += "com.github.seeseemelk" % "MockBukkit-v1.20" % "3.18.0" % Test,
+        libraryDependencies += "org.typelevel" %% "munit-cats-effect" % "2.0.0-M4" % Test,
         libraryDependencies += "org.locationtech.jts" % "jts-core" % "1.16.1" % "provided",
         libraryDependencies += "org.locationtech.jts" % "jts-io" % "1.16.1" % "provided",
         libraryDependencies += "dev.folia" % "folia-api" % foliaVersion % "provided", // intransitive()

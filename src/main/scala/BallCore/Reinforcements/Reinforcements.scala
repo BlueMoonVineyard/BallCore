@@ -11,6 +11,7 @@ import BallCore.Storage.SQLManager
 import BallCore.UI.Prompts
 import org.bukkit.Server
 import org.bukkit.plugin.java.JavaPlugin
+import BallCore.Fingerprints.FingerprintManager
 
 object Reinforcements:
     private def registerBlockListener()(using
@@ -20,6 +21,7 @@ object Reinforcements:
         gm: GroupManager,
         sql: SQLManager,
         busts: BustThroughTracker,
+        fingerprints: FingerprintManager,
     ): Unit =
         server.getPluginManager.registerEvents(Listener(), plugin)
 
@@ -43,6 +45,7 @@ object Reinforcements:
         prompts: Prompts,
         sql: SQLManager,
         busts: BustThroughTracker,
+        fingerprints: FingerprintManager,
     ): Unit =
         registerBlockListener()
         registerEntityListener()

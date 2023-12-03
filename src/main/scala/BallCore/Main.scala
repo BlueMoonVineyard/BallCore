@@ -45,6 +45,7 @@ import BallCore.RandomSpawner.RandomSpawn
 import BallCore.SpawnInventory.SpawnBook
 import BallCore.Gear.Tier1Gear
 import BallCore.Elevator.Elevators
+import BallCore.Fingerprints.FingerprintManager
 
 final class Main extends JavaPlugin:
     given sm: ShutdownCallbacks = ShutdownCallbacks()
@@ -121,6 +122,8 @@ final class Main extends JavaPlugin:
 
         given restHooks: RestManagerHooks = IngameRestManagerHooks()
         given rest: RestManager = RestManager()
+        given fingerprints: FingerprintManager =
+            Fingerprints.Fingerprints.register()
 
         sid.startListener()
 
@@ -181,6 +184,7 @@ final class Main extends JavaPlugin:
         msg.node.`override`()
         msg.replyNode.register()
         msg.meNode.`override`()
+        MyFingerprintCommand().node.register()
 
     override def onDisable(): Unit =
         CommandAPI.onDisable()
