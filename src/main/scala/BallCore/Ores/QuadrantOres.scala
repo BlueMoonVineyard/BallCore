@@ -22,7 +22,7 @@ object QuadrantOres:
         // +, - base ores
         val tin: OreVariants = ironLike("tin", "Tin", OreTypes.tin.num)
         val silver: OreVariants =
-            goldLike("silver", "Silver", OreTypes.sulfur.num)
+            goldLike("silver", "Silver", OreTypes.silver.num)
         val copper: OreVariants =
             copperLike("copper", "Copper", OreTypes.copper.num)
 

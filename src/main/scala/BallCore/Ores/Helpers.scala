@@ -28,7 +28,7 @@ enum OreTypes(val num: Int):
     case tin extends OreTypes(20)
     case aluminum extends OreTypes(30)
     case zinc extends OreTypes(40)
-    case silver extends OreTypes(50)
+    case sulfur extends OreTypes(220)
     case sillicon extends OreTypes(60)
     case cobalt extends OreTypes(70)
     case lead extends OreTypes(80)
@@ -39,7 +39,7 @@ enum OreTypes(val num: Int):
     case meteorite extends OreTypes(140)
 
     case gold extends OreTypes(210)
-    case sulfur extends OreTypes(220)
+    case silver extends OreTypes(220)
     case palladium extends OreTypes(230)
     case magnesium extends OreTypes(240)
 
