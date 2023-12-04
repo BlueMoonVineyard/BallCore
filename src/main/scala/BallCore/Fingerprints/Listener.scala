@@ -75,6 +75,9 @@ class Listener()(using
                 block.getWorld.getUID,
             )
             book = fingerprintsToBook(now, fprints, event.getPlayer())
-            _ <- IO { event.getPlayer().getInventory().addItem(book) }
+            _ <- if fprints.size > 0 then
+                IO { event.getPlayer().getInventory().addItem(book) }
                 .evalOn(EntityExecutionContext(event.getPlayer()))
+            else
+                IO { event.getPlayer().sendServerMessage(txt"There are no fingerprints in your area...") }
         } yield ()))
