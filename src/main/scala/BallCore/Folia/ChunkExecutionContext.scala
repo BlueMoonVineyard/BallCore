@@ -20,8 +20,7 @@ class ChunkExecutionContext(cx: Int, cz: Int, world: World)(using
     override def execute(runnable: Runnable): Unit =
         if Bukkit.getServer().isOwnedByCurrentRegion(world, cx, cz) then
             runnable.run()
-        else
-            val _ = sched.run(plugin, world, cx, cz, _ => runnable.run())
+        else val _ = sched.run(plugin, world, cx, cz, _ => runnable.run())
 
     override def reportFailure(cause: Throwable): Unit =
         plugin.getLogger

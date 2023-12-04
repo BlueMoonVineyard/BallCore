@@ -11,8 +11,7 @@ import BallCore.Storage.SQLManager
 import BallCore.CustomItems.ItemRegistry
 
 object HerbivoreKitchen {
-    val pairs
-        : List[(List[(Vanilla, Int)], List[(Material, Int)], String)] =
+    val pairs: List[(List[(Vanilla, Int)], List[(Material, Int)], String)] =
         List(
             (
                 List((Vanilla(Material.WHEAT), 32)),
@@ -103,8 +102,13 @@ object HerbivoreKitchen {
     )
 }
 
-class HerbivoreKitchen()(using CraftingActor, Plugin, Prompts, SQLManager, ItemRegistry)
-    extends CraftingStation(HerbivoreKitchen.recipes):
+class HerbivoreKitchen()(using
+    CraftingActor,
+    Plugin,
+    Prompts,
+    SQLManager,
+    ItemRegistry,
+) extends CraftingStation(HerbivoreKitchen.recipes):
     def group: ItemGroup = CraftingStations.group
 
     def template: CustomItemStack = HerbivoreKitchen.template

@@ -155,8 +155,13 @@ object ConcreteMixer:
         txt"Mixes and hardens concrete with greater efficiency",
     )
 
-class ConcreteMixer()(using CraftingActor, Plugin, Prompts, SQLManager, ItemRegistry)
-    extends CraftingStation(ConcreteMixer.recipes):
+class ConcreteMixer()(using
+    CraftingActor,
+    Plugin,
+    Prompts,
+    SQLManager,
+    ItemRegistry,
+) extends CraftingStation(ConcreteMixer.recipes):
     def group: ItemGroup = CraftingStations.group
 
     def template: CustomItemStack = ConcreteMixer.template

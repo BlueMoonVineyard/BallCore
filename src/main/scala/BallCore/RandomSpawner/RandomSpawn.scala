@@ -51,4 +51,11 @@ class RandomSpawn()(using p: Plugin):
     private def randomBlock: IO[Option[Block]] = randomPoint.flatMap(topBlockAt)
 
     def randomSpawnLocation: IO[Block] =
-        Stream.eval(randomBlock).repeat.dropWhile(_.isEmpty).take(1).compile.onlyOrError.map(_.get)
+        Stream
+            .eval(randomBlock)
+            .repeat
+            .dropWhile(_.isEmpty)
+            .take(1)
+            .compile
+            .onlyOrError
+            .map(_.get)

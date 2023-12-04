@@ -100,7 +100,11 @@ class PolygonEditor(using
     def leave(player: Player): Unit =
         val _ = playerPolygons.remove(player)
 
-    private def createBossBar(actualArea: Int, maxArea: Int, player: Player): BossBar =
+    private def createBossBar(
+        actualArea: Int,
+        maxArea: Int,
+        player: Player,
+    ): BossBar =
         val bar = BossBar.bossBar(
             Component.text(s"Area Used: ${actualArea} / ${maxArea}"),
             (actualArea.toFloat / maxArea.toFloat).min(1f).max(0f),

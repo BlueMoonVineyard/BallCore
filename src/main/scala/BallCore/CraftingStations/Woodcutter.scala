@@ -61,8 +61,13 @@ object Woodcutter:
         txt"Processes logs with greater efficiency",
     )
 
-class Woodcutter()(using CraftingActor, Plugin, Prompts, SQLManager, ItemRegistry)
-    extends CraftingStation(Woodcutter.recipes):
+class Woodcutter()(using
+    CraftingActor,
+    Plugin,
+    Prompts,
+    SQLManager,
+    ItemRegistry,
+) extends CraftingStation(Woodcutter.recipes):
     def group: ItemGroup = CraftingStations.group
 
     def template: CustomItemStack = Woodcutter.template

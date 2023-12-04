@@ -18,7 +18,7 @@ object Economist:
         Recipe(
             "Create Shop Chest",
             List(
-                (Vanilla(Material.CHEST), 1),
+                (Vanilla(Material.CHEST), 1)
             ),
             List((ShopChest.template, 1)),
             5,
@@ -27,10 +27,11 @@ object Economist:
         Recipe(
             "Create Sell Order",
             List(
-                (Vanilla(Material.PAPER), 1),
+                (Vanilla(Material.PAPER), 1)
             ),
             List((SellOrder.template, 1)),
-            1, 1,
+            1,
+            1,
         ),
     )
 
@@ -41,7 +42,12 @@ object Economist:
         txt"Creates shop chests and orders",
     )
 
-class Economist()(using CraftingActor, Plugin, Prompts, SQLManager, ItemRegistry)
-    extends CraftingStation(Economist.recipes):
+class Economist()(using
+    CraftingActor,
+    Plugin,
+    Prompts,
+    SQLManager,
+    ItemRegistry,
+) extends CraftingStation(Economist.recipes):
     def group: ItemGroup = CraftingStations.group
     def template: CustomItemStack = Economist.template

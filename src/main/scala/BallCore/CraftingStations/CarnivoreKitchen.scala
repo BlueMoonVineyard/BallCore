@@ -80,8 +80,13 @@ object CarnivoreKitchen {
     )
 }
 
-class CarnivoreKitchen()(using CraftingActor, Plugin, Prompts, SQLManager, ItemRegistry)
-    extends CraftingStation(CarnivoreKitchen.recipes):
+class CarnivoreKitchen()(using
+    CraftingActor,
+    Plugin,
+    Prompts,
+    SQLManager,
+    ItemRegistry,
+) extends CraftingStation(CarnivoreKitchen.recipes):
     def group: ItemGroup = CraftingStations.group
 
     def template: CustomItemStack = CarnivoreKitchen.template

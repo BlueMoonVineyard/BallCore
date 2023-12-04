@@ -42,10 +42,10 @@ def fingerprintsToBook(
     )
     meta.pages(fingerprints.map { fingerprint =>
         List(
-        	txt"Fingerprint".decorate(TextDecoration.BOLD),
-        	txt"Player ID: ${fingerprint.creator}",
-        	txt"Left On: ${date.toDateString} at ${date.toTimeString}",
-        	txt"Action: ${fingerprint.reason.explain}",
+            txt"Fingerprint".decorate(TextDecoration.BOLD),
+            txt"Player ID: ${fingerprint.creator}",
+            txt"Left On: ${date.toDateString} at ${date.toTimeString}",
+            txt"Action: ${fingerprint.reason.explain}",
         ).mkComponent(txt("\n"))
     }.asJava)
     book.setItemMeta(meta)
@@ -75,9 +75,16 @@ class Listener()(using
                 block.getWorld.getUID,
             )
             book = fingerprintsToBook(now, fprints, event.getPlayer())
-            _ <- if fprints.size > 0 then
-                IO { event.getPlayer().getInventory().addItem(book) }
-                .evalOn(EntityExecutionContext(event.getPlayer()))
-            else
-                IO { event.getPlayer().sendServerMessage(txt"There are no fingerprints in your area...") }
+            _ <-
+                if fprints.size > 0 then
+                    IO { event.getPlayer().getInventory().addItem(book) }
+                        .evalOn(EntityExecutionContext(event.getPlayer()))
+                else
+                    IO {
+                        event
+                            .getPlayer()
+                            .sendServerMessage(
+                                txt"There are no fingerprints in your area..."
+                            )
+                    }
         } yield ()))

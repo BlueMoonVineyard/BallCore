@@ -91,7 +91,11 @@ class PlantListProgram extends UIProgram:
                                 case GrowingClimate.allClimates => allClimates
                             } climates".color(NamedTextColor.GRAY))
                         if plant.growingClimate.growsWithin(model.climate) then
-                            Lore(txt"Grows in the current climate".color(NamedTextColor.GREEN))
+                            Lore(
+                                txt"Grows in the current climate".color(
+                                    NamedTextColor.GREEN
+                                )
+                            )
                         plant.plant match
                             case PlantType.ageable(_, hoursBetweenStages) =>
                                 Lore(

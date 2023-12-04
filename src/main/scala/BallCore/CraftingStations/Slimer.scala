@@ -33,7 +33,8 @@ object Slimer:
                 (Vanilla(Material.ENDER_PEARL), 1),
             ),
             List((Sigil.itemStack, 4)),
-            10, 2,
+            10,
+            2,
         ),
     )
 

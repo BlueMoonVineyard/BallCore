@@ -53,5 +53,7 @@ class Listener(using rs: RandomSpawn, sql: SQLManager, p: Plugin)
         if player.hasPlayedBefore() then return ()
         sql.useFireAndForget(for {
             block <- rs.randomSpawnLocation
-            _ <- IO.fromCompletableFuture(IO { player.teleportAsync(block.getLocation()) })
+            _ <- IO.fromCompletableFuture(IO {
+                player.teleportAsync(block.getLocation())
+            })
         } yield ())

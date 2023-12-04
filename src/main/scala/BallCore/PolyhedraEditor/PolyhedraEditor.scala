@@ -698,13 +698,29 @@ class PolyhedraEditor(using
                             volumes.exists { volume =>
                                 val coordinates =
                                     Array(
-                                        Coordinate(volume.cornerA.x, volume.cornerA.z),
-                                        Coordinate(volume.cornerA.x, volume.cornerB.z),
-                                        Coordinate(volume.cornerB.x, volume.cornerB.z),
-                                        Coordinate(volume.cornerB.x, volume.cornerA.z),
-                                        Coordinate(volume.cornerA.x, volume.cornerA.z),
+                                        Coordinate(
+                                            volume.cornerA.x,
+                                            volume.cornerA.z,
+                                        ),
+                                        Coordinate(
+                                            volume.cornerA.x,
+                                            volume.cornerB.z,
+                                        ),
+                                        Coordinate(
+                                            volume.cornerB.x,
+                                            volume.cornerB.z,
+                                        ),
+                                        Coordinate(
+                                            volume.cornerB.x,
+                                            volume.cornerA.z,
+                                        ),
+                                        Coordinate(
+                                            volume.cornerA.x,
+                                            volume.cornerA.z,
+                                        ),
                                     )
-                                val volumeProjection = gf.createPolygon(coordinates)
+                                val volumeProjection =
+                                    gf.createPolygon(coordinates)
                                 !areas.exists { polygon =>
                                     volumeProjection.coveredBy(polygon)
                                 }

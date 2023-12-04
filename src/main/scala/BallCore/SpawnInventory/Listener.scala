@@ -9,8 +9,7 @@ object Listener:
     def register()(using p: Plugin): Unit =
         p.getServer().getPluginManager().registerEvents(Listener(), p)
 
-class Listener()
-    extends org.bukkit.event.Listener:
+class Listener() extends org.bukkit.event.Listener:
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     def onPlayerJoin(event: PlayerJoinEvent): Unit =

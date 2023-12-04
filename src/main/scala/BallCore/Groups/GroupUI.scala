@@ -814,7 +814,13 @@ class RoleManagementProgram(using
                                 sql.useBlocking(
                                     sql.withS(
                                         sql.withTX(
-                                            gm.assignRole(model.userID, plr.getUniqueId, model.group.metadata.id, model.role.id, true).value
+                                            gm.assignRole(
+                                                model.userID,
+                                                plr.getUniqueId,
+                                                model.group.metadata.id,
+                                                model.role.id,
+                                                true,
+                                            ).value
                                         )
                                     )
                                 ) match
@@ -841,7 +847,13 @@ class RoleManagementProgram(using
                                 sql.useBlocking(
                                     sql.withS(
                                         sql.withTX(
-                                            gm.assignRole(model.userID, plr.getUniqueId, model.group.metadata.id, model.role.id, false).value
+                                            gm.assignRole(
+                                                model.userID,
+                                                plr.getUniqueId,
+                                                model.group.metadata.id,
+                                                model.role.id,
+                                                false,
+                                            ).value
                                         )
                                     )
                                 ) match

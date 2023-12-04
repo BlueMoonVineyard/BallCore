@@ -57,7 +57,9 @@ object WorkChestUtils:
         if inputs._2 <= 64 then
             List(inputs._1.clone().tap(_.setAmount(inputs._2)))
         else
-            inputs._1.clone().tap(_.setAmount(64)) :: splitinate((inputs._1, inputs._2 - 64))
+            inputs._1.clone().tap(_.setAmount(64)) :: splitinate(
+                (inputs._1, inputs._2 - 64)
+            )
 
     def insertInto(
         outputs: List[(ItemStack, Int)],
@@ -67,7 +69,8 @@ object WorkChestUtils:
         outputs.foreach { output =>
             splitinate(output).foreach { stack =>
                 inventory.addItem(stack).forEach { (_, extra) =>
-                    val _ = at.getWorld.dropItemNaturally(at.getLocation(), stack)
+                    val _ =
+                        at.getWorld.dropItemNaturally(at.getLocation(), stack)
                 }
             }
         }
@@ -100,14 +103,15 @@ object CraftingActor:
 
     def validateJob(
         recipe: Recipe,
-        workstation: Block
+        workstation: Block,
     )(using ItemRegistry): Boolean =
         WorkChestUtils.findWorkChest(workstation) match
             case None => false
             case Some((_, chest)) =>
                 inventoryContains(recipe.inputs, chest)
 
-class CraftingActor(using p: Plugin, ir: ItemRegistry) extends Actor[CraftingMessage]:
+class CraftingActor(using p: Plugin, ir: ItemRegistry)
+    extends Actor[CraftingMessage]:
     private var jobs: Map[Block, Job] = Map[Block, Job]()
     private val sides: List[BlockFace] =
         List(BlockFace.NORTH, BlockFace.SOUTH, BlockFace.WEST, BlockFace.EAST)

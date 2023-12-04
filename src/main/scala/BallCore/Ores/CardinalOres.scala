@@ -23,7 +23,9 @@ object CardinalOres:
             Material.LAPIS_LAZULI,
             txt"Sapphire",
         )
-        sapphire.setItemMeta(sapphire.getItemMeta().tap(_.setCustomModelData(1)))
+        sapphire.setItemMeta(
+            sapphire.getItemMeta().tap(_.setCustomModelData(1))
+        )
 
         // south
         val sillicon: OreVariants =
@@ -43,7 +45,9 @@ object CardinalOres:
             Material.AMETHYST_SHARD,
             txt"Plutonium",
         )
-        plutonium.setItemMeta(plutonium.getItemMeta().tap(_.setCustomModelData(1)))
+        plutonium.setItemMeta(
+            plutonium.getItemMeta().tap(_.setCustomModelData(1))
+        )
 
         // west
         val lead: OreVariants = ironLike("lead", "Lead", OreTypes.lead.num)

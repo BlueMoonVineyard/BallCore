@@ -17,10 +17,8 @@ class LocationExecutionContext(loc: Location)(using plugin: Plugin)
     val sched: RegionScheduler = plugin.getServer.getRegionScheduler
 
     override def execute(runnable: Runnable): Unit =
-        if Bukkit.getServer().isOwnedByCurrentRegion(loc) then
-            runnable.run()
-        else
-            sched.execute(plugin, loc, runnable)
+        if Bukkit.getServer().isOwnedByCurrentRegion(loc) then runnable.run()
+        else sched.execute(plugin, loc, runnable)
 
     override def reportFailure(cause: Throwable): Unit =
         plugin.getLogger

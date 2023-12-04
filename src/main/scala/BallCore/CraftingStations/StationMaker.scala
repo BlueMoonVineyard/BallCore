@@ -197,8 +197,13 @@ object StationMaker:
         txt"Allows creating improved crafting stations",
     )
 
-class StationMaker()(using CraftingActor, Plugin, Prompts, SQLManager, ItemRegistry)
-    extends CraftingStation(StationMaker.recipes):
+class StationMaker()(using
+    CraftingActor,
+    Plugin,
+    Prompts,
+    SQLManager,
+    ItemRegistry,
+) extends CraftingStation(StationMaker.recipes):
     def group: ItemGroup = CraftingStations.group
 
     def template: CustomItemStack = StationMaker.template

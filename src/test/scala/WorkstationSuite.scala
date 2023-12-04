@@ -34,7 +34,10 @@ class WorkstationSuite extends munit.FunSuite:
         Material.MANGROVE_LOG,
     )
     test("exactchoice") {
-        assert(ExactChoice(ItemStacks.copper.ingot).test(ItemStacks.copper.ingot), "sanity check")
+        assert(
+            ExactChoice(ItemStacks.copper.ingot).test(ItemStacks.copper.ingot),
+            "sanity check",
+        )
     }
     test("create workstations") {
         given Plugin = MockBukkit.createMockPlugin()

@@ -109,7 +109,8 @@ final class Main extends JavaPlugin:
 
             given hn: CivBeaconManager = new CivBeaconManager
 
-            given erm: EntityReinforcementManager = new EntityReinforcementManager
+            given erm: EntityReinforcementManager =
+                new EntityReinforcementManager
 
             given ac: AntiCheeser = new AntiCheeser
 
@@ -145,7 +146,9 @@ final class Main extends JavaPlugin:
                 Fingerprints.Fingerprints.register()
 
             sid.startListener()
-            getServer().getPluginManager().registerEvents(ExceptionLogger(), this)
+            getServer()
+                .getPluginManager()
+                .registerEvents(ExceptionLogger(), this)
 
             Datekeeping.Datekeeping.startSidebarClock()
             Beacons.registerItems()
@@ -208,18 +211,28 @@ final class Main extends JavaPlugin:
             StationCommand().node.register()
         catch
             case e: Throwable =>
-                getSLF4JLogger().error("Failed to start BallCore, shutting down...", e)
+                getSLF4JLogger().error(
+                    "Failed to start BallCore, shutting down...",
+                    e,
+                )
                 Bukkit.getServer().shutdown()
 
     override def onDisable(): Unit =
         CommandAPI.onDisable()
         import cats.effect.unsafe.implicits.global
-        sm.shutdown().redeemWith({
-            case exception: Throwable =>
-                IO {
-                    Sentry.captureException(exception)
-                    getSLF4JLogger().error("Failed to shut down BallCore", exception)
-                }
-        }, { _ =>
-            IO { getSLF4JLogger().info("Successfully shut down BallCore") }
-        }).unsafeRunSync()
+        sm.shutdown()
+            .redeemWith(
+                { case exception: Throwable =>
+                    IO {
+                        Sentry.captureException(exception)
+                        getSLF4JLogger()
+                            .error("Failed to shut down BallCore", exception)
+                    }
+                },
+                { _ =>
+                    IO {
+                        getSLF4JLogger().info("Successfully shut down BallCore")
+                    }
+                },
+            )
+            .unsafeRunSync()

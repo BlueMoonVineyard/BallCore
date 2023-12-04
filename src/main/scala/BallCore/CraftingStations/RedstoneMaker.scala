@@ -138,8 +138,13 @@ object RedstoneMaker {
     )
 }
 
-class RedstoneMaker()(using CraftingActor, Plugin, Prompts, SQLManager, ItemRegistry)
-    extends CraftingStation(RedstoneMaker.recipes):
+class RedstoneMaker()(using
+    CraftingActor,
+    Plugin,
+    Prompts,
+    SQLManager,
+    ItemRegistry,
+) extends CraftingStation(RedstoneMaker.recipes):
     def group: ItemGroup = CraftingStations.group
 
     def template: CustomItemStack = RedstoneMaker.template

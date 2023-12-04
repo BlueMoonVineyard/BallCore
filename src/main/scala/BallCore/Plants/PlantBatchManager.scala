@@ -145,7 +145,6 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin, c: Clock)
         )
     )
 
-
     private def toOffsets(x: Int, z: Int): (Int, Int, Int, Int) =
         (x / 16, z / 16, x % 16, z % 16)
 
@@ -193,9 +192,9 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin, c: Clock)
     private def save(value: Dirty[DBPlantData])(using Session[IO]): IO[Unit] =
         if value.deleted then
             IO.println("saving deleted plant") *>
-            sql
-                .commandIO(
-                    sql"""
+                sql
+                    .commandIO(
+                        sql"""
 			DELETE FROM Plants
 				WHERE ChunkX = $int4
 				  AND ChunkZ = $int4
@@ -204,21 +203,21 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin, c: Clock)
 				  AND OffsetZ = $int4
 				  AND Y = $int4;
 			""",
-                    (
-                        value.inner.chunkX,
-                        value.inner.chunkZ,
-                        value.inner.world,
-                        value.inner.offsetX,
-                        value.inner.offsetZ,
-                        value.inner.yPos,
-                    ),
-                )
-                .map(_ => ())
+                        (
+                            value.inner.chunkX,
+                            value.inner.chunkZ,
+                            value.inner.world,
+                            value.inner.offsetX,
+                            value.inner.offsetZ,
+                            value.inner.yPos,
+                        ),
+                    )
+                    .map(_ => ())
         else
             IO.println("saving non-deleted plant") *>
-            sql
-                .commandIO(
-                    sql"""
+                sql
+                    .commandIO(
+                        sql"""
 			INSERT INTO Plants
 				(ChunkX, ChunkZ, World, OffsetX, OffsetZ, Y, Kind, AgeIngameHours, IncompleteGrowthAdvancements, ValidClimate)
 			VALUES
@@ -226,20 +225,20 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin, c: Clock)
 			ON CONFLICT (ChunkX, ChunkZ, World, OffsetX, OffsetZ, Y) DO UPDATE SET
 				Kind = EXCLUDED.Kind, AgeIngameHours = EXCLUDED.AgeIngameHours, IncompleteGrowthAdvancements = EXCLUDED.IncompleteGrowthAdvancements;
 			""",
-                    (
-                        value.inner.chunkX,
-                        value.inner.chunkZ,
-                        value.inner.world,
-                        value.inner.offsetX,
-                        value.inner.offsetZ,
-                        value.inner.yPos,
-                        value.inner.what,
-                        value.inner.ageIngameHours,
-                        value.inner.incompleteGrowthAdvancements,
-                        value.inner.isInValidClimate
-                    ),
-                )
-                .map(_ => ())
+                        (
+                            value.inner.chunkX,
+                            value.inner.chunkZ,
+                            value.inner.world,
+                            value.inner.offsetX,
+                            value.inner.offsetZ,
+                            value.inner.yPos,
+                            value.inner.what,
+                            value.inner.ageIngameHours,
+                            value.inner.incompleteGrowthAdvancements,
+                            value.inner.isInValidClimate,
+                        ),
+                    )
+                    .map(_ => ())
 
     private def get(
         cx: Int,
@@ -301,7 +300,18 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin, c: Clock)
                     oz,
                     y,
                     Dirty(
-                        DBPlantData(cx, cz, world, ox, oz, y, what, 0, 0, rightClimate),
+                        DBPlantData(
+                            cx,
+                            cz,
+                            world,
+                            ox,
+                            oz,
+                            y,
+                            what,
+                            0,
+                            0,
+                            rightClimate,
+                        ),
                         true,
                         false,
                     ),
@@ -384,11 +394,15 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin, c: Clock)
                     }
                 }
             case PlantMsg.tickPlants =>
-                val transaction = Sentry.startTransaction("PlantMsg.tickPlants", "operation")
+                val transaction =
+                    Sentry.startTransaction("PlantMsg.tickPlants", "operation")
 
                 try
                     // increment plant ages and their growth ticks if necessary
-                    val mapInPlaceSpan = transaction.startChild("computation", "mapping values in place")
+                    val mapInPlaceSpan = transaction.startChild(
+                        "computation",
+                        "mapping values in place",
+                    )
                     plants.mapValuesInPlace { (key, map) =>
                         map.map { (plantKey, plant) =>
                             if plant.deleted then plantKey -> plant
@@ -426,7 +440,10 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin, c: Clock)
                     }
                     mapInPlaceSpan.finish()
 
-                    val plantDispatchSpan = transaction.startChild("dispatching", "dispatching plants to be grown")
+                    val plantDispatchSpan = transaction.startChild(
+                        "dispatching",
+                        "dispatching plants to be grown",
+                    )
                     // dispatch plants with growth ticks to be grown in the world
                     plants.foreach { (key, map) =>
                         val (cx, cz, worldID) = key
@@ -455,20 +472,25 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin, c: Clock)
                                 .partition { (_, in) =>
                                     val (data, block) = in
 
-                                    1.to(data.inner.incompleteGrowthAdvancements)
-                                        .exists { _ =>
-                                            val result = PlantGrower.grow(
-                                                block,
-                                                data.inner.what.plant,
-                                            )
-                                            result.isSuccess && result.get
-                                        }
+                                    1.to(
+                                        data.inner.incompleteGrowthAdvancements
+                                    ).exists { _ =>
+                                        val result = PlantGrower.grow(
+                                            block,
+                                            data.inner.what.plant,
+                                        )
+                                        result.isSuccess && result.get
+                                    }
                                 }
                             this.send(
-                                PlantMsg.plantsFinishedGrowing(done.map(_._2._2))
+                                PlantMsg.plantsFinishedGrowing(
+                                    done.map(_._2._2)
+                                )
                             )
                             this.send(
-                                PlantMsg.plantsGrewPartially(notDone.map(_._2._2))
+                                PlantMsg.plantsGrewPartially(
+                                    notDone.map(_._2._2)
+                                )
                             )
                         }
                     }
@@ -477,5 +499,4 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin, c: Clock)
                     case e: Throwable =>
                         transaction.setThrowable(e)
                         transaction.setStatus(SpanStatus.NOT_FOUND)
-                finally
-                    transaction.finish()
+                finally transaction.finish()

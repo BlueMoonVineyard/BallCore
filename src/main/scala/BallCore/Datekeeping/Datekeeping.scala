@@ -190,7 +190,8 @@ object Datekeeping:
                     .execute(
                         p,
                         () => {
-                            val minute = (date.hour * 60 + date.minute) * 16.6666
+                            val minute =
+                                (date.hour * 60 + date.minute) * 16.6666
                             Bukkit.getServer
                                 .getWorld("world")
                                 .setTime(minute.floor.toLong + 18000)

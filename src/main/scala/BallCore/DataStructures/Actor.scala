@@ -27,16 +27,18 @@ class ShutdownCallbacks:
         fn._1
 
     def shutdown(): IO[Unit] =
-        items.concat(resources).map { cb =>
-            cb.recoverWith {
-                case e: Throwable =>
+        items
+            .concat(resources)
+            .map { cb =>
+                cb.recoverWith { case e: Throwable =>
                     IO {
                         Sentry.captureException(e)
                         println(s"Failed to run shutdown callback")
                         e.printStackTrace()
                     }
+                }
             }
-        }.sequence_
+            .sequence_
 
 trait Actor[Msg]:
     def handle(m: Msg): Unit
@@ -53,13 +55,18 @@ trait Actor[Msg]:
     def startListener()(using cb: ShutdownCallbacks): Unit =
         val thread = Thread.startVirtualThread(() =>
             try
-                println(s"Actor Thread for ${this.getClass().getSimpleName()} is starting")
+                println(
+                    s"Actor Thread for ${this.getClass().getSimpleName()} is starting"
+                )
                 this.mainLoop()
-            catch case e: Throwable =>
-                Sentry.captureException(e)
-                e.printStackTrace()
+            catch
+                case e: Throwable =>
+                    Sentry.captureException(e)
+                    e.printStackTrace()
             finally
-                println(s"Actor Thread for ${this.getClass().getSimpleName()} is shutting down")
+                println(
+                    s"Actor Thread for ${this.getClass().getSimpleName()} is shutting down"
+                )
         )
         thread.setName(s"Actor Thread: ${this.getClass().getSimpleName()}")
         cb.add(this.shutdown)
@@ -76,14 +83,14 @@ trait Actor[Msg]:
             msg match
                 case TrueMsg.inner(msg) =>
                     try handle(msg)
-                    catch case e: Throwable =>
-                        Sentry.captureException(e)
-                        e.printStackTrace()
+                    catch
+                        case e: Throwable =>
+                            Sentry.captureException(e)
+                            e.printStackTrace()
                 case TrueMsg.shutdown(promise) =>
                     promise.complete(Try {
                         handleShutdown()
-                    }.recover {
-                        case e =>
-                            Sentry.captureException(e)
-                            e.printStackTrace()
+                    }.recover { case e =>
+                        Sentry.captureException(e)
+                        e.printStackTrace()
                     })

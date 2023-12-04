@@ -43,7 +43,9 @@ object PlantGrower:
                     true
                 case PlantType.stemmedAgeable(stem, fruit, _) =>
                     val ageable = block.getBlockData.asInstanceOf[Ageable]
-                    ageable.setAge((ageable.getAge + 1).min(ageable.getMaximumAge))
+                    ageable.setAge(
+                        (ageable.getAge + 1).min(ageable.getMaximumAge)
+                    )
                     block.setBlockData(ageable)
                     if ageable.getAge == ageable.getMaximumAge then
                         block.setType(fruit, true)

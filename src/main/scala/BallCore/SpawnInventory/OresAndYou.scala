@@ -15,10 +15,15 @@ import skunk.Session
 object OresAndYou:
     val builder = MiniMessage.builder().strict(true).build()
     def percent(d: Double): String =
-        f"${d*100}%.1f%%"
-    def viewForPlayer(plr: Player)(using p: Plugin, s: Session[IO], as: BallCore.Acclimation.Storage): IO[Book] =
+        f"${d * 100}%.1f%%"
+    def viewForPlayer(plr: Player)(using
+        p: Plugin,
+        s: Session[IO],
+        as: BallCore.Acclimation.Storage,
+    ): IO[Book] =
         for {
-            pair <- IO { Information.latLong(plr.getX, plr.getZ) }.evalOn(EntityExecutionContext(plr))
+            pair <- IO { Information.latLong(plr.getX, plr.getZ) }
+                .evalOn(EntityExecutionContext(plr))
             plat <- as.getLatitude(plr.getUniqueId)
             plong <- as.getLongitude(plr.getUniqueId)
             dlat = Information.similarityNeg(pair._1, plat)
@@ -41,10 +46,12 @@ object OresAndYou:
                        |- <link:11>West Ores</link>
                        |- <link:12>East Ores</link>""".stripMargin,
                     s"""<b>Adaptation</b>
-                       |Your adaptation to your current location is: ${percent(bonusRateMultiplier)}
+                       |Your adaptation to your current location is: ${percent(
+                            bonusRateMultiplier
+                        )}
                        |(ore probabilities are multipled by your adaptation)
                        |
-                       |Adaption Point: ${(plat*Information.WorldRadiusBlocks).toInt}, ${(plong*Information.WorldRadiusBlocks).toInt}
+                       |Adaption Point: ${(plat * Information.WorldRadiusBlocks).toInt}, ${(plong * Information.WorldRadiusBlocks).toInt}
                        |Current Location: ${plr.getX.toInt}, ${plr.getZ.toInt}""".stripMargin,
                     s"""Adaptation Speeds:
                        |- 7 days within your heart's claim

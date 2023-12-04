@@ -22,7 +22,8 @@ object RailManufactory:
     private val goldChoice: RecipeIngredient = Custom(
         goldLikes.map(_.ingot): _*
     )
-    val pairs: List[(List[(RecipeIngredient, Int)], Material, (Int, Int), String)] =
+    val pairs
+        : List[(List[(RecipeIngredient, Int)], Material, (Int, Int), String)] =
         List(
             (
                 List(ironChoice -> 64, Vanilla(Material.STICK) -> 8),
@@ -84,8 +85,13 @@ object RailManufactory:
         txt"Crafts metals into rails at bulk rates",
     )
 
-class RailManufactory()(using CraftingActor, Plugin, Prompts, SQLManager, ItemRegistry)
-    extends CraftingStation(RailManufactory.recipes):
+class RailManufactory()(using
+    CraftingActor,
+    Plugin,
+    Prompts,
+    SQLManager,
+    ItemRegistry,
+) extends CraftingStation(RailManufactory.recipes):
     def group: ItemGroup = CraftingStations.group
 
     def template: CustomItemStack = RailManufactory.template

@@ -51,7 +51,10 @@ class StationListProgram(stations: List[CraftingStation]) extends UIProgram:
                 paginated(model.page).foreach { (station) =>
                     Button(
                         station.template,
-                        station.template.getItemMeta().displayName().color(NamedTextColor.GREEN),
+                        station.template
+                            .getItemMeta()
+                            .displayName()
+                            .color(NamedTextColor.GREEN),
                         Message.clickStation(station),
                     ) {
                         station.template.lore().forEach { component =>
@@ -74,7 +77,10 @@ class StationListProgram(stations: List[CraftingStation]) extends UIProgram:
             }
         }
 
-class RecipeViewerProgram(stations: List[CraftingStation], recipes: List[Recipe]) extends UIProgram:
+class RecipeViewerProgram(
+    stations: List[CraftingStation],
+    recipes: List[Recipe],
+) extends UIProgram:
     private val paginated: List[List[(Recipe, Int)]] =
         recipes.zipWithIndex.grouped(5 * 9).toList
     private val numPages: Int = paginated.size

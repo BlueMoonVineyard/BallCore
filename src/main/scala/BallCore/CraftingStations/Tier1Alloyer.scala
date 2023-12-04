@@ -40,8 +40,12 @@ object Tier1Alloyer:
         txt"Alloys ores together into more valuable ores",
     )
 
-class Tier1Alloyer()(using CraftingActor, Plugin, Prompts, SQLManager, ItemRegistry)
-    extends CraftingStation(Tier1Alloyer.recipes):
+class Tier1Alloyer()(using
+    CraftingActor,
+    Plugin,
+    Prompts,
+    SQLManager,
+    ItemRegistry,
+) extends CraftingStation(Tier1Alloyer.recipes):
     def group: ItemGroup = CraftingStations.group
     def template: CustomItemStack = Tier1Alloyer.template
-

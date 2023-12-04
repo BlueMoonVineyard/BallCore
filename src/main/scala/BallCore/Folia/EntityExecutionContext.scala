@@ -17,10 +17,8 @@ class EntityExecutionContext(ent: Entity)(using plugin: Plugin)
     val sched: EntityScheduler = ent.getScheduler
 
     override def execute(runnable: Runnable): Unit =
-        if Bukkit.getServer().isOwnedByCurrentRegion(ent) then
-            runnable.run()
-        else
-            val _ = sched.run(plugin, _ => runnable.run(), null)
+        if Bukkit.getServer().isOwnedByCurrentRegion(ent) then runnable.run()
+        else val _ = sched.run(plugin, _ => runnable.run(), null)
 
     override def reportFailure(cause: Throwable): Unit =
         plugin.getLogger

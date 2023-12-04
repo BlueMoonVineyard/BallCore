@@ -157,8 +157,13 @@ object GlazingKiln:
         txt"Dyes and glazes more terracotta with less dyes than normal crafting",
     )
 
-class GlazingKiln()(using CraftingActor, Plugin, Prompts, SQLManager, ItemRegistry)
-    extends CraftingStation(GlazingKiln.recipes):
+class GlazingKiln()(using
+    CraftingActor,
+    Plugin,
+    Prompts,
+    SQLManager,
+    ItemRegistry,
+) extends CraftingStation(GlazingKiln.recipes):
     def group: ItemGroup = CraftingStations.group
 
     def template: CustomItemStack = GlazingKiln.template

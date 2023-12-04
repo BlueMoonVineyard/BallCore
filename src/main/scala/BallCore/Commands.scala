@@ -304,18 +304,31 @@ class StationCommand(using
                 GreedyStringArgument("workstation")
                     .replaceSuggestions(
                         ArgumentSuggestions.strings(
-                            stations.map(x => stringify(x.template.getItemMeta().displayName())).asJava
+                            stations
+                                .map(x =>
+                                    stringify(
+                                        x.template.getItemMeta().displayName()
+                                    )
+                                )
+                                .asJava
                         )
                     )
                     .executesPlayer({ (sender, args) =>
                         val arg = args.getUnchecked[String]("workstation")
                         stations.find(station =>
-                            stringify(station.template.getItemMeta().displayName()) == arg
+                            stringify(
+                                station.template.getItemMeta().displayName()
+                            ) == arg
                         ) match
                             case None =>
-                                sender.sendServerMessage(txt"I couldn't find a workstation with that name!")
+                                sender.sendServerMessage(
+                                    txt"I couldn't find a workstation with that name!"
+                                )
                             case Some(station) =>
-                                val p = RecipeViewerProgram(stations, station.recipes)
+                                val p = RecipeViewerProgram(
+                                    stations,
+                                    station.recipes,
+                                )
                                 val runner = UIProgramRunner(
                                     p,
                                     p.Flags(0),
@@ -509,7 +522,8 @@ class CheatCommand(using
                         registry.items().foreach { item =>
                             val is = item.template.clone()
                             sender.getInventory.addItem(is).forEach { (_, is) =>
-                                val _ = sender.getWorld.dropItemNaturally(sender.getLocation, is)
+                                val _ = sender.getWorld
+                                    .dropItemNaturally(sender.getLocation, is)
                             }
                             sender.sendServerMessage(
                                 txt"Gave 1 item"

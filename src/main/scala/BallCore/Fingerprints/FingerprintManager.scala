@@ -36,7 +36,9 @@ enum FingerprintReason(val label: String):
         this match
             case bustedThrough => "Busted through a beacon"
 
-val reasonEnum = text.eimap[FingerprintReason](FingerprintReason.fromLabel(_).toRight("not found"))(_.label)
+val reasonEnum = text.eimap[FingerprintReason](
+    FingerprintReason.fromLabel(_).toRight("not found")
+)(_.label)
 
 class FingerprintManager()(using
     sql: SQLManager,
@@ -102,7 +104,9 @@ class FingerprintManager()(using
                 player,
             )
         ).getOrElseF(for {
-            newID <- random.nextAlphaNumeric.replicateA(6).map(_.mkString.toUpperCase())
+            newID <- random.nextAlphaNumeric
+                .replicateA(6)
+                .map(_.mkString.toUpperCase())
             _ <- sql.commandIO(
                 sql"""
             INSERT INTO PlayerFingerprints (

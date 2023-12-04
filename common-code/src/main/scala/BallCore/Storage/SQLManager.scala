@@ -144,12 +144,16 @@ class SQLManager(resource: Resource[IO, Session[IO]], val database: String):
       * @tparam A
       *   return type of the IO function to be ran within the transaction
       */
-    def txIO[A](fn: Transaction[IO] => IO[A])(using s: Session[IO])(using scala.util.NotGiven[Transaction[IO]]): IO[A] =
+    def txIO[A](
+        fn: Transaction[IO] => IO[A]
+    )(using s: Session[IO])(using scala.util.NotGiven[Transaction[IO]]): IO[A] =
         s.transaction.use { tx =>
             fn(tx)
         }
 
-    def withTX[A](fn: Transaction[IO] ?=> IO[A])(using s: Session[IO])(using scala.util.NotGiven[Transaction[IO]]): IO[A] =
+    def withTX[A](
+        fn: Transaction[IO] ?=> IO[A]
+    )(using s: Session[IO])(using scala.util.NotGiven[Transaction[IO]]): IO[A] =
         s.transaction.use { tx =>
             fn(using tx)
         }
