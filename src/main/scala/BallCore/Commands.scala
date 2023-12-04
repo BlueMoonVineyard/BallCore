@@ -504,6 +504,20 @@ class CheatCommand(using
                     )
             )
             .`then`(
+                LiteralArgument("spawn-everything")
+                    .executesPlayer({ (sender, args) =>
+                        registry.items().foreach { item =>
+                            val is = item.template.clone()
+                            sender.getInventory.addItem(is).forEach { (_, is) =>
+                                val _ = sender.getWorld.dropItemNaturally(sender.getLocation, is)
+                            }
+                            sender.sendServerMessage(
+                                txt"Gave 1 item"
+                            )
+                        }
+                    }: PlayerCommandExecutor)
+            )
+            .`then`(
                 LiteralArgument("spawn-inventory")
                     .executesPlayer({ (sender, args) =>
                         InventorySetter.giveSpawnInventory(sender)

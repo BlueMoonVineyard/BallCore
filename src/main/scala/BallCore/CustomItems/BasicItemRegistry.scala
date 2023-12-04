@@ -17,6 +17,9 @@ class BasicItemRegistry(using s: Server) extends ItemRegistry:
         Map[NamespacedKey, CustomItem]()
     private var recipeList: List[NamespacedKey] = List[NamespacedKey]()
 
+    def items(): List[CustomItem] =
+        itemMap.values.toList
+
     def register(item: CustomItem): Unit =
         itemMap += item.id -> item
 

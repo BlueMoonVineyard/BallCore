@@ -78,7 +78,6 @@ final class Main extends JavaPlugin:
             Sentry.init(options => {
                 options.setDsn(config.node("sentry", "dsn").getString())
                 options.setTracesSampleRate(0.2)
-                options.setDebug(true)
             })
 
             val databaseConfig = Config.from(config.node("database")) match

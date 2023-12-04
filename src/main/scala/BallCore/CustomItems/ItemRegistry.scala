@@ -52,6 +52,8 @@ trait ItemRegistry:
 
     def recipes(): List[NamespacedKey]
 
+    def items(): List[CustomItem]
+
 @SerialVersionUID(1000L)
 enum CustomMaterial:
     case custom(named: String)
