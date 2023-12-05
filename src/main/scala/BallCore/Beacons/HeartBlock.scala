@@ -16,6 +16,7 @@ import org.bukkit.{Material, NamespacedKey}
 
 import java.util.UUID
 import BallCore.Sigils.BattleManager
+import io.sentry.Sentry
 
 object HeartBlock:
     val itemStack: CustomItemStack = CustomItemStack.make(
@@ -149,16 +150,32 @@ class HeartBlock()(using
                 ()
 
     def onBlockRemoved(event: BlockBreakEvent): Unit =
-        sql.useBlocking(sql.withS(for {
-            owner <- bm.retrieve[UUID](event.getBlock, "owner")
-            res <- hn.removeHeart(event.getBlock.getLocation, owner.get)
-        } yield res)) match
-            case Some(_) =>
+        sql.useBlocking(
+            sql.withS(sql.withTX(for {
+                owner <- bm.retrieve[UUID](event.getBlock, "owner")
+                res <- hn.removeHeart(event.getBlock.getLocation, owner.get)
+            } yield res))
+                .redeem({ case e =>
+                    Left(e)
+                }, { case it =>
+                    Right(it)
+                })
+        ) match
+            case Left(err) =>
                 event.getPlayer
                     .sendServerMessage(
-                        txt"You've disconnected from the beacon..."
+                        txt"An error happened while attempting to delete the beacon."
                     )
-            case None =>
-                event.getPlayer.sendServerMessage(
-                    txt"You've deleted the beacon..."
-                )
+                Sentry.captureException(err)
+                event.setCancelled(true)
+            case Right(it) =>
+                it match
+                    case Some(_) =>
+                        event.getPlayer
+                            .sendServerMessage(
+                                txt"You've disconnected from the beacon..."
+                            )
+                    case None =>
+                        event.getPlayer.sendServerMessage(
+                            txt"You've deleted the beacon..."
+                        )

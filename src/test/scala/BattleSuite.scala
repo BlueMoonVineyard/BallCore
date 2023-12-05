@@ -21,6 +21,26 @@ import BallCore.Beacons.BeaconID
 import org.locationtech.jts.geom.Polygon
 import org.locationtech.jts.geom.Geometry
 import skunk.Session
+import BallCore.Beacons.BeaconManagerHooks
+import skunk.Transaction
+import cats.effect.kernel.Deferred
+import BallCore.Beacons.IngameBeaconManagerHooks
+
+object DummyBeaconHooks:
+    def it: Deferred[IO, BeaconManagerHooks] =
+        new Deferred:
+            override def get: IO[BeaconManagerHooks] =
+                IO.pure(DummyBeaconHooks())
+            override def tryGet: IO[Option[BeaconManagerHooks]] =
+                IO.pure(Some(DummyBeaconHooks()))
+            override def complete(it: BeaconManagerHooks): IO[Boolean] =
+                IO.pure(false)
+
+class DummyBeaconHooks extends BeaconManagerHooks:
+    override def beaconDeletionIncoming(
+        beaconID: BeaconID
+    )(using Session[IO], Transaction[IO]): IO[Unit] =
+        IO.pure(())
 
 class TestBattleHooks(using assertions: Assertions) extends BattleHooks:
     val spawnQueue: mutable.Queue[Unit] =
@@ -72,6 +92,7 @@ class BattleSuite extends munit.FunSuite:
 
     sql.test("battle manager pillar amount") { implicit sql =>
         given gm: GroupManager = GroupManager()
+        given it: Deferred[IO, BeaconManagerHooks] = DummyBeaconHooks.it
         given hn: CivBeaconManager = CivBeaconManager()
         given hooks: TestBattleHooks = TestBattleHooks(using this)
         given battleManager: BattleManager = BattleManager()
@@ -156,15 +177,24 @@ class BattleSuite extends munit.FunSuite:
             sql.useBlocking(sql.withS(battleManager.offensiveResign(battle)))
 
             sql.useBlocking(
-                sql.withS(hn.removeHeart(defensiveLocation, defensiveOwner))
+                sql.withS(
+                    sql.withTX(
+                        hn.removeHeart(defensiveLocation, defensiveOwner)
+                    )
+                )
             )
             sql.useBlocking(
-                sql.withS(hn.removeHeart(offensiveLocation, offensiveOwner))
+                sql.withS(
+                    sql.withTX(
+                        hn.removeHeart(offensiveLocation, offensiveOwner)
+                    )
+                )
             )
         }
     }
     sql.test("battle manager defense") { implicit sql =>
         given gm: GroupManager = GroupManager()
+        given it: Deferred[IO, BeaconManagerHooks] = DummyBeaconHooks.it
         given hn: CivBeaconManager = CivBeaconManager()
         given hooks: TestBattleHooks = TestBattleHooks(using this)
         given battleManager: BattleManager = BattleManager()
@@ -249,14 +279,19 @@ class BattleSuite extends munit.FunSuite:
         sql.useBlocking(sql.withS(battleManager.pillarDefended(battle)))
 
         sql.useBlocking(
-            sql.withS(hn.removeHeart(defensiveLocation, defensiveOwner))
+            sql.withS(
+                sql.withTX(hn.removeHeart(defensiveLocation, defensiveOwner))
+            )
         )
         sql.useBlocking(
-            sql.withS(hn.removeHeart(offensiveLocation, offensiveOwner))
+            sql.withS(
+                sql.withTX(hn.removeHeart(offensiveLocation, offensiveOwner))
+            )
         )
     }
     sql.test("battle manager conquest") { implicit sql =>
         given gm: GroupManager = GroupManager()
+        given it: Deferred[IO, BeaconManagerHooks] = DummyBeaconHooks.it
         given hn: CivBeaconManager = CivBeaconManager()
         given hooks: TestBattleHooks = TestBattleHooks(using this)
         given battleManager: BattleManager = BattleManager()
@@ -341,9 +376,197 @@ class BattleSuite extends munit.FunSuite:
         sql.useBlocking(sql.withS(battleManager.pillarTaken(battle)))
 
         sql.useBlocking(
-            sql.withS(hn.removeHeart(defensiveLocation, defensiveOwner))
+            sql.withS(
+                sql.withTX(hn.removeHeart(defensiveLocation, defensiveOwner))
+            )
         )
         sql.useBlocking(
-            sql.withS(hn.removeHeart(offensiveLocation, offensiveOwner))
+            sql.withS(
+                sql.withTX(hn.removeHeart(offensiveLocation, offensiveOwner))
+            )
         )
+    }
+    sql.test("battle manager offensive heart dies during battle") { implicit sql =>
+        given gm: GroupManager = GroupManager()
+        given it: Deferred[IO, BeaconManagerHooks] = sql.useBlocking(Deferred[IO, BeaconManagerHooks])
+        given hn: CivBeaconManager = CivBeaconManager()
+        given hooks: TestBattleHooks = TestBattleHooks(using this)
+        given battleManager: BattleManager = BattleManager()
+        sql.useBlocking(it.complete(IngameBeaconManagerHooks()))
+        val world = WorldMock()
+
+        val offset = 2 * 10
+
+        val offensiveOwner = UUID.randomUUID()
+        val offensiveLocation = Location(world, 0, -10, 0)
+        val (offensiveBeacon, _) =
+            sql.useBlocking(
+                sql.withS(hn.placeHeart(offensiveLocation, offensiveOwner))
+            ).toOption
+                .get
+
+        val defensiveOwner = UUID.randomUUID()
+        val defensiveLocation = Location(world, offset, 10, offset)
+        val (defensiveBeacon, _) =
+            sql.useBlocking(
+                sql.withS(
+                    hn.placeHeart(
+                        defensiveLocation,
+                        defensiveOwner,
+                    )
+                )
+            ).toOption
+                .get
+
+        assertNotEquals(
+            offensiveBeacon,
+            defensiveBeacon,
+            "different heart IDs",
+        )
+
+        val gf = GeometryFactory()
+        val area1 = rectangleCenteredAt(gf, 0, 0, -10, 5)
+        assert(
+            area1.covers(gf.createPoint(Coordinate(0, 0, -10))),
+            "sanity check of area 1",
+        )
+        val res1 = sql.useBlocking(
+            sql.withS(
+                sql.withTX(
+                    hn.updateBeaconPolygon(offensiveBeacon, world, area1)
+                )
+            )
+        )
+        assert(res1.isRight, (res1, "setting first heart's area"))
+
+        val area2 = rectangleCenteredAt(gf, offset, offset, 10, 5)
+        assert(
+            area2.covers(gf.createPoint(Coordinate(offset, offset, 10))),
+            "sanity check of area 2",
+        )
+        val res2 = sql.useBlocking(
+            sql.withS(
+                sql.withTX(
+                    hn.updateBeaconPolygon(defensiveBeacon, world, area2)
+                )
+            )
+        )
+        assert(res2.isRight, (res2, "setting second heart's area"))
+
+        hooks.expectSpawn()
+        val battle = sql.useBlocking(
+            sql.withS(
+                battleManager.startBattle(
+                    offensiveBeacon,
+                    defensiveBeacon,
+                    area2,
+                    area2,
+                    world.getUID(),
+                )
+            )
+        )
+
+        for _ <- 1 to battleManager.initialHealth - 1 do
+            hooks.expectSpawn()
+            sql.useBlocking(sql.withS(battleManager.pillarTaken(battle)))
+
+        val sizeBefore = hooks.expectDefended().size
+        sql.useBlocking(
+            sql.withS(
+                sql.withTX(hn.removeHeart(offensiveLocation, offensiveOwner))
+            )
+        )
+        assertNotEquals(sizeBefore, hooks.defendQueue.size, "a battle should've been defended")
+    }
+    sql.test("battle manager defensive heart dies during battle") { implicit sql =>
+        given gm: GroupManager = GroupManager()
+        given it: Deferred[IO, BeaconManagerHooks] = sql.useBlocking(Deferred[IO, BeaconManagerHooks])
+        given hn: CivBeaconManager = CivBeaconManager()
+        given hooks: TestBattleHooks = TestBattleHooks(using this)
+        given battleManager: BattleManager = BattleManager()
+        sql.useBlocking(it.complete(IngameBeaconManagerHooks()))
+        val world = WorldMock()
+
+        val offset = 2 * 10
+
+        val offensiveOwner = UUID.randomUUID()
+        val offensiveLocation = Location(world, 0, -10, 0)
+        val (offensiveBeacon, _) =
+            sql.useBlocking(
+                sql.withS(hn.placeHeart(offensiveLocation, offensiveOwner))
+            ).toOption
+                .get
+
+        val defensiveOwner = UUID.randomUUID()
+        val defensiveLocation = Location(world, offset, 10, offset)
+        val (defensiveBeacon, _) =
+            sql.useBlocking(
+                sql.withS(
+                    hn.placeHeart(
+                        defensiveLocation,
+                        defensiveOwner,
+                    )
+                )
+            ).toOption
+                .get
+
+        assertNotEquals(
+            offensiveBeacon,
+            defensiveBeacon,
+            "different heart IDs",
+        )
+
+        val gf = GeometryFactory()
+        val area1 = rectangleCenteredAt(gf, 0, 0, -10, 5)
+        assert(
+            area1.covers(gf.createPoint(Coordinate(0, 0, -10))),
+            "sanity check of area 1",
+        )
+        val res1 = sql.useBlocking(
+            sql.withS(
+                sql.withTX(
+                    hn.updateBeaconPolygon(offensiveBeacon, world, area1)
+                )
+            )
+        )
+        assert(res1.isRight, (res1, "setting first heart's area"))
+
+        val area2 = rectangleCenteredAt(gf, offset, offset, 10, 5)
+        assert(
+            area2.covers(gf.createPoint(Coordinate(offset, offset, 10))),
+            "sanity check of area 2",
+        )
+        val res2 = sql.useBlocking(
+            sql.withS(
+                sql.withTX(
+                    hn.updateBeaconPolygon(defensiveBeacon, world, area2)
+                )
+            )
+        )
+        assert(res2.isRight, (res2, "setting second heart's area"))
+
+        hooks.expectSpawn()
+        val battle = sql.useBlocking(
+            sql.withS(
+                battleManager.startBattle(
+                    offensiveBeacon,
+                    defensiveBeacon,
+                    area2,
+                    area2,
+                    world.getUID(),
+                )
+            )
+        )
+
+        for _ <- 1 to battleManager.initialHealth - 1 do
+            hooks.expectSpawn()
+            sql.useBlocking(sql.withS(battleManager.pillarTaken(battle)))
+
+        val sizeBefore = hooks.expectTaken().size
+        sql.useBlocking(
+            sql.withS(
+                sql.withTX(hn.removeHeart(defensiveLocation, defensiveOwner))
+            )
+        )
+        assertNotEquals(sizeBefore, hooks.takeQueue.size, "a battle should've been taken")
     }

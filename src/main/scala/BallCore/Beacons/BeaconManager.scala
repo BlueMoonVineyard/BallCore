@@ -29,6 +29,8 @@ import java.text.DecimalFormat
 import java.util.UUID
 import cats.data.EitherT
 import skunk.Transaction
+import BallCore.Sigils.BattleManager
+import cats.effect.kernel.Deferred
 
 type OwnerID = UUID
 type HeartID = UUID
@@ -97,7 +99,27 @@ object CivBeaconManager:
         else if count < 10 then ((64 * 64) * 2 * count) - (64 * 64)
         else ((64 * 64) * count) + 9 * (64 * 64)
 
-class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
+trait BeaconManagerHooks:
+    def beaconDeletionIncoming(
+        beaconID: BeaconID
+    )(using Session[IO], Transaction[IO]): IO[Unit]
+
+class IngameBeaconManagerHooks(using battles: BattleManager)
+    extends BeaconManagerHooks:
+    override def beaconDeletionIncoming(
+        beaconID: BeaconID
+    )(using Session[IO], Transaction[IO]): IO[Unit] =
+        for {
+            battleList <- battles.battlesThatBeaconIsInvolvedIn(beaconID)
+            (offensive, defensive) = battleList
+            _ <- offensive.traverse(battles.offensiveResign)
+            _ <- defensive.traverse(battles.defensiveResign)
+        } yield ()
+
+class CivBeaconManager()(using
+    sql: Storage.SQLManager,
+    hooks: Deferred[IO, BeaconManagerHooks],
+)(using GroupManager):
     sql.applyMigration(
         Storage.Migration(
             "Initial CivBeaconManager",
@@ -575,7 +597,7 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
         }
 
     def removeHeart(l: Location, owner: OwnerID)(using
-        Session[IO]
+        Session[IO], Transaction[IO]
     ): IO[Option[(BeaconID, Long)]] =
         sql
             .queryUniqueIO(
@@ -599,14 +621,17 @@ class CivBeaconManager()(using sql: Storage.SQLManager)(using GroupManager):
                                 None,
                             )
                             data.beaconIDsToRTreeEntries -= beacon
-                            sql
-                                .commandIO(
-                                    sql"""
+                            for {
+                                it <- hooks.get
+                                _ <- it.beaconDeletionIncoming(beacon)
+                                _ <- sql
+                                    .commandIO(
+                                        sql"""
                         DELETE FROM CivBeacons WHERE ID = $uuid
                         """,
-                                    beacon,
-                                )
-                                .map(_ => None)
+                                        beacon,
+                                    )
+                            } yield None
                         else IO.pure(Some(beacon, count))
                     }
             }

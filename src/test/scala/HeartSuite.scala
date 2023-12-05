@@ -12,12 +12,16 @@ import org.locationtech.jts.geom.{Coordinate, GeometryFactory}
 
 import java.util.UUID
 import scala.util.chaining.*
+import BallCore.Beacons.BeaconManagerHooks
+import cats.effect.IO
+import cats.effect.kernel.Deferred
 
 class HeartSuite extends munit.FunSuite {
     val sql: FunFixture[SQLManager] =
         FunFixture[SQLManager](TestDatabase.setup, TestDatabase.teardown)
     sql.test("placing standalone heart") { implicit sql =>
         given gm: GroupManager = GroupManager()
+        given it: Deferred[IO, BeaconManagerHooks] = DummyBeaconHooks.it
         given hn: CivBeaconManager = CivBeaconManager()
         val world = WorldMock()
         val ownerID = UUID.randomUUID()
@@ -33,12 +37,13 @@ class HeartSuite extends munit.FunSuite {
 
         val res3 =
             sql.useBlocking(
-                sql.withS(hn.removeHeart(Location(world, 0, 0, 0), ownerID))
+                sql.withS(sql.withTX(hn.removeHeart(Location(world, 0, 0, 0), ownerID)))
             )
         assert(res3.isEmpty, res3)
     }
     sql.test("polygon shenanigans") { implicit sql =>
         given gm: GroupManager = GroupManager()
+        given it: Deferred[IO, BeaconManagerHooks] = DummyBeaconHooks.it
         given hn: CivBeaconManager = CivBeaconManager()
         val world = WorldMock()
         val ownerID = UUID.randomUUID()
@@ -155,6 +160,7 @@ class HeartSuite extends munit.FunSuite {
     }
     sql.test("two-heart beacon") { implicit sql =>
         given gm: GroupManager = GroupManager()
+        given it: Deferred[IO, BeaconManagerHooks] = DummyBeaconHooks.it
         given hn: CivBeaconManager = CivBeaconManager()
         val world = WorldMock()
         val id1 = UUID.randomUUID()
@@ -192,7 +198,7 @@ class HeartSuite extends munit.FunSuite {
 
             val res3 =
                 sql.useBlocking(
-                    sql.withS(hn.removeHeart(Location(world, x, y, z), id2))
+                    sql.withS(sql.withTX(hn.removeHeart(Location(world, x, y, z), id2)))
                 )
             assert(res3.isDefined, res3)
             val (hid3, hni3) = res3.get
@@ -202,6 +208,7 @@ class HeartSuite extends munit.FunSuite {
     }
     sql.test("multiple claim areas") { implicit sql =>
         given gm: GroupManager = GroupManager()
+        given it: Deferred[IO, BeaconManagerHooks] = DummyBeaconHooks.it
         given hn: CivBeaconManager = CivBeaconManager()
         val world = WorldMock()
         val id1 = UUID.randomUUID()
@@ -255,6 +262,7 @@ class HeartSuite extends munit.FunSuite {
     }
     sql.test("overlapping two beacons") { implicit sql =>
         given gm: GroupManager = GroupManager()
+        given it: Deferred[IO, BeaconManagerHooks] = DummyBeaconHooks.it
         given hn: CivBeaconManager = CivBeaconManager()
         val world = WorldMock()
 
@@ -333,6 +341,7 @@ class HeartSuite extends munit.FunSuite {
     }
     sql.test("overlapping more than two beacons") { implicit sql =>
         given gm: GroupManager = GroupManager()
+        given it: Deferred[IO, BeaconManagerHooks] = DummyBeaconHooks.it
         given hn: CivBeaconManager = CivBeaconManager()
         val world = WorldMock()
 

@@ -166,6 +166,24 @@ class BattleManager(using
             bool,
             (beacon, beacon),
         )
+    // offensive then defensive
+    def battlesThatBeaconIsInvolvedIn(beacon: BeaconID)(using Session[IO]): IO[(List[BattleID], List[BattleID])] =
+        for {
+            a <- sql.queryListIO(
+                sql"""
+            SELECT BattleID FROM Battles WHERE OffensiveBeacon = $uuid;
+            """,
+                uuid,
+                (beacon),
+            )
+            b <- sql.queryListIO(
+                sql"""
+            SELECT BattleID FROM Battles WHERE DefensiveBeacon = $uuid;
+            """,
+                uuid,
+                (beacon),
+            )
+        } yield (a, b)
     def startBattle(
         offensive: BeaconID,
         defensive: BeaconID,

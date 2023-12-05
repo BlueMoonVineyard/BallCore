@@ -5,7 +5,7 @@
 package BallCore
 
 import BallCore.Acclimation.AcclimationActor
-import BallCore.Beacons.{Beacons, CivBeaconManager}
+import BallCore.Beacons.{Beacons, CivBeaconManager, BeaconManagerHooks}
 import BallCore.Chat.ChatActor
 import BallCore.CraftingStations.CraftingStations
 import BallCore.CustomItems.*
@@ -54,6 +54,8 @@ import cats.effect.IO
 import BallCore.WebHooks.WebHookManager
 import org.http4s.client.Client
 import org.http4s.ember.client.EmberClientBuilder
+import cats.effect.kernel.Deferred
+import BallCore.Beacons.IngameBeaconManagerHooks
 
 class ExceptionLogger extends Listener:
     @EventHandler
@@ -119,6 +121,8 @@ final class Main extends JavaPlugin:
 
             given hm: HologramManager = new HologramManager
 
+            given beaconHooks: Deferred[IO, BeaconManagerHooks] = Deferred[IO, BeaconManagerHooks].unsafeRunSync()(cats.effect.unsafe.IORuntime.global)
+
             given hn: CivBeaconManager = new CivBeaconManager
 
             given erm: EntityReinforcementManager =
@@ -138,6 +142,9 @@ final class Main extends JavaPlugin:
             given spm: SlimePillarManager = SlimePillarManager()
             given ingameBattleHooks: BattleHooks = GameBattleHooks()
             given battleManager: BattleManager = new BattleManager()
+
+            beaconHooks.complete(IngameBeaconManagerHooks()).unsafeRunSync()(cats.effect.unsafe.IORuntime.global)
+
             given editor: PolygonEditor = new PolygonEditor()
             given ott: OneTimeTeleporter = OneTimeTeleporter(
                 GameOneTimeTeleporterHooks()
