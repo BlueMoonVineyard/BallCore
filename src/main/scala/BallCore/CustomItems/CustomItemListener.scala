@@ -13,6 +13,7 @@ import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.plugin.Plugin
 
 import scala.jdk.CollectionConverters.*
+import org.bukkit.event.Event.Result
 
 object CustomItemListener:
     def register()(using
@@ -100,9 +101,10 @@ class CustomItemListener(using
                 event.setCancelled(cancel)
             case None =>
 
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
     def onInteractItem(event: PlayerInteractEvent): Unit =
-        if !event.hasItem || !(event.getAction == Action.RIGHT_CLICK_AIR || event.getAction == Action.RIGHT_CLICK_BLOCK)
+        if !event.hasItem || !(event.getAction == Action.RIGHT_CLICK_AIR || (event.getAction == Action.RIGHT_CLICK_BLOCK && event
+                .useItemInHand() != Result.DENY))
         then return
 
         reg.lookup(event.getItem) match
