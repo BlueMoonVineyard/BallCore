@@ -64,6 +64,11 @@ lazy val dependencyPlugin = project
             "com.typesafe.akka" %% "akka-stream" % AkkaVersion,
             "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         ),
+        libraryDependencies ++= Seq(
+          "org.http4s" %% "http4s-ember-client",
+          "org.http4s" %% "http4s-circe",
+          "org.http4s" %% "http4s-dsl",
+        ).map(_ % "0.23.24"),
     )
 
 lazy val commonCode = project

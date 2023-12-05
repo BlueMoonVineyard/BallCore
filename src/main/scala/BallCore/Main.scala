@@ -51,6 +51,9 @@ import org.bukkit.event.Listener
 import org.bukkit.event.EventHandler
 import com.destroystokyo.paper.event.server.ServerExceptionEvent
 import cats.effect.IO
+import BallCore.WebHooks.WebHookManager
+import org.http4s.client.Client
+import org.http4s.ember.client.EmberClientBuilder
 
 class ExceptionLogger extends Listener:
     @EventHandler
@@ -88,6 +91,15 @@ final class Main extends JavaPlugin:
 
             given sql: Storage.SQLManager =
                 sm.addIO(Storage.SQLManager(databaseConfig))
+
+            given client: Client[IO] =
+                sm.addIO(
+                    EmberClientBuilder
+                        .default[IO]
+                        .build
+                        .allocated
+                        .unsafeRunSync()(cats.effect.unsafe.IORuntime.global)
+                )
 
             given keyVal: Storage.SQLKeyVal = new Storage.SQLKeyVal
 
@@ -130,6 +142,7 @@ final class Main extends JavaPlugin:
             given ott: OneTimeTeleporter = OneTimeTeleporter(
                 GameOneTimeTeleporterHooks()
             )
+            given webhooks: WebHookManager = WebHookManager()
 
             given editor3D: PolyhedraEditor = new PolyhedraEditor()
 
@@ -209,6 +222,7 @@ final class Main extends JavaPlugin:
             msg.meNode.`override`()
             MyFingerprintCommand().node.register()
             StationCommand().node.register()
+            RelayCommand().root.register()
         catch
             case e: Throwable =>
                 getSLF4JLogger().error(

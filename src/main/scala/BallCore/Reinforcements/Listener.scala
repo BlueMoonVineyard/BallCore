@@ -32,6 +32,7 @@ import cats.effect.IO
 import BallCore.TextComponents._
 import scala.util.Random
 import BallCore.Groups.Position
+import BallCore.WebHooks.WebHookManager
 
 object Listener:
     private def centered(at: Location): Location =
@@ -103,6 +104,7 @@ class Listener(using
     sql: SQLManager,
     busts: BustThroughTracker,
     fingerprints: FingerprintManager,
+    webhooks: WebHookManager,
 ) extends org.bukkit.event.Listener:
 
     import Listener.*
@@ -177,17 +179,25 @@ class Listener(using
                                         audience <- gm
                                             .groupAudience(group)
                                             .value
-                                        _ <- IO {
+                                        coords <- IO {
                                             val xOffset = Random.between(-3, 3)
                                             val zOffset = Random.between(-3, 3)
                                             val x =
                                                 location.getBlockX() + xOffset
                                             val z =
                                                 location.getBlockZ() + zOffset
+                                            (x, z)
+                                        }
+                                        _ <- IO {
                                             audience.foreach((name, aud) =>
                                                 aud.sendServerMessage(
-                                                    txt"[$name] Someone busted through your beacon approximately around ${x} ± 3 / ${location.getBlockY} / ${z} ± 3"
+                                                    txt"[$name] Someone busted through your beacon approximately around ${coords._1} ± 3 / ${location.getBlockY} / ${coords._2} ± 3"
                                                 )
+                                            )
+                                        }.flatMap { _ =>
+                                            webhooks.broadcastTo(
+                                                group,
+                                                s"Someone busted through your beacon approximately around ${coords._1} ± 3 / ${location.getBlockY} / ${coords._2} ± 3",
                                             )
                                         }
                                     } yield ()
