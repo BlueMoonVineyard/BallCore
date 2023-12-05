@@ -33,6 +33,10 @@ import BallCore.TextComponents._
 import scala.util.Random
 import BallCore.Groups.Position
 import BallCore.WebHooks.WebHookManager
+import cats.data.OptionT
+import BallCore.PrimeTime.{PrimeTimeManager, PrimeTimeResult}
+import java.time.temporal.ChronoUnit
+import java.time.OffsetDateTime
 
 object Listener:
     private def centered(at: Location): Location =
@@ -105,6 +109,7 @@ class Listener(using
     busts: BustThroughTracker,
     fingerprints: FingerprintManager,
     webhooks: WebHookManager,
+    primeTime: PrimeTimeManager,
 ) extends org.bukkit.event.Listener:
 
     import Listener.*
@@ -134,83 +139,148 @@ class Listener(using
             location.getZ.toInt,
             location.getWorld.getUID,
         )
-        sql
-            .useBlocking(sql.withS(cbm.beaconContaining(location)))
-            .flatMap(id => sql.useBlocking(sql.withS(cbm.getGroup(id))))
-            .map(group => {
-                val sgid = sql
-                    .useBlocking(sql.withS(sql.withTX(gm.getSubclaims(group))))
-                    .getOrElse(Map())
-                    .find(_._2.contains(position))
-                    .map(_._1)
-                    .getOrElse(nullUUID)
-                sql.useBlocking(
-                    sql.withS(
-                        sql.withTX(
+        sql.useBlocking(sql.withS(sql.withTX(for {
+            beaconContaining <- cbm.beaconContaining(location)
+            group <- OptionT
+                .fromOption[IO](beaconContaining)
+                .flatMapF(beacon => cbm.getGroup(beacon))
+                .flatMapF(groupID =>
+                    for {
+                        claims <- gm.getSubclaims(groupID)
+                        subgroup = claims
+                            .getOrElse(Map())
+                            .find(_._2.contains(position))
+                            .map(_._1)
+                            .getOrElse(nullUUID)
+                        permissionGranted <-
                             gm.check(
                                 player.getUniqueId,
-                                group,
-                                sgid,
+                                groupID,
+                                subgroup,
                                 permission,
                             ).value
-                                .map(_.map(ok => (group, ok)))
-                        )
+                        isOk = permissionGranted == Right(true)
+                        isInPrimeTime <-
+                            if breaking && !isOk then
+                                primeTime.checkPrimeTime(groupID)
+                            else IO.pure(None)
+                    } yield Some(
+                        (groupID, subgroup, permissionGranted, isInPrimeTime)
                     )
                 )
-            })
-            .getOrElse(Right(null, true)) match
-            case Right((group, false)) if breaking =>
-                busts.bust(location) match
-                    case BustResult.alreadyBusted =>
-                        Right(true)
-                    case BustResult.justBusted =>
-                        sql.useFireAndForget(
-                            sql.withS(
-                                sql.withTX(
-                                    for {
-                                        _ <- fingerprints.storeFingerprintAt(
-                                            location.getX.toInt,
-                                            location.getY.toInt,
-                                            location.getZ.toInt,
-                                            location.getWorld.getUID,
-                                            player.getUniqueId,
-                                            FingerprintReason.bustedThrough,
+                .value
+            ok: Either[GroupError, (BustResult, Boolean)] <- group match
+                case None =>
+                    IO.pure(Right((BustResult.notBusting, true)))
+                case Some(
+                        (groupID, subgroupID, permissionGranted, isInPrimeTime)
+                    ) =>
+                    (permissionGranted, isInPrimeTime) match
+                        case (Right(false), PrimeTimeResult.isInPrimeTime)
+                            if breaking =>
+                            for {
+                                result <- IO { busts.bust(location) }
+                                bustResult <- result match
+                                    case BustResult.alreadyBusted =>
+                                        IO.pure(
+                                            Right(
+                                                BustResult.alreadyBusted,
+                                                true,
+                                            )
                                         )
-                                        audience <- gm
-                                            .groupAudience(group)
-                                            .value
-                                        coords <- IO {
-                                            val xOffset = Random.between(-3, 3)
-                                            val zOffset = Random.between(-3, 3)
-                                            val x =
-                                                location.getBlockX() + xOffset
-                                            val z =
-                                                location.getBlockZ() + zOffset
-                                            (x, z)
-                                        }
-                                        _ <- IO {
-                                            audience.foreach((name, aud) =>
-                                                aud.sendServerMessage(
-                                                    txt"[$name] Someone busted through your beacon approximately around ${coords._1} ± 3 / ${location.getBlockY} / ${coords._2} ± 3"
+                                    case BustResult.busting =>
+                                        IO.pure(
+                                            Right(BustResult.busting, false)
+                                        )
+                                    case BustResult.notBusting =>
+                                        IO.pure(
+                                            Right(BustResult.notBusting, false)
+                                        )
+                                    case BustResult.bustingBlocked(x) =>
+                                        IO.pure(
+                                            Right(
+                                                BustResult.bustingBlocked(x),
+                                                false,
+                                            )
+                                        )
+                                    case BustResult.justBusted =>
+                                        for {
+                                            _ <- fingerprints.storeFingerprintAt(
+                                                location.getX.toInt,
+                                                location.getY.toInt,
+                                                location.getZ.toInt,
+                                                location.getWorld.getUID,
+                                                player.getUniqueId,
+                                                FingerprintReason.bustedThrough,
+                                            )
+                                            audience <- gm
+                                                .groupAudience(groupID)
+                                                .value
+                                            coords <- IO {
+                                                val xOffset =
+                                                    Random.between(-3, 3)
+                                                val zOffset =
+                                                    Random.between(-3, 3)
+                                                val x =
+                                                    location
+                                                        .getBlockX() + xOffset
+                                                val z =
+                                                    location
+                                                        .getBlockZ() + zOffset
+                                                (x, z)
+                                            }
+                                            _ <- IO {
+                                                audience.foreach((name, aud) =>
+                                                    aud.sendServerMessage(
+                                                        txt"[$name] Someone busted through your beacon approximately around ${coords._1} ± 3 / ${location.getBlockY} / ${coords._2} ± 3"
+                                                    )
                                                 )
-                                            )
-                                        }.flatMap { _ =>
-                                            webhooks.broadcastTo(
-                                                group,
-                                                s"Someone busted through your beacon approximately around ${coords._1} ± 3 / ${location.getBlockY} / ${coords._2} ± 3",
-                                            )
-                                        }
-                                    } yield ()
+                                            }.flatMap { _ =>
+                                                webhooks.broadcastTo(
+                                                    groupID,
+                                                    s"Someone busted through your beacon approximately around ${coords._1} ± 3 / ${location.getBlockY} / ${coords._2} ± 3",
+                                                )
+                                            }
+                                        } yield Right(
+                                            (BustResult.justBusted, true)
+                                        )
+                            } yield bustResult
+                        case (
+                                Right(false),
+                                PrimeTimeResult.notInPrimeTime(reopens),
+                            ) if breaking =>
+                            IO.pure(
+                                Right(
+                                    (BustResult.bustingBlocked(reopens), false)
                                 )
                             )
+                        case (Right(false), _) =>
+                            IO.pure(Right((BustResult.notBusting, false)))
+                        case (Right(true), _) =>
+                            IO.pure(Right((BustResult.notBusting, true)))
+                        case (Left(err), _) =>
+                            IO.pure(Left(err))
+        } yield ok)))
+            .map { (result, ok) =>
+                result match
+                    case BustResult.alreadyBusted =>
+                    case BustResult.notBusting =>
+                    case BustResult.bustingBlocked(next) =>
+                        playBreakEffect(location, ReinforcementTypes.Stone)
+                        val time =
+                            ChronoUnit.HOURS.between(OffsetDateTime.now(), next)
+                        player.sendServerMessage(
+                            txt"This group's vulnerability window isn't active."
                         )
-                        playBreakEffect(location, ReinforcementTypes.IronLike)
-                        Right(false)
+                        player.sendServerMessage(
+                            txt"It opens in ${time} hours."
+                        )
                     case BustResult.busting =>
+                        playBreakEffect(location, ReinforcementTypes.IronLike)
+                    case BustResult.justBusted =>
                         playDamageEffect(location, ReinforcementTypes.IronLike)
-                        Right(false)
-            case it =>
-                it.map(_._2)
+                ok
+            }
 
     private inline def checkAt(
         location: Block,
@@ -526,15 +596,14 @@ class Listener(using
                     ()
                 case _ =>
                     event.setCancelled(true)
-        else
-            if sql
-                    .useBlocking(
-                        sql.withS(
-                            cbm.beaconContaining(event.getBlock.getLocation())
-                        )
+        else if sql
+                .useBlocking(
+                    sql.withS(
+                        cbm.beaconContaining(event.getBlock.getLocation())
                     )
-                    .isDefined
-            then event.setCancelled(true)
+                )
+                .isDefined
+        then event.setCancelled(true)
 
     // prevent reinforced blocks from falling
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)

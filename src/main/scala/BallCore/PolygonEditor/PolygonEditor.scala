@@ -448,13 +448,15 @@ class PolygonEditor(using
                                         ) =>
                                         sql.useBlocking(
                                             sql.withS(
-                                                battleManager.startBattle(
-                                                    model.beaconID,
-                                                    defensiveBeacon,
-                                                    contestedArea,
-                                                    jtsPolygon,
-                                                    model.polygon.head.getWorld
-                                                        .getUID(),
+                                                sql.withTX(
+                                                    battleManager.startBattle(
+                                                        model.beaconID,
+                                                        defensiveBeacon,
+                                                        contestedArea,
+                                                        jtsPolygon,
+                                                        model.polygon.head.getWorld
+                                                            .getUID(),
+                                                    )
                                                 )
                                             )
                                         )

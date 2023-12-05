@@ -10,6 +10,8 @@ enum BustResult:
     case justBusted
     case alreadyBusted
     case busting
+    case notBusting
+    case bustingBlocked(windowOpensAt: OffsetDateTime)
 
 class BustThroughTracker(using c: Clock):
     val blockHealth = 250

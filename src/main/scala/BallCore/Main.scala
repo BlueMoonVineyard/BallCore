@@ -56,6 +56,7 @@ import org.http4s.client.Client
 import org.http4s.ember.client.EmberClientBuilder
 import cats.effect.kernel.Deferred
 import BallCore.Beacons.IngameBeaconManagerHooks
+import BallCore.PrimeTime.PrimeTimeManager
 
 class ExceptionLogger extends Listener:
     @EventHandler
@@ -164,6 +165,7 @@ final class Main extends JavaPlugin:
             given rest: RestManager = RestManager()
             given fingerprints: FingerprintManager =
                 Fingerprints.Fingerprints.register()
+            given primeTime: PrimeTimeManager = PrimeTimeManager()
 
             sid.startListener()
             getServer()

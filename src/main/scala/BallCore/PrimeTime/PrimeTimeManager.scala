@@ -24,6 +24,10 @@ enum PrimeTimeError:
     case groupError(error: GroupError)
     case waitUntilTomorrowWindowHasPassed
 
+enum PrimeTimeResult:
+    case notInPrimeTime(reopens: OffsetDateTime)
+    case isInPrimeTime
+
 class PrimeTimeManager(using sql: SQLManager, gm: GroupManager, c: Clock):
     sql.applyMigration(
         Migration(
@@ -113,7 +117,8 @@ class PrimeTimeManager(using sql: SQLManager, gm: GroupManager, c: Clock):
                     sql"""
                 SELECT EXISTS (SELECT 1 FROM PrimeTimes WHERE GroupID = $uuid);
                 """,
-                    bool, group,
+                    bool,
+                    group,
                 ).flatMap { exists =>
                     if !exists then
                         sql.commandIO(
@@ -174,7 +179,45 @@ class PrimeTimeManager(using sql: SQLManager, gm: GroupManager, c: Clock):
             pointTime.isAfter(start) || pointTime.isBefore(end)
         else pointTime.isAfter(start) && pointTime.isBefore(end)
 
-    def isGroupInPrimeTime(
+    def checkPrimeTime(group: GroupID)(using Session[IO], Transaction[IO]): IO[PrimeTimeResult] =
+        for {
+            isInPrimeTime <- isGroupInPrimeTime(group)
+            result <- if isInPrimeTime then
+                IO.pure(PrimeTimeResult.isInPrimeTime)
+            else
+                getNextPrimeTimeWindow(group).map { x =>
+                    PrimeTimeResult.notInPrimeTime(x.get)
+                }
+        } yield result
+
+    private def getNextPrimeTimeWindow(
+        group: GroupID,
+    )(using Session[IO], Transaction[IO]): IO[Option[OffsetDateTime]] =
+        for {
+            now <- c.nowIO()
+            primeTimeTimeOfDay <- sql.queryOptionIO(
+                sql"""
+            SELECT StartOfWindow FROM PrimeTimes
+                WHERE GroupID = $uuid;
+            """,
+                timetz,
+                group,
+            )
+            primeTimeWithSameOffset = primeTimeTimeOfDay.map(_.withOffsetSameInstant(now.getOffset()))
+            primeTime = primeTimeWithSameOffset.map(_.atDate(now.toLocalDate()))
+            extraWindows <- sql.queryOptionIO(
+                sql"""
+            SELECT StartOfTodayWindow, StartOfTomorrowWindow FROM TemporaryPrimeTimeAdjustmentVulnerabilityWindows
+                WHERE GroupID = $uuid;
+            """,
+                (timestamptz *: timestamptz),
+                group,
+            )
+            allWindows = primeTime.toList.concat(extraWindows.toList.flatMap { (x, y) => List(x, y) })
+            inOrder = allWindows.sortWith((a, b) => a.isBefore(b))
+        } yield inOrder.headOption
+
+    private def isGroupInPrimeTime(
         group: GroupID
     )(using Session[IO], Transaction[IO]): IO[Boolean] =
         for {
