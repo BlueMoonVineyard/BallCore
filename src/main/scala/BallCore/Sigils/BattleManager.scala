@@ -19,8 +19,16 @@ import scala.collection.concurrent.TrieMap
 import net.kyori.adventure.bossbar.BossBar
 import net.kyori.adventure.audience.Audience
 import java.{util => ju}
+import BallCore.PrimeTime.PrimeTimeManager
+import cats.data.OptionT
+import skunk.Transaction
+import java.time.OffsetDateTime
+import BallCore.PrimeTime.PrimeTimeResult
 
 type BattleID = UUID
+
+enum BattleError:
+    case opponentIsInPrimeTime(opensAt: OffsetDateTime)
 
 trait BattleHooks:
     def spawnPillarFor(
@@ -48,6 +56,7 @@ class BattleManager(using
     sql: Storage.SQLManager,
     cbm: CivBeaconManager,
     hooks: BattleHooks,
+    primeTime: PrimeTimeManager,
 ):
     val initialHealth = 6
     val _ = cbm
@@ -167,7 +176,9 @@ class BattleManager(using
             (beacon, beacon),
         )
     // offensive then defensive
-    def battlesThatBeaconIsInvolvedIn(beacon: BeaconID)(using Session[IO]): IO[(List[BattleID], List[BattleID])] =
+    def battlesThatBeaconIsInvolvedIn(
+        beacon: BeaconID
+    )(using Session[IO]): IO[(List[BattleID], List[BattleID])] =
         for {
             a <- sql.queryListIO(
                 sql"""
@@ -191,10 +202,19 @@ class BattleManager(using
         desiredArea: Polygon,
         world: UUID,
     )(using
-        Session[IO]
-    ): IO[BattleID] =
-        sql.queryUniqueIO(
-            sql"""
+        Session[IO],
+        Transaction[IO],
+    ): IO[Either[BattleError, BattleID]] =
+        for {
+            primeTime <- OptionT(cbm.getGroup(defensive))
+                .flatMap { group =>
+                    OptionT.liftF(primeTime.checkPrimeTime(group))
+                }
+                .getOrElse(PrimeTimeResult.isInPrimeTime)
+            result <- primeTime match
+                case PrimeTimeResult.isInPrimeTime =>
+                    sql.queryUniqueIO(
+                        sql"""
         INSERT INTO Battles (
             BattleID, OffensiveBeacon, DefensiveBeacon, ContestedArea, DesiredArea, Health, PillarCount, World
         ) SELECT
@@ -208,28 +228,32 @@ class BattleManager(using
             $uuid as World
         RETURNING BattleID, PillarCount;
         """,
-            (uuid *: int4),
-            (
-                offensive,
-                defensive,
-                contestedArea,
-                desiredArea,
-                initialHealth,
-                contestedArea,
-                world,
-            ),
-        ).flatTap { (battleID, count) =>
-            spawnInitialPillars(
-                battleID,
-                offensive,
-                defensive,
-                contestedArea,
-                world,
-                count,
-            )
-        }.flatTap { (battleID, _) =>
-            updateBossBarFor(battleID, initialHealth)
-        }.map(_._1)
+                        (uuid *: int4),
+                        (
+                            offensive,
+                            defensive,
+                            contestedArea,
+                            desiredArea,
+                            initialHealth,
+                            contestedArea,
+                            world,
+                        ),
+                    ).flatTap { (battleID, count) =>
+                        spawnInitialPillars(
+                            battleID,
+                            offensive,
+                            defensive,
+                            contestedArea,
+                            world,
+                            count,
+                        )
+                    }.flatTap { (battleID, _) =>
+                        updateBossBarFor(battleID, initialHealth)
+                    }.map(_._1)
+                        .map(Right.apply)
+                case PrimeTimeResult.notInPrimeTime(reopens) =>
+                    IO.pure(Left(BattleError.opponentIsInPrimeTime(reopens)))
+        } yield result
     private def battleDefended(battle: BattleID)(using Session[IO]): IO[Unit] =
         sql.queryUniqueIO(
             sql"""
