@@ -18,6 +18,11 @@ import BallCore.Storage.Migration
 import java.time.OffsetTime
 import java.time.Duration
 import cats.data.EitherT
+import cats.data.OptionT
+
+enum PrimeTimeError:
+    case groupError(error: GroupError)
+    case waitUntilTomorrowWindowHasPassed
 
 class PrimeTimeManager(using sql: SQLManager, gm: GroupManager, c: Clock):
     sql.applyMigration(
@@ -29,7 +34,14 @@ class PrimeTimeManager(using sql: SQLManager, gm: GroupManager, c: Clock):
                     GroupID UUID UNIQUE NOT NULL REFERENCES GroupStates(ID),
                     StartOfWindow TIMETZ NOT NULL
                 );
-                """.command
+                """.command,
+                sql"""
+                CREATE TABLE TemporaryPrimeTimeAdjustmentVulnerabilityWindows (
+                    GroupID UUID UNIQUE NOT NULL REFERENCES GroupStates(ID),
+                    StartOfTodayWindow TIMESTAMPTZ NOT NULL,
+                    StartOfTomorrowWindow TIMESTAMPTZ NOT NULL
+                );
+                """.command,
             ),
             List(
                 sql"""
@@ -41,29 +53,114 @@ class PrimeTimeManager(using sql: SQLManager, gm: GroupManager, c: Clock):
 
     val windowSize = Duration.ofHours(6)
 
+    private def checkIfExtraWindowIsActive(
+        group: GroupID
+    )(using Session[IO], Transaction[IO]): IO[Option[Boolean]] =
+        (for {
+            window <- OptionT(
+                sql.queryOptionIO(
+                    sql"""
+            SELECT StartOfTodayWindow, StartOfTomorrowWindow FROM TemporaryPrimeTimeAdjustmentVulnerabilityWindows
+                WHERE GroupID = $uuid;
+            """,
+                    (timestamptz *: timestamptz),
+                    group,
+                )
+            )
+            (startOfToday, startOfTomorrow) = window
+            now <- OptionT.liftF(c.nowIO())
+            result <-
+                if startOfTomorrow.plus(windowSize).isBefore(now) then
+                    OptionT.liftF(
+                        sql.commandIO(
+                            sql"""
+                DELETE FROM TemporaryPrimeTimeAdjustmentVulnerabilityWindows WHERE GroupID = $uuid;
+                """,
+                            group,
+                        ).map(_ => false)
+                    )
+                else
+                    OptionT.pure[IO](
+                        startOfToday.isBefore(now) && startOfToday
+                            .plus(windowSize)
+                            .isAfter(now) || startOfTomorrow.isBefore(
+                            now
+                        ) && startOfTomorrow.plus(windowSize).isAfter(now)
+                    )
+        } yield result).value
+
     def setGroupPrimeTime(
         as: UserID,
         group: GroupID,
         time: OffsetTime,
-    )(using Session[IO], Transaction[IO]): IO[Either[GroupError, Unit]] =
+    )(using Session[IO], Transaction[IO]): IO[Either[PrimeTimeError, Unit]] =
         (for {
-            _ <- gm.checkE(
-                as,
-                group,
-                nullUUID,
-                Permissions.UpdateGroupInformation,
-            )
-            _ <- EitherT.right(
-                sql.commandIO(
-                    sql"""
-            INSERT INTO PrimeTimes (
-                GroupID, StartOfWindow
-            ) VALUES (
-                $uuid, $timetz
-            ) ON CONFLICT (GroupID) DO UPDATE SET StartOfWindow = EXCLUDED.StartOfWindow;
-            """,
-                    (group, time),
+            _ <- gm
+                .checkE(
+                    as,
+                    group,
+                    nullUUID,
+                    Permissions.UpdateGroupInformation,
                 )
+                .leftMap(PrimeTimeError.groupError.apply)
+            _ <- EitherT(checkIfExtraWindowIsActive(group).map { x =>
+                if x.isDefined then
+                    Left(PrimeTimeError.waitUntilTomorrowWindowHasPassed)
+                else Right(())
+            })
+            _ <- EitherT.right(
+                sql.queryUniqueIO(
+                    sql"""
+                SELECT EXISTS (SELECT 1 FROM PrimeTimes WHERE GroupID = $uuid);
+                """,
+                    bool, group,
+                ).flatMap { exists =>
+                    if !exists then
+                        sql.commandIO(
+                            sql"""
+                    INSERT INTO PrimeTimes (
+                        GroupID, StartOfWindow
+                    ) VALUES (
+                        $uuid, $timetz
+                    );
+                    """,
+                            (group, time),
+                        )
+                    else
+                        for {
+                            current <- sql.queryUniqueIO(
+                                sql"""
+                            SELECT StartOfWindow FROM PrimeTimes WHERE GroupID = $uuid
+                            """,
+                                timetz,
+                                group,
+                            )
+                            now <- c.nowIO()
+                            tomorrow = now.plusDays(1)
+                            currentInSameZoneAsNow = current
+                                .withOffsetSameInstant(now.getOffset())
+                            todayWindow = currentInSameZoneAsNow
+                                .atDate(now.toLocalDate())
+                            tomorrowWindow = currentInSameZoneAsNow
+                                .atDate(tomorrow.toLocalDate())
+                            _ <- sql.commandIO(
+                                sql"""
+                            INSERT INTO TemporaryPrimeTimeAdjustmentVulnerabilityWindows (
+                                GroupID, StartOfTodayWindow, StartOfTomorrowWindow
+                            ) VALUES (
+                                $uuid, $timestamptz, $timestamptz
+                            );
+                            """,
+                                (group, todayWindow, tomorrowWindow),
+                            )
+                            _ <- sql.commandIO(
+                                sql"""
+                            UPDATE PrimeTimes SET StartOfWindow = $timetz WHERE GroupID = $uuid;
+                            """,
+                                (time, group),
+                            )
+                        } yield ()
+                }
             )
         } yield ()).value
 
@@ -77,7 +174,9 @@ class PrimeTimeManager(using sql: SQLManager, gm: GroupManager, c: Clock):
             pointTime.isAfter(start) || pointTime.isBefore(end)
         else pointTime.isAfter(start) && pointTime.isBefore(end)
 
-    def isGroupInPrimeTime(group: GroupID)(using Session[IO]): IO[Boolean] =
+    def isGroupInPrimeTime(
+        group: GroupID
+    )(using Session[IO], Transaction[IO]): IO[Boolean] =
         for {
             now <- c.nowIO()
             primeTime <- sql.queryOptionIO(
@@ -88,9 +187,11 @@ class PrimeTimeManager(using sql: SQLManager, gm: GroupManager, c: Clock):
                 timetz,
                 group,
             )
+            active <- checkIfExtraWindowIsActive(group)
+            isExtra = active.getOrElse(false)
         } yield primeTime
             .map { start =>
                 val end = start.plus(windowSize)
-                timeIsBetween(start, end, now)
+                isExtra || timeIsBetween(start, end, now)
             }
             .getOrElse(false)
