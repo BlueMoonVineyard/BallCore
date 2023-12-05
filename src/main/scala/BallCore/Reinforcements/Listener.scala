@@ -515,14 +515,26 @@ class Listener(using
     // prevent zombies from killing doors
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     def preventZombies(event: EntityChangeBlockEvent): Unit =
-        if sql
-                .useBlocking(
-                    sql.withS(
-                        cbm.beaconContaining(event.getBlock.getLocation())
+        if event.getEntity().isInstanceOf[Player] then
+            checkAt(
+                event.getBlock,
+                event.getEntity.asInstanceOf[Player],
+                Permissions.Build,
+                true,
+            ) match
+                case Right(ok) if ok =>
+                    ()
+                case _ =>
+                    event.setCancelled(true)
+        else
+            if sql
+                    .useBlocking(
+                        sql.withS(
+                            cbm.beaconContaining(event.getBlock.getLocation())
+                        )
                     )
-                )
-                .isDefined
-        then event.setCancelled(true)
+                    .isDefined
+            then event.setCancelled(true)
 
     // prevent reinforced blocks from falling
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
