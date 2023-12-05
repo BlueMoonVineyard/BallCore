@@ -261,7 +261,10 @@ class SlimePillarSlapDetector()(using
 
         val intr = event.getEntity().asInstanceOf[Interaction]
 
-        val position = plr.rayTraceEntities(10).getHitPosition()
+        val result = plr.rayTraceEntities(10)
+        if result == null then
+            return
+        val position = result.getHitPosition()
         val location = position.toLocation(plr.getWorld(), 0, 0)
         playEffect(location, Particle.VILLAGER_ANGRY, 0.5)
 
@@ -287,7 +290,10 @@ class SlimePillarSlapDetector()(using
         if ChronoUnit.MILLIS.between(time, clock.now()) < 750 then return
         lastSlaps.update(event.getPlayer(), clock.now())
 
-        val position = event.getPlayer().rayTraceEntities(10).getHitPosition()
+        val result = event.getPlayer().rayTraceEntities(10)
+        if result == null then
+            return
+        val position = result.getHitPosition()
         val location = position.toLocation(event.getPlayer().getWorld(), 0, 0)
         playEffect(location, Particle.HEART, 0.5)
 
