@@ -39,14 +39,14 @@ object Mining:
         Drops(
             0 to 320,
             2 to 8,
-            0.02,
+            0.04,
             ItemStack(Material.COAL),
             WorldLocation.everywhere,
         ),
         Drops(
             -64 to 16,
             1 to 4,
-            0.0205,
+            0.041,
             ItemStack(Material.REDSTONE),
             WorldLocation.everywhere,
         ),
@@ -62,7 +62,7 @@ object Mining:
             Drops(
                 0 to 320,
                 1 to 3,
-                0.01,
+                0.02,
                 ore,
                 WorldLocation.cardinal(cardinal),
             )
@@ -79,7 +79,7 @@ object Mining:
             Drops(
                 -64 to 16,
                 1 to 2,
-                0.01,
+                0.02,
                 ore,
                 WorldLocation.cardinal(cardinal),
             )
@@ -96,7 +96,7 @@ object Mining:
             Drops(
                 -64 to 320,
                 1 to 2,
-                0.012,
+                0.024,
                 ore,
                 WorldLocation.quadrant(quadrant),
             )
@@ -113,7 +113,7 @@ object Mining:
             Drops(
                 -64 to 32,
                 1 to 2,
-                0.012,
+                0.024,
                 ore,
                 WorldLocation.quadrant(quadrant),
             )
@@ -130,7 +130,7 @@ object Mining:
             Drops(
                 -16 to 112,
                 1 to 5,
-                0.02,
+                0.04,
                 ore,
                 WorldLocation.quadrant(quadrant),
             )
