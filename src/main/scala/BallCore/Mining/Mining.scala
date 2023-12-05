@@ -19,6 +19,8 @@ import scala.collection.immutable.Range.Inclusive
 import scala.util.Random
 import scala.util.chaining.*
 import BallCore.Rest.RestManager
+import scala.collection.concurrent.TrieMap
+import java.util.UUID
 
 object Mining:
     val stoneBlocks: Set[Material] =
@@ -211,6 +213,41 @@ class MiningListener()(using
     sql: SQLManager,
     rest: RestManager,
 ) extends Listener:
+    val dopamineTracker = TrieMap[UUID, (Int, Int)]()
+    private def didntGetAnything(p: UUID): Boolean =
+        val (current, max) =
+            dopamineTracker.getOrElseUpdate(p, (0, randomizer.between(32, 64)))
+        if current + 1 >= max then
+            dopamineTracker(p) = (0, randomizer.between(32, 64))
+            true
+        else
+            dopamineTracker(p) = (current + 1, max)
+            false
+    private def gotSomething(p: UUID): Unit =
+        val _ = dopamineTracker.remove(p)
+    private def pickOne(drops: List[Drops]): Drops =
+        val total = drops.map(_.chance).foldLeft(0d)(_ + _)
+        val rng = randomizer.between(0d, 1d)
+        val cumulativeDrops = drops.zipWithIndex
+            .foldLeft((0d, List[(Double, Int)]())) {
+                (currentAccumulator, currentDrop) =>
+                    (
+                        currentAccumulator._1 + currentDrop._1.chance / total,
+                        (
+                            currentAccumulator._1 + currentDrop._1.chance / total,
+                            currentDrop._2,
+                        ) :: currentAccumulator._2,
+                    )
+            }
+            ._2
+        cumulativeDrops.foreach(println)
+        cumulativeDrops
+            .find { (chance, _) =>
+                rng <= chance
+            }
+            .map(it => drops(it._2))
+            .get
+
     val randomizer: Random = scala.util.Random()
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -235,8 +272,9 @@ class MiningListener()(using
             event.getBlock.getX(),
             event.getBlock.getZ(),
         )
+        val restIsUsed = sql.useBlocking(sql.withS(rest.useRest(plr)))
         val restFactor =
-            if sql.useBlocking(sql.withS(rest.useRest(plr))) then 1.0
+            if restIsUsed then 1.0
             else 0.5
 
         val dlat = Information.similarityNeg(lat, plat)
@@ -270,10 +308,22 @@ class MiningListener()(using
             else false
         } match
             case Some(maybe) =>
+                println("got something!")
+                gotSomething(plr)
                 val dropAmount =
                     maybe.amount(randomizer.nextInt(maybe.amount.length))
                 val drop = maybe.what.clone().tap(_.setAmount(dropAmount))
                 val _ = event.getBlock.getWorld
                     .dropItemNaturally(event.getBlock.getLocation(), drop)
-            case _ =>
+            case None if restIsUsed =>
+                println("got nothing...")
+                if didntGetAnything(plr) then
+                    println("dopamine time!")
+                    val picked = pickOne(possibleDrops)
+                    val dropAmount =
+                        picked.amount(randomizer.nextInt(picked.amount.length))
+                    val drop = picked.what.clone().tap(_.setAmount(dropAmount))
+                    val _ = event.getBlock.getWorld
+                        .dropItemNaturally(event.getBlock.getLocation(), drop)
+            case None =>
                 ()
