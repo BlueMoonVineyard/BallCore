@@ -50,6 +50,7 @@ lazy val dependencyPlugin = project
         libraryDependencies += "org.tpolecat" %% "skunk-circe" % "0.6.0",
         libraryDependencies += "dev.jorel" % "commandapi-bukkit-shade" % "9.1.0",
         libraryDependencies += "com.github.tommyettinger" % "colorful-pure" % "0.8.5",
+        libraryDependencies += "io.chrisdavenport" %% "rediculous" % "0.5.1",
 
         // currently vendored in lib for a bugfix
         // libraryDependencies += "com.github.stefvanschie.inventoryframework" % "IF" % "0.10.8",

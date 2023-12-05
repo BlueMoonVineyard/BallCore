@@ -850,6 +850,7 @@ class GroupManager()(using sql: Storage.SQLManager):
                 )
             }
 
+    // BUKKIT ONLY CURRENTLY
     def groupAudience(
         groupID: GroupID
     )(using
