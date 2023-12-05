@@ -56,7 +56,9 @@ object OresAndYou:
                     s"""Adaptation Speeds:
                        |- 7 days within your heart's claim
                        |- 14 days if you have no heart
-                       |- 30 days if you're outside of your heart's claim""".stripMargin,
+                       |- 30 days if you're outside of your heart's claim
+                       |
+                       |You can use <#00d485>/one-time-adaptation</#00d485> to set your adaptation point to your current location once.""".stripMargin,
                     s"""<b>Univeral Ores</b>
                        |Coal spawns from y=0 to 320.
                        |Redstone spawns from y=-64 to 16.""".stripMargin,
