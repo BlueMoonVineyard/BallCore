@@ -230,6 +230,7 @@ final class Main extends JavaPlugin:
             MyFingerprintCommand().node.register()
             StationCommand().node.register()
             RelayCommand().root.register()
+            SettingsCommand().node.register()
         catch
             case e: Throwable =>
                 getSLF4JLogger().error(
