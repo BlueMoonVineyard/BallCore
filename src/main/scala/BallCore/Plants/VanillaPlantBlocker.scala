@@ -100,11 +100,13 @@ class VanillaPlantBlocker() extends Listener:
         val loc = event.getBlock
         val climate = Climate.climateAt(loc.getX, loc.getY, loc.getZ)
         val possiblePlants = Plant.values.filter(_.growingClimate == climate)
-        val chosenPlant = possiblePlants(Random.nextInt(possiblePlants.length))
 
-        loc.getWorld
-            .dropItemNaturally(
-                loc.getLocation(),
-                chosenPlant.plant.representativeItem(),
-            )
-        ()
+        if possiblePlants.size > 0 then
+            val chosenPlant = possiblePlants(Random.nextInt(possiblePlants.length))
+
+            loc.getWorld
+                .dropItemNaturally(
+                    loc.getLocation(),
+                    chosenPlant.plant.representativeItem(),
+                )
+            ()
