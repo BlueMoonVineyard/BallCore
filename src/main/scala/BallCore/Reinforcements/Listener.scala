@@ -31,6 +31,7 @@ import BallCore.Fingerprints.FingerprintReason
 import cats.effect.IO
 import BallCore.TextComponents._
 import scala.util.Random
+import BallCore.Groups.Position
 
 object Listener:
     private def centered(at: Location): Location =
@@ -125,6 +126,12 @@ class Listener(using
         permission: Permissions,
         breaking: Boolean,
     ): Either[GroupError, Boolean] =
+        val position = Position(
+            location.getX.toInt,
+            location.getY.toInt,
+            location.getZ.toInt,
+            location.getWorld.getUID,
+        )
         sql
             .useBlocking(sql.withS(cbm.beaconContaining(location)))
             .flatMap(id => sql.useBlocking(sql.withS(cbm.getGroup(id))))
@@ -132,7 +139,7 @@ class Listener(using
                 val sgid = sql
                     .useBlocking(sql.withS(sql.withTX(gm.getSubclaims(group))))
                     .getOrElse(Map())
-                    .find(_._2.contains(location))
+                    .find(_._2.contains(position))
                     .map(_._1)
                     .getOrElse(nullUUID)
                 sql.useBlocking(

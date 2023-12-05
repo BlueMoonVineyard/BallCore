@@ -21,6 +21,27 @@ import scala.concurrent.Future
 import net.kyori.adventure.text.Component
 import BallCore.UI.ItemAccumulator
 
+extension (p: BallCore.Groups.Permissions)
+    def displayItem(): Material =
+        import BallCore.Groups.Permissions.*
+
+        p match
+            case ManageRoles => Material.LEATHER_CHESTPLATE
+            case ManageUserRoles => Material.IRON_CHESTPLATE
+            case InviteUser => Material.PLAYER_HEAD
+            case RemoveUser => Material.BARRIER
+            case UpdateGroupInformation => Material.NAME_TAG
+            case AddReinforcements => Material.STONE
+            case RemoveReinforcements => Material.IRON_PICKAXE
+            case Build => Material.BRICKS
+            case Chests => Material.CHEST
+            case Doors => Material.OAK_DOOR
+            case Crops => Material.WHEAT
+            case Signs => Material.OAK_SIGN
+            case Entities => Material.EGG
+            case ManageClaims => Material.BEACON
+            case ManageSubgroups => Material.RED_BED
+
 class ConfirmationPrompt(
     title: Component,
     yesLabel: Component,

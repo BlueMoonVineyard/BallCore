@@ -6,7 +6,6 @@ package BallCore.Groups
 
 import io.circe.*
 import io.circe.generic.semiauto.*
-import org.bukkit.{Location, Material}
 
 import java.util as ju
 
@@ -102,24 +101,6 @@ enum Permissions(val name: String):
             case ManageClaims =>
                 "Allows users to manage the claims of this group's beacons"
 
-    def displayItem(): Material =
-        this match
-            case ManageRoles => Material.LEATHER_CHESTPLATE
-            case ManageUserRoles => Material.IRON_CHESTPLATE
-            case InviteUser => Material.PLAYER_HEAD
-            case RemoveUser => Material.BARRIER
-            case UpdateGroupInformation => Material.NAME_TAG
-            case AddReinforcements => Material.STONE
-            case RemoveReinforcements => Material.IRON_PICKAXE
-            case Build => Material.BRICKS
-            case Chests => Material.CHEST
-            case Doors => Material.OAK_DOOR
-            case Crops => Material.WHEAT
-            case Signs => Material.OAK_SIGN
-            case Entities => Material.EGG
-            case ManageClaims => Material.BEACON
-            case ManageSubgroups => Material.RED_BED
-
 implicit val pKeyEncoder: KeyEncoder[Permissions] = (perm: Permissions) =>
     perm.name
 implicit val pKeyDecoder: KeyDecoder[Permissions] = (key: String) =>
@@ -158,13 +139,14 @@ case class Volume(
         if a1 <= target && target <= a2 then true
         else false
 
-    def contains(target: Location): Boolean =
+    def contains(target: Position): Boolean =
         val ca = cornerALocation()
         val cb = cornerBLocation()
 
-        check1D(target.getX, ca.x, cb.x) &&
-        check1D(target.getY, ca.y, cb.y) &&
-        check1D(target.getZ, ca.z, cb.z)
+        check1D(target.x, ca.x, cb.x) &&
+        check1D(target.y, ca.y, cb.y) &&
+        check1D(target.z, ca.z, cb.z) &&
+        ca.world == target.world
 
 implicit val vDecoder: Decoder[Volume] = deriveDecoder[Volume]
 implicit val vEncoder: Encoder[Volume] = deriveEncoder[Volume]
@@ -172,7 +154,7 @@ implicit val vEncoder: Encoder[Volume] = deriveEncoder[Volume]
 case class Subclaims(
     volumes: List[Volume]
 ):
-    def contains(target: Location): Boolean =
+    def contains(target: Position): Boolean =
         volumes.exists(_.contains(target))
 
 implicit val scDecoder: Decoder[Subclaims] = deriveDecoder[Subclaims]
