@@ -37,6 +37,9 @@ import cats.data.OptionT
 import BallCore.PrimeTime.{PrimeTimeManager, PrimeTimeResult}
 import java.time.temporal.ChronoUnit
 import java.time.OffsetDateTime
+import BallCore.CustomItems.BlockManager
+import BallCore.CustomItems.Listeners
+import BallCore.CustomItems.ItemRegistry
 
 object Listener:
     private def centered(at: Location): Location =
@@ -110,6 +113,8 @@ class Listener(using
     fingerprints: FingerprintManager,
     webhooks: WebHookManager,
     primeTime: PrimeTimeManager,
+    blockManager: BlockManager,
+    ir: ItemRegistry,
 ) extends org.bukkit.event.Listener:
 
     import Listener.*
@@ -399,6 +404,32 @@ class Listener(using
             case _ =>
                 // TODO: notify of permission denied
                 event.setCancelled(true)
+
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    def preventUsingCustomItems(event: PlayerInteractEvent): Unit =
+        if event.getHand != EquipmentSlot.HAND then return
+        if !event.hasBlock then return
+        if event.getPlayer.isSneaking then return
+
+        sql.useBlocking(
+            sql.withS(blockManager.getCustomItem(event.getClickedBlock))
+        ) match
+            case Some(item) =>
+                item match
+                    case _: Listeners.BlockClicked
+                        if event.getAction == Action.RIGHT_CLICK_BLOCK =>
+
+                        checkAt(
+                            event.getClickedBlock,
+                            event.getPlayer,
+                            Permissions.Chests,
+                        ) match
+                            case Right(ok) if ok =>
+                                ()
+                            case _ =>
+                                // TODO: notify of permission denied
+                                event.setCancelled(true)
+            case _ =>
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     def preventWaxingCopper(event: BlockPlaceEvent): Unit =

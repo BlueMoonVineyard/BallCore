@@ -14,6 +14,7 @@ import org.bukkit.plugin.java.JavaPlugin
 import BallCore.Fingerprints.FingerprintManager
 import BallCore.WebHooks.WebHookManager
 import BallCore.PrimeTime.PrimeTimeManager
+import BallCore.CustomItems.BlockManager
 
 object Reinforcements:
     private def registerBlockListener()(using
@@ -26,6 +27,8 @@ object Reinforcements:
         fingerprints: FingerprintManager,
         webhooks: WebHookManager,
         primeTime: PrimeTimeManager,
+        blockManager: BlockManager,
+        ir: ItemRegistry,
     ): Unit =
         server.getPluginManager.registerEvents(Listener(), plugin)
 
@@ -52,6 +55,7 @@ object Reinforcements:
         fingerprints: FingerprintManager,
         webhooks: WebHookManager,
         primeTime: PrimeTimeManager,
+        blockManager: BlockManager,
     ): Unit =
         registerBlockListener()
         registerEntityListener()
