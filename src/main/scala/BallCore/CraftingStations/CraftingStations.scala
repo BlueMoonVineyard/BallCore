@@ -51,6 +51,19 @@ object CraftingStations:
         p.getServer().getPluginManager().registerEvents(BundleStufferListener(), p)
         registry.register(BundleStuffer())
 
+        val bundleRecipe = ShapedRecipe(
+            NamespacedKey("ballcore", "craft_bundle"),
+            ItemStack(Material.BUNDLE),
+        )
+        bundleRecipe.shape(
+            " S ",
+            "L L",
+            " L ",
+        )
+        bundleRecipe.setIngredient('L', MaterialChoice(Material.LEATHER))
+        bundleRecipe.setIngredient('S', MaterialChoice(Material.STRING))
+        registry.addRecipe(bundleRecipe)
+
         val smRecipe = ShapedRecipe(
             NamespacedKey("ballcore", "craft_station_maker"),
             StationMaker.template,

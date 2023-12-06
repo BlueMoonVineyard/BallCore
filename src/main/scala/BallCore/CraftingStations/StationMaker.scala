@@ -12,6 +12,7 @@ import org.bukkit.{Material, NamespacedKey}
 import RecipeIngredient.*
 import BallCore.Storage.SQLManager
 import BallCore.CustomItems.ItemRegistry
+import BallCore.Alloys.Tier1
 
 object StationMaker:
     val recipes: List[Recipe] = List(
@@ -188,6 +189,19 @@ object StationMaker:
             ),
             30,
             1,
+        ),
+        Recipe(
+            "Make Bundle Stuffer",
+            List(
+                (Vanilla(Material.FLETCHING_TABLE), 1),
+                (Custom(Tier1.all.map(_.stack): _*), 64),
+                (Vanilla(Material.BUNDLE), 1),
+            ),
+            List(
+                (BundleStuffer.template, 1)
+            ),
+            30,
+            2,
         ),
     )
     val template: CustomItemStack = CustomItemStack.make(

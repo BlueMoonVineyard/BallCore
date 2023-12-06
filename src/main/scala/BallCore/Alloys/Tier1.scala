@@ -74,6 +74,8 @@ object Tier1:
         gildedIron.stack.getItemMeta().tap(_.setCustomModelData(330))
     )
 
+    val all = List(pallalumin, bronze, magnox, gildedIron)
+
     def register()(using ir: ItemRegistry): Unit =
         ir.register(PlainCustomItem(ig, pallalumin.stack))
         ir.register(PlainCustomItem(ig, bronze.stack))
