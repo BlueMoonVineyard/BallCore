@@ -28,6 +28,9 @@ enum PrimeTimeResult:
     case notInPrimeTime(reopens: OffsetDateTime)
     case isInPrimeTime
 
+    def canAttack: Boolean =
+        this == isInPrimeTime
+
 class PrimeTimeManager(using sql: SQLManager, gm: GroupManager, c: Clock):
     sql.applyMigration(
         Migration(
@@ -179,19 +182,25 @@ class PrimeTimeManager(using sql: SQLManager, gm: GroupManager, c: Clock):
             pointTime.isAfter(start) || pointTime.isBefore(end)
         else pointTime.isAfter(start) && pointTime.isBefore(end)
 
-    def checkPrimeTime(group: GroupID)(using Session[IO], Transaction[IO]): IO[PrimeTimeResult] =
+    def checkPrimeTime(
+        group: GroupID
+    )(using Session[IO], Transaction[IO]): IO[PrimeTimeResult] =
         for {
             isInPrimeTime <- isGroupInPrimeTime(group)
-            result <- if isInPrimeTime then
-                IO.pure(PrimeTimeResult.isInPrimeTime)
-            else
-                getNextPrimeTimeWindow(group).map { x =>
-                    PrimeTimeResult.notInPrimeTime(x.get)
-                }
+            result <-
+                if isInPrimeTime then IO.pure(PrimeTimeResult.isInPrimeTime)
+                else
+                    getNextPrimeTimeWindow(group).map { x =>
+                        x match
+                            case None =>
+                                PrimeTimeResult.isInPrimeTime
+                            case Some(value) =>
+                                PrimeTimeResult.notInPrimeTime(value)
+                    }
         } yield result
 
     private def getNextPrimeTimeWindow(
-        group: GroupID,
+        group: GroupID
     )(using Session[IO], Transaction[IO]): IO[Option[OffsetDateTime]] =
         for {
             now <- c.nowIO()
@@ -203,7 +212,9 @@ class PrimeTimeManager(using sql: SQLManager, gm: GroupManager, c: Clock):
                 timetz,
                 group,
             )
-            primeTimeWithSameOffset = primeTimeTimeOfDay.map(_.withOffsetSameInstant(now.getOffset()))
+            primeTimeWithSameOffset = primeTimeTimeOfDay.map(
+                _.withOffsetSameInstant(now.getOffset())
+            )
             primeTime = primeTimeWithSameOffset.map(_.atDate(now.toLocalDate()))
             extraWindows <- sql.queryOptionIO(
                 sql"""
@@ -213,7 +224,9 @@ class PrimeTimeManager(using sql: SQLManager, gm: GroupManager, c: Clock):
                 (timestamptz *: timestamptz),
                 group,
             )
-            allWindows = primeTime.toList.concat(extraWindows.toList.flatMap { (x, y) => List(x, y) })
+            allWindows = primeTime.toList.concat(extraWindows.toList.flatMap {
+                (x, y) => List(x, y)
+            })
             inOrder = allWindows.sortWith((a, b) => a.isBefore(b))
         } yield inOrder.headOption
 
@@ -237,4 +250,4 @@ class PrimeTimeManager(using sql: SQLManager, gm: GroupManager, c: Clock):
                 val end = start.plus(windowSize)
                 isExtra || timeIsBetween(start, end, now)
             }
-            .getOrElse(false)
+            .getOrElse(true)

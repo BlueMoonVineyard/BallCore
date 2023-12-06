@@ -25,6 +25,10 @@ import BallCore.Beacons.BeaconManagerHooks
 import skunk.Transaction
 import cats.effect.kernel.Deferred
 import BallCore.Beacons.IngameBeaconManagerHooks
+import BallCore.PrimeTime.PrimeTimeManager
+import BallCore.DataStructures.TestClock
+import java.time.OffsetDateTime
+import java.time.OffsetTime
 
 object DummyBeaconHooks:
     def it: Deferred[IO, BeaconManagerHooks] =
@@ -95,6 +99,8 @@ class BattleSuite extends munit.FunSuite:
         given it: Deferred[IO, BeaconManagerHooks] = DummyBeaconHooks.it
         given hn: CivBeaconManager = CivBeaconManager()
         given hooks: TestBattleHooks = TestBattleHooks(using this)
+        given TestClock = TestClock(OffsetDateTime.now())
+        given PrimeTimeManager = PrimeTimeManager()
         given battleManager: BattleManager = BattleManager()
         val world = WorldMock()
 
@@ -159,19 +165,22 @@ class BattleSuite extends munit.FunSuite:
             assert(res2.isRight, (res2, "setting second heart's area"))
 
             for _ <- 1 to pillarCount do hooks.expectSpawn()
-            val battle = sql.useBlocking(
-                sql.withS(
-                    sql.withTX(
-                        battleManager.startBattle(
-                            offensiveBeacon,
-                            defensiveBeacon,
-                            area2,
-                            area2,
-                            world.getUID(),
+            val battle = sql
+                .useBlocking(
+                    sql.withS(
+                        sql.withTX(
+                            battleManager.startBattle(
+                                offensiveBeacon,
+                                defensiveBeacon,
+                                area2,
+                                area2,
+                                world.getUID(),
+                            )
                         )
                     )
                 )
-            )
+                .toOption
+                .get
 
             hooks.expectDefended()
             sql.useBlocking(sql.withS(battleManager.offensiveResign(battle)))
@@ -197,6 +206,8 @@ class BattleSuite extends munit.FunSuite:
         given it: Deferred[IO, BeaconManagerHooks] = DummyBeaconHooks.it
         given hn: CivBeaconManager = CivBeaconManager()
         given hooks: TestBattleHooks = TestBattleHooks(using this)
+        given TestClock = TestClock(OffsetDateTime.now())
+        given PrimeTimeManager = PrimeTimeManager()
         given battleManager: BattleManager = BattleManager()
         val world = WorldMock()
 
@@ -259,17 +270,22 @@ class BattleSuite extends munit.FunSuite:
         assert(res2.isRight, (res2, "setting second heart's area"))
 
         hooks.expectSpawn()
-        val battle = sql.useBlocking(
-            sql.withS(
-                battleManager.startBattle(
-                    offensiveBeacon,
-                    defensiveBeacon,
-                    area2,
-                    area2,
-                    world.getUID(),
+        val battle = sql
+            .useBlocking(
+                sql.withS(
+                    sql.withTX(
+                        battleManager.startBattle(
+                            offensiveBeacon,
+                            defensiveBeacon,
+                            area2,
+                            area2,
+                            world.getUID(),
+                        )
+                    )
                 )
             )
-        )
+            .toOption
+            .get
 
         for _ <- battleManager.initialHealth + 1 to 10 do
             hooks.expectSpawn()
@@ -294,6 +310,8 @@ class BattleSuite extends munit.FunSuite:
         given it: Deferred[IO, BeaconManagerHooks] = DummyBeaconHooks.it
         given hn: CivBeaconManager = CivBeaconManager()
         given hooks: TestBattleHooks = TestBattleHooks(using this)
+        given TestClock = TestClock(OffsetDateTime.now())
+        given PrimeTimeManager = PrimeTimeManager()
         given battleManager: BattleManager = BattleManager()
         val world = WorldMock()
 
@@ -356,17 +374,22 @@ class BattleSuite extends munit.FunSuite:
         assert(res2.isRight, (res2, "setting second heart's area"))
 
         hooks.expectSpawn()
-        val battle = sql.useBlocking(
-            sql.withS(
-                battleManager.startBattle(
-                    offensiveBeacon,
-                    defensiveBeacon,
-                    area2,
-                    area2,
-                    world.getUID(),
+        val battle = sql
+            .useBlocking(
+                sql.withS(
+                    sql.withTX(
+                        battleManager.startBattle(
+                            offensiveBeacon,
+                            defensiveBeacon,
+                            area2,
+                            area2,
+                            world.getUID(),
+                        )
+                    )
                 )
             )
-        )
+            .toOption
+            .get
 
         for _ <- 1 to battleManager.initialHealth - 1 do
             hooks.expectSpawn()
@@ -386,187 +409,337 @@ class BattleSuite extends munit.FunSuite:
             )
         )
     }
-    sql.test("battle manager offensive heart dies during battle") { implicit sql =>
-        given gm: GroupManager = GroupManager()
-        given it: Deferred[IO, BeaconManagerHooks] = sql.useBlocking(Deferred[IO, BeaconManagerHooks])
-        given hn: CivBeaconManager = CivBeaconManager()
-        given hooks: TestBattleHooks = TestBattleHooks(using this)
-        given battleManager: BattleManager = BattleManager()
-        sql.useBlocking(it.complete(IngameBeaconManagerHooks()))
-        val world = WorldMock()
+    sql.test("battle manager offensive heart dies during battle") {
+        implicit sql =>
+            given gm: GroupManager = GroupManager()
+            given it: Deferred[IO, BeaconManagerHooks] =
+                sql.useBlocking(Deferred[IO, BeaconManagerHooks])
+            given hn: CivBeaconManager = CivBeaconManager()
+            given hooks: TestBattleHooks = TestBattleHooks(using this)
+            given TestClock = TestClock(OffsetDateTime.now())
+            given PrimeTimeManager = PrimeTimeManager()
+            given battleManager: BattleManager = BattleManager()
+            sql.useBlocking(it.complete(IngameBeaconManagerHooks()))
+            val world = WorldMock()
 
-        val offset = 2 * 10
+            val offset = 2 * 10
 
-        val offensiveOwner = UUID.randomUUID()
-        val offensiveLocation = Location(world, 0, -10, 0)
-        val (offensiveBeacon, _) =
-            sql.useBlocking(
-                sql.withS(hn.placeHeart(offensiveLocation, offensiveOwner))
-            ).toOption
-                .get
+            val offensiveOwner = UUID.randomUUID()
+            val offensiveLocation = Location(world, 0, -10, 0)
+            val (offensiveBeacon, _) =
+                sql.useBlocking(
+                    sql.withS(hn.placeHeart(offensiveLocation, offensiveOwner))
+                ).toOption
+                    .get
 
-        val defensiveOwner = UUID.randomUUID()
-        val defensiveLocation = Location(world, offset, 10, offset)
-        val (defensiveBeacon, _) =
-            sql.useBlocking(
+            val defensiveOwner = UUID.randomUUID()
+            val defensiveLocation = Location(world, offset, 10, offset)
+            val (defensiveBeacon, _) =
+                sql.useBlocking(
+                    sql.withS(
+                        hn.placeHeart(
+                            defensiveLocation,
+                            defensiveOwner,
+                        )
+                    )
+                ).toOption
+                    .get
+
+            assertNotEquals(
+                offensiveBeacon,
+                defensiveBeacon,
+                "different heart IDs",
+            )
+
+            val gf = GeometryFactory()
+            val area1 = rectangleCenteredAt(gf, 0, 0, -10, 5)
+            assert(
+                area1.covers(gf.createPoint(Coordinate(0, 0, -10))),
+                "sanity check of area 1",
+            )
+            val res1 = sql.useBlocking(
                 sql.withS(
-                    hn.placeHeart(
-                        defensiveLocation,
-                        defensiveOwner,
+                    sql.withTX(
+                        hn.updateBeaconPolygon(offensiveBeacon, world, area1)
                     )
                 )
-            ).toOption
+            )
+            assert(res1.isRight, (res1, "setting first heart's area"))
+
+            val area2 = rectangleCenteredAt(gf, offset, offset, 10, 5)
+            assert(
+                area2.covers(gf.createPoint(Coordinate(offset, offset, 10))),
+                "sanity check of area 2",
+            )
+            val res2 = sql.useBlocking(
+                sql.withS(
+                    sql.withTX(
+                        hn.updateBeaconPolygon(defensiveBeacon, world, area2)
+                    )
+                )
+            )
+            assert(res2.isRight, (res2, "setting second heart's area"))
+
+            hooks.expectSpawn()
+            val battle = sql
+                .useBlocking(
+                    sql.withS(
+                        sql.withTX(
+                            battleManager.startBattle(
+                                offensiveBeacon,
+                                defensiveBeacon,
+                                area2,
+                                area2,
+                                world.getUID(),
+                            )
+                        )
+                    )
+                )
+                .toOption
                 .get
 
-        assertNotEquals(
-            offensiveBeacon,
-            defensiveBeacon,
-            "different heart IDs",
-        )
+            for _ <- 1 to battleManager.initialHealth - 1 do
+                hooks.expectSpawn()
+                sql.useBlocking(sql.withS(battleManager.pillarTaken(battle)))
 
-        val gf = GeometryFactory()
-        val area1 = rectangleCenteredAt(gf, 0, 0, -10, 5)
-        assert(
-            area1.covers(gf.createPoint(Coordinate(0, 0, -10))),
-            "sanity check of area 1",
-        )
-        val res1 = sql.useBlocking(
-            sql.withS(
-                sql.withTX(
-                    hn.updateBeaconPolygon(offensiveBeacon, world, area1)
+            val sizeBefore = hooks.expectDefended().size
+            sql.useBlocking(
+                sql.withS(
+                    sql.withTX(
+                        hn.removeHeart(offensiveLocation, offensiveOwner)
+                    )
                 )
             )
-        )
-        assert(res1.isRight, (res1, "setting first heart's area"))
-
-        val area2 = rectangleCenteredAt(gf, offset, offset, 10, 5)
-        assert(
-            area2.covers(gf.createPoint(Coordinate(offset, offset, 10))),
-            "sanity check of area 2",
-        )
-        val res2 = sql.useBlocking(
-            sql.withS(
-                sql.withTX(
-                    hn.updateBeaconPolygon(defensiveBeacon, world, area2)
-                )
+            assertNotEquals(
+                sizeBefore,
+                hooks.defendQueue.size,
+                "a battle should've been defended",
             )
-        )
-        assert(res2.isRight, (res2, "setting second heart's area"))
-
-        hooks.expectSpawn()
-        val battle = sql.useBlocking(
-            sql.withS(
-                battleManager.startBattle(
-                    offensiveBeacon,
-                    defensiveBeacon,
-                    area2,
-                    area2,
-                    world.getUID(),
-                )
-            )
-        )
-
-        for _ <- 1 to battleManager.initialHealth - 1 do
-            hooks.expectSpawn()
-            sql.useBlocking(sql.withS(battleManager.pillarTaken(battle)))
-
-        val sizeBefore = hooks.expectDefended().size
-        sql.useBlocking(
-            sql.withS(
-                sql.withTX(hn.removeHeart(offensiveLocation, offensiveOwner))
-            )
-        )
-        assertNotEquals(sizeBefore, hooks.defendQueue.size, "a battle should've been defended")
     }
-    sql.test("battle manager defensive heart dies during battle") { implicit sql =>
-        given gm: GroupManager = GroupManager()
-        given it: Deferred[IO, BeaconManagerHooks] = sql.useBlocking(Deferred[IO, BeaconManagerHooks])
-        given hn: CivBeaconManager = CivBeaconManager()
-        given hooks: TestBattleHooks = TestBattleHooks(using this)
-        given battleManager: BattleManager = BattleManager()
-        sql.useBlocking(it.complete(IngameBeaconManagerHooks()))
-        val world = WorldMock()
+    sql.test("battle manager defensive heart dies during battle") {
+        implicit sql =>
+            given gm: GroupManager = GroupManager()
+            given it: Deferred[IO, BeaconManagerHooks] =
+                sql.useBlocking(Deferred[IO, BeaconManagerHooks])
+            given hn: CivBeaconManager = CivBeaconManager()
+            given hooks: TestBattleHooks = TestBattleHooks(using this)
+            given TestClock = TestClock(OffsetDateTime.now())
+            given PrimeTimeManager = PrimeTimeManager()
+            given battleManager: BattleManager = BattleManager()
+            sql.useBlocking(it.complete(IngameBeaconManagerHooks()))
+            val world = WorldMock()
 
-        val offset = 2 * 10
+            val offset = 2 * 10
 
-        val offensiveOwner = UUID.randomUUID()
-        val offensiveLocation = Location(world, 0, -10, 0)
-        val (offensiveBeacon, _) =
-            sql.useBlocking(
-                sql.withS(hn.placeHeart(offensiveLocation, offensiveOwner))
-            ).toOption
-                .get
+            val offensiveOwner = UUID.randomUUID()
+            val offensiveLocation = Location(world, 0, -10, 0)
+            val (offensiveBeacon, _) =
+                sql.useBlocking(
+                    sql.withS(hn.placeHeart(offensiveLocation, offensiveOwner))
+                ).toOption
+                    .get
 
-        val defensiveOwner = UUID.randomUUID()
-        val defensiveLocation = Location(world, offset, 10, offset)
-        val (defensiveBeacon, _) =
-            sql.useBlocking(
+            val defensiveOwner = UUID.randomUUID()
+            val defensiveLocation = Location(world, offset, 10, offset)
+            val (defensiveBeacon, _) =
+                sql.useBlocking(
+                    sql.withS(
+                        hn.placeHeart(
+                            defensiveLocation,
+                            defensiveOwner,
+                        )
+                    )
+                ).toOption
+                    .get
+
+            assertNotEquals(
+                offensiveBeacon,
+                defensiveBeacon,
+                "different heart IDs",
+            )
+
+            val gf = GeometryFactory()
+            val area1 = rectangleCenteredAt(gf, 0, 0, -10, 5)
+            assert(
+                area1.covers(gf.createPoint(Coordinate(0, 0, -10))),
+                "sanity check of area 1",
+            )
+            val res1 = sql.useBlocking(
                 sql.withS(
-                    hn.placeHeart(
-                        defensiveLocation,
-                        defensiveOwner,
+                    sql.withTX(
+                        hn.updateBeaconPolygon(offensiveBeacon, world, area1)
                     )
                 )
-            ).toOption
+            )
+            assert(res1.isRight, (res1, "setting first heart's area"))
+
+            val area2 = rectangleCenteredAt(gf, offset, offset, 10, 5)
+            assert(
+                area2.covers(gf.createPoint(Coordinate(offset, offset, 10))),
+                "sanity check of area 2",
+            )
+            val res2 = sql.useBlocking(
+                sql.withS(
+                    sql.withTX(
+                        hn.updateBeaconPolygon(defensiveBeacon, world, area2)
+                    )
+                )
+            )
+            assert(res2.isRight, (res2, "setting second heart's area"))
+
+            hooks.expectSpawn()
+            val battle = sql
+                .useBlocking(
+                    sql.withS(
+                        sql.withTX(
+                            battleManager.startBattle(
+                                offensiveBeacon,
+                                defensiveBeacon,
+                                area2,
+                                area2,
+                                world.getUID(),
+                            )
+                        )
+                    )
+                )
+                .toOption
                 .get
 
-        assertNotEquals(
-            offensiveBeacon,
-            defensiveBeacon,
-            "different heart IDs",
-        )
+            for _ <- 1 to battleManager.initialHealth - 1 do
+                hooks.expectSpawn()
+                sql.useBlocking(sql.withS(battleManager.pillarTaken(battle)))
 
-        val gf = GeometryFactory()
-        val area1 = rectangleCenteredAt(gf, 0, 0, -10, 5)
-        assert(
-            area1.covers(gf.createPoint(Coordinate(0, 0, -10))),
-            "sanity check of area 1",
-        )
-        val res1 = sql.useBlocking(
-            sql.withS(
-                sql.withTX(
-                    hn.updateBeaconPolygon(offensiveBeacon, world, area1)
+            val sizeBefore = hooks.expectTaken().size
+            sql.useBlocking(
+                sql.withS(
+                    sql.withTX(
+                        hn.removeHeart(defensiveLocation, defensiveOwner)
+                    )
                 )
             )
-        )
-        assert(res1.isRight, (res1, "setting first heart's area"))
+            assertNotEquals(
+                sizeBefore,
+                hooks.takeQueue.size,
+                "a battle should've been taken",
+            )
+    }
+    sql.test("battle manager rejects battles started outside of prime time") {
+        implicit sql =>
+            given gm: GroupManager = GroupManager()
+            given it: Deferred[IO, BeaconManagerHooks] =
+                sql.useBlocking(Deferred[IO, BeaconManagerHooks])
+            given hn: CivBeaconManager = CivBeaconManager()
+            given hooks: TestBattleHooks = TestBattleHooks(using this)
+            given clock: TestClock = TestClock(OffsetDateTime.parse("2023-12-01T06:00:00+00:00"))
+            given pm: PrimeTimeManager = PrimeTimeManager()
+            given battleManager: BattleManager = BattleManager()
+            sql.useBlocking(it.complete(IngameBeaconManagerHooks()))
+            val world = WorldMock()
 
-        val area2 = rectangleCenteredAt(gf, offset, offset, 10, 5)
-        assert(
-            area2.covers(gf.createPoint(Coordinate(offset, offset, 10))),
-            "sanity check of area 2",
-        )
-        val res2 = sql.useBlocking(
-            sql.withS(
-                sql.withTX(
-                    hn.updateBeaconPolygon(defensiveBeacon, world, area2)
+            val offset = 2 * 10
+
+            val offensiveOwner = UUID.randomUUID()
+            val offensiveLocation = Location(world, 0, -10, 0)
+            val (offensiveBeacon, _) =
+                sql.useBlocking(
+                    sql.withS(hn.placeHeart(offensiveLocation, offensiveOwner))
+                ).toOption
+                    .get
+
+            val defensiveOwner = UUID.randomUUID()
+            val defensiveLocation = Location(world, offset, 10, offset)
+            val (defensiveBeacon, _) =
+                sql.useBlocking(
+                    sql.withS(
+                        hn.placeHeart(
+                            defensiveLocation,
+                            defensiveOwner,
+                        )
+                    )
+                ).toOption
+                    .get
+            val defensiveGroup = sql.useBlocking(sql.withS(sql.withTX(gm.createGroup(defensiveOwner, "defensive group"))))
+            assert(sql.useBlocking(sql.withS(sql.withTX(hn.setGroup(defensiveBeacon, defensiveGroup)))).isRight, "should've been able to bind defensive beacon to group")
+
+            val result = sql.useBlocking(
+                sql.withS(
+                    sql.withTX(
+                        pm.setGroupPrimeTime(
+                            defensiveOwner,
+                            defensiveGroup,
+                            OffsetTime.parse("05:00:00+00:00"),
+                        )
+                    )
                 )
             )
-        )
-        assert(res2.isRight, (res2, "setting second heart's area"))
+            assert(result.isRight, "should've been able to set prime time")
 
-        hooks.expectSpawn()
-        val battle = sql.useBlocking(
-            sql.withS(
-                battleManager.startBattle(
-                    offensiveBeacon,
-                    defensiveBeacon,
-                    area2,
-                    area2,
-                    world.getUID(),
+            assertNotEquals(
+                offensiveBeacon,
+                defensiveBeacon,
+                "different heart IDs",
+            )
+
+            val gf = GeometryFactory()
+            val area1 = rectangleCenteredAt(gf, 0, 0, -10, 5)
+            assert(
+                area1.covers(gf.createPoint(Coordinate(0, 0, -10))),
+                "sanity check of area 1",
+            )
+            val res1 = sql.useBlocking(
+                sql.withS(
+                    sql.withTX(
+                        hn.updateBeaconPolygon(offensiveBeacon, world, area1)
+                    )
                 )
             )
-        )
+            assert(res1.isRight, (res1, "setting first heart's area"))
 
-        for _ <- 1 to battleManager.initialHealth - 1 do
+            val area2 = rectangleCenteredAt(gf, offset, offset, 10, 5)
+            assert(
+                area2.covers(gf.createPoint(Coordinate(offset, offset, 10))),
+                "sanity check of area 2",
+            )
+            val res2 = sql.useBlocking(
+                sql.withS(
+                    sql.withTX(
+                        hn.updateBeaconPolygon(defensiveBeacon, world, area2)
+                    )
+                )
+            )
+            assert(res2.isRight, (res2, "setting second heart's area"))
+
             hooks.expectSpawn()
-            sql.useBlocking(sql.withS(battleManager.pillarTaken(battle)))
+            val battle = sql
+                .useBlocking(
+                    sql.withS(
+                        sql.withTX(
+                            battleManager.startBattle(
+                                offensiveBeacon,
+                                defensiveBeacon,
+                                area2,
+                                area2,
+                                world.getUID(),
+                            )
+                        )
+                    )
+                )
+            assert(battle.isRight, "battle shouldn've been started in prime time")
 
-        val sizeBefore = hooks.expectTaken().size
-        sql.useBlocking(
-            sql.withS(
-                sql.withTX(hn.removeHeart(defensiveLocation, defensiveOwner))
-            )
-        )
-        assertNotEquals(sizeBefore, hooks.takeQueue.size, "a battle should've been taken")
+            clock.time = OffsetDateTime.parse("2023-12-03T04:00:00+00:00")
+            val battle2 = sql
+                .useBlocking(
+                    sql.withS(
+                        sql.withTX(
+                            battleManager.startBattle(
+                                offensiveBeacon,
+                                defensiveBeacon,
+                                area2,
+                                area2,
+                                world.getUID(),
+                            )
+                        )
+                    )
+                )
+            assert(battle2.isLeft, "battle shouldn't have been started outside of prime time")
     }
