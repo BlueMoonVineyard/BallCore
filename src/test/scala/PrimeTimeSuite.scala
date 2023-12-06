@@ -45,12 +45,12 @@ class PrimeTimeSuite extends munit.FunSuite {
             sql.useBlocking(
                 sql.withS(
                     sql.withTX(
-                        pm.isGroupInPrimeTime(
+                        pm.checkPrimeTime(
                             groupID
                         )
                     )
                 )
-            ),
+            ).canAttack,
             "we should be in prime time after an hour from the start of the window",
         )
 
@@ -59,12 +59,12 @@ class PrimeTimeSuite extends munit.FunSuite {
             !sql.useBlocking(
                 sql.withS(
                     sql.withTX(
-                        pm.isGroupInPrimeTime(
+                        pm.checkPrimeTime(
                             groupID
                         )
                     )
                 )
-            ),
+            ).canAttack,
             "we shouldnt be in prime time 8 hours from the start of the window (it ended 2 hours ago)",
         )
     }
@@ -98,12 +98,12 @@ class PrimeTimeSuite extends munit.FunSuite {
             sql.useBlocking(
                 sql.withS(
                     sql.withTX(
-                        pm.isGroupInPrimeTime(
+                        pm.checkPrimeTime(
                             groupID
                         )
                     )
                 )
-            ),
+            ).canAttack,
             "we should be in prime time before the rollover",
         )
 
@@ -112,12 +112,12 @@ class PrimeTimeSuite extends munit.FunSuite {
             sql.useBlocking(
                 sql.withS(
                     sql.withTX(
-                        pm.isGroupInPrimeTime(
+                        pm.checkPrimeTime(
                             groupID
                         )
                     )
                 )
-            ),
+            ).canAttack,
             "we should be in prime time after the rollover",
         )
 
@@ -126,12 +126,12 @@ class PrimeTimeSuite extends munit.FunSuite {
             !sql.useBlocking(
                 sql.withS(
                     sql.withTX(
-                        pm.isGroupInPrimeTime(
+                        pm.checkPrimeTime(
                             groupID
                         )
                     )
                 )
-            ),
+            ).canAttack,
             "we shouldnt be in prime time after the shift ending",
         )
     }
@@ -168,12 +168,12 @@ class PrimeTimeSuite extends munit.FunSuite {
             sql.useBlocking(
                 sql.withS(
                     sql.withTX(
-                        pm.isGroupInPrimeTime(
+                        pm.checkPrimeTime(
                             groupID
                         )
                     )
                 )
-            ),
+            ).canAttack,
             "we should be in prime time after an hour from the start of the first window",
         )
 
@@ -213,12 +213,12 @@ class PrimeTimeSuite extends munit.FunSuite {
             sql.useBlocking(
                 sql.withS(
                     sql.withTX(
-                        pm.isGroupInPrimeTime(
+                        pm.checkPrimeTime(
                             groupID
                         )
                     )
                 )
-            ),
+            ).canAttack,
             "we should still be in prime time with the old today window",
         )
 
@@ -227,12 +227,12 @@ class PrimeTimeSuite extends munit.FunSuite {
             !sql.useBlocking(
                 sql.withS(
                     sql.withTX(
-                        pm.isGroupInPrimeTime(
+                        pm.checkPrimeTime(
                             groupID
                         )
                     )
                 )
-            ),
+            ).canAttack,
             "we should be in between the old today window and the new today window",
         )
 
@@ -241,12 +241,12 @@ class PrimeTimeSuite extends munit.FunSuite {
             sql.useBlocking(
                 sql.withS(
                     sql.withTX(
-                        pm.isGroupInPrimeTime(
+                        pm.checkPrimeTime(
                             groupID
                         )
                     )
                 )
-            ),
+            ).canAttack,
             "we should be in the new today window",
         )
 
@@ -255,12 +255,12 @@ class PrimeTimeSuite extends munit.FunSuite {
             !sql.useBlocking(
                 sql.withS(
                     sql.withTX(
-                        pm.isGroupInPrimeTime(
+                        pm.checkPrimeTime(
                             groupID
                         )
                     )
                 )
-            ),
+            ).canAttack,
             "we should be in between the new today window and the extra window tomorrow",
         )
 
@@ -269,12 +269,12 @@ class PrimeTimeSuite extends munit.FunSuite {
             sql.useBlocking(
                 sql.withS(
                     sql.withTX(
-                        pm.isGroupInPrimeTime(
+                        pm.checkPrimeTime(
                             groupID
                         )
                     )
                 )
-            ),
+            ).canAttack,
             "we should be in the extra window tomorrow",
         )
 
@@ -283,12 +283,12 @@ class PrimeTimeSuite extends munit.FunSuite {
             !sql.useBlocking(
                 sql.withS(
                     sql.withTX(
-                        pm.isGroupInPrimeTime(
+                        pm.checkPrimeTime(
                             groupID
                         )
                     )
                 )
-            ),
+            ).canAttack,
             "we should be in between the extra window and the new window tomorrow",
         )
 
@@ -297,12 +297,12 @@ class PrimeTimeSuite extends munit.FunSuite {
             sql.useBlocking(
                 sql.withS(
                     sql.withTX(
-                        pm.isGroupInPrimeTime(
+                        pm.checkPrimeTime(
                             groupID
                         )
                     )
                 )
-            ),
+            ).canAttack,
             "we should be in the new tomorrow window",
         )
 
@@ -311,12 +311,12 @@ class PrimeTimeSuite extends munit.FunSuite {
             !sql.useBlocking(
                 sql.withS(
                     sql.withTX(
-                        pm.isGroupInPrimeTime(
+                        pm.checkPrimeTime(
                             groupID
                         )
                     )
                 )
-            ),
+            ).canAttack,
             "we should be after the new tomorrow window",
         )
 
@@ -325,12 +325,12 @@ class PrimeTimeSuite extends munit.FunSuite {
             !sql.useBlocking(
                 sql.withS(
                     sql.withTX(
-                        pm.isGroupInPrimeTime(
+                        pm.checkPrimeTime(
                             groupID
                         )
                     )
                 )
-            ),
+            ).canAttack,
             "no more of the old today window",
         )
 
