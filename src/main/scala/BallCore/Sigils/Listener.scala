@@ -135,8 +135,6 @@ class SigilListener(using
 
                 if attacker == null then return
 
-                doSigilBinding(killed, next)
-
                 given ec: ExecutionContext = EntityExecutionContext(attacker)
 
                 FireAndForget {
