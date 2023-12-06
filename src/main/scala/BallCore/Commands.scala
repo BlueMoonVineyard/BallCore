@@ -572,6 +572,7 @@ class InformationGiver():
         txt"[CivCubed] Rest accumulates when you log off and come back the next day!",
         txt"[CivCubed] See what plants grow in your area with ${txt("/plants")
                 .color(Colors.teal)}!",
+        txt"[CivCubed] Remember to take breaks and drink plenty of water!",
         txt"[CivCubed] The more time you spend somewhere, the more ores you'll get when you mine!",
         txt"[CivCubed] Join the Discord at https://discord.civcubed.net!",
         txt"[CivCubed] Use ${txt("/workstations").color(Colors.teal)} to view the list of workstations!",
