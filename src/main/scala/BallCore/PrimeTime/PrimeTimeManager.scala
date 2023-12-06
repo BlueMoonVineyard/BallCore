@@ -96,6 +96,13 @@ class PrimeTimeManager(using sql: SQLManager, gm: GroupManager, c: Clock):
                     )
         } yield result).value
 
+    def getGroupPrimeTime(
+        group: GroupID,
+    )(using Session[IO]): IO[Option[OffsetTime]] =
+        sql.queryOptionIO(sql"""
+        SELECT StartOfWindow FROM PrimeTimes WHERE GroupID = $uuid
+        """, timetz, group)
+
     def setGroupPrimeTime(
         as: UserID,
         group: GroupID,

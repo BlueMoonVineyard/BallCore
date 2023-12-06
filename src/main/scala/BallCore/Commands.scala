@@ -76,6 +76,7 @@ import java.time.format.TextStyle
 import java.util.Locale
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import BallCore.PrimeTime.PrimeTimeManager
 
 class OTTCommand(using sql: SQLManager, ott: OneTimeTeleporter):
     private def errorText(err: OTTError): Component =
@@ -878,6 +879,8 @@ class GroupsCommand(using
     cbm: CivBeaconManager,
     sql: SQLManager,
     e: PolyhedraEditor,
+    primeTime: PrimeTimeManager,
+    kv: KeyVal,
 ):
     val inviteNode =
         LiteralArgument("invite")
