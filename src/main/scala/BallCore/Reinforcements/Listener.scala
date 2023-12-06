@@ -21,7 +21,7 @@ import org.bukkit.event.entity.{
 import org.bukkit.event.player.*
 import org.bukkit.event.world.StructureGrowEvent
 import org.bukkit.event.{EventHandler, EventPriority}
-import org.bukkit.inventory.{EquipmentSlot, ItemStack}
+import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.{Location, Material, Particle}
 
 import scala.jdk.CollectionConverters.*
@@ -118,15 +118,6 @@ class Listener(using
 ) extends org.bukkit.event.Listener:
 
     import Listener.*
-
-    def reinforcementFromItem(is: ItemStack): Option[ReinforcementTypes] =
-        if is == null then return None
-        is.getType match
-            case Material.STONE => Some(ReinforcementTypes.Stone)
-            case Material.DEEPSLATE => Some(ReinforcementTypes.Deepslate)
-            case Material.IRON_INGOT => Some(ReinforcementTypes.IronLike)
-            case Material.COPPER_INGOT => Some(ReinforcementTypes.CopperLike)
-            case _ => None
 
     //
     //// Stuff that interacts with the RSM; i.e. that mutates block states
