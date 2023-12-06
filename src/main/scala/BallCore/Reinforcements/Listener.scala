@@ -163,7 +163,7 @@ class Listener(using
                         isInPrimeTime <-
                             if breaking && !isOk then
                                 primeTime.checkPrimeTime(groupID)
-                            else IO.pure(None)
+                            else IO.pure(PrimeTimeResult.isInPrimeTime)
                     } yield Some(
                         (groupID, subgroup, permissionGranted, isInPrimeTime)
                     )
@@ -276,9 +276,9 @@ class Listener(using
                             txt"It opens in ${time} hours."
                         )
                     case BustResult.busting =>
-                        playBreakEffect(location, ReinforcementTypes.IronLike)
-                    case BustResult.justBusted =>
                         playDamageEffect(location, ReinforcementTypes.IronLike)
+                    case BustResult.justBusted =>
+                        playBreakEffect(location, ReinforcementTypes.IronLike)
                 ok
             }
 

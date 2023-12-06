@@ -97,11 +97,15 @@ class PrimeTimeManager(using sql: SQLManager, gm: GroupManager, c: Clock):
         } yield result).value
 
     def getGroupPrimeTime(
-        group: GroupID,
+        group: GroupID
     )(using Session[IO]): IO[Option[OffsetTime]] =
-        sql.queryOptionIO(sql"""
+        sql.queryOptionIO(
+            sql"""
         SELECT StartOfWindow FROM PrimeTimes WHERE GroupID = $uuid
-        """, timetz, group)
+        """,
+            timetz,
+            group,
+        )
 
     def setGroupPrimeTime(
         as: UserID,
@@ -184,7 +188,9 @@ class PrimeTimeManager(using sql: SQLManager, gm: GroupManager, c: Clock):
         end: OffsetTime,
         point: OffsetDateTime,
     ): Boolean =
-        val pointTime = point.toOffsetTime()
+        val pointTime =
+            point.toOffsetTime().withOffsetSameInstant(start.getOffset())
+
         if start.isAfter(end) then
             pointTime.isAfter(start) || pointTime.isBefore(end)
         else pointTime.isAfter(start) && pointTime.isBefore(end)
@@ -195,7 +201,10 @@ class PrimeTimeManager(using sql: SQLManager, gm: GroupManager, c: Clock):
         for {
             isInPrimeTime <- isGroupInPrimeTime(group)
             result <-
-                if isInPrimeTime then IO.pure(PrimeTimeResult.isInPrimeTime)
+                if isInPrimeTime then
+                    IO.pure(
+                        PrimeTimeResult.isInPrimeTime
+                    )
                 else
                     getNextPrimeTimeWindow(group).map { x =>
                         x match
