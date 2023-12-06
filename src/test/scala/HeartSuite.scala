@@ -15,6 +15,8 @@ import scala.util.chaining.*
 import BallCore.Beacons.BeaconManagerHooks
 import cats.effect.IO
 import cats.effect.kernel.Deferred
+import BallCore.DataStructures.TestClock
+import java.time.OffsetDateTime
 
 class HeartSuite extends munit.FunSuite {
     val sql: FunFixture[SQLManager] =
@@ -22,6 +24,7 @@ class HeartSuite extends munit.FunSuite {
     sql.test("placing standalone heart") { implicit sql =>
         given gm: GroupManager = GroupManager()
         given it: Deferred[IO, BeaconManagerHooks] = DummyBeaconHooks.it
+        given TestClock = TestClock(OffsetDateTime.now())
         given hn: CivBeaconManager = CivBeaconManager()
         val world = WorldMock()
         val ownerID = UUID.randomUUID()
@@ -44,6 +47,7 @@ class HeartSuite extends munit.FunSuite {
     sql.test("polygon shenanigans") { implicit sql =>
         given gm: GroupManager = GroupManager()
         given it: Deferred[IO, BeaconManagerHooks] = DummyBeaconHooks.it
+        given TestClock = TestClock(OffsetDateTime.now())
         given hn: CivBeaconManager = CivBeaconManager()
         val world = WorldMock()
         val ownerID = UUID.randomUUID()
@@ -161,6 +165,7 @@ class HeartSuite extends munit.FunSuite {
     sql.test("two-heart beacon") { implicit sql =>
         given gm: GroupManager = GroupManager()
         given it: Deferred[IO, BeaconManagerHooks] = DummyBeaconHooks.it
+        given TestClock = TestClock(OffsetDateTime.now())
         given hn: CivBeaconManager = CivBeaconManager()
         val world = WorldMock()
         val id1 = UUID.randomUUID()
@@ -209,6 +214,7 @@ class HeartSuite extends munit.FunSuite {
     sql.test("multiple claim areas") { implicit sql =>
         given gm: GroupManager = GroupManager()
         given it: Deferred[IO, BeaconManagerHooks] = DummyBeaconHooks.it
+        given TestClock = TestClock(OffsetDateTime.now())
         given hn: CivBeaconManager = CivBeaconManager()
         val world = WorldMock()
         val id1 = UUID.randomUUID()
@@ -263,6 +269,7 @@ class HeartSuite extends munit.FunSuite {
     sql.test("overlapping two beacons") { implicit sql =>
         given gm: GroupManager = GroupManager()
         given it: Deferred[IO, BeaconManagerHooks] = DummyBeaconHooks.it
+        given TestClock = TestClock(OffsetDateTime.now())
         given hn: CivBeaconManager = CivBeaconManager()
         val world = WorldMock()
 
@@ -342,6 +349,7 @@ class HeartSuite extends munit.FunSuite {
     sql.test("overlapping more than two beacons") { implicit sql =>
         given gm: GroupManager = GroupManager()
         given it: Deferred[IO, BeaconManagerHooks] = DummyBeaconHooks.it
+        given TestClock = TestClock(OffsetDateTime.now())
         given hn: CivBeaconManager = CivBeaconManager()
         val world = WorldMock()
 

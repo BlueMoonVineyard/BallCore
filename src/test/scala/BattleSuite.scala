@@ -29,6 +29,8 @@ import BallCore.PrimeTime.PrimeTimeManager
 import BallCore.DataStructures.TestClock
 import java.time.OffsetDateTime
 import java.time.OffsetTime
+import java.time.Duration
+import BallCore.Sigils.BattleError
 
 object DummyBeaconHooks:
     def it: Deferred[IO, BeaconManagerHooks] =
@@ -99,7 +101,7 @@ class BattleSuite extends munit.FunSuite:
         given it: Deferred[IO, BeaconManagerHooks] = DummyBeaconHooks.it
         given hn: CivBeaconManager = CivBeaconManager()
         given hooks: TestBattleHooks = TestBattleHooks(using this)
-        given TestClock = TestClock(OffsetDateTime.now())
+        given clock: TestClock = TestClock(OffsetDateTime.now())
         given PrimeTimeManager = PrimeTimeManager()
         given battleManager: BattleManager = BattleManager()
         val world = WorldMock()
@@ -128,6 +130,8 @@ class BattleSuite extends munit.FunSuite:
                     )
                 ).toOption
                     .get
+
+            clock.changeTimeBy(Duration.ofDays(4))
 
             assertNotEquals(
                 offensiveBeacon,
@@ -206,7 +210,7 @@ class BattleSuite extends munit.FunSuite:
         given it: Deferred[IO, BeaconManagerHooks] = DummyBeaconHooks.it
         given hn: CivBeaconManager = CivBeaconManager()
         given hooks: TestBattleHooks = TestBattleHooks(using this)
-        given TestClock = TestClock(OffsetDateTime.now())
+        given clock: TestClock = TestClock(OffsetDateTime.now())
         given PrimeTimeManager = PrimeTimeManager()
         given battleManager: BattleManager = BattleManager()
         val world = WorldMock()
@@ -233,6 +237,8 @@ class BattleSuite extends munit.FunSuite:
                 )
             ).toOption
                 .get
+
+        clock.changeTimeBy(Duration.ofDays(4))
 
         assertNotEquals(
             offensiveBeacon,
@@ -310,7 +316,7 @@ class BattleSuite extends munit.FunSuite:
         given it: Deferred[IO, BeaconManagerHooks] = DummyBeaconHooks.it
         given hn: CivBeaconManager = CivBeaconManager()
         given hooks: TestBattleHooks = TestBattleHooks(using this)
-        given TestClock = TestClock(OffsetDateTime.now())
+        given clock: TestClock = TestClock(OffsetDateTime.now())
         given PrimeTimeManager = PrimeTimeManager()
         given battleManager: BattleManager = BattleManager()
         val world = WorldMock()
@@ -337,6 +343,8 @@ class BattleSuite extends munit.FunSuite:
                 )
             ).toOption
                 .get
+
+        clock.changeTimeBy(Duration.ofDays(4))
 
         assertNotEquals(
             offensiveBeacon,
@@ -416,7 +424,7 @@ class BattleSuite extends munit.FunSuite:
                 sql.useBlocking(Deferred[IO, BeaconManagerHooks])
             given hn: CivBeaconManager = CivBeaconManager()
             given hooks: TestBattleHooks = TestBattleHooks(using this)
-            given TestClock = TestClock(OffsetDateTime.now())
+            given clock: TestClock = TestClock(OffsetDateTime.now())
             given PrimeTimeManager = PrimeTimeManager()
             given battleManager: BattleManager = BattleManager()
             sql.useBlocking(it.complete(IngameBeaconManagerHooks()))
@@ -444,6 +452,8 @@ class BattleSuite extends munit.FunSuite:
                     )
                 ).toOption
                     .get
+
+            clock.changeTimeBy(Duration.ofDays(4))
 
             assertNotEquals(
                 offensiveBeacon,
@@ -523,7 +533,7 @@ class BattleSuite extends munit.FunSuite:
                 sql.useBlocking(Deferred[IO, BeaconManagerHooks])
             given hn: CivBeaconManager = CivBeaconManager()
             given hooks: TestBattleHooks = TestBattleHooks(using this)
-            given TestClock = TestClock(OffsetDateTime.now())
+            given clock: TestClock = TestClock(OffsetDateTime.now())
             given PrimeTimeManager = PrimeTimeManager()
             given battleManager: BattleManager = BattleManager()
             sql.useBlocking(it.complete(IngameBeaconManagerHooks()))
@@ -551,6 +561,8 @@ class BattleSuite extends munit.FunSuite:
                     )
                 ).toOption
                     .get
+
+            clock.changeTimeBy(Duration.ofDays(4))
 
             assertNotEquals(
                 offensiveBeacon,
@@ -630,7 +642,7 @@ class BattleSuite extends munit.FunSuite:
                 sql.useBlocking(Deferred[IO, BeaconManagerHooks])
             given hn: CivBeaconManager = CivBeaconManager()
             given hooks: TestBattleHooks = TestBattleHooks(using this)
-            given clock: TestClock = TestClock(OffsetDateTime.parse("2023-12-01T06:00:00+00:00"))
+            given clock: TestClock = TestClock(OffsetDateTime.parse("2023-11-01T06:00:00+00:00"))
             given pm: PrimeTimeManager = PrimeTimeManager()
             given battleManager: BattleManager = BattleManager()
             sql.useBlocking(it.complete(IngameBeaconManagerHooks()))
@@ -658,6 +670,9 @@ class BattleSuite extends munit.FunSuite:
                     )
                 ).toOption
                     .get
+
+            clock.time = OffsetDateTime.parse("2023-12-01T06:00:00+00:00")
+
             val defensiveGroup = sql.useBlocking(sql.withS(sql.withTX(gm.createGroup(defensiveOwner, "defensive group"))))
             assert(sql.useBlocking(sql.withS(sql.withTX(hn.setGroup(defensiveBeacon, defensiveGroup)))).isRight, "should've been able to bind defensive beacon to group")
 
@@ -742,4 +757,89 @@ class BattleSuite extends munit.FunSuite:
                     )
                 )
             assert(battle2.isLeft, "battle shouldn't have been started outside of prime time")
+    }
+    sql.test("battle manager rejects beacons that are too new") { implicit sql =>
+        given gm: GroupManager = GroupManager()
+        given it: Deferred[IO, BeaconManagerHooks] = DummyBeaconHooks.it
+        given hn: CivBeaconManager = CivBeaconManager()
+        given hooks: TestBattleHooks = TestBattleHooks(using this)
+        given clock: TestClock = TestClock(OffsetDateTime.now())
+        given PrimeTimeManager = PrimeTimeManager()
+        given battleManager: BattleManager = BattleManager()
+        val world = WorldMock()
+
+        val offset = 2 * 10
+
+        val offensiveOwner = UUID.randomUUID()
+        val offensiveLocation = Location(world, 0, -10, 0)
+        val (offensiveBeacon, _) =
+            sql.useBlocking(
+                sql.withS(hn.placeHeart(offensiveLocation, offensiveOwner))
+            ).toOption
+                .get
+
+        val defensiveOwner = UUID.randomUUID()
+        val defensiveLocation = Location(world, offset, 10, offset)
+        val (defensiveBeacon, _) =
+            sql.useBlocking(
+                sql.withS(
+                    hn.placeHeart(
+                        defensiveLocation,
+                        defensiveOwner,
+                    )
+                )
+            ).toOption
+                .get
+
+        assertNotEquals(
+            offensiveBeacon,
+            defensiveBeacon,
+            "different heart IDs",
+        )
+
+        val gf = GeometryFactory()
+        val area1 = rectangleCenteredAt(gf, 0, 0, -10, 5)
+        assert(
+            area1.covers(gf.createPoint(Coordinate(0, 0, -10))),
+            "sanity check of area 1",
+        )
+        val res1 = sql.useBlocking(
+            sql.withS(
+                sql.withTX(
+                    hn.updateBeaconPolygon(offensiveBeacon, world, area1)
+                )
+            )
+        )
+        assert(res1.isRight, (res1, "setting first heart's area"))
+
+        val area2 = rectangleCenteredAt(gf, offset, offset, 10, 5)
+        assert(
+            area2.covers(gf.createPoint(Coordinate(offset, offset, 10))),
+            "sanity check of area 2",
+        )
+        val res2 = sql.useBlocking(
+            sql.withS(
+                sql.withTX(
+                    hn.updateBeaconPolygon(defensiveBeacon, world, area2)
+                )
+            )
+        )
+        assert(res2.isRight, (res2, "setting second heart's area"))
+
+        val battle = sql
+            .useBlocking(
+                sql.withS(
+                    sql.withTX(
+                        battleManager.startBattle(
+                            offensiveBeacon,
+                            defensiveBeacon,
+                            area2,
+                            area2,
+                            world.getUID(),
+                        )
+                    )
+                )
+            )
+
+        assertEquals(battle, Left(BattleError.beaconIsTooNew))
     }

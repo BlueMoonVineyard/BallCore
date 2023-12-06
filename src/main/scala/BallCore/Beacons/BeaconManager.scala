@@ -31,6 +31,8 @@ import cats.data.EitherT
 import skunk.Transaction
 import BallCore.Sigils.BattleManager
 import cats.effect.kernel.Deferred
+import BallCore.DataStructures.Clock
+import java.time.OffsetDateTime
 
 type OwnerID = UUID
 type HeartID = UUID
@@ -118,6 +120,7 @@ class IngameBeaconManagerHooks(using battles: BattleManager)
 
 class CivBeaconManager()(using
     sql: Storage.SQLManager,
+    c: Clock,
     hooks: Deferred[IO, BeaconManagerHooks],
 )(using GroupManager):
     sql.applyMigration(
@@ -167,6 +170,27 @@ class CivBeaconManager()(using
             List(
                 sql"""
                 ALTER TABLE CivBeacons ALTER COLUMN CoveredArea SET DATA TYPE GEOMETRY(Polygon);
+                """.command
+            ),
+        )
+    )
+    sql.applyMigration(
+        Storage.Migration(
+            "Beacon maturation",
+            List(
+                sql"""
+                ALTER TABLE CivBeacons ADD COLUMN CreatedAt TIMESTAMPTZ;
+                """.command,
+                sql"""
+                UPDATE CivBeacons SET CreatedAt = now();
+                """.command,
+                sql"""
+                ALTER TABLE CivBeacons ALTER COLUMN CreatedAt SET NOT NULL;
+                """.command,
+            ),
+            List(
+                sql"""
+                ALTER TABLE CivBeacons DROP COLUMN CreatedAt;
                 """.command
             ),
         )
@@ -530,6 +554,17 @@ class CivBeaconManager()(using
             _ <- EitherT.right(sudoSetBeaconPolygon(beacon, world, polygon))
         } yield ()).value
 
+    def beaconCreatedAt(
+        beacon: BeaconID
+    )(using Session[IO]): IO[Option[OffsetDateTime]] =
+        sql.queryOptionIO(
+            sql"""
+        SELECT CreatedAt FROM CivBeacons WHERE ID = $uuid
+        """,
+            timestamptz,
+            beacon,
+        )
+
     def beaconSize(beacon: BeaconID)(using Session[IO]): IO[Long] =
         sql.queryUniqueIO(
             sql"""
@@ -560,6 +595,7 @@ class CivBeaconManager()(using
                         val (x, y, z) = offset
                         heartAt(l.clone().add(x, y, z))
                     })
+                    currentDate <- c.nowIO()
                     beaconID <- OptionT
                         .fromOption(
                             adjacentHearts
@@ -573,12 +609,12 @@ class CivBeaconManager()(using
                                 .commandIO(
                                     sql"""
                                 INSERT INTO CivBeacons (
-                                    ID, World
+                                    ID, World, CreatedAt
                                 ) VALUES (
-                                    $uuid, $uuid
-                                );                        
+                                    $uuid, $uuid, $timestamptz
+                                );
                                 """,
-                                    (newID, l.getWorld.getUID),
+                                    (newID, l.getWorld.getUID, currentDate),
                                 )
                                 .map(_ => newID)
                         }
@@ -597,7 +633,8 @@ class CivBeaconManager()(using
         }
 
     def removeHeart(l: Location, owner: OwnerID)(using
-        Session[IO], Transaction[IO]
+        Session[IO],
+        Transaction[IO],
     ): IO[Option[(BeaconID, Long)]] =
         sql
             .queryUniqueIO(

@@ -24,10 +24,13 @@ import cats.data.OptionT
 import skunk.Transaction
 import java.time.OffsetDateTime
 import BallCore.PrimeTime.PrimeTimeResult
+import BallCore.DataStructures.Clock
+import java.time.temporal.ChronoUnit
 
 type BattleID = UUID
 
 enum BattleError:
+    case beaconIsTooNew
     case opponentIsInPrimeTime(opensAt: OffsetDateTime)
 
 trait BattleHooks:
@@ -57,6 +60,7 @@ class BattleManager(using
     cbm: CivBeaconManager,
     hooks: BattleHooks,
     primeTime: PrimeTimeManager,
+    clock: Clock,
 ):
     val initialHealth = 6
     val _ = cbm
@@ -206,13 +210,16 @@ class BattleManager(using
         Transaction[IO],
     ): IO[Either[BattleError, BattleID]] =
         for {
+            now <- clock.nowIO()
+            offensiveCreatedAt <- OptionT(cbm.beaconCreatedAt(offensive)).getOrElseF(clock.nowIO())
+            offensiveAge = ChronoUnit.DAYS.between(offensiveCreatedAt, now)
             primeTime <- OptionT(cbm.getGroup(defensive))
                 .flatMap { group =>
                     OptionT.liftF(primeTime.checkPrimeTime(group))
                 }
                 .getOrElse(PrimeTimeResult.isInPrimeTime)
             result <- primeTime match
-                case PrimeTimeResult.isInPrimeTime =>
+                case PrimeTimeResult.isInPrimeTime if offensiveAge > 3 =>
                     sql.queryUniqueIO(
                         sql"""
         INSERT INTO Battles (
@@ -251,6 +258,10 @@ class BattleManager(using
                         updateBossBarFor(battleID, initialHealth)
                     }.map(_._1)
                         .map(Right.apply)
+                case PrimeTimeResult.isInPrimeTime =>
+                    IO.pure(Left(BattleError.beaconIsTooNew))
+                case PrimeTimeResult.notInPrimeTime(_) if offensiveAge <= 3 =>
+                    IO.pure(Left(BattleError.beaconIsTooNew))
                 case PrimeTimeResult.notInPrimeTime(reopens) =>
                     IO.pure(Left(BattleError.opponentIsInPrimeTime(reopens)))
         } yield result

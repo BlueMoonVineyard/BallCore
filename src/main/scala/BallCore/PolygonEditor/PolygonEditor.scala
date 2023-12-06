@@ -467,6 +467,10 @@ class PolygonEditor(using
                                                         player.sendServerMessage(
                                                             txt"The opponent's vulnerability window isn't open!"
                                                         )
+                                                    case BattleError.beaconIsTooNew =>
+                                                        player.sendServerMessage(
+                                                            txt"Your beacon needs to be at least 4 days old to launch a battle!"
+                                                        )
                                                 Some(state)
                                             case Right(value) =>
                                                 player.sendServerMessage(
