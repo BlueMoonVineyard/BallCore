@@ -176,6 +176,8 @@ object WorldLocation:
             quadrant(northwest),
             quadrant(northeast),
             cardinal(north),
+            cardinal(east),
+            cardinal(west),
             everywhere,
         )
     val wests: List[WorldLocation] =
@@ -183,6 +185,8 @@ object WorldLocation:
             quadrant(northwest),
             quadrant(southwest),
             cardinal(west),
+            cardinal(north),
+            cardinal(south),
             everywhere,
         )
     val souths: List[WorldLocation] =
@@ -190,6 +194,8 @@ object WorldLocation:
             quadrant(southwest),
             quadrant(southeast),
             cardinal(south),
+            cardinal(east),
+            cardinal(west),
             everywhere,
         )
     val easts: List[WorldLocation] =
@@ -197,6 +203,8 @@ object WorldLocation:
             quadrant(northeast),
             quadrant(southeast),
             cardinal(east),
+            cardinal(north),
+            cardinal(south),
             everywhere,
         )
 
