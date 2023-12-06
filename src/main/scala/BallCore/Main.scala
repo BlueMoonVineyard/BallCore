@@ -140,9 +140,9 @@ final class Main extends JavaPlugin:
             given cem: CustomEntityManager = new CustomEntityManager()
 
             given bam: SigilSlimeManager = SigilSlimeManager()
-            given spm: SlimePillarManager = SlimePillarManager()
             given ingameBattleHooks: BattleHooks = GameBattleHooks()
             given battleManager: BattleManager = new BattleManager()
+            given spm: SlimePillarManager = SlimePillarManager()
 
             beaconHooks.complete(IngameBeaconManagerHooks()).unsafeRunSync()(cats.effect.unsafe.IORuntime.global)
 

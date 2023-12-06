@@ -14,6 +14,8 @@ import org.bukkit.plugin.Plugin
 
 import scala.jdk.CollectionConverters.*
 import org.bukkit.event.Event.Result
+import org.bukkit.event.inventory.PrepareItemCraftEvent
+import org.bukkit.Tag
 
 object CustomItemListener:
     def register()(using
@@ -117,6 +119,16 @@ class CustomItemListener(using
                         case _ => false
                 event.setCancelled(cancel)
             case None =>
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    def blockToolTogetherCrafting(event: PrepareItemCraftEvent): Unit =
+        val isCraftingToolsTogether =
+            event
+                .getInventory()
+                .getMatrix()
+                .filterNot(_ == null)
+                .count(x => Tag.ITEMS_TOOLS.isTagged(x.getType())) >= 2
+        if isCraftingToolsTogether then event.getInventory().setResult(null)
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     def onInteractBlock(event: PlayerInteractEvent): Unit =
