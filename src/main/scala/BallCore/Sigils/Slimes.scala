@@ -38,11 +38,19 @@ import skunk.codec.all._
 import cats.effect.IO
 import skunk.Session
 import scala.collection.concurrent.TrieMap
+import BallCore.CustomItems.ItemRegistry
+import org.bukkit.event.player.PlayerInteractEntityEvent
+import org.bukkit.event.EventHandler
+import org.bukkit.event.EventPriority
 
 object Slimes:
     val sigilSlime = ItemStack(Material.STICK)
     sigilSlime.setItemMeta(
         sigilSlime.getItemMeta().tap(_.setCustomModelData(6))
+    )
+    val boundSigilSlime = ItemStack(Material.STICK)
+    boundSigilSlime.setItemMeta(
+        boundSigilSlime.getItemMeta().tap(_.setCustomModelData(8))
     )
     val slimeEggStack = CustomItemStack.make(
         NamespacedKey("ballcore", "sigil_slime_egg"),
@@ -262,6 +270,8 @@ class SlimeBehaviours()(using
     cem: CustomEntityManager,
     p: Plugin,
     sql: Storage.SQLManager,
+    ir: ItemRegistry,
+    ssm: SigilSlimeManager,
 ) extends Listener:
     val randomizer = scala.util.Random()
 
@@ -299,6 +309,59 @@ class SlimeBehaviours()(using
                                 .setRotation(loc.getYaw(), 0)
                     }
             }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    def onRightClick(event: PlayerInteractEntityEvent): Unit =
+        if !event.getRightClicked().isInstanceOf[Interaction] then return
+        val is = event.getPlayer().getInventory().getItemInMainHand()
+
+        val plr = ir.lookup(is) match
+            case Some(x: Sigil) =>
+                x.boundPlayerIn(is) match
+                    case None =>
+                        return
+                    case Some(player) =>
+                        player
+            case _ =>
+                return
+        val _ = plr
+
+        val intr = event.getRightClicked().asInstanceOf[Interaction]
+
+        val display = sql.useBlocking(
+            sql.withS(cem.entityKind(intr))
+        ) match
+            case Some((ent, disp)) if ent == Slimes.entityKind =>
+                Bukkit.getEntity(disp).asInstanceOf[ItemDisplay]
+            case _ =>
+                return
+
+        sql.useFireAndForget(for {
+            _ <- sql.withS(ssm.banish(plr, intr.getUniqueId))
+            _ <- IO {
+                display.setInterpolationDelay(-1)
+                display.setInterpolationDuration(5)
+                val existing = display.getTransformation()
+                display.setTransformation(Transformation(
+                    Vector3f(0f, -Slimes.heightBlocks.toFloat, 0f),
+                    existing.getLeftRotation(),
+                    Vector3f(0f, 0f, 0f),
+                    existing.getRightRotation(),
+                ))
+                val _ = display.getScheduler().runDelayed(p, _ => {
+                    display.setItemStack(Slimes.boundSigilSlime)
+                    display.setInterpolationDelay(-1)
+                    display.setInterpolationDuration(5)
+                    val existing = display.getTransformation()
+                    display.setTransformation(Transformation(
+                        Vector3f(0f, 0f, 0f),
+                        existing.getLeftRotation(),
+                        Vector3f(Slimes.slimeScale.toFloat),
+                        existing.getRightRotation(),
+                    ))
+                }, () => (), 6)
+            }.evalOn(EntityExecutionContext(display))
+        } yield ())
 
 class SlimeEgg(using
     cem: CustomEntityManager,

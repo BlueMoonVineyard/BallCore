@@ -75,6 +75,7 @@ object Sigil:
         p.getServer()
             .getGlobalRegionScheduler()
             .runAtFixedRate(p, _ => behaviours.doSlimeLooks(), 1L, 7L)
+        p.getServer().getPluginManager().registerEvents(behaviours, p)
         p.getServer().getPluginManager().registerEvents(DamageListener(), p)
         p.getServer().getPluginManager().registerEvents(SigilListener(), p)
         p.getServer()

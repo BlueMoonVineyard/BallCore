@@ -266,7 +266,6 @@ class SlimePillarSlapDetector()(using
             return
         val position = result.getHitPosition()
         val location = position.toLocation(plr.getWorld(), 0, 0)
-        playEffect(location, Particle.VILLAGER_ANGRY, 0.5)
 
         val isPillar = sql.useBlocking(
             sql.withS(cem.entityKind(intr))
@@ -276,6 +275,7 @@ class SlimePillarSlapDetector()(using
 
         if !isPillar then return
 
+        playEffect(location, Particle.VILLAGER_ANGRY, 0.5)
         sql.useFireAndForget(
             sql.withS(spm.slapPillar(intr, plr))
         )
@@ -295,7 +295,6 @@ class SlimePillarSlapDetector()(using
             return
         val position = result.getHitPosition()
         val location = position.toLocation(event.getPlayer().getWorld(), 0, 0)
-        playEffect(location, Particle.HEART, 0.5)
 
         val isPillar = sql.useBlocking(
             sql.withS(cem.entityKind(intr))
@@ -305,6 +304,7 @@ class SlimePillarSlapDetector()(using
 
         if !isPillar then return
 
+        playEffect(location, Particle.HEART, 0.5)
         sql.useFireAndForget(
             sql.withS(spm.healPillar(intr, event.getPlayer()))
         )
