@@ -9,6 +9,8 @@ import org.bukkit.event.block.{BlockBreakEvent, BlockPlaceEvent}
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.inventory.{ItemStack, Recipe}
 import org.bukkit.{Material, NamespacedKey}
+import org.bukkit.event.block.BlockRedstoneEvent
+import org.bukkit.block.Block
 
 object Listeners:
     trait BlockPlaced:
@@ -19,6 +21,9 @@ object Listeners:
 
     trait BlockClicked:
         def onBlockClicked(event: PlayerInteractEvent): Unit
+
+    trait BlockRedstoneOn:
+        def onRedstonePulsed(block: Block, event: BlockRedstoneEvent): Unit
 
     trait BlockLeftClicked:
         def onBlockLeftClicked(event: PlayerInteractEvent): Unit

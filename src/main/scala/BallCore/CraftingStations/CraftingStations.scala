@@ -48,6 +48,9 @@ object CraftingStations:
         )
         stations.foreach(registry.register(_))
 
+        p.getServer().getPluginManager().registerEvents(BundleStufferListener(), p)
+        registry.register(BundleStuffer())
+
         val smRecipe = ShapedRecipe(
             NamespacedKey("ballcore", "craft_station_maker"),
             StationMaker.template,

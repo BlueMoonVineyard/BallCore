@@ -16,6 +16,8 @@ import scala.jdk.CollectionConverters.*
 import org.bukkit.event.Event.Result
 import org.bukkit.event.inventory.PrepareItemCraftEvent
 import org.bukkit.Tag
+import org.bukkit.event.block.BlockRedstoneEvent
+import org.bukkit.block.data.`type`.Switch
 
 object CustomItemListener:
     def register()(using
@@ -53,6 +55,24 @@ class CustomItemListener(using
                     sql.withS(bm.setCustomItem(event.getBlockPlaced, item))
                 )
             case _ => ()
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    def onRedstoneBlock(event: BlockRedstoneEvent): Unit =
+        event.getBlock.getBlockData match
+            case e: Switch =>
+                val targetBlock = event
+                    .getBlock()
+                    .getRelative(e.getFacing().getOppositeFace())
+                sql.useBlocking(
+                    sql.withS(bm.getCustomItem(targetBlock))
+                ) match
+                    case Some(item) =>
+                        item match
+                            case redstone: Listeners.BlockRedstoneOn =>
+                                redstone.onRedstonePulsed(targetBlock, event)
+                            case _ =>
+                    case _ =>
+            case _ =>
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     def onBlockBreak(event: BlockBreakEvent): Unit =
