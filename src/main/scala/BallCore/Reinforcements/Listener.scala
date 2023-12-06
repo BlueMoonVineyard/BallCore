@@ -367,7 +367,10 @@ class Listener(using
                 case Right(ok) if ok =>
                     ()
                 case _ =>
-                    // TODO: notify of permission denied
+                    playDamageEffect(
+                        loc.getLocation(),
+                        ReinforcementTypes.Stone,
+                    )
                     event.setCancelled(true)
         else if loc.getBlockData.isInstanceOf[Openable] then
             checkAt(
@@ -378,7 +381,10 @@ class Listener(using
                 case Right(ok) if ok =>
                     ()
                 case _ =>
-                    // TODO: notify of permission denied
+                    playDamageEffect(
+                        loc.getLocation(),
+                        ReinforcementTypes.Stone,
+                    )
                     event.setCancelled(true)
         else if loc.getState().isInstanceOf[Sign] then
             checkAt(
@@ -389,7 +395,10 @@ class Listener(using
                 case Right(ok) if ok =>
                     ()
                 case _ =>
-                    // TODO: notify of permission denied
+                    playDamageEffect(
+                        loc.getLocation(),
+                        ReinforcementTypes.Stone,
+                    )
                     event.setCancelled(true)
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
@@ -402,7 +411,10 @@ class Listener(using
             case Right(ok) if ok =>
                 ()
             case _ =>
-                // TODO: notify of permission denied
+                playDamageEffect(
+                    event.getHarvestedBlock.getLocation(),
+                    ReinforcementTypes.Stone,
+                )
                 event.setCancelled(true)
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
@@ -418,7 +430,6 @@ class Listener(using
                 item match
                     case _: Listeners.BlockClicked
                         if event.getAction == Action.RIGHT_CLICK_BLOCK =>
-
                         checkAt(
                             event.getClickedBlock,
                             event.getPlayer,
@@ -427,7 +438,10 @@ class Listener(using
                             case Right(ok) if ok =>
                                 ()
                             case _ =>
-                                // TODO: notify of permission denied
+                                playDamageEffect(
+                                    event.getClickedBlock.getLocation(),
+                                    ReinforcementTypes.Stone,
+                                )
                                 event.setCancelled(true)
             case _ =>
 
@@ -443,7 +457,7 @@ class Listener(using
             case Right(ok) if ok =>
                 ()
             case _ =>
-                // TODO: notify of permission denied
+                playDamageEffect(loc.getLocation(), ReinforcementTypes.Stone)
                 event.setCancelled(true)
 
     // prevents grass -> path, grass/dirt -> farmland, logs -> stripped logs, harvesting beehives
@@ -467,7 +481,7 @@ class Listener(using
             case _ =>
                 ()
 
-        // TODO: notify of permission denied
+        playDamageEffect(loc.getLocation(), ReinforcementTypes.Stone)
         val btype = loc.getType
 
         if MaterialTags.SHOVELS.isTagged(slot.getType) then
@@ -511,10 +525,10 @@ class Listener(using
         val player = event.getPlayer
         val loc = event.getClickedBlock
 
-        // TODO: notify of permission denied
         checkAt(loc, player, Permissions.Build) match
             case Right(ok) if ok =>
             case _ =>
+                playDamageEffect(loc.getLocation(), ReinforcementTypes.Stone)
                 event.setCancelled(true)
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
@@ -529,6 +543,7 @@ class Listener(using
         checkAt(block, player, Permissions.Build) match
             case Right(ok) if ok =>
             case _ =>
+                playDamageEffect(player.getLocation(), ReinforcementTypes.Stone)
                 event.setCancelled(true)
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
@@ -539,6 +554,7 @@ class Listener(using
         checkAt(block, player, Permissions.Build) match
             case Right(ok) if ok =>
             case _ =>
+                playDamageEffect(block.getLocation(), ReinforcementTypes.Stone)
                 event.setCancelled(true)
 
     // prevent harvesting reinforced powdered snow w/out perms
@@ -552,6 +568,7 @@ class Listener(using
         checkAt(block, player, Permissions.Build) match
             case Right(ok) if ok =>
             case _ =>
+                playDamageEffect(block.getLocation(), ReinforcementTypes.Stone)
                 event.setCancelled(true)
 
     // prevent placing liquids in blocks
@@ -563,6 +580,7 @@ class Listener(using
         checkAt(block, player, Permissions.Build) match
             case Right(ok) if ok =>
             case _ =>
+                playDamageEffect(block.getLocation(), ReinforcementTypes.Stone)
                 event.setCancelled(true)
 
     // prevent bonemealing blocks
@@ -579,8 +597,9 @@ class Listener(using
                     case _ =>
                         true
             }
-        then event.setCancelled(true)
-    // TODO: notify of permission denied
+        then
+            playDamageEffect(player.getLocation(), ReinforcementTypes.Stone)
+            event.setCancelled(true)
 
     //
     //// Stuff that enforces reinforcements in the face of non-permissions; i.e. stuff like preventing water from killing reinforced blocks
