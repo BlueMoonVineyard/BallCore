@@ -74,7 +74,7 @@ object Sigil:
         val behaviours = SlimeBehaviours()
         p.getServer()
             .getGlobalRegionScheduler()
-            .runAtFixedRate(p, _ => behaviours.doSlimeLooks(), 1L, 7L)
+            .runAtFixedRate(p, _ => behaviours.doSlimeLooks(), 1L, 13L)
         p.getServer().getPluginManager().registerEvents(behaviours, p)
         p.getServer().getPluginManager().registerEvents(DamageListener(), p)
         p.getServer().getPluginManager().registerEvents(SigilListener(), p)

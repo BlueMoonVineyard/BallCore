@@ -42,6 +42,7 @@ import BallCore.CustomItems.ItemRegistry
 import org.bukkit.event.player.PlayerInteractEntityEvent
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
+import org.joml.Quaternionf
 
 object Slimes:
     val sigilSlime = ItemStack(Material.STICK)
@@ -304,9 +305,18 @@ class SlimeBehaviours()(using
                                         .toVector()
                                 )
                             interaction.setRotation(loc.getYaw(), 0)
-                            Bukkit
-                                .getEntity(entity.display)
-                                .setRotation(loc.getYaw(), 0)
+                            val display = Bukkit.getEntity(entity.display).asInstanceOf[ItemDisplay]
+                            val existingTransformation = display.getTransformation()
+                            display.setInterpolationDelay(-1)
+                            display.setInterpolationDuration(5)
+                            display.setTransformation(
+                                Transformation(
+                                    existingTransformation.getTranslation(),
+                                    AxisAngle4f((360f - loc.getYaw()).toRadians, 0, 1, 0).get(Quaternionf()),
+                                    existingTransformation.getScale(),
+                                    existingTransformation.getRightRotation(),
+                                )
+                            )
                     }
             }
 
