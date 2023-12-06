@@ -43,6 +43,8 @@ import org.bukkit.event.player.PlayerInteractEntityEvent
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
 import org.joml.Quaternionf
+import skunk.Transaction
+import org.bukkit.event.entity.EntityDamageByEntityEvent
 
 object Slimes:
     val sigilSlime = ItemStack(Material.STICK)
@@ -97,6 +99,27 @@ class SigilSlimeManager(using
             ),
         )
     )
+    sql.applyMigration(
+        Storage.Migration(
+            "Sigil Slime HP",
+            List(
+                sql"""
+                ALTER TABLE SigilSlimes ADD COLUMN Health INTEGER;
+                """.command,
+                sql"""
+                UPDATE SigilSlimes SET Health = 10;
+                """.command,
+                sql"""
+                ALTER TABLE SigilSlimes ALTER COLUMN Health SET NOT NULL;
+                """.command,
+            ),
+            List(
+                sql"""
+                ALTER TABLE SigilSlimes DROP COLUMN Health;
+                """.command
+            ),
+        )
+    )
     val _ = cbm
     val _ = ccm
 
@@ -104,9 +127,9 @@ class SigilSlimeManager(using
         sql.commandIO(
             sql"""
         INSERT INTO SigilSlimes (
-            BeaconID, InteractionEntityID
+            BeaconID, InteractionEntityID, Health
         ) VALUES (
-            $uuid, $uuid
+            $uuid, $uuid, 10
         )
         """,
             (beacon, entity),
@@ -134,17 +157,35 @@ class SigilSlimeManager(using
             (user, from),
         )
 
-    def banish(user: UserID, slime: UUID)(using Session[IO]): IO[Unit] =
-        sql.commandIO(
-            sql"""
-        UPDATE SigilSlimes
-        SET
-            BanishedUserID = $uuid
-        WHERE
-            InteractionEntityID = $uuid;
-        """,
-            (user, slime),
-        ).map(_ => ())
+    def banish(user: UserID, slime: UUID)(using
+        Session[IO],
+        Transaction[IO],
+    ): IO[Boolean] =
+        for {
+            alreadyBanished <- sql.queryUniqueIO(
+                sql"""
+            SELECT EXISTS(
+                SELECT 1 FROM SigilSlimes WHERE BanishedUserID = $uuid AND BeaconID =
+                    (SELECT BeaconID FROM SigilSlimes WHERE InteractionEntityID = $uuid)
+            );
+            """,
+                bool,
+                (user, slime),
+            )
+            result <-
+                if alreadyBanished then IO.pure(false)
+                else
+                    sql.commandIO(
+                        sql"""
+                UPDATE SigilSlimes
+                SET
+                    BanishedUserID = $uuid
+                WHERE
+                    InteractionEntityID = $uuid;
+                """,
+                        (user, slime),
+                    ).map(_ => true)
+        } yield result
 
     def unbanish(user: UserID, slime: UUID)(using Session[IO]): IO[Unit] =
         sql.commandIO(
@@ -158,6 +199,26 @@ class SigilSlimeManager(using
         """,
             (slime, user),
         ).map(_ => ())
+
+    def slap(
+        slime: UUID
+    )(using Session[IO], Transaction[IO]): IO[(Int, Boolean)] =
+        sql.queryUniqueIO(
+            sql"""
+        UPDATE SigilSlimes SET Health = Health - 1 WHERE InteractionEntityID = $uuid RETURNING Health;
+        """,
+            int4,
+            slime,
+        ).flatMap { health =>
+            if health <= 0 then
+                sql.commandIO(
+                    sql"""
+                DELETE FROM SigilSlimes WHERE InteractionEntityID = $uuid;
+                """,
+                    slime,
+                ).map(_ => (0, true))
+            else IO.pure((health, false))
+        }
 
 val namespacedKeyCodec = text.imap { str => NamespacedKey.fromString(str) } {
     it => it.asString()
@@ -305,20 +366,71 @@ class SlimeBehaviours()(using
                                         .toVector()
                                 )
                             interaction.setRotation(loc.getYaw(), 0)
-                            val display = Bukkit.getEntity(entity.display).asInstanceOf[ItemDisplay]
-                            val existingTransformation = display.getTransformation()
-                            display.setInterpolationDelay(-1)
-                            display.setInterpolationDuration(5)
+                            val display = Bukkit
+                                .getEntity(entity.display)
+                                .asInstanceOf[ItemDisplay]
+                            val existingTransformation =
+                                display.getTransformation()
                             display.setTransformation(
                                 Transformation(
                                     existingTransformation.getTranslation(),
-                                    AxisAngle4f((360f - loc.getYaw()).toRadians, 0, 1, 0).get(Quaternionf()),
+                                    AxisAngle4f(
+                                        (360f - loc.getYaw()).toRadians,
+                                        0,
+                                        1,
+                                        0,
+                                    ).get(Quaternionf()),
                                     existingTransformation.getScale(),
                                     existingTransformation.getRightRotation(),
                                 )
                             )
                     }
             }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    def onSlap(event: EntityDamageByEntityEvent): Unit =
+        if !event.getEntity().isInstanceOf[Interaction] then return
+        if !event.getDamager().isInstanceOf[Player] then return
+
+        val intr = event.getEntity().asInstanceOf[Interaction]
+
+        val display = sql.useBlocking(
+            sql.withS(cem.entityKind(intr))
+        ) match
+            case Some((ent, disp)) if ent == Slimes.entityKind =>
+                Bukkit.getEntity(disp).asInstanceOf[ItemDisplay]
+            case _ =>
+                return
+
+        sql.useFireAndForget(
+            for {
+                result <- sql.withS(sql.withTX(ssm.slap(intr.getUniqueId)))
+                _ <- result match
+                    case (_, true) =>
+                        IO {
+                            display.remove()
+                            intr.remove()
+                        }.evalOn(EntityExecutionContext(intr))
+                    case (hp, false) =>
+                        IO {
+                            val size = hp.toFloat / 10f
+                            val scale = Slimes.slimeScale.toFloat * size
+                            val translation =
+                                Slimes.heightBlocks.toFloat * (1f - size)
+                            display.setInterpolationDelay(-1)
+                            display.setInterpolationDuration(5)
+                            val existing = display.getTransformation()
+                            display.setTransformation(
+                                Transformation(
+                                    Vector3f(0f, -translation, 0f),
+                                    existing.getLeftRotation(),
+                                    Vector3f(scale),
+                                    existing.getRightRotation(),
+                                )
+                            )
+                        }.evalOn(EntityExecutionContext(intr))
+            } yield ()
+        )
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     def onRightClick(event: PlayerInteractEntityEvent): Unit =
@@ -347,30 +459,53 @@ class SlimeBehaviours()(using
                 return
 
         sql.useFireAndForget(for {
-            _ <- sql.withS(ssm.banish(plr, intr.getUniqueId))
-            _ <- IO {
-                display.setInterpolationDelay(-1)
-                display.setInterpolationDuration(5)
-                val existing = display.getTransformation()
-                display.setTransformation(Transformation(
-                    Vector3f(0f, -Slimes.heightBlocks.toFloat, 0f),
-                    existing.getLeftRotation(),
-                    Vector3f(0f, 0f, 0f),
-                    existing.getRightRotation(),
-                ))
-                val _ = display.getScheduler().runDelayed(p, _ => {
-                    display.setItemStack(Slimes.boundSigilSlime)
-                    display.setInterpolationDelay(-1)
-                    display.setInterpolationDuration(5)
-                    val existing = display.getTransformation()
-                    display.setTransformation(Transformation(
-                        Vector3f(0f, 0f, 0f),
-                        existing.getLeftRotation(),
-                        Vector3f(Slimes.slimeScale.toFloat),
-                        existing.getRightRotation(),
-                    ))
-                }, () => (), 6)
-            }.evalOn(EntityExecutionContext(display))
+            ok <- sql.withS(sql.withTX(ssm.banish(plr, intr.getUniqueId)))
+            _ <-
+                if ok then
+                    IO {
+                        display.setInterpolationDelay(-1)
+                        display.setInterpolationDuration(5)
+                        val existing = display.getTransformation()
+                        val oldScale = existing.getScale()
+                        val oldTranslation = existing.getTranslation()
+                        display.setTransformation(
+                            Transformation(
+                                Vector3f(0f, -Slimes.heightBlocks.toFloat, 0f),
+                                existing.getLeftRotation(),
+                                Vector3f(0f, 0f, 0f),
+                                existing.getRightRotation(),
+                            )
+                        )
+                        val _ = display
+                            .getScheduler()
+                            .runDelayed(
+                                p,
+                                _ => {
+                                    display.setItemStack(Slimes.boundSigilSlime)
+                                    display.setInterpolationDelay(-1)
+                                    display.setInterpolationDuration(5)
+                                    val existing = display.getTransformation()
+                                    display.setTransformation(
+                                        Transformation(
+                                            oldTranslation,
+                                            existing.getLeftRotation(),
+                                            oldScale,
+                                            existing.getRightRotation(),
+                                        )
+                                    )
+                                },
+                                () => (),
+                                6,
+                            )
+                    }.evalOn(EntityExecutionContext(display))
+                else
+                    IO {
+                        event
+                            .getPlayer()
+                            .sendServerMessage(
+                                txt"That person is already banished from here!"
+                            )
+                    }
         } yield ())
 
 class SlimeEgg(using
