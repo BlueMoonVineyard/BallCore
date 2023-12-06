@@ -33,6 +33,7 @@ import BallCore.Sigils.BattleManager
 import cats.effect.IO
 import net.kyori.adventure.bossbar.BossBar
 import net.kyori.adventure.text.Component
+import BallCore.Sigils.BattleError
 
 object PolygonEditor:
     def register()(using e: PolygonEditor, p: Plugin): Unit =
@@ -459,11 +460,19 @@ class PolygonEditor(using
                                                     )
                                                 )
                                             )
-                                        )
-                                        player.sendServerMessage(
-                                            txt"A battle has been started!"
-                                        )
-                                        None
+                                        ) match
+                                            case Left(err) =>
+                                                err match
+                                                    case BattleError.opponentIsInPrimeTime(opensAt) =>
+                                                        player.sendServerMessage(
+                                                            txt"The opponent's vulnerability window isn't open!"
+                                                        )
+                                                Some(state)
+                                            case Right(value) =>
+                                                player.sendServerMessage(
+                                                    txt"A battle has been started!"
+                                                )
+                                                None
                                     case Left(err) =>
                                         player.sendServerMessage(err.explain)
                                         Some(state)
