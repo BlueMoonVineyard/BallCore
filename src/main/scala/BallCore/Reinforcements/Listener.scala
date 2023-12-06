@@ -164,8 +164,15 @@ class Listener(using
                             if breaking && !isOk then
                                 primeTime.checkPrimeTime(groupID)
                             else IO.pure(PrimeTimeResult.isInPrimeTime)
+                        heart <- cbm.heartAt(location)
                     } yield Some(
-                        (groupID, subgroup, permissionGranted, isInPrimeTime)
+                        (
+                            groupID,
+                            subgroup,
+                            permissionGranted,
+                            isInPrimeTime,
+                            heart,
+                        )
                     )
                 )
                 .value
@@ -173,11 +180,17 @@ class Listener(using
                 case None =>
                     IO.pure(Right((BustResult.notBusting, true)))
                 case Some(
-                        (groupID, subgroupID, permissionGranted, isInPrimeTime)
+                        (
+                            groupID,
+                            subgroupID,
+                            permissionGranted,
+                            isInPrimeTime,
+                            heart,
+                        )
                     ) =>
                     (permissionGranted, isInPrimeTime) match
                         case (Right(false), PrimeTimeResult.isInPrimeTime)
-                            if breaking =>
+                            if breaking && heart.isEmpty =>
                             for {
                                 result <- IO { busts.bust(location) }
                                 bustResult <- result match
