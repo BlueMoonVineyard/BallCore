@@ -20,6 +20,19 @@ import org.bukkit.{Bukkit, Material}
 import scala.concurrent.Future
 import net.kyori.adventure.text.Component
 import BallCore.UI.ItemAccumulator
+import BallCore.PrimeTime.PrimeTimeManager
+import java.time.OffsetTime
+import java.util.TimeZone
+import BallCore.Storage.KeyVal
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
+import java.time.Instant
+import java.time.ZonedDateTime
+import java.time.format.TextStyle
+import java.util.Locale
+import scala.util.Try
+import BallCore.PrimeTime.PrimeTimeError
+import java.time.LocalTime
 
 extension (p: BallCore.Groups.Permissions)
     def displayItem(): Material =
@@ -97,6 +110,8 @@ class GroupManagementProgram(using
     cbm: CivBeaconManager,
     sql: SQLManager,
     editor: PolyhedraEditor,
+    primeTime: PrimeTimeManager,
+    kv: KeyVal,
 ) extends UIProgram:
     case class Flags(groupID: GroupID, userID: UserID)
 
@@ -105,6 +120,8 @@ class GroupManagementProgram(using
         userID: UserID,
         viewing: ViewingWhat,
         canBindToHeart: Boolean,
+        primeTime: Option[OffsetTime],
+        userZone: Option[TimeZone],
     )
 
     // noinspection ScalaWeakerAccess
@@ -122,6 +139,7 @@ class GroupManagementProgram(using
         case ClickSubgroup(subgroup: SubgroupID)
         case LeaveGroup
         case DeleteGroup
+        case UpdateVulnerabilityWindow
 
     private def randomBedFor(obj: Object): Material =
         val beds = MaterialTags.BEDS.getValues.toArray(Array[Material]())
@@ -137,22 +155,29 @@ class GroupManagementProgram(using
             .contains(1)
 
     override def init(flags: Flags): Model =
-        val group =
+        import BallCore.PrimeTime.TimeZoneCodec.{encoder, decoder}
+
+        val (group, vulnWindow, userZone) =
             sql.useBlocking(
-                sql.withS(sql.withTX(gm.getGroup(flags.groupID).value))
-            ).toOption
-                .get
+                sql.withS(sql.withTX(for {
+                    group <- gm.getGroup(flags.groupID).value
+                    primeTime <- primeTime.getGroupPrimeTime(flags.groupID)
+                    userTimezone <- kv.get[TimeZone](flags.userID, "time-zone")
+                } yield (group.toOption.get, primeTime, userTimezone)))
+            )
         Model(
             group,
             flags.userID,
             ViewingWhat.Players,
             canBindToHeart(flags.userID),
+            vulnWindow,
+            userZone,
         )
 
     override def view(model: Model): Callback ?=> Gui =
         val group = model.group
         Root(txt"Viewing ${group.metadata.name}", 6) {
-            OutlinePane(0, 0, 1, 6) {
+            OutlinePane(0, 0, 2, 6) {
                 Button(
                     Material.PLAYER_HEAD,
                     txt"Members".style(NamedTextColor.GREEN),
@@ -191,12 +216,93 @@ class GroupManagementProgram(using
                         txt"Delete Group".style(NamedTextColor.GREEN),
                         Message.DeleteGroup,
                     )()
-            }
-            OutlinePane(1, 0, 1, 6, priority = Priority.LOWEST, repeat = true) {
-                Item(
-                    Material.BLACK_STAINED_GLASS_PANE,
-                    displayName = Some(txt""),
-                )()
+                if model.canBindToHeart then
+                    Button(
+                        Material.WHITE_CONCRETE,
+                        txt"Bind to Beacon".style(NamedTextColor.GREEN),
+                        Message.BindToHeart,
+                    )()
+                if group.check(
+                        Permissions.UpdateGroupInformation,
+                        model.userID,
+                        nullUUID,
+                    )
+                then
+                    Button(
+                        Material.CLOCK,
+                        txt"Vulnerability Window".style(NamedTextColor.GREEN),
+                        Message.UpdateVulnerabilityWindow,
+                    ) {
+                        model.primeTime match
+                            case None =>
+                                Lore(
+                                    txt"The vulnerability window is not set yet."
+                                        .color(NamedTextColor.WHITE)
+                                )
+                                model.userZone match
+                                    case None =>
+                                        Lore(
+                                            txt"You need to set a personal timezone with ${txt("/settings timezone <time-zone>")
+                                                    .color(Colors.teal)} in order to set the vulnerability window."
+                                                .color(NamedTextColor.WHITE)
+                                        )
+                                    case Some(value) =>
+                                        Lore(
+                                            txt"Right click to set the vulnerability window."
+                                                .color(NamedTextColor.WHITE)
+                                        )
+                            case Some(time) =>
+                                val formatter =
+                                    DateTimeFormatter.ofPattern("HH:mm")
+                                model.userZone match
+                                    case Some(zone) =>
+                                        val start = time.withOffsetSameInstant(
+                                            zone.toZoneId()
+                                                .getRules()
+                                                .getOffset(Instant.now())
+                                        )
+                                        val end =
+                                            start.plus(primeTime.windowSize)
+                                        val startS = formatter.format(start)
+                                        val endS = formatter.format(end)
+                                        Lore(
+                                            txt"The vulnerability window is from ${startS} to ${endS}."
+                                                .color(NamedTextColor.WHITE)
+                                        )
+                                        Lore(
+                                            txt"Right click to change the vulnerability window."
+                                                .color(NamedTextColor.WHITE)
+                                        )
+                                        Lore(
+                                            txt"Warning: if you change the vulnerability window,"
+                                                .color(NamedTextColor.WHITE)
+                                        )
+                                        Lore(
+                                            txt"the new one and the old one will coexist for today and tomorrow."
+                                                .color(NamedTextColor.WHITE)
+                                        )
+                                        Lore(
+                                            txt"You will not be able to change it until the end of the old time tomorrow."
+                                                .color(NamedTextColor.WHITE)
+                                        )
+                                    case None =>
+                                        val start = time.withOffsetSameInstant(
+                                            ZoneOffset.UTC
+                                        )
+                                        val end =
+                                            start.plus(primeTime.windowSize)
+                                        val startS = formatter.format(start)
+                                        val endS = formatter.format(end)
+                                        Lore(
+                                            txt"The vulnerability window is from ${startS} to ${endS}."
+                                                .color(NamedTextColor.WHITE)
+                                        )
+                                        Lore(
+                                            txt"You need to set a personal timezone with ${txt("/settings timezone <time-zone>")
+                                                    .color(Colors.teal)} in order to set the vulnerability window."
+                                                .color(NamedTextColor.WHITE)
+                                        )
+                    }
             }
             model.viewing match
                 case ViewingWhat.Players => Players(model)
@@ -228,12 +334,6 @@ class GroupManagementProgram(using
                 txt"Create Subgroup".style(NamedTextColor.GREEN),
                 Message.CreateSubgroup,
             )()
-            if model.canBindToHeart then
-                Button(
-                    Material.WHITE_CONCRETE,
-                    txt"Bind to Beacon".style(NamedTextColor.GREEN),
-                    Message.BindToHeart,
-                )()
         }
 
     private def Players(model: Model)(using PaneAccumulator): Unit =
@@ -523,12 +623,99 @@ class GroupManagementProgram(using
                 )
                 services.transferTo(p, p.Flags())
                 model
+            case Message.UpdateVulnerabilityWindow =>
+                model.userZone match
+                    case None =>
+                        services.notify(
+                            "You need to set a time with /settings timezone <timezone> in order to update the vulnerability window!"
+                        )
+                        model
+                    case Some(zone) =>
+                        val formatter =
+                            DateTimeFormatter.ofPattern("HH:mm:ss - dd/MM/yyyy")
+                        val parser =
+                            DateTimeFormatter
+                                .ofPattern("HH:mm")
+                                .withZone(zone.toZoneId())
+                        val name = zone
+                            .toZoneId()
+                            .getDisplayName(TextStyle.FULL, Locale.US)
+                        val example =
+                            formatter.format(ZonedDateTime.now(zone.toZoneId()))
+                        services.notify(
+                            s"Your configured timezone is $name. It is currently $example."
+                        )
+                        services.notify(
+                            s"Warning: if you change the vulnerability window, the new one and the old one will coexist for today and tomorrow."
+                        )
+                        services.notify(
+                            s"You will not be able to change it until the end of the old time tomorrow."
+                        )
+                        services
+                            .prompt(
+                                s"What time would you like the vulneraiblity window to start? (In 24-hour time, such as 13:00) It will last 6 hours from the time you specify. If you provide an invalid time, it won't be changed."
+                            )
+                            .map { response =>
+                                Try(
+                                    LocalTime
+                                        .parse(response, parser)
+                                        .atOffset(
+                                            zone.toZoneId()
+                                                .getRules()
+                                                .getOffset(Instant.now())
+                                        )
+                                ).toEither match
+                                    case Right(time) =>
+                                        sql.useBlocking(
+                                            sql.withS(
+                                                sql.withTX(
+                                                    primeTime.setGroupPrimeTime(
+                                                        model.userID,
+                                                        model.group.metadata.id,
+                                                        time,
+                                                    )
+                                                )
+                                            )
+                                        ) match
+                                            case Left(err) =>
+                                                err match
+                                                    case PrimeTimeError
+                                                            .groupError(
+                                                                error
+                                                            ) =>
+                                                        services.notify(
+                                                            s"Couldn't update the time because ${error.explain()}."
+                                                        )
+                                                        model
+                                                    case PrimeTimeError.waitUntilTomorrowWindowHasPassed =>
+                                                        services.notify(
+                                                            s"Couldn't update the time because it was changed too recently."
+                                                        )
+                                                        model
+                                            case Right(ok) =>
+                                                val updatedTime =
+                                                    parser.format(time)
+                                                services.notify(
+                                                    s"Successfully updated the vulnerability window to ${updatedTime}! The old one will apply for two more days alongside the new one."
+                                                )
+                                                model.copy(primeTime =
+                                                    Some(time)
+                                                )
+                                    case Left(err) =>
+                                        println(err)
+                                        services.notify(
+                                            s"You provided an invalid time. Cancelling..."
+                                        )
+                                        model
+                            }
 
 class SubgroupManagementProgram(using
     gm: GroupManager,
     cbm: CivBeaconManager,
     sql: SQLManager,
     editor: PolyhedraEditor,
+    primeTime: PrimeTimeManager,
+    kv: KeyVal,
 ) extends UIProgram:
     case class Flags(groupID: GroupID, subgroupID: SubgroupID, userID: UserID)
 
@@ -679,6 +866,8 @@ class RoleManagementProgram(using
     cbm: CivBeaconManager,
     sql: SQLManager,
     editor: PolyhedraEditor,
+    primeTime: PrimeTimeManager,
+    kv: KeyVal,
 ) extends UIProgram:
     case class Flags(
         groupID: GroupID,
@@ -1023,9 +1212,11 @@ class RoleManagementProgram(using
 
 class InvitesListProgram(using
     gm: GroupManager,
-    sql: SQLManager,
     cbm: CivBeaconManager,
+    sql: SQLManager,
     phe: PolyhedraEditor,
+    primeTime: PrimeTimeManager,
+    kv: KeyVal,
 ) extends UIProgram:
     case class Flags(userID: UserID)
 
@@ -1183,6 +1374,8 @@ class GroupListProgram(using
     cbm: CivBeaconManager,
     sql: SQLManager,
     editor: PolyhedraEditor,
+    primeTime: PrimeTimeManager,
+    kv: KeyVal,
 ) extends UIProgram:
     case class Flags(userID: UserID)
 
