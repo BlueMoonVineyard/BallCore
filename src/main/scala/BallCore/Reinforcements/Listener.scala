@@ -413,27 +413,25 @@ class Listener(using
         if event.getHand != EquipmentSlot.HAND then return
         if !event.hasBlock then return
         if event.getPlayer.isSneaking then return
+        if event.getAction != Action.RIGHT_CLICK_BLOCK then return
 
         sql.useBlocking(
             sql.withS(blockManager.getCustomItem(event.getClickedBlock))
         ) match
-            case Some(item) =>
-                item match
-                    case _: Listeners.BlockClicked
-                        if event.getAction == Action.RIGHT_CLICK_BLOCK =>
-                        checkAt(
-                            event.getClickedBlock,
-                            event.getPlayer,
-                            Permissions.Chests,
-                        ) match
-                            case Right(ok) if ok =>
-                                ()
-                            case _ =>
-                                playDamageEffect(
-                                    event.getClickedBlock.getLocation(),
-                                    ReinforcementTypes.Stone,
-                                )
-                                event.setCancelled(true)
+            case Some(item: Listeners.BlockClicked) =>
+                checkAt(
+                    event.getClickedBlock,
+                    event.getPlayer,
+                    Permissions.Chests,
+                ) match
+                    case Right(ok) if ok =>
+                        ()
+                    case _ =>
+                        playDamageEffect(
+                            event.getClickedBlock.getLocation(),
+                            ReinforcementTypes.Stone,
+                        )
+                        event.setCancelled(true)
             case _ =>
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
