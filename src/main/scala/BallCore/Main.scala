@@ -172,6 +172,7 @@ final class Main extends JavaPlugin:
                 .getPluginManager()
                 .registerEvents(ExceptionLogger(), this)
 
+            CompressedCobblestone.register()
             Datekeeping.Datekeeping.startSidebarClock()
             Beacons.registerItems()
             QuadrantOres.registerItems()
