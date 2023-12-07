@@ -39,8 +39,6 @@ import io.sentry.SpanStatus
 enum PlantMsg:
     case startGrowing(what: Plant, where: Block)
     case stopGrowing(where: Block)
-    case plantsGrewPartially(where: List[Block])
-    case plantsFinishedGrowing(where: List[Block])
     case tickPlants
     case inspect(where: Block, player: Player)
 
@@ -323,26 +321,6 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin, c: Clock)
                 update(cx, cz, world, ox, oz, y) {
                     _.copy(deleted = true)
                 }
-            case PlantMsg.plantsFinishedGrowing(where) =>
-                where.foreach { blk =>
-                    val (cx, cz, ox, oz) = toOffsets(blk.getX, blk.getZ)
-                    val y = blk.getY
-                    val world = blk.getWorld.getUID
-                    update(cx, cz, world, ox, oz, y) {
-                        _.copy(deleted = true)
-                    }
-                }
-            case PlantMsg.plantsGrewPartially(where) =>
-                where.foreach { blk =>
-                    val (cx, cz, ox, oz) = toOffsets(blk.getX, blk.getZ)
-                    val y = blk.getY
-                    val world = blk.getWorld.getUID
-                    update(cx, cz, world, ox, oz, y) { d =>
-                        d.copy(inner =
-                            d.inner.copy(incompleteGrowthAdvancements = 0)
-                        )
-                    }
-                }
             case PlantMsg.inspect(where, player) =>
                 val (cx, cz, ox, oz) = toOffsets(where.getX, where.getZ)
                 val y = where.getY
@@ -353,7 +331,7 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin, c: Clock)
                 )
 
                 FireAndForget {
-                    get(cx, cz, world).get(ox, oz, y).foreach { plant =>
+                    get(cx, cz, world).get(ox, oz, y).filterNot(_.deleted).foreach { plant =>
                         val (x, z) = fromOffsets(
                             plant.inner.chunkX,
                             plant.inner.chunkZ,
@@ -449,13 +427,12 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin, c: Clock)
                         val (cx, cz, worldID) = key
                         val world = Bukkit.getWorld(worldID)
 
-                        given ec: ChunkExecutionContext =
-                            ChunkExecutionContext(cx, cz, world)
-
-                        FireAndForget {
-                            val (done, notDone) = map
-                                .filter(!_._2.deleted)
-                                .view
+                        sql.useBlocking(IO {
+                            val (done, notDone) = map.view
+                                .filterNot(_._2.deleted)
+                                .filter(
+                                    _._2.inner.incompleteGrowthAdvancements > 0
+                                )
                                 .mapValues { data =>
                                     val (x, z) = fromOffsets(
                                         data.inner.chunkX,
@@ -482,21 +459,36 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin, c: Clock)
                                         result.isSuccess && result.get
                                     }
                                 }
-                            this.send(
-                                PlantMsg.plantsFinishedGrowing(
-                                    done.map(_._2._2)
-                                )
-                            )
-                            this.send(
-                                PlantMsg.plantsGrewPartially(
-                                    notDone.map(_._2._2)
-                                )
-                            )
-                        }
+
+                            done.map(_._2._2).foreach { blk =>
+                                val (cx, cz, ox, oz) =
+                                    toOffsets(blk.getX, blk.getZ)
+                                val y = blk.getY
+                                val world = blk.getWorld.getUID
+                                update(cx, cz, world, ox, oz, y) {
+                                    _.copy(deleted = true)
+                                }
+                            }
+                            notDone.map(_._2._2).foreach { blk =>
+                                val (cx, cz, ox, oz) =
+                                    toOffsets(blk.getX, blk.getZ)
+                                val y = blk.getY
+                                val world = blk.getWorld.getUID
+                                update(cx, cz, world, ox, oz, y) { d =>
+                                    d.copy(inner =
+                                        d.inner
+                                            .copy(incompleteGrowthAdvancements =
+                                                0
+                                            )
+                                    )
+                                }
+                            }
+                        }.evalOn(ChunkExecutionContext(cx, cz, world)))
                     }
                     plantDispatchSpan.finish()
                 catch
                     case e: Throwable =>
                         transaction.setThrowable(e)
                         transaction.setStatus(SpanStatus.NOT_FOUND)
-                finally transaction.finish()
+                finally
+                    transaction.finish()

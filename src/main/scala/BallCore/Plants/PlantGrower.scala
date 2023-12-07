@@ -11,6 +11,9 @@ import org.bukkit.util.Consumer
 
 import scala.util.chaining.*
 import scala.util.Try
+import scala.util.Failure
+import scala.util.Success
+import io.sentry.Sentry
 
 object PlantGrower:
     // return value is whether or not the plant is "done"
@@ -32,15 +35,28 @@ object PlantGrower:
                 case PlantType.generateTree(mat, kind, _) =>
                     val consumer: Consumer[BlockState] = state => {}
                     block.setType(Material.AIR, true)
-                    if !block.getWorld
+                    Try(
+                        block.getWorld
                             .generateTree(
                                 block.getLocation(),
                                 java.util.Random(),
                                 kind,
                                 consumer,
                             )
-                    then block.setType(Material.DEAD_BUSH, true)
-                    true
+                    ) match
+                        case Failure(exception) =>
+                            Sentry.captureException(exception)
+                            println("setting material because of failure")
+                            exception.printStackTrace()
+                            block.setType(mat, false)
+                            false
+                        case Success(true) =>
+                            println("it worked!!!")
+                            true
+                        case Success(false) =>
+                            println("it failed!!!")
+                            block.setType(Material.DEAD_BUSH, false)
+                            false
                 case PlantType.stemmedAgeable(stem, fruit, _) =>
                     val ageable = block.getBlockData.asInstanceOf[Ageable]
                     ageable.setAge(

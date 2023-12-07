@@ -11,9 +11,10 @@ import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.{Material, Tag}
 
 import scala.util.chaining.*
+import org.bukkit.event.block.BlockBreakEvent
 
 class CustomPlantListener()(using pbm: PlantBatchManager) extends Listener:
-    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     def onPlantCrop(event: BlockPlaceEvent): Unit =
         val plant = Plant.values.find { p =>
             p.plant match
@@ -35,7 +36,29 @@ class CustomPlantListener()(using pbm: PlantBatchManager) extends Listener:
             case Some(what) =>
                 pbm.send(PlantMsg.startGrowing(what, event.getBlock))
 
-    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    def onPlantCrop(event: BlockBreakEvent): Unit =
+        val plant = Plant.values.find { p =>
+            p.plant match
+                case PlantType.ageable(mat, _) =>
+                    mat == event.getBlock.getType
+                case PlantType.generateTree(mat, kind, _) =>
+                    mat == event.getBlock.getType
+                case PlantType.stemmedAgeable(stem, fruit, _) =>
+                    stem == event.getBlock.getType
+                case PlantType.verticalPlant(mat, _) =>
+                    mat == event.getBlock.getType
+                case PlantType.bamboo(_) =>
+                    Material.BAMBOO == event.getBlock.getType
+                case PlantType.fruitTree(looksLike, fruit, _) =>
+                    false
+        }
+        plant match
+            case None =>
+            case Some(what) =>
+                pbm.send(PlantMsg.stopGrowing(event.getBlock))
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     def inspectPlant(event: PlayerInteractEvent): Unit =
         if event.getHand != EquipmentSlot.HAND || event.getAction != Action.RIGHT_CLICK_BLOCK
         then return
