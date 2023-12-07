@@ -227,6 +227,7 @@ final class Main extends JavaPlugin:
             OneTimeAdaptation().node.register()
             RestartTimer().register()
             Elevators.register()
+            MiscRecipes.register()
             val msg = MessageCommand()
             msg.node.`override`()
             msg.replyNode.register()
