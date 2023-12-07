@@ -79,6 +79,7 @@ import java.time.format.DateTimeFormatter
 import BallCore.PrimeTime.PrimeTimeManager
 import BallCore.Sigils.GameBattleHooks
 import BallCore.SpawnInventory.BattlesAndYou
+import BallCore.SpawnInventory.SigilsAndYou
 
 class OTTCommand(using sql: SQLManager, ott: OneTimeTeleporter):
     private def errorText(err: OTTError): Component =
@@ -537,6 +538,15 @@ class BookCommand(using
                     .executesPlayer({ (sender, args) =>
                         sql.useFireAndForget(for {
                             book <- sql.withS(BattlesAndYou.viewForPlayer(sender))
+                            _ <- IO { sender.openBook(book) }
+                        } yield ())
+                    }: PlayerCommandExecutor)
+            )
+            .`then`(
+                LiteralArgument("sigils-and-you")
+                    .executesPlayer({ (sender, args) =>
+                        sql.useFireAndForget(for {
+                            book <- sql.withS(SigilsAndYou.viewForPlayer(sender))
                             _ <- IO { sender.openBook(book) }
                         } yield ())
                     }: PlayerCommandExecutor)

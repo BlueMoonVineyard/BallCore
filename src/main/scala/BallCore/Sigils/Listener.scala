@@ -20,6 +20,8 @@ import java.util.UUID
 import java.util.concurrent.TimeUnit
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.jdk.CollectionConverters.*
+import cats.data.OptionT
+import BallCore.TextComponents._
 
 enum DamageMessage:
     case damage(from: UUID, against: UUID, damage: Double)
@@ -118,15 +120,23 @@ class SigilListener(using
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     def onPlayerMove(event: PlayerMoveEvent): Unit =
         val banished =
-            sql.useBlocking(sql.withS(hnm.beaconContaining(event.getTo)))
-                .exists { gid =>
-                    sql.useBlocking(
-                        sql.withS(
-                            ssm.isBanished(event.getPlayer.getUniqueId, gid)
-                        )
+            sql.useBlocking(sql.withS((for {
+                beacon <- OptionT(hnm.beaconContaining(event.getTo))
+                banishment <- OptionT(
+                    ssm.isBanished(event.getPlayer.getUniqueId, beacon)
+                )
+            } yield banishment).value))
+        banished match
+            case None =>
+            case Some(location) =>
+                event
+                    .getPlayer()
+                    .sendServerMessage(
+                        txt"A Sigil Slime is blocking you! It's located at [${location
+                                .getX()
+                                .toInt}, ${location.getY().toInt}, ${location.getZ().toInt}]"
                     )
-                }
-        if banished then event.setCancelled(true)
+                event.setCancelled(true)
 
     private def doSigilBinding(killed: Player, on: List[UUID]): Unit =
         on match

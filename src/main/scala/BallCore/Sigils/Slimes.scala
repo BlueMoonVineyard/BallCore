@@ -45,6 +45,7 @@ import org.bukkit.event.EventPriority
 import org.joml.Quaternionf
 import skunk.Transaction
 import org.bukkit.event.entity.EntityDamageByEntityEvent
+import org.bukkit.Location
 
 object Slimes:
     val sigilSlime = ItemStack(Material.STICK)
@@ -146,16 +147,18 @@ class SigilSlimeManager(using
 
     def isBanished(user: UserID, from: BeaconID)(using
         Session[IO]
-    ): IO[Boolean] =
-        sql.queryUniqueIO(
+    ): IO[Option[Location]] =
+        sql.queryOptionIO(
             sql"""
-        SELECT EXISTS (
-            SELECT 1 FROM SigilSlimes WHERE BanishedUserID = $uuid AND BeaconID = $uuid
+        SELECT X, Y, Z, World FROM CustomEntities WHERE InteractionEntityID = (
+            SELECT InteractionEntityID FROM SigilSlimes WHERE BanishedUserID = $uuid AND BeaconID = $uuid
         );
         """,
-            bool,
+            (float8 *: float8 *: float8 *: uuid),
             (user, from),
-        )
+        ).map(_.map { case (x, y, z, world) =>
+            Location(Bukkit.getWorld(world), x, y, z)
+        })
 
     def banish(user: UserID, slime: UUID)(using
         Session[IO],
@@ -234,6 +237,10 @@ class CustomEntityManager(using sql: Storage.SQLManager, p: Plugin):
                     Type TEXT NOT NULL,
                     InteractionEntityID UUID NOT NULL,
                     DisplayEntityID UUID NOT NULL,
+                    X DOUBLE PRECISION NOT NULL,
+                    Y DOUBLE PRECISION NOT NULL,
+                    Z DOUBLE PRECISION NOT NULL,
+                    World UUID NOT NULL,
                     UNIQUE(InteractionEntityID),
                     Unique(DisplayEntityID)
                 );
@@ -246,6 +253,54 @@ class CustomEntityManager(using sql: Storage.SQLManager, p: Plugin):
             ),
         )
     )
+    sql.applyMigration(
+        Storage.Migration(
+            "Store locations",
+            List(
+                sql"""
+                ALTER TABLE CustomEntities ADD COLUMN X DOUBLE PRECISION;
+                """.command,
+                sql"""
+                ALTER TABLE CustomEntities ADD COLUMN Y DOUBLE PRECISION;
+                """.command,
+                sql"""
+                ALTER TABLE CustomEntities ADD COLUMN Z DOUBLE PRECISION;
+                """.command,
+                sql"""
+                ALTER TABLE CustomEntities ADD COLUMN World UUID;
+                """.command,
+                sql"""
+                UPDATE CustomEntities SET X = 0, Y = 0, Z = 0, World = '858c3b67-006f-4477-9bb8-2fe2db5b9907';
+                """.command,
+                sql"""
+                ALTER TABLE CustomEntities ALTER COLUMN X SET NOT NULL;
+                """.command,
+                sql"""
+                ALTER TABLE CustomEntities ALTER COLUMN Y SET NOT NULL;
+                """.command,
+                sql"""
+                ALTER TABLE CustomEntities ALTER COLUMN Z SET NOT NULL;
+                """.command,
+                sql"""
+                ALTER TABLE CustomEntities ALTER COLUMN World SET NOT NULL;
+                """.command,
+            ),
+            List(
+                sql"""
+                ALTER TABLE CustomEntities DROP COLUMN X;
+                """.command,
+                sql"""
+                ALTER TABLE CustomEntities DROP COLUMN Y;
+                """.command,
+                sql"""
+                ALTER TABLE CustomEntities DROP COLUMN Z;
+                """.command,
+                sql"""
+                ALTER TABLE CustomEntities DROP COLUMN World;
+                """.command,
+            ),
+        )
+    )
 
     private val cache = TrieMap[UUID, (NamespacedKey, UUID)]()
 
@@ -254,15 +309,27 @@ class CustomEntityManager(using sql: Storage.SQLManager, p: Plugin):
         display: ItemDisplay,
         kind: NamespacedKey,
     )(using Session[IO]): IO[Unit] =
+        val x = interaction.getX()
+        val y = interaction.getY()
+        val z = interaction.getZ()
+        val world = interaction.getWorld().getUID
         sql.commandIO(
             sql"""
         INSERT INTO CustomEntities (
-            Type, InteractionEntityID, DisplayEntityID
+            Type, InteractionEntityID, DisplayEntityID, X, Y, Z, World
         ) VALUES (
-            $namespacedKeyCodec, $uuid, $uuid
+            $namespacedKeyCodec, $uuid, $uuid, $float8, $float8, $float8, $uuid
         );
         """,
-            (kind, interaction.getUniqueId(), display.getUniqueId()),
+            (
+                kind,
+                interaction.getUniqueId(),
+                display.getUniqueId(),
+                x,
+                y,
+                z,
+                world,
+            ),
         ).flatMap { _ =>
             IO {
                 cache(interaction.getUniqueId()) = (kind, display.getUniqueId())
