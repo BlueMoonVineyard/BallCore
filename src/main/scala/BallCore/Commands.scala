@@ -78,6 +78,7 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import BallCore.PrimeTime.PrimeTimeManager
 import BallCore.Sigils.GameBattleHooks
+import BallCore.SpawnInventory.BattlesAndYou
 
 class OTTCommand(using sql: SQLManager, ott: OneTimeTeleporter):
     private def errorText(err: OTTError): Component =
@@ -532,6 +533,15 @@ class BookCommand(using
                     }: PlayerCommandExecutor)
             )
             .`then`(
+                LiteralArgument("battles-and-you")
+                    .executesPlayer({ (sender, args) =>
+                        sql.useFireAndForget(for {
+                            book <- sql.withS(BattlesAndYou.viewForPlayer(sender))
+                            _ <- IO { sender.openBook(book) }
+                        } yield ())
+                    }: PlayerCommandExecutor)
+            )
+            .`then`(
                 LiteralArgument("workstations-and-you")
                     .executesPlayer({ (sender, args) =>
                         sql.useFireAndForget(for {
@@ -572,6 +582,7 @@ class InformationGiver():
         txt"[CivCubed] Consider helping us keep the lights on by donating to https://opencollective.com/civcubed!",
         txt"[CivCubed] Browse the selection of ${txt("/book").color(Colors.teal)} and learn more about the server!",
         txt"[CivCubed] Rest accumulates when you log off and come back the next day!",
+        txt"[CivCubed] Set up a relay of important events to a Discord webhook with ${txt("/relay").color(Colors.teal)}!",
         txt"[CivCubed] See what plants grow in your area with ${txt("/plants")
                 .color(Colors.teal)}!",
         txt"[CivCubed] Remember to take breaks and drink plenty of water!",

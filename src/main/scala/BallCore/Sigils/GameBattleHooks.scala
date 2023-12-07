@@ -400,7 +400,7 @@ class GameBattleHooks(using
             )
 
             result <- IO.race(
-                Temporal[IO].sleep(15.seconds),
+                Temporal[IO].sleep(10.minutes),
                 cancellationFor(offensiveGroupID),
             )
 
@@ -457,7 +457,7 @@ class GameBattleHooks(using
                 s"$offensiveName is starting a battle with you! It will begin in 20 minutes.",
             )
 
-            _ <- Temporal[IO].sleep(15.seconds)
+            _ <- Temporal[IO].sleep(20.minutes)
 
             // declare to offense
             _ <- gm
