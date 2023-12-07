@@ -24,6 +24,7 @@ import org.bukkit.{Material, OfflinePlayer}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.jdk.CollectionConverters.*
+import com.github.stefvanschie.inventoryframework.pane.Orientable.Orientation
 
 // trait AccumulatorFn:
 
@@ -77,6 +78,20 @@ object Elements extends TextComponents:
         repeat: Boolean = false,
     )(inner: ItemAccumulator ?=> Unit = nil)(using an: PaneAccumulator): Unit =
         val pane = IFOutlinePane(x, y, length, height, priority)
+        pane.setRepeat(repeat)
+        Accumulator.run(inner, an.extra).foreach(x => pane.addItem(x))
+        an add pane
+
+    def VerticalPane(
+        x: Int,
+        y: Int,
+        length: Int,
+        height: Int,
+        priority: Priority = Priority.NORMAL,
+        repeat: Boolean = false,
+    )(inner: ItemAccumulator ?=> Unit = nil)(using an: PaneAccumulator): Unit =
+        val pane = IFOutlinePane(x, y, length, height, priority)
+        pane.setOrientation(Orientation.VERTICAL)
         pane.setRepeat(repeat)
         Accumulator.run(inner, an.extra).foreach(x => pane.addItem(x))
         an add pane

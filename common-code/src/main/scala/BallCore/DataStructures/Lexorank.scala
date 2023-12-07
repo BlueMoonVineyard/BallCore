@@ -25,19 +25,19 @@ object Lexorank:
 
         while (!done) {
             val prevChar = getChar(prev_, i, minChar)
-            val nextChar = getChar(next_, i, minChar)
+            val nextChar = getChar(next_, i, maxChar)
             val midChar = mid(prevChar, nextChar)
 
             if prevChar == nextChar then
-                rank = rank + prevChar
+                rank = s"$rank$prevChar"
                 i = i + 1
             else if midChar == prevChar || midChar == nextChar then
-                rank = rank + prevChar
+                rank = s"$rank$prevChar"
                 i = i + 1
             else
-                rank = rank + midChar
+                rank = s"$rank$midChar"
                 done = true
         }
 
-        if rank >= next_ then prev_
-        else rank
+        if rank < next_ then rank
+        else prev_

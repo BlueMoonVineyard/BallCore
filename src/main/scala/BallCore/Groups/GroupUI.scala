@@ -34,6 +34,7 @@ import scala.util.Try
 import BallCore.PrimeTime.PrimeTimeError
 import java.time.LocalTime
 import org.bukkit.OfflinePlayer
+import cats.effect.IO
 
 extension (p: BallCore.Groups.Permissions)
     def displayItem(): Material =
@@ -142,6 +143,7 @@ class GroupManagementProgram(using
         case DeleteGroup
         case UpdateVulnerabilityWindow
         case KickPlayer(player: OfflinePlayer)
+        case CreateRole
 
     private def randomBedFor(obj: Object): Material =
         val beds = MaterialTags.BEDS.getValues.toArray(Array[Material]())
@@ -179,7 +181,7 @@ class GroupManagementProgram(using
     override def view(model: Model): Callback ?=> Gui =
         val group = model.group
         Root(txt"Viewing ${group.metadata.name}", 6) {
-            OutlinePane(0, 0, 2, 6) {
+            VerticalPane(0, 0, 2, 6) {
                 Button(
                     Material.PLAYER_HEAD,
                     txt"Members".style(NamedTextColor.GREEN),
@@ -377,8 +379,16 @@ class GroupManagementProgram(using
                                     txt"- ${x.name}".style(NamedTextColor.WHITE)
                                 )
                             }
-                        if group.check(Permissions.RemoveUser, model.userID, nullUUID) then
-                            Lore(txt"Click to remove from the group".color(NamedTextColor.RED))
+                        if group.check(
+                                Permissions.RemoveUser,
+                                model.userID,
+                                nullUUID,
+                            )
+                        then
+                            Lore(
+                                txt"Click to remove from the group"
+                                    .color(NamedTextColor.RED)
+                            )
                     }
                 }
         }
@@ -394,7 +404,7 @@ class GroupManagementProgram(using
 
     private def Roles(model: Model)(using PaneAccumulator): Unit =
         val group = model.group
-        OutlinePane(2, 0, 7, 6) {
+        OutlinePane(2, 0, 7, 5) {
             group.roles.foreach { x =>
                 Button(
                     Material.LEATHER_CHESTPLATE,
@@ -425,6 +435,15 @@ class GroupManagementProgram(using
                         }
                 }
             }
+        }
+        OutlinePane(2, 5, 7, 1) {
+            if group.check(Permissions.ManageRoles, model.userID, nullUUID)
+            then
+                Button(
+                    Material.WRITABLE_BOOK,
+                    txt"Create Role",
+                    Message.CreateRole,
+                )()
         }
 
     override def update(msg: Message, model: Model)(using
@@ -630,7 +649,15 @@ class GroupManagementProgram(using
                 model
             case Message.KickPlayer(target) =>
                 sql.useFuture(for {
-                    result <- sql.withS(sql.withTX(gm.kickUserFromGroup(model.userID, target.getUniqueId, model.group.metadata.id)))
+                    result <- sql.withS(
+                        sql.withTX(
+                            gm.kickUserFromGroup(
+                                model.userID,
+                                target.getUniqueId,
+                                model.group.metadata.id,
+                            )
+                        )
+                    )
                 } yield result match
                     case Left(err) =>
                         services.notify(
@@ -641,7 +668,34 @@ class GroupManagementProgram(using
                         services.notify(
                             s"You successfully kicked ${target.getName()} from the group"
                         )
-                        model.copy(group = model.group.copy(users = model.group.users.removed(target.getUniqueId))))
+                        model.copy(group =
+                            model.group.copy(users =
+                                model.group.users.removed(target.getUniqueId)
+                            )
+                        )
+                )
+            case Message.CreateRole =>
+                sql.useFuture(sql.withS(sql.withTX(for {
+                    name <- IO.fromFuture {
+                        IO {
+                            services.prompt(
+                                "What do you want to call the role?"
+                            )
+                        }
+                    }
+                    result <- gm
+                        .createRole(model.userID, model.group.metadata.id, name)
+                        .value
+                    updatedGroup <- gm.getGroup(model.group.metadata.id).value
+                } yield result match
+                    case Left(err) =>
+                        services.notify(
+                            s"You couldn't create that role because ${err.explain()}"
+                        )
+                        model
+                    case Right(_) =>
+                        model.copy(group = updatedGroup.getOrElse(???))
+                )))
             case Message.UpdateVulnerabilityWindow =>
                 model.userZone match
                     case None =>

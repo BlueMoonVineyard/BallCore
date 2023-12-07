@@ -165,6 +165,7 @@ case class RoleState(
     name: String,
     hoist: Boolean,
     permissions: Map[Permissions, RuleMode],
+    ord: String,
 )
 
 implicit val rsDecoder: Decoder[RoleState] = deriveDecoder[RoleState]

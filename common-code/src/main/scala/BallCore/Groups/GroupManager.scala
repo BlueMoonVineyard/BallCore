@@ -298,6 +298,7 @@ class GroupManager()(using sql: Storage.SQLManager):
                     (Permissions.AddReinforcements, RuleMode.Allow),
                     (Permissions.RemoveReinforcements, RuleMode.Allow),
                 ),
+                "U",
             ),
             RoleState(
                 ju.UUID.randomUUID(),
@@ -308,6 +309,7 @@ class GroupManager()(using sql: Storage.SQLManager):
                     (Permissions.InviteUser, RuleMode.Allow),
                     (Permissions.RemoveUser, RuleMode.Allow),
                 ),
+                "g",
             ),
             RoleState(
                 groupMemberUUID,
@@ -321,6 +323,7 @@ class GroupManager()(using sql: Storage.SQLManager):
                     (Permissions.Entities, RuleMode.Allow),
                     (Permissions.Signs, RuleMode.Allow),
                 ),
+                "p",
             ),
             RoleState(
                 everyoneUUID,
@@ -328,6 +331,7 @@ class GroupManager()(using sql: Storage.SQLManager):
                 true,
                 Map(
                 ),
+                "u",
             ),
         )
         var ord = ""
@@ -513,8 +517,9 @@ class GroupManager()(using sql: Storage.SQLManager):
                         name = role.name,
                         hoist = role.hoist,
                         permissions = role.permissions,
+                        ord = role.ord,
                     )
-                }
+                }.sortWith((a, b) => a.ord.compareTo(b.ord) < 0)
             }
 
     private def getAll(
@@ -726,6 +731,12 @@ class GroupManager()(using sql: Storage.SQLManager):
             }
             .flatMap { group =>
                 val rid = ju.UUID.randomUUID()
+                val prevOrd = group.roles.find(_.id == groupMemberUUID).get.ord
+                val ord = group.roles.filterNot(x => x.id == everyoneUUID || x.id == groupMemberUUID).lastOption.map { x =>
+                    Lexorank.rank(x.ord, prevOrd)
+                }.getOrElse {
+                    Lexorank.rank(prevOrd, "")
+                }
 
                 EitherT.right(
                     sql
@@ -743,7 +754,7 @@ class GroupManager()(using sql: Storage.SQLManager):
                                 name,
                                 false,
                                 Map[Permissions, RuleMode]().asJson,
-                                "",
+                                ord,
                             ),
                         )
                         .map(_ => rid)

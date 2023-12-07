@@ -5,17 +5,16 @@
 import BallCore.DataStructures.Lexorank
 
 class LexorankSuite extends munit.FunSuite:
-    test("basic lexorank") {
-        val prev = "a"
-        val next = "d"
-        val mid = Lexorank.rank(prev, next)
-        assert(prev < mid, (prev, mid, next))
-        assert(mid < next, (prev, mid, next))
-    }
-    test("complicated lexorank") {
-        val prev = "alksdjlkg"
-        val next = "alkszjlkg"
-        val mid = Lexorank.rank(prev, next)
-        assert(prev < mid, (prev, mid, next))
-        assert(mid < next, (prev, mid, next))
+    val tests = List(
+        ("new digit", "aaaa", "aaab"),
+        ("mid value", "aaaa", "aaac"),
+        ("new digit mid", "az", "b"),
+        ("g and p", "g", "p"),
+    )
+    tests.foreach { case (title, prev, next) =>
+        test(title) {
+            val mid = Lexorank.rank(prev, next)
+            assert(prev < mid, (prev, mid, next))
+            assert(mid < next, (prev, mid, next))
+        }
     }
