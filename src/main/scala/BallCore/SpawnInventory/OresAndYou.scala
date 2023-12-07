@@ -51,7 +51,7 @@ object OresAndYou:
                         )}
                        |(ore probabilities are multipled by your adaptation)
                        |
-                       |Adaption Point: ${(plat * Information.WorldRadiusBlocks).toInt}, ${(plong * Information.WorldRadiusBlocks).toInt}
+                       |Adaption Point: ${(plong * Information.WorldRadiusBlocks).toInt}, ${(plat * Information.WorldRadiusBlocks).toInt}
                        |Current Location: ${plr.getX.toInt}, ${plr.getZ.toInt}""".stripMargin,
                     s"""Adaptation Speeds:
                        |- 7 days within your heart's claim
