@@ -448,33 +448,40 @@ class PolygonEditor(using
                                                 )
                                         ) =>
                                         sql.useBlocking(
-                                            sql.withS(
-                                                sql.withTX(
-                                                    battleManager.startBattle(
-                                                        model.beaconID,
-                                                        defensiveBeacon,
-                                                        contestedArea,
-                                                        jtsPolygon,
-                                                        model.polygon.head.getWorld
-                                                            .getUID(),
+                                            sql.withR(
+                                                sql.withS(
+                                                    sql.withTX(
+                                                        battleManager.startBattle(
+                                                            model.beaconID,
+                                                            defensiveBeacon,
+                                                            contestedArea,
+                                                            jtsPolygon,
+                                                            model.polygon.head.getWorld
+                                                                .getUID(),
+                                                        )
                                                     )
                                                 )
                                             )
                                         ) match
                                             case Left(err) =>
                                                 err match
-                                                    case BattleError.opponentIsInPrimeTime(opensAt) =>
-                                                        player.sendServerMessage(
-                                                            txt"The opponent's vulnerability window isn't open!"
-                                                        )
+                                                    case BattleError
+                                                            .opponentIsInPrimeTime(
+                                                                opensAt
+                                                            ) =>
+                                                        player
+                                                            .sendServerMessage(
+                                                                txt"The opponent's vulnerability window isn't open!"
+                                                            )
                                                     case BattleError.beaconIsTooNew =>
-                                                        player.sendServerMessage(
-                                                            txt"Your beacon needs to be at least 4 days old to launch a battle!"
-                                                        )
+                                                        player
+                                                            .sendServerMessage(
+                                                                txt"Your beacon needs to be at least 4 days old to launch a battle!"
+                                                            )
                                                 Some(state)
                                             case Right(value) =>
                                                 player.sendServerMessage(
-                                                    txt"A battle has been started!"
+                                                    txt"You have started declaring battle..."
                                                 )
                                                 None
                                     case Left(err) =>

@@ -7,7 +7,6 @@ import skunk.Session
 import cats.effect.IO
 import skunk.codec.all._
 import skunk.SqlState
-import cats.syntax.traverse.*
 import BallCore.Beacons.BeaconID
 import BallCore.Beacons.CivBeaconManager
 import org.locationtech.jts.geom.GeometryFactory
@@ -26,6 +25,10 @@ import java.time.OffsetDateTime
 import BallCore.PrimeTime.PrimeTimeResult
 import BallCore.DataStructures.Clock
 import java.time.temporal.ChronoUnit
+import cats.syntax.all._
+import cats.effect.Resource
+import cats.effect.Fiber
+import scala.util.NotGiven
 
 type BattleID = UUID
 
@@ -40,12 +43,13 @@ trait BattleHooks:
         contestedArea: Geometry,
         world: UUID,
         defensiveBeacon: BeaconID,
-    )(using Session[IO]): IO[Unit]
+        pillarWasDefended: Option[Boolean],
+    )(using Session[IO], Transaction[IO]): IO[Unit]
     def battleDefended(
         battle: BattleID,
         offensiveBeacon: BeaconID,
         defensiveBeacon: BeaconID,
-    )(using Session[IO]): IO[Unit]
+    )(using Session[IO], Transaction[IO]): IO[Unit]
     def battleTaken(
         battle: BattleID,
         offensiveBeacon: BeaconID,
@@ -53,7 +57,13 @@ trait BattleHooks:
         areaToRemoveFromDefense: Polygon,
         claimToSetOffenseTo: Polygon,
         world: UUID,
-    )(using Session[IO]): IO[Unit]
+    )(using Session[IO], Transaction[IO]): IO[Unit]
+    def impendingBattle(
+        offensiveBeacon: BeaconID,
+        defensiveBeacon: BeaconID,
+        contestedArea: Geometry,
+        world: UUID,
+    )(using Session[IO], Transaction[IO]): IO[Unit]
 
 class BattleManager(using
     sql: Storage.SQLManager,
@@ -153,7 +163,7 @@ class BattleManager(using
         contestedArea: Geometry,
         world: UUID,
         count: Int,
-    )(using Session[IO]): IO[Unit] =
+    )(using Session[IO], Transaction[IO]): IO[Unit] =
         (1 to count).toList
             .traverse(_ =>
                 hooks.spawnPillarFor(
@@ -162,13 +172,14 @@ class BattleManager(using
                     contestedArea,
                     world,
                     defense,
+                    None,
                 )
             )
             .map(_ => ())
 
-    def offensiveResign(battle: BattleID)(using Session[IO]): IO[Unit] =
+    def offensiveResign(battle: BattleID)(using Session[IO], Transaction[IO]): IO[Unit] =
         battleDefended(battle)
-    def defensiveResign(battle: BattleID)(using Session[IO]): IO[Unit] =
+    def defensiveResign(battle: BattleID)(using Session[IO], Transaction[IO]): IO[Unit] =
         battleTaken(battle)
 
     def isInvolvedInBattle(beacon: BeaconID)(using Session[IO]): IO[Boolean] =
@@ -199,6 +210,56 @@ class BattleManager(using
                 (beacon),
             )
         } yield (a, b)
+    private def spawnBattleFiber(
+        offensive: BeaconID,
+        defensive: BeaconID,
+        contestedArea: Polygon,
+        desiredArea: Polygon,
+        world: UUID,
+    )(using r: Resource[IO, Session[IO]]): IO[Fiber[IO, Throwable, BattleID]] =
+        (r.use { implicit session =>
+            sql.withTX(for {
+                _ <- hooks
+                    .impendingBattle(offensive, defensive, contestedArea, world)
+                result <- sql.queryUniqueIO(
+                    sql"""
+                INSERT INTO Battles (
+                    BattleID, OffensiveBeacon, DefensiveBeacon, ContestedArea, DesiredArea, Health, PillarCount, World
+                ) SELECT
+                    gen_random_uuid() as BattleID,
+                    $uuid as OffensiveBeacon,
+                    $uuid as DefensiveBeacon,
+                    ST_GeomFromGeoJSON($polygonGeojsonCodec) as ContestedArea,
+                    ST_GeomFromGeoJSON($polygonGeojsonCodec) as DesiredArea,
+                    $int4 as Health,
+                    GREATEST(CEILING(ST_Area(ST_MakeValid(ST_GeomFromGeoJSON($polygonGeojsonCodec))) / 512.0), 1) as PillarCount,
+                    $uuid as World
+                RETURNING BattleID, PillarCount;
+                """,
+                    (uuid *: int4),
+                    (
+                        offensive,
+                        defensive,
+                        contestedArea,
+                        desiredArea,
+                        initialHealth,
+                        contestedArea,
+                        world,
+                    ),
+                )
+                // TODO: multiple slime pillars
+                (battleID, count) = result
+                _ <- spawnInitialPillars(
+                    battleID,
+                    offensive,
+                    defensive,
+                    contestedArea,
+                    world,
+                    1,
+                )
+                _ <- updateBossBarFor(battleID, initialHealth)
+            } yield battleID)
+        }).start
     def startBattle(
         offensive: BeaconID,
         defensive: BeaconID,
@@ -208,10 +269,12 @@ class BattleManager(using
     )(using
         Session[IO],
         Transaction[IO],
-    ): IO[Either[BattleError, BattleID]] =
+        Resource[IO, Session[IO]],
+    ): IO[Either[BattleError, Fiber[IO, Throwable, BattleID]]] =
         for {
             now <- clock.nowIO()
-            offensiveCreatedAt <- OptionT(cbm.beaconCreatedAt(offensive)).getOrElseF(clock.nowIO())
+            offensiveCreatedAt <- OptionT(cbm.beaconCreatedAt(offensive))
+                .getOrElseF(clock.nowIO())
             offensiveAge = ChronoUnit.DAYS.between(offensiveCreatedAt, now)
             primeTime <- OptionT(cbm.getGroup(defensive))
                 .flatMap { group =>
@@ -220,44 +283,13 @@ class BattleManager(using
                 .getOrElse(PrimeTimeResult.isInPrimeTime)
             result <- primeTime match
                 case PrimeTimeResult.isInPrimeTime if offensiveAge > 3 =>
-                    sql.queryUniqueIO(
-                        sql"""
-        INSERT INTO Battles (
-            BattleID, OffensiveBeacon, DefensiveBeacon, ContestedArea, DesiredArea, Health, PillarCount, World
-        ) SELECT
-            gen_random_uuid() as BattleID,
-            $uuid as OffensiveBeacon,
-            $uuid as DefensiveBeacon,
-            ST_GeomFromGeoJSON($polygonGeojsonCodec) as ContestedArea,
-            ST_GeomFromGeoJSON($polygonGeojsonCodec) as DesiredArea,
-            $int4 as Health,
-            GREATEST(CEILING(ST_Area(ST_MakeValid(ST_GeomFromGeoJSON($polygonGeojsonCodec))) / 512.0), 1) as PillarCount,
-            $uuid as World
-        RETURNING BattleID, PillarCount;
-        """,
-                        (uuid *: int4),
-                        (
-                            offensive,
-                            defensive,
-                            contestedArea,
-                            desiredArea,
-                            initialHealth,
-                            contestedArea,
-                            world,
-                        ),
-                    ).flatTap { (battleID, count) =>
-                        spawnInitialPillars(
-                            battleID,
-                            offensive,
-                            defensive,
-                            contestedArea,
-                            world,
-                            count,
-                        )
-                    }.flatTap { (battleID, _) =>
-                        updateBossBarFor(battleID, initialHealth)
-                    }.map(_._1)
-                        .map(Right.apply)
+                    spawnBattleFiber(
+                        offensive,
+                        defensive,
+                        contestedArea,
+                        desiredArea,
+                        world,
+                    ).map(Right.apply)
                 case PrimeTimeResult.isInPrimeTime =>
                     IO.pure(Left(BattleError.beaconIsTooNew))
                 case PrimeTimeResult.notInPrimeTime(_) if offensiveAge <= 3 =>
@@ -265,7 +297,7 @@ class BattleManager(using
                 case PrimeTimeResult.notInPrimeTime(reopens) =>
                     IO.pure(Left(BattleError.opponentIsInPrimeTime(reopens)))
         } yield result
-    private def battleDefended(battle: BattleID)(using Session[IO]): IO[Unit] =
+    private def battleDefended(battle: BattleID)(using Session[IO], Transaction[IO]): IO[Unit] =
         sql.queryUniqueIO(
             sql"""
             DELETE FROM Battles WHERE BattleID = $uuid RETURNING OffensiveBeacon, DefensiveBeacon;
@@ -277,7 +309,7 @@ class BattleManager(using
         }.flatMap((offense, defense) =>
             hooks.battleDefended(battle, offense, defense)
         )
-    def pillarDefended(battle: BattleID)(using Session[IO]): IO[Unit] =
+    def pillarDefended(battle: BattleID)(using Session[IO], NotGiven[Transaction[IO]]): IO[Unit] =
         sql.queryUniqueIO(
             sql"""
     UPDATE Battles SET Health = Health + 1 WHERE BattleID = $uuid RETURNING Health, OffensiveBeacon, DefensiveBeacon, ST_AsGeoJSON(ContestedArea), World;
@@ -286,21 +318,22 @@ class BattleManager(using
             battle,
         ).redeemWith(
             { case SqlState.CheckViolation(_) =>
-                battleDefended(battle)
+                sql.withTX(battleDefended(battle))
             },
             { (health, offense, defense, contestedArea, world) =>
-                hooks
+                sql.withTX(hooks
                     .spawnPillarFor(
                         battle,
                         offense,
                         contestedArea,
                         world,
                         defense,
+                        Some(true),
                     )
-                    .flatTap(_ => updateBossBarFor(battle, health))
+                    .flatTap(_ => updateBossBarFor(battle, health)))
             },
         ).map(_ => ())
-    private def battleTaken(battle: BattleID)(using Session[IO]): IO[Unit] =
+    private def battleTaken(battle: BattleID)(using Session[IO], Transaction[IO]): IO[Unit] =
         sql.queryUniqueIO(
             sql"""
             DELETE FROM Battles WHERE BattleID = $uuid RETURNING OffensiveBeacon, DefensiveBeacon, ST_AsGeoJSON(ContestedArea), ST_AsGeoJSON(DesiredArea), World;
@@ -320,7 +353,7 @@ class BattleManager(using
             )
         )
 
-    def pillarTaken(battle: BattleID)(using Session[IO]): IO[Unit] =
+    def pillarTaken(battle: BattleID)(using Session[IO], NotGiven[Transaction[IO]]): IO[Unit] =
         sql.queryUniqueIO(
             sql"""
     UPDATE Battles SET Health = Health - 1 WHERE BattleID = $uuid RETURNING Health, OffensiveBeacon, DefensiveBeacon, ST_AsGeoJSON(ContestedArea), World;
@@ -329,17 +362,18 @@ class BattleManager(using
             battle,
         ).redeemWith(
             { case SqlState.CheckViolation(_) =>
-                battleTaken(battle)
+                sql.withTX(battleTaken(battle))
             },
             { (health, offense, defense, contestedArea, world) =>
-                hooks
+                sql.withTX(hooks
                     .spawnPillarFor(
                         battle,
                         offense,
                         contestedArea,
                         world,
                         defense,
+                        Some(false),
                     )
-                    .flatTap(_ => updateBossBarFor(battle, health))
+                    .flatTap(_ => updateBossBarFor(battle, health)))
             },
         ).map(_ => ())

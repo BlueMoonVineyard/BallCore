@@ -35,6 +35,8 @@ import BallCore.DataStructures.Clock
 import java.time.temporal.ChronoUnit
 import org.bukkit.Location
 import org.bukkit.Particle
+import skunk.Transaction
+import scala.util.NotGiven
 
 object SlimePillar:
     val slimePillarModel = ItemStack(Material.STICK)
@@ -160,7 +162,7 @@ class SlimePillarManager(using
     def slapPillar(
         interaction: Interaction,
         player: Audience,
-    )(using battleManager: BattleManager)(using Session[IO]): IO[PillarResult] =
+    )(using battleManager: BattleManager)(using Session[IO], NotGiven[Transaction[IO]]): IO[PillarResult] =
         for {
             health <- sql.queryUniqueIO(
                 sql"""
@@ -193,7 +195,7 @@ class SlimePillarManager(using
     def healPillar(
         interaction: Interaction,
         player: Audience,
-    )(using battleManager: BattleManager)(using Session[IO]): IO[PillarResult] =
+    )(using battleManager: BattleManager)(using Session[IO], NotGiven[Transaction[IO]]): IO[PillarResult] =
         for {
             health <- sql.queryUniqueIO(
                 sql"""

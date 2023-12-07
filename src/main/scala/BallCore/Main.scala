@@ -36,7 +36,6 @@ import scala.util.Try
 import BallCore.Sigils.SlimePillarManager
 import BallCore.Reinforcements.BustThroughTracker
 import BallCore.Sigils.BattleManager
-import BallCore.Sigils.BattleHooks
 import BallCore.Sigils.GameBattleHooks
 import BallCore.OneTimeTeleport.OneTimeTeleporter
 import BallCore.OneTimeTeleport.GameOneTimeTeleporterHooks
@@ -140,7 +139,7 @@ final class Main extends JavaPlugin:
             given cem: CustomEntityManager = new CustomEntityManager()
 
             given bam: SigilSlimeManager = SigilSlimeManager()
-            given ingameBattleHooks: BattleHooks = GameBattleHooks()
+            given ingameBattleHooks: GameBattleHooks = GameBattleHooks()
             given battleManager: BattleManager = new BattleManager()
             given spm: SlimePillarManager = SlimePillarManager()
 
@@ -213,6 +212,7 @@ final class Main extends JavaPlugin:
             val groupCommands = GroupsCommand()
             groupCommands.node.register()
             groupCommands.invitesNode.register()
+            groupCommands.cancelBattleNode.register()
             GetHeart().node.register()
             BookCommand().node.register()
             CancelCommand().node.register()

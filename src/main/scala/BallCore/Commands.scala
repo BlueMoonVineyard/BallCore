@@ -77,6 +77,7 @@ import java.util.Locale
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import BallCore.PrimeTime.PrimeTimeManager
+import BallCore.Sigils.GameBattleHooks
 
 class OTTCommand(using sql: SQLManager, ott: OneTimeTeleporter):
     private def errorText(err: OTTError): Component =
@@ -159,7 +160,8 @@ class SettingsCommand(using sql: SQLManager, kv: KeyVal):
                         IO {
                             val zid = tz.toZoneId()
                             val id = tz.getID()
-                            val name = zid.getDisplayName(TextStyle.FULL, Locale.US)
+                            val name =
+                                zid.getDisplayName(TextStyle.FULL, Locale.US)
                             val now = formatter.format(ZonedDateTime.now(zid))
                             sender.sendServerMessage(
                                 txt"Your current time zone is ${id} (${name}). The current time is ${now}."
@@ -882,7 +884,44 @@ class GroupsCommand(using
     e: PolyhedraEditor,
     primeTime: PrimeTimeManager,
     kv: KeyVal,
+    gameBattleHooks: GameBattleHooks,
 ):
+    val cancelBattleNode =
+        CommandTree("cancel-battle").`then`(
+            TextArgument("group")
+                .replaceSuggestions(suggestGroups(true))
+                .executesPlayer(withGroupArgument("group") {
+                    (sender, args, group) =>
+                        sql.useFireAndForget(
+                            for {
+                                result <- sql.withS(
+                                    sql.withTX(
+                                        gm
+                                            .check(
+                                                sender.getUniqueId,
+                                                group.id,
+                                                nullUUID,
+                                                Permissions.ManageClaims,
+                                            )
+                                            .value
+                                    )
+                                )
+                                _ <- result match
+                                    case Right(ok) if ok =>
+                                        gameBattleHooks
+                                            .cancelImpendingBattle(group.id)
+                                    case _ =>
+                                        IO {
+                                            sender.sendServerMessage(
+                                                txt"You can't cancel the battle!"
+                                            )
+                                        }
+
+                            } yield ()
+                        )
+
+                })
+        )
     val inviteNode =
         LiteralArgument("invite")
             .`then`(
