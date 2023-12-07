@@ -33,6 +33,7 @@ import java.util.Locale
 import scala.util.Try
 import BallCore.PrimeTime.PrimeTimeError
 import java.time.LocalTime
+import org.bukkit.OfflinePlayer
 
 extension (p: BallCore.Groups.Permissions)
     def displayItem(): Material =
@@ -140,6 +141,7 @@ class GroupManagementProgram(using
         case LeaveGroup
         case DeleteGroup
         case UpdateVulnerabilityWindow
+        case KickPlayer(player: OfflinePlayer)
 
     private def randomBedFor(obj: Object): Material =
         val beds = MaterialTags.BEDS.getValues.toArray(Array[Material]())
@@ -343,9 +345,10 @@ class GroupManagementProgram(using
                 .map(x => Bukkit.getOfflinePlayer(x))
                 .sortBy(_.getName())
                 .foreach { x =>
-                    Item(
+                    Button(
                         Material.PLAYER_HEAD,
-                        displayName = Some(txt"${x.getName}"),
+                        txt"${x.getName}",
+                        Message.KickPlayer(x),
                     ) {
                         Skull(x)
                         if group.owners.contains(x.getUniqueId) then
@@ -374,6 +377,8 @@ class GroupManagementProgram(using
                                     txt"- ${x.name}".style(NamedTextColor.WHITE)
                                 )
                             }
+                        if group.check(Permissions.RemoveUser, model.userID, nullUUID) then
+                            Lore(txt"Click to remove from the group".color(NamedTextColor.RED))
                     }
                 }
         }
@@ -623,6 +628,20 @@ class GroupManagementProgram(using
                 )
                 services.transferTo(p, p.Flags())
                 model
+            case Message.KickPlayer(target) =>
+                sql.useFuture(for {
+                    result <- sql.withS(sql.withTX(gm.kickUserFromGroup(model.userID, target.getUniqueId, model.group.metadata.id)))
+                } yield result match
+                    case Left(err) =>
+                        services.notify(
+                            s"You couldn't kick ${target.getName()} from the group because ${err.explain()}"
+                        )
+                        model
+                    case Right(_) =>
+                        services.notify(
+                            s"You successfully kicked ${target.getName()} from the group"
+                        )
+                        model.copy(group = model.group.copy(users = model.group.users.removed(target.getUniqueId))))
             case Message.UpdateVulnerabilityWindow =>
                 model.userZone match
                     case None =>

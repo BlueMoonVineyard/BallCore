@@ -119,7 +119,9 @@ enum GroupError:
     case MustBeOwner
     case MustNotBeOwner
     case MustBeOnlyOwner
+    case MustBeInGroup
     case GroupNotFound
+    case TargetIsAboveYou
     case TargetNotInGroup
     case GroupWouldHaveNoOwners
     case TargetIsAlreadyOwner
@@ -135,10 +137,12 @@ enum GroupError:
             case MustBeOwner => "you must be owner"
             case MustNotBeOwner => "you must not be an owner"
             case MustBeOnlyOwner => "you must be the only owner"
+            case MustBeInGroup => "you must be in the group"
             case GroupNotFound => "the group was not found"
             case TargetNotInGroup => "the target is not in the group"
             case GroupWouldHaveNoOwners => "the group would have no owners"
             case TargetIsAlreadyOwner => "the target is already an owner"
+            case TargetIsAboveYou => "the target's roles outrank your own"
             case AlreadyInGroup => "the target is already in the group"
             case NoPermissions => "you do not have permission"
             case RoleNotFound => "the role was not found"
@@ -360,6 +364,43 @@ class GroupManager()(using sql: Storage.SQLManager):
                     sql.commandIO(
                         sql"DELETE FROM GroupMemberships WHERE GroupID = $uuid AND UserID = $uuid",
                         (group, as),
+                    )
+                )
+            }
+            .map(_ => ())
+            .value
+
+    def kickUserFromGroup(as: UserID, target: UserID, group: GroupID)(using
+        Session[IO],
+        Transaction[IO],
+    ): IO[Either[GroupError, Unit]] =
+        getGroup(group)
+            .guard(GroupError.MustBeInGroup) {
+                _.users.contains(as)
+            }
+            .guard(GroupError.TargetNotInGroup) {
+                _.users.contains(target)
+            }
+            .guard(GroupError.NoPermissions) {
+                _.check(Permissions.RemoveUser, as, nullUUID)
+            }
+            .guard(GroupError.TargetIsAboveYou) {
+                !_.owners.contains(target)
+            }
+            .guard(GroupError.TargetIsAboveYou) { group =>
+                if group.owners.contains(as) then true
+                else
+                    val ids = group.roles.map(_.id)
+                    val maxTarget =
+                        group.users(target).map(ids.indexOf).maxOption
+                    val maxSelf = group.users(as).map(ids.indexOf).maxOption
+                    maxTarget < maxSelf
+            }
+            .flatMap { _ =>
+                EitherT.right(
+                    sql.commandIO(
+                        sql"DELETE FROM GroupMemberships WHERE GroupID = $uuid AND UserID = $uuid",
+                        (group, target),
                     )
                 )
             }

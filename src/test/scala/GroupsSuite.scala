@@ -328,6 +328,125 @@ class GroupsSuite extends munit.FunSuite:
         )
         assert(res10 == Right(false), res10)
     }
+    sql.test("kicking") { implicit sql =>
+        // setup
+
+        val gm = Groups.GroupManager()
+        val ownerID = ju.UUID.randomUUID()
+        val moderator1ID = ju.UUID.randomUUID()
+        val moderator2ID = ju.UUID.randomUUID()
+        val rando1ID = ju.UUID.randomUUID()
+        val rando2ID = ju.UUID.randomUUID()
+
+        val gid = sql.useBlocking(
+            sql.withS(sql.withTX(gm.createGroup(ownerID, "woot!")))
+        )
+
+        List(moderator1ID, moderator2ID, rando1ID, rando2ID).foreach { user =>
+            val res =
+                sql.useBlocking(
+                    sql.withS(sql.withTX(gm.addToGroup(user, gid).value))
+                )
+            assert(res == Right(()), res)
+        }
+
+        val roles = sql.useBlocking(sql.withS(sql.withTX(gm.roles(gid).value)))
+        assert(roles.isRight, roles)
+        val actualRoles = roles.getOrElse(List())
+        val modRoleID = actualRoles.find { x => x.name == "Moderator" }.get.id
+
+        List(moderator1ID, moderator2ID).foreach { user =>
+            val res = sql.useBlocking(
+                sql.withS(
+                    sql.withTX(
+                        gm.assignRole(ownerID, user, gid, modRoleID, true)
+                            .value
+                    )
+                )
+            )
+            assert(res == Right(()), res)
+        }
+
+        // actual testing
+
+        val res1 = sql.useBlocking(
+            sql.withS(
+                sql.withTX(
+                    gm.kickUserFromGroup(
+                        moderator1ID,
+                        ownerID,
+                        gid,
+                    )
+                )
+            )
+        )
+        assertEquals(res1, Left(Groups.GroupError.TargetIsAboveYou), "mods can't kick owners")
+
+        val res3 = sql.useBlocking(
+            sql.withS(
+                sql.withTX(
+                    gm.kickUserFromGroup(
+                        rando2ID,
+                        rando1ID,
+                        gid,
+                    )
+                )
+            )
+        )
+        assertEquals(res3, Left(Groups.GroupError.NoPermissions), "randos don't have perms")
+
+        val res2 = sql.useBlocking(
+            sql.withS(
+                sql.withTX(
+                    gm.kickUserFromGroup(
+                        moderator1ID,
+                        rando1ID,
+                        gid,
+                    )
+                )
+            )
+        )
+        assertEquals(res2, Right(()), "mods can kick randos")
+
+        val res4 = sql.useBlocking(
+            sql.withS(
+                sql.withTX(
+                    gm.kickUserFromGroup(
+                        rando1ID,
+                        rando2ID,
+                        gid,
+                    )
+                )
+            )
+        )
+        assertEquals(res4, Left(Groups.GroupError.MustBeInGroup), "people outside can't kick")
+
+        val res5 = sql.useBlocking(
+            sql.withS(
+                sql.withTX(
+                    gm.kickUserFromGroup(
+                        moderator1ID,
+                        moderator2ID,
+                        gid,
+                    )
+                )
+            )
+        )
+        assertEquals(res5, Left(Groups.GroupError.TargetIsAboveYou), "mods can't kick eachother")
+
+        val res6 = sql.useBlocking(
+            sql.withS(
+                sql.withTX(
+                    gm.kickUserFromGroup(
+                        ownerID,
+                        moderator1ID,
+                        gid,
+                    )
+                )
+            )
+        )
+        assertEquals(res6, Right(()), "owners can kick mods")
+    }
     sql.test("multi-owner groups") { implicit sql =>
         val gm = Groups.GroupManager()
 
