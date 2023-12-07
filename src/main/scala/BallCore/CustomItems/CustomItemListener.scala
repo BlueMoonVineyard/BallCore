@@ -18,6 +18,7 @@ import org.bukkit.event.inventory.PrepareItemCraftEvent
 import org.bukkit.Tag
 import org.bukkit.event.block.BlockRedstoneEvent
 import org.bukkit.block.data.`type`.Switch
+import org.bukkit.Keyed
 
 object CustomItemListener:
     def register()(using
@@ -149,6 +150,15 @@ class CustomItemListener(using
                 .filterNot(_ == null)
                 .count(x => Tag.ITEMS_TOOLS.isTagged(x.getType())) >= 2
         if isCraftingToolsTogether then event.getInventory().setResult(null)
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    def blockUnpermittedVanillaUses(event: PrepareItemCraftEvent): Unit =
+        val recipe = event.getRecipe()
+        if recipe == null || !recipe.isInstanceOf[Keyed] then return
+        val key = recipe.asInstanceOf[Keyed].getKey()
+        if key.getNamespace() != "minecraft" then return
+        if !AllowedVanillaRecipes.items.contains(recipe.getResult().getType())
+        then event.getInventory().setResult(null)
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     def onInteractBlock(event: PlayerInteractEvent): Unit =
