@@ -882,10 +882,19 @@ class GroupsCommand(using
     cbm: CivBeaconManager,
     sql: SQLManager,
     e: PolyhedraEditor,
+    polygons: PolygonEditor,
     primeTime: PrimeTimeManager,
     kv: KeyVal,
     gameBattleHooks: GameBattleHooks,
 ):
+    val viewNearbyClaimsNode =
+        CommandTree("nearby-claims")
+            .executesPlayer({ (sender, args) =>
+                sql.useFireAndForget(for {
+                    nearbyBeacons <- sql.withS(cbm.beaconsNearby(sender.getLocation()))
+                    _ <- IO { polygons.view(sender, nearbyBeacons) }
+                } yield ())
+            }: PlayerCommandExecutor)
     val cancelBattleNode =
         CommandTree("cancel-battle").`then`(
             TextArgument("group")

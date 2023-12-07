@@ -413,6 +413,24 @@ class CivBeaconManager()(using
                 .headOption
         }
 
+    def beaconsNearby(l: Location)(using
+        Session[IO]
+    ): IO[List[(Polygon, World, BeaconID)]] =
+        val lx = l.getX.toFloat
+        val ly = l.getZ.toFloat
+        getWorldData(l.getWorld).flatMap { x =>
+            x.beaconRTree
+                .nearestK(lx, ly, 1000, 1000f)
+                .map(_.value._2)
+                .distinct
+                .toList
+                .traverse { beaconID =>
+                    getPolygonFor(beaconID)
+                        .map(_.get)
+                        .map(x => (x, l.getWorld, beaconID))
+                }
+        }
+
     def sudoSetBeaconPolygon(beacon: BeaconID, world: World, polygon: Polygon)(
         using Session[IO]
     ): IO[Unit] =

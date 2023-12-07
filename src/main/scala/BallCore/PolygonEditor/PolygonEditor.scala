@@ -34,6 +34,7 @@ import cats.effect.IO
 import net.kyori.adventure.bossbar.BossBar
 import net.kyori.adventure.text.Component
 import BallCore.Sigils.BattleError
+import org.locationtech.jts.geom.Polygon
 
 object PolygonEditor:
     def register()(using e: PolygonEditor, p: Plugin): Unit =
@@ -78,6 +79,9 @@ enum PlayerState:
         state: CreatorModel,
         actions: List[CreatorAction],
         maxArea: Int,
+    )
+    case viewing(
+        beacons: List[(Polygon, World, BeaconID)]
     )
 
 class PolygonEditor(using
@@ -129,6 +133,10 @@ class PolygonEditor(using
         bar.progress((actualArea.toFloat / maxArea.toFloat).min(1f).max(0f))
         ()
 
+    def view(player: Player, beacons: List[(Polygon, World, BeaconID)]): Unit =
+        player.sendServerMessage(txt"You are looking at ${beacons.size} nearby claims.")
+        playerPolygons(player) = PlayerState.viewing(beacons)
+
     def create(player: Player, world: World, beaconID: BeaconID): Unit =
         import BallCore.UI.ChatElements.*
         sql.useBlocking(sql.withS((for {
@@ -168,9 +176,37 @@ class PolygonEditor(using
                             case PlayerState
                                     .creating(state, actions, maxArea) =>
                                 renderCreator(player, state, actions)
+                            case PlayerState.viewing(polygons) =>
+                                renderViewer(player, polygons)
                     },
                     null,
                 )
+        }
+
+    private def renderViewer(
+        player: Player,
+        polygons: List[(Polygon, World, BeaconID)],
+    ) =
+        polygons.foreach { case (polygon, world, _) =>
+            val points =
+                polygon.getCoordinates
+                    .map(coord =>
+                        Location(world, coord.getX, coord.getZ, coord.getY)
+                    )
+                    .toList
+                    .dropRight(1)
+            val lines =
+                points
+                    .sliding(2, 1)
+                    .concat(List(List(points.last, points.head)))
+                    .map(pair => (pair.head, pair(1)))
+                    .toList
+            player.sendActionBar(
+                txt"${txt("/done").style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Stop viewing these claims"
+            )
+            lines.foreach { (p1, p2) =>
+                drawLine(p1, p2, player, Color.ORANGE, 0.5)
+            }
         }
 
     private def renderCreator(
@@ -514,6 +550,8 @@ class PolygonEditor(using
                     case PlayerState.editing(state, bar, maxArea) =>
                         val (model, actions) = state.update(EditorMsg.done())
                         handleEditor(player, model, actions, bar, maxArea)
+                    case PlayerState.viewing(_) =>
+                        None
                     case _ =>
                         Some(state)
             )
@@ -541,6 +579,7 @@ class PolygonEditor(using
             clickPromises.remove(player)
             true
         else if playerPolygons.contains(player) then
+            var viewing = false
             val _ = playerPolygons.updateWith(player) { state =>
                 state.flatMap(state =>
                     state match
@@ -552,9 +591,12 @@ class PolygonEditor(using
                             val (model, actions) =
                                 state.update(CreatorMsg.click(on))
                             Some(handleCreator(player, model, actions, maxArea))
+                        case PlayerState.viewing(_) =>
+                            viewing = true
+                            Some(state)
                 )
             }
-            true
+            !viewing
         else false
 
     def look(player: Player, targetLoc: Location): Unit =

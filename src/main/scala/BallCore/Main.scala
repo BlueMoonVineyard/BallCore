@@ -213,6 +213,7 @@ final class Main extends JavaPlugin:
             groupCommands.node.register()
             groupCommands.invitesNode.register()
             groupCommands.cancelBattleNode.register()
+            groupCommands.viewNearbyClaimsNode.register()
             GetHeart().node.register()
             BookCommand().node.register()
             CancelCommand().node.register()
