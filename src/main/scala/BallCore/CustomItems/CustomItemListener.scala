@@ -157,7 +157,14 @@ class CustomItemListener(using
         if recipe == null || !recipe.isInstanceOf[Keyed] then return
         val key = recipe.asInstanceOf[Keyed].getKey()
         if key.getNamespace() != "minecraft" then return
-        if !AllowedVanillaRecipes.items.contains(recipe.getResult().getType())
+        val containsCustomItem = event
+            .getInventory()
+            .getMatrix()
+            .filterNot(_ == null)
+            .exists(reg.lookup(_).isDefined)
+        if containsCustomItem && !AllowedVanillaRecipes.items.contains(
+                recipe.getResult().getType()
+            )
         then event.getInventory().setResult(null)
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
