@@ -8,6 +8,7 @@ import BallCore.DataStructures.ShutdownCallbacks
 import BallCore.Groups.GroupManager
 import BallCore.Storage.SQLManager
 import org.bukkit.plugin.Plugin
+import BallCore.Sidebar.SidebarActor
 
 object Chat:
     def register()(using
@@ -15,6 +16,7 @@ object Chat:
         gm: GroupManager,
         sm: ShutdownCallbacks,
         sql: SQLManager,
+        sidebar: SidebarActor,
     ): ChatActor =
         given a: ChatActor = ChatActor()
 

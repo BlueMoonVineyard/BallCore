@@ -23,6 +23,10 @@ import scala.jdk.CollectionConverters.*
 import scala.collection.concurrent.TrieMap
 import com.github.tommyettinger.colorful.pure.oklab.ColorTools
 import scala.util.Random
+import BallCore.Sidebar.SidebarActor
+import BallCore.Sidebar.SidebarMsg
+import BallCore.Sidebar.SidebarLine
+import cats.effect.IO
 
 enum ChatMessage:
     case send(p: Player, m: Component)
@@ -65,7 +69,7 @@ object ChatActor:
             )
             .build()
 
-class ChatActor(using gm: GroupManager, sql: SQLManager)
+class ChatActor(using gm: GroupManager, sql: SQLManager, sidebar: SidebarActor)
     extends Actor[ChatMessage]:
 
     import BallCore.UI.ChatElements.*
@@ -193,6 +197,32 @@ class ChatActor(using gm: GroupManager, sql: SQLManager)
                 )
             }
 
+    private def updateChannel(p: Player, c: PlayerState): Unit =
+        val update = (msg: Component) =>
+            sidebar.send(
+                SidebarMsg.update(
+                    SidebarLine.chatChannel,
+                    p,
+                    Some(msg.color(NamedTextColor.GREEN)),
+                )
+            )
+        c match
+            case PlayerState.globalChat => update(txt" Global Chat")
+            case PlayerState.localChat => update(txt" Local Chat")
+            case PlayerState.groupChat(group) =>
+                sql.useFireAndForget(for {
+                    audience <- sql.withS(
+                        sql.withTX(gm.groupAudience(group).value)
+                    )
+                    _ <- audience match
+                        case Left(err) =>
+                            IO { update(txt" Unknown GC") }
+                        case Right((name, _)) =>
+                            IO { update(txt" GC: ${name}") }
+                } yield ())
+            case PlayerState.chattingWith(target) =>
+                update(txt" DMs: ${target.displayName()}")
+
     def handle(m: ChatMessage): Unit =
         m match
             case ChatMessage.send(p, m_) =>
@@ -223,6 +253,7 @@ class ChatActor(using gm: GroupManager, sql: SQLManager)
                         txt"${p.displayName()} has joined the game"
                             .color(NamedTextColor.YELLOW)
                     )
+                updateChannel(p, states(p))
             case ChatMessage.left(p) =>
                 Bukkit.getServer
                     .sendMessage(
@@ -236,6 +267,7 @@ class ChatActor(using gm: GroupManager, sql: SQLManager)
                         NamedTextColor.GREEN
                     )
                 )
+                updateChannel(p, states(p))
             case ChatMessage.chattingInGlobal(p) =>
                 states += p -> PlayerState.globalChat
                 p.sendMessage(
@@ -243,6 +275,7 @@ class ChatActor(using gm: GroupManager, sql: SQLManager)
                         NamedTextColor.GREEN
                     )
                 )
+                updateChannel(p, states(p))
             case ChatMessage.chattingInLocal(p) =>
                 states += p -> PlayerState.localChat
                 p.sendMessage(
@@ -250,6 +283,7 @@ class ChatActor(using gm: GroupManager, sql: SQLManager)
                         NamedTextColor.GREEN
                     )
                 )
+                updateChannel(p, states(p))
             case ChatMessage.sendToPlayer(from, m, target) =>
                 dm(from, target, m, false)
             case ChatMessage.sendToGroup(from, m, group) =>
@@ -274,3 +308,4 @@ class ChatActor(using gm: GroupManager, sql: SQLManager)
                             NamedTextColor.GREEN
                         )
                 )
+                updateChannel(from, states(from))

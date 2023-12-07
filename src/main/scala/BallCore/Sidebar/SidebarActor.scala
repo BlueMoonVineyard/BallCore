@@ -26,8 +26,10 @@ enum SidebarLine:
     case filler1
     case date
     case time
-    case separator
+    case separator1
     case rest
+    case separator2
+    case chatChannel
     case filler2
 
 class SidebarActor(using lib: ScoreboardLibrary, p: Plugin)

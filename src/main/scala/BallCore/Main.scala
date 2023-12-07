@@ -199,8 +199,8 @@ final class Main extends JavaPlugin:
             Sigil.register()
 
             given pbm: PlantBatchManager = Plants.Plants.register()
-
             given chatActor: ChatActor = Chat.Chat.register()
+
 
             val chatCommands = ChatCommands()
             Order.register()
