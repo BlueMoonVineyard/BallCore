@@ -77,14 +77,21 @@ class Listener()(using
             book = fingerprintsToBook(now, fprints, event.getPlayer())
             _ <-
                 if fprints.size > 0 then
-                    IO { event.getPlayer().getInventory().addItem(book) }
+                    IO {
+                        event
+                            .getPlayer()
+                            .sendServerMessage(
+                                txt"You found some fingerprints!"
+                            )
+                        event.getPlayer().getInventory().addItem(book)
+                    }
                         .evalOn(EntityExecutionContext(event.getPlayer()))
                 else
                     IO {
                         event
                             .getPlayer()
                             .sendServerMessage(
-                                txt"There are no fingerprints in your area..."
+                                txt"There are no fingerprints here..."
                             )
                     }
         } yield ()))
