@@ -420,7 +420,7 @@ class CivBeaconManager()(using
         val ly = l.getZ.toFloat
         getWorldData(l.getWorld).flatMap { x =>
             x.beaconRTree
-                .nearestK(lx, ly, 1000, 1000f)
+                .nearestK(lx, ly, 1000, 32f)
                 .map(_.value._2)
                 .distinct
                 .toList

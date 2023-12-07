@@ -134,7 +134,7 @@ class PolygonEditor(using
         ()
 
     def view(player: Player, beacons: List[(Polygon, World, BeaconID)]): Unit =
-        player.sendServerMessage(txt"You are looking at ${beacons.size} nearby claims.")
+        player.sendServerMessage(txt"You are looking at ${beacons.size} nearby claims within 32 blocks of you.")
         playerPolygons(player) = PlayerState.viewing(beacons)
 
     def create(player: Player, world: World, beaconID: BeaconID): Unit =
@@ -559,6 +559,7 @@ class PolygonEditor(using
 
     def leftClicked(player: Player, on: Location): Boolean =
         if playerPolygons.contains(player) then
+            var viewing = false
             playerPolygons.updateWith(player) { state =>
                 state.flatMap(state =>
                     state match
@@ -566,11 +567,14 @@ class PolygonEditor(using
                             val (model, actions) =
                                 state.update(EditorMsg.leftClick())
                             handleEditor(player, model, actions, bar, maxArea)
+                        case PlayerState.viewing(_) =>
+                            viewing = true
+                            Some(state)
                         case _ =>
                             Some(state)
                 )
             }
-            true
+            !viewing
         else false
 
     def clicked(player: Player, on: Location): Boolean =
