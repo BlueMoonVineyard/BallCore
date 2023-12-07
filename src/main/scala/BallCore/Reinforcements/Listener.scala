@@ -40,6 +40,9 @@ import java.time.OffsetDateTime
 import BallCore.CustomItems.BlockManager
 import BallCore.CustomItems.Listeners
 import BallCore.CustomItems.ItemRegistry
+import BallCore.Sigils.BattleManager
+import cats.effect.kernel.Resource
+import skunk.Session
 
 object Listener:
     private def centered(at: Location): Location =
@@ -115,6 +118,7 @@ class Listener(using
     primeTime: PrimeTimeManager,
     blockManager: BlockManager,
     ir: ItemRegistry,
+    battle: BattleManager,
 ) extends org.bukkit.event.Listener:
 
     import Listener.*
@@ -155,7 +159,15 @@ class Listener(using
                                 subgroup,
                                 permission,
                             ).value
-                        isOk = permissionGranted == Right(true)
+                        extantBattle <- battle.bufferZoneAt(location)(using
+                            Resource.make(IO.pure(summon[Session[IO]]))(_ =>
+                                IO.unit
+                            )
+                        )
+                        isOk =
+                            extantBattle.isDefined || permissionGranted == Right(
+                                true
+                            )
                         isInPrimeTime <-
                             if breaking && !isOk then
                                 primeTime.checkPrimeTime(groupID)
@@ -168,6 +180,7 @@ class Listener(using
                             permissionGranted,
                             isInPrimeTime,
                             heart,
+                            extantBattle,
                         )
                     )
                 )
@@ -182,9 +195,12 @@ class Listener(using
                             permissionGranted,
                             isInPrimeTime,
                             heart,
+                            extantBattle,
                         )
                     ) =>
                     (permissionGranted, isInPrimeTime) match
+                        case _ if extantBattle.isDefined && heart.isEmpty =>
+                            IO.pure(Right((BustResult.notBusting, true)))
                         case (Right(false), PrimeTimeResult.isInPrimeTime)
                             if breaking && heart.isEmpty =>
                             for {

@@ -29,6 +29,12 @@ import cats.syntax.all._
 import cats.effect.Resource
 import cats.effect.Fiber
 import scala.util.NotGiven
+import com.github.plokhotnyuk.rtree2d.core.RTree
+import com.github.plokhotnyuk.rtree2d.core.RTreeEntry
+import org.locationtech.jts.triangulate.DelaunayTriangulationBuilder
+import org.locationtech.jts.geom.GeometryCollection
+import org.bukkit.Location
+import org.locationtech.jts.geom.Coordinate
 
 type BattleID = UUID
 
@@ -82,6 +88,7 @@ class BattleManager(using
         GeoJsonWriter().write(polygon)
     }
     private val bossBars = TrieMap[BattleID, (BossBar, List[Audience])]()
+    val bufferSize = 10
 
     private def updateBossBarFor(battle: BattleID, health: Int): IO[BossBar] =
         IO {
@@ -156,6 +163,81 @@ class BattleManager(using
         )
     )
 
+    private case class WorldData(
+        var battleRTree: RTree[(Polygon, BattleID)],
+        var battleIDsToRTreeEntries: Map[BeaconID, IndexedSeq[
+            RTreeEntry[(Polygon, BattleID)]
+        ]],
+    )
+    private def triangulate(
+        id: BattleID,
+        polygon: Polygon,
+    ): IndexedSeq[RTreeEntry[(Polygon, BattleID)]] =
+        import com.github.plokhotnyuk.rtree2d.core.*
+        import com.github.plokhotnyuk.rtree2d.core.EuclideanPlane.*
+
+        val triangulator = DelaunayTriangulationBuilder()
+        triangulator.setSites(polygon)
+        val triangleCollection = triangulator
+            .getTriangles(geometryFactory)
+            .asInstanceOf[GeometryCollection]
+        val triangles =
+            for i <- 0 until triangleCollection.getNumGeometries
+            yield triangleCollection.getGeometryN(i).asInstanceOf[Polygon]
+
+        triangles.map { triangle =>
+            val Array(minmin, _, maxmax, _, _) =
+                triangle.getEnvelope
+                    .asInstanceOf[Polygon]
+                    .getCoordinates
+
+            entry(
+                minmin.getX.toFloat,
+                minmin.getY.toFloat,
+                maxmax.getX.toFloat,
+                maxmax.getY.toFloat,
+                (triangle, id),
+            )
+        }
+    private def loadBattles(
+        world: UUID
+    )(using Session[IO]): IO[RTree[(Polygon, BattleID)]] =
+        sql
+            .queryListIO(
+                sql"""
+        SELECT
+            BattleID, ST_AsGeoJSON(ContestedArea)
+        FROM
+            Battles
+        WHERE
+            World = $uuid;
+        """,
+                uuid *: polygonGeojsonCodec.opt,
+                world,
+            )
+            .map(
+                _.flatMap((it, bytes) =>
+                    bytes.map(x =>
+                        (it, x.buffer(bufferSize).asInstanceOf[Polygon])
+                    )
+                )
+                    .flatMap(triangulate)
+            )
+            .map(RTree(_))
+    private val worldData = TrieMap[UUID, WorldData]()
+    private def getWorldData(
+        world: UUID
+    )(using rsrc: Resource[IO, Session[IO]]): IO[WorldData] =
+        if !worldData.contains(world) then
+            for {
+                rtree <- rsrc.use { implicit session => loadBattles(world) }
+            } yield {
+                val entries = rtree.entries.groupMap(_.value._2)(identity)
+                worldData += world -> WorldData(rtree, entries)
+                worldData(world)
+            }
+        else IO.pure(worldData(world))
+
     private def spawnInitialPillars(
         battle: BattleID,
         offense: BeaconID,
@@ -177,10 +259,32 @@ class BattleManager(using
             )
             .map(_ => ())
 
-    def offensiveResign(battle: BattleID)(using Session[IO], Transaction[IO]): IO[Unit] =
+    def offensiveResign(
+        battle: BattleID
+    )(using Session[IO], Transaction[IO]): IO[Unit] =
         battleDefended(battle)
-    def defensiveResign(battle: BattleID)(using Session[IO], Transaction[IO]): IO[Unit] =
+    def defensiveResign(
+        battle: BattleID
+    )(using Session[IO], Transaction[IO]): IO[Unit] =
         battleTaken(battle)
+
+    def bufferZoneAt(l: Location)(using
+        Resource[IO, Session[IO]]
+    ): IO[Option[BattleID]] =
+        val lx = l.getX.toFloat
+        val ly = l.getZ.toFloat
+        getWorldData(l.getWorld.getUID).map { worldData =>
+            worldData.battleRTree
+                .searchAll(lx, ly)
+                .filter { entry =>
+                    val (polygon, _) = entry.value
+                    polygon.covers(
+                        geometryFactory.createPoint(Coordinate(l.getX, l.getZ))
+                    )
+                }
+                .map(_.value._2)
+                .headOption
+        }
 
     def isInvolvedInBattle(beacon: BeaconID)(using Session[IO]): IO[Boolean] =
         sql.queryUniqueIO(
@@ -249,6 +353,19 @@ class BattleManager(using
                 )
                 // TODO: multiple slime pillars
                 (battleID, count) = result
+                worldData <- getWorldData(world)
+                _ <- IO {
+                    val triangulated = triangulate(
+                        battleID,
+                        contestedArea.buffer(bufferSize).asInstanceOf[Polygon],
+                    )
+                    worldData.battleRTree = RTree.update(
+                        worldData.battleRTree,
+                        Seq(),
+                        triangulated,
+                    )
+                    worldData.battleIDsToRTreeEntries += battleID -> triangulated
+                }
                 _ <- spawnInitialPillars(
                     battleID,
                     offensive,
@@ -297,19 +414,43 @@ class BattleManager(using
                 case PrimeTimeResult.notInPrimeTime(reopens) =>
                     IO.pure(Left(BattleError.opponentIsInPrimeTime(reopens)))
         } yield result
-    private def battleDefended(battle: BattleID)(using Session[IO], Transaction[IO]): IO[Unit] =
+    private def removeFromBattleMap(battleID: BattleID, world: UUID)(using
+        s: Session[IO]
+    ): IO[Unit] =
+        for {
+            worldData <- getWorldData(world)(using
+                Resource.make(IO.pure(s))(_ => IO.unit)
+            )
+            _ <- IO {
+                worldData.battleRTree = RTree.update(
+                    worldData.battleRTree,
+                    worldData.battleIDsToRTreeEntries
+                        .get(battleID)
+                        .toSeq
+                        .flatten,
+                    None,
+                )
+            }
+        } yield ()
+    private def battleDefended(
+        battle: BattleID
+    )(using Session[IO], Transaction[IO]): IO[Unit] =
         sql.queryUniqueIO(
             sql"""
-            DELETE FROM Battles WHERE BattleID = $uuid RETURNING OffensiveBeacon, DefensiveBeacon;
+            DELETE FROM Battles WHERE BattleID = $uuid RETURNING OffensiveBeacon, DefensiveBeacon, World;
             """,
-            (uuid *: uuid),
+            (uuid *: uuid *: uuid),
             battle,
         ).flatTap { _ =>
             removeBossBarFor(battle)
-        }.flatMap((offense, defense) =>
+        }.flatTap { case (_, _, world) =>
+            removeFromBattleMap(battle, world)
+        }.flatMap((offense, defense, world) =>
             hooks.battleDefended(battle, offense, defense)
         )
-    def pillarDefended(battle: BattleID)(using Session[IO], NotGiven[Transaction[IO]]): IO[Unit] =
+    def pillarDefended(
+        battle: BattleID
+    )(using Session[IO], NotGiven[Transaction[IO]]): IO[Unit] =
         sql.queryUniqueIO(
             sql"""
     UPDATE Battles SET Health = Health + 1 WHERE BattleID = $uuid RETURNING Health, OffensiveBeacon, DefensiveBeacon, ST_AsGeoJSON(ContestedArea), World;
@@ -321,19 +462,23 @@ class BattleManager(using
                 sql.withTX(battleDefended(battle))
             },
             { (health, offense, defense, contestedArea, world) =>
-                sql.withTX(hooks
-                    .spawnPillarFor(
-                        battle,
-                        offense,
-                        contestedArea,
-                        world,
-                        defense,
-                        Some(true),
-                    )
-                    .flatTap(_ => updateBossBarFor(battle, health)))
+                sql.withTX(
+                    hooks
+                        .spawnPillarFor(
+                            battle,
+                            offense,
+                            contestedArea,
+                            world,
+                            defense,
+                            Some(true),
+                        )
+                        .flatTap(_ => updateBossBarFor(battle, health))
+                )
             },
         ).map(_ => ())
-    private def battleTaken(battle: BattleID)(using Session[IO], Transaction[IO]): IO[Unit] =
+    private def battleTaken(
+        battle: BattleID
+    )(using Session[IO], Transaction[IO]): IO[Unit] =
         sql.queryUniqueIO(
             sql"""
             DELETE FROM Battles WHERE BattleID = $uuid RETURNING OffensiveBeacon, DefensiveBeacon, ST_AsGeoJSON(ContestedArea), ST_AsGeoJSON(DesiredArea), World;
@@ -342,6 +487,8 @@ class BattleManager(using
             battle,
         ).flatTap { _ =>
             removeBossBarFor(battle)
+        }.flatTap { case (_, _, _, _, world) =>
+            removeFromBattleMap(battle, world)
         }.flatMap((offense, defense, contestedArea, desiredArea, world) =>
             hooks.battleTaken(
                 battle,
@@ -353,7 +500,9 @@ class BattleManager(using
             )
         )
 
-    def pillarTaken(battle: BattleID)(using Session[IO], NotGiven[Transaction[IO]]): IO[Unit] =
+    def pillarTaken(
+        battle: BattleID
+    )(using Session[IO], NotGiven[Transaction[IO]]): IO[Unit] =
         sql.queryUniqueIO(
             sql"""
     UPDATE Battles SET Health = Health - 1 WHERE BattleID = $uuid RETURNING Health, OffensiveBeacon, DefensiveBeacon, ST_AsGeoJSON(ContestedArea), World;
@@ -365,15 +514,17 @@ class BattleManager(using
                 sql.withTX(battleTaken(battle))
             },
             { (health, offense, defense, contestedArea, world) =>
-                sql.withTX(hooks
-                    .spawnPillarFor(
-                        battle,
-                        offense,
-                        contestedArea,
-                        world,
-                        defense,
-                        Some(false),
-                    )
-                    .flatTap(_ => updateBossBarFor(battle, health)))
+                sql.withTX(
+                    hooks
+                        .spawnPillarFor(
+                            battle,
+                            offense,
+                            contestedArea,
+                            world,
+                            defense,
+                            Some(false),
+                        )
+                        .flatTap(_ => updateBossBarFor(battle, health))
+                )
             },
         ).map(_ => ())

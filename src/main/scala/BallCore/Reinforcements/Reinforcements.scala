@@ -18,6 +18,7 @@ import BallCore.CustomItems.BlockManager
 import org.bukkit.inventory.ShapelessRecipe
 import org.bukkit.inventory.ShapedRecipe
 import org.bukkit.Material
+import BallCore.Sigils.BattleManager
 
 object Reinforcements:
     private def registerBlockListener()(using
@@ -32,6 +33,7 @@ object Reinforcements:
         primeTime: PrimeTimeManager,
         blockManager: BlockManager,
         ir: ItemRegistry,
+        battles: BattleManager,
     ): Unit =
         server.getPluginManager.registerEvents(Listener(), plugin)
 
@@ -93,6 +95,7 @@ object Reinforcements:
         webhooks: WebHookManager,
         primeTime: PrimeTimeManager,
         blockManager: BlockManager,
+        battles: BattleManager,
     ): Unit =
         registerBlockListener()
         registerEntityListener()
