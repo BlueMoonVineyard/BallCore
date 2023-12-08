@@ -35,6 +35,7 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.chaining.*
 import io.sentry.Sentry
 import io.sentry.SpanStatus
+import net.kyori.adventure.bossbar.BossBar
 
 enum PlantMsg:
     case startGrowing(what: Plant, where: Block)
@@ -142,6 +143,38 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin, c: Clock)
             ),
         )
     )
+
+    // private def chunkAt(world: World, cx: Int, cz: Int)(using
+    //     p: Plugin
+    // ): ResourceIO[Chunk] =
+    //     Resource.make {
+    //         IO.fromCompletableFuture {
+    //             IO {
+    //                 world
+    //                     .getChunkAtAsync(cx, cz)
+    //                     .thenApply(chunk =>
+    //                         chunk.tap(_.addPluginChunkTicket(p))
+    //                     )
+    //             }
+    //         }
+    //     } { chunk =>
+    //         IO { val _ = chunk.removePluginChunkTicket(p) }
+    //     }
+
+    // private def chunksNearby(world: World, cx: Int, cz: Int)(using
+    //     p: Plugin
+    // ): ResourceIO[Chunk] =
+    //     for {
+    //         a <- chunkAt(world, cx + -1, cz + -1)
+    //         b <- chunkAt(world, cx + -1, cz + 0)
+    //         c <- chunkAt(world, cx + -1, cz + 1)
+    //         d <- chunkAt(world, cx + 0, cz + -1)
+    //         centreChunk <- chunkAt(world, cx + 0, cz + 0)
+    //         f <- chunkAt(world, cx + 0, cz + 1)
+    //         g <- chunkAt(world, cx + 1, cz + -1)
+    //         h <- chunkAt(world, cx + 1, cz + 0)
+    //         i <- chunkAt(world, cx + 1, cz + 1)
+    //     } yield centreChunk
 
     private def toOffsets(x: Int, z: Int): (Int, Int, Int, Int) =
         (x / 16, z / 16, x % 16, z % 16)
@@ -331,45 +364,48 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin, c: Clock)
                 )
 
                 FireAndForget {
-                    get(cx, cz, world).get(ox, oz, y).filterNot(_.deleted).foreach { plant =>
-                        val (x, z) = fromOffsets(
-                            plant.inner.chunkX,
-                            plant.inner.chunkZ,
-                            plant.inner.offsetX,
-                            plant.inner.offsetZ,
-                        )
-                        val actualSeason =
-                            Datekeeping
-                                .time()
-                                .month
-                                .toInt
-                                .pipe(Month.fromOrdinal)
-                                .season
-                        val actualClimate =
-                            Climate.climateAt(x, plant.inner.yPos, z)
-                        val rightSeason =
-                            plant.inner.what.growingSeason growsWithin actualSeason
-                        val rightClimate =
-                            plant.inner.what.growingClimate growsWithin actualClimate
+                    get(cx, cz, world)
+                        .get(ox, oz, y)
+                        .filterNot(_.deleted)
+                        .foreach { plant =>
+                            val (x, z) = fromOffsets(
+                                plant.inner.chunkX,
+                                plant.inner.chunkZ,
+                                plant.inner.offsetX,
+                                plant.inner.offsetZ,
+                            )
+                            val actualSeason =
+                                Datekeeping
+                                    .time()
+                                    .month
+                                    .toInt
+                                    .pipe(Month.fromOrdinal)
+                                    .season
+                            val actualClimate =
+                                Climate.climateAt(x, plant.inner.yPos, z)
+                            val rightSeason =
+                                plant.inner.what.growingSeason growsWithin actualSeason
+                            val rightClimate =
+                                plant.inner.what.growingClimate growsWithin actualClimate
 
-                        (rightSeason, rightClimate) match
-                            case (false, false) =>
-                                player.sendServerMessage(
-                                    txt"This plant is neither in the right climate nor season; it grows in ${plant.inner.what.growingClimate.display} climates during ${plant.inner.what.growingSeason.display}, but it is in a ${actualClimate.display} climate and it is currently ${actualSeason.display}"
-                                )
-                            case (false, true) =>
-                                player.sendServerMessage(
-                                    txt"This plant is out of season; it grows during ${plant.inner.what.growingSeason.display} (it is currently ${actualSeason.display})"
-                                )
-                            case (true, false) =>
-                                player.sendServerMessage(
-                                    txt"This plant is in the wrong climate; it grows in ${plant.inner.what.growingClimate.display} climates (it is in a ${actualClimate.display} climate)"
-                                )
-                            case (true, true) =>
-                                player.sendServerMessage(
-                                    txt"This plant is in the right season and climate! It is ${plant.inner.ageIngameHours} hours old."
-                                )
-                    }
+                            (rightSeason, rightClimate) match
+                                case (false, false) =>
+                                    player.sendServerMessage(
+                                        txt"This plant is neither in the right climate nor season; it grows in ${plant.inner.what.growingClimate.display} climates during ${plant.inner.what.growingSeason.display}, but it is in a ${actualClimate.display} climate and it is currently ${actualSeason.display}"
+                                    )
+                                case (false, true) =>
+                                    player.sendServerMessage(
+                                        txt"This plant is out of season; it grows during ${plant.inner.what.growingSeason.display} (it is currently ${actualSeason.display})"
+                                    )
+                                case (true, false) =>
+                                    player.sendServerMessage(
+                                        txt"This plant is in the wrong climate; it grows in ${plant.inner.what.growingClimate.display} climates (it is in a ${actualClimate.display} climate)"
+                                    )
+                                case (true, true) =>
+                                    player.sendServerMessage(
+                                        txt"This plant is in the right season and climate! It is ${plant.inner.ageIngameHours} hours old."
+                                    )
+                        }
                 }
             case PlantMsg.tickPlants =>
                 val transaction =
@@ -418,77 +454,93 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin, c: Clock)
                     }
                     mapInPlaceSpan.finish()
 
+                    val bossBar = BossBar.bossBar(
+                        txt"Ticking plants...",
+                        0.0f,
+                        BossBar.Color.GREEN,
+                        BossBar.Overlay.PROGRESS,
+                    )
+                    bossBar.addViewer(Bukkit.getServer())
+
                     val plantDispatchSpan = transaction.startChild(
                         "dispatching",
                         "dispatching plants to be grown",
                     )
+                    val size = plants.size
                     // dispatch plants with growth ticks to be grown in the world
-                    plants.foreach { (key, map) =>
+                    plants.zipWithIndex.foreach { case ((key, map), idx) =>
                         val (cx, cz, worldID) = key
                         val world = Bukkit.getWorld(worldID)
+                        bossBar.progress(idx.toFloat / size.toFloat)
 
                         sql.useBlocking(IO {
-                            val (done, notDone) = map.view
-                                .filterNot(_._2.deleted)
-                                .filter(
-                                    _._2.inner.incompleteGrowthAdvancements > 0
-                                )
-                                .mapValues { data =>
-                                    val (x, z) = fromOffsets(
-                                        data.inner.chunkX,
-                                        data.inner.chunkZ,
-                                        data.inner.offsetX,
-                                        data.inner.offsetZ,
+                            if world.isChunkLoaded(cx, cz) then
+                                val (done, notDone) = map.view
+                                    .filterNot(_._2.deleted)
+                                    .filter(
+                                        _._2.inner.incompleteGrowthAdvancements > 0
                                     )
-                                    val block =
-                                        world.getBlockAt(x, data.inner.yPos, z)
-
-                                    (data, block)
-                                }
-                                .toList
-                                .partition { (_, in) =>
-                                    val (data, block) = in
-
-                                    1.to(
-                                        data.inner.incompleteGrowthAdvancements
-                                    ).exists { _ =>
-                                        val result = PlantGrower.grow(
-                                            block,
-                                            data.inner.what.plant,
+                                    .mapValues { data =>
+                                        val (x, z) = fromOffsets(
+                                            data.inner.chunkX,
+                                            data.inner.chunkZ,
+                                            data.inner.offsetX,
+                                            data.inner.offsetZ,
                                         )
-                                        result.isSuccess && result.get
+                                        val block =
+                                            world.getBlockAt(
+                                                x,
+                                                data.inner.yPos,
+                                                z,
+                                            )
+
+                                        (data, block)
+                                    }
+                                    .toList
+                                    .partition { (_, in) =>
+                                        val (data, block) = in
+
+                                        1.to(
+                                            data.inner.incompleteGrowthAdvancements
+                                        ).exists { _ =>
+                                            val result = PlantGrower.grow(
+                                                block,
+                                                data.inner.what.plant,
+                                            )
+                                            result.isSuccess && result.get
+                                        }
+                                    }
+
+                                done.map(_._2._2).foreach { blk =>
+                                    val (cx, cz, ox, oz) =
+                                        toOffsets(blk.getX, blk.getZ)
+                                    val y = blk.getY
+                                    val world = blk.getWorld.getUID
+                                    update(cx, cz, world, ox, oz, y) {
+                                        _.copy(deleted = true)
                                     }
                                 }
-
-                            done.map(_._2._2).foreach { blk =>
-                                val (cx, cz, ox, oz) =
-                                    toOffsets(blk.getX, blk.getZ)
-                                val y = blk.getY
-                                val world = blk.getWorld.getUID
-                                update(cx, cz, world, ox, oz, y) {
-                                    _.copy(deleted = true)
+                                notDone.map(_._2._2).foreach { blk =>
+                                    val (cx, cz, ox, oz) =
+                                        toOffsets(blk.getX, blk.getZ)
+                                    val y = blk.getY
+                                    val world = blk.getWorld.getUID
+                                    update(cx, cz, world, ox, oz, y) { d =>
+                                        d.copy(inner =
+                                            d.inner
+                                                .copy(
+                                                    incompleteGrowthAdvancements = 0
+                                                )
+                                        )
+                                    }
                                 }
-                            }
-                            notDone.map(_._2._2).foreach { blk =>
-                                val (cx, cz, ox, oz) =
-                                    toOffsets(blk.getX, blk.getZ)
-                                val y = blk.getY
-                                val world = blk.getWorld.getUID
-                                update(cx, cz, world, ox, oz, y) { d =>
-                                    d.copy(inner =
-                                        d.inner
-                                            .copy(incompleteGrowthAdvancements =
-                                                0
-                                            )
-                                    )
-                                }
-                            }
                         }.evalOn(ChunkExecutionContext(cx, cz, world)))
                     }
                     plantDispatchSpan.finish()
+
+                    val _ = bossBar.removeViewer(Bukkit.getServer())
                 catch
                     case e: Throwable =>
                         transaction.setThrowable(e)
                         transaction.setStatus(SpanStatus.NOT_FOUND)
-                finally
-                    transaction.finish()
+                finally transaction.finish()
