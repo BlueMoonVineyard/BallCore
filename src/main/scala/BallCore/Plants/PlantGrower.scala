@@ -46,15 +46,12 @@ object PlantGrower:
                     ) match
                         case Failure(exception) =>
                             Sentry.captureException(exception)
-                            println("setting material because of failure")
                             exception.printStackTrace()
                             block.setType(mat, false)
                             false
                         case Success(true) =>
-                            println("it worked!!!")
                             true
                         case Success(false) =>
-                            println("it failed!!!")
                             block.setType(Material.DEAD_BUSH, false)
                             false
                 case PlantType.stemmedAgeable(stem, fruit, _) =>

@@ -12,6 +12,7 @@ import org.bukkit.{Material, Tag}
 
 import scala.util.chaining.*
 import org.bukkit.event.block.BlockBreakEvent
+import org.bukkit.event.world.ChunkLoadEvent
 
 class CustomPlantListener()(using pbm: PlantBatchManager) extends Listener:
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -69,3 +70,7 @@ class CustomPlantListener()(using pbm: PlantBatchManager) extends Listener:
         pbm.send(
             PlantMsg.inspect(event.getClickedBlock, event.getPlayer)
         )
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    def chunkLoaded(event: ChunkLoadEvent): Unit =
+        pbm.send(PlantMsg.chunkLoaded(event.getChunk()))
