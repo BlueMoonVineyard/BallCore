@@ -42,6 +42,7 @@ import org.joml.Vector3f
 import org.joml.AxisAngle4f
 import org.bukkit.entity.Display.Brightness
 import org.bukkit.Color
+import BallCore.Folia.EntityExecutionContext
 
 object PolygonEditor:
     def register()(using e: PolygonEditor, p: Plugin): Unit =
@@ -98,7 +99,7 @@ enum LineColour:
             case LineColour.lime => Color.LIME
             case LineColour.gray => Color.GRAY
 
-class LineDrawer(player: Player)(using p: Plugin):
+class LineDrawer(val player: Player)(using p: Plugin):
     import scala.util.chaining._
 
     private var lineEntities = List[ItemDisplay]()
@@ -254,8 +255,7 @@ class PolygonEditor(using
         }
         lineDrawer.setLines(lines)
 
-        playerPolygons(player) =
-            PlayerState.viewing(beacons, lineDrawer)
+        playerPolygons(player) = PlayerState.viewing(beacons, lineDrawer)
 
     def create(player: Player, world: World, beaconID: BeaconID): Unit =
         import BallCore.UI.ChatElements.*
@@ -278,11 +278,15 @@ class PolygonEditor(using
                 player.sendServerMessage(
                     txt"You've started editing your claims"
                 )
+                val model = EditorModel(beaconID, polygon, world)
+                val bar = createBossBar(polygon.getArea().toInt, area, player)
+                val lineDrawer = LineDrawer(player)
+                updateEditorPersistent(model, bar, area, lineDrawer)
                 playerPolygons(player) = PlayerState.editing(
-                    EditorModel(beaconID, polygon, world),
-                    createBossBar(polygon.getArea().toInt, area, player),
+                    model,
+                    bar,
                     area,
-                    LineDrawer(player),
+                    lineDrawer,
                 )
         )))
 
@@ -298,9 +302,6 @@ class PolygonEditor(using
                                 renderEditor(
                                     player,
                                     state,
-                                    bar,
-                                    maxArea,
-                                    lineDrawer,
                                 )
                             case PlayerState
                                     .creating(
@@ -372,60 +373,8 @@ class PolygonEditor(using
     private def renderEditor(
         player: Player,
         model: EditorModel,
-        bar: BossBar,
-        maxArea: Int,
-        lineViewer: LineDrawer,
     ): Unit =
         import EditorModelState.*
-
-        updateBossBar(model.polygonArea, maxArea, bar)
-        val couldWarLines = model.couldWarGroup match
-            case None => List()
-            case Some((_, _, polygon)) =>
-                val world = model.lines(0)._1.getWorld()
-                val points =
-                    polygon.getCoordinates
-                        .map(coord =>
-                            Location(world, coord.getX, coord.getZ, coord.getY)
-                        )
-                        .toList
-                        .dropRight(1)
-                val lines =
-                    points
-                        .sliding(2, 1)
-                        .concat(List(List(points.last, points.head)))
-                        .map(pair => (pair.head, pair(1)))
-                        .toList
-                lines.map((p1, p2) => (p1, p2, LineColour.orange))
-        val normalLines = model.lines.map { (p1, p2) =>
-            (p1, p2, LineColour.white)
-        }
-
-        val pointLines =
-            model.polygon.zipWithIndex.map { (point, idx) =>
-                val colour =
-                    if model.state == lookingAt(point) then LineColour.teal
-                    else if model.state == editingPoint(idx, false) then
-                        LineColour.red
-                    else if model.state == editingPoint(idx, true) then
-                        LineColour.yellow
-                    else LineColour.orange
-                (point, point.clone().add(0, 2, 0), colour)
-            }
-
-        val midpointLines =
-            model.midpoints.map { (_, point) =>
-                val colour =
-                    if model.state == lookingAt(point) then LineColour.teal
-                    else LineColour.lime
-                (point, point.clone().add(0, 2, 0), colour)
-            }
-
-        val allLines = couldWarLines
-            .concat(normalLines)
-            .concat(pointLines)
-            .concat(midpointLines)
-        lineViewer.setLines(allLines)
 
         model.state match
             case idle() =>
@@ -515,15 +464,85 @@ class PolygonEditor(using
                     case _ =>
                         Some(model)
             }
-        done.lastOption match
+        val newModel = done.lastOption match
             case None =>
-                Some(PlayerState.editing(model, bar, maxArea, lineDrawer))
+                Some(model)
             case Some(None) =>
                 bar.removeViewer(player)
                 lineDrawer.clear()
                 None
             case Some(Some(newModel)) =>
-                Some(PlayerState.editing(newModel, bar, maxArea, lineDrawer))
+                Some(newModel)
+        newModel.foreach { model =>
+            updateEditorPersistent(model, bar, maxArea, lineDrawer)
+        }
+        newModel.map(model =>
+            PlayerState.editing(model, bar, maxArea, lineDrawer)
+        )
+
+    private def updateEditorPersistent(
+        model: EditorModel,
+        bar: BossBar,
+        maxArea: Int,
+        lineDrawer: LineDrawer,
+    ): Unit =
+        import EditorModelState.*
+
+        sql.useFireAndForget(IO {
+            updateBossBar(model.polygonArea, maxArea, bar)
+            val couldWarLines = model.couldWarGroup match
+                case None => List()
+                case Some((_, _, polygon)) =>
+                    val world = model.lines(0)._1.getWorld()
+                    val points =
+                        polygon.getCoordinates
+                            .map(coord =>
+                                Location(
+                                    world,
+                                    coord.getX,
+                                    coord.getZ,
+                                    coord.getY,
+                                )
+                            )
+                            .toList
+                            .dropRight(1)
+                    val lines =
+                        points
+                            .sliding(2, 1)
+                            .concat(List(List(points.last, points.head)))
+                            .map(pair => (pair.head, pair(1)))
+                            .toList
+                    lines.map((p1, p2) => (p1, p2, LineColour.orange))
+            val normalLines = model.lines.map { (p1, p2) =>
+                (p1, p2, LineColour.white)
+            }
+
+            val pointLines =
+                model.polygon.zipWithIndex.map { (point, idx) =>
+                    val colour =
+                        if model.state == lookingAt(point) then LineColour.teal
+                        else if model.state == editingPoint(idx, false) then
+                            LineColour.red
+                        else if model.state == editingPoint(idx, true) then
+                            LineColour.yellow
+                        else LineColour.orange
+                    (point, point.clone().add(0, 2, 0), colour)
+                }
+
+            val midpointLines =
+                model.midpoints.map { (_, point) =>
+                    val colour =
+                        if model.state == lookingAt(point) then LineColour.teal
+                        else LineColour.lime
+                    (point, point.clone().add(0, 2, 0), colour)
+                }
+
+            val allLines = couldWarLines
+                .concat(normalLines)
+                .concat(pointLines)
+                .concat(midpointLines)
+            lineDrawer.setLines(allLines)
+        }.evalOn(EntityExecutionContext(lineDrawer.player)))
 
     private def handleCreator(
         player: Player,
@@ -558,14 +577,12 @@ class PolygonEditor(using
                             catch
                                 case e: IllegalArgumentException =>
                                     0
+                        val emodel = EditorModel(model.beaconID, points)
+                        val bar = createBossBar(area, maxArea, player)
+                        updateEditorPersistent(emodel, bar, maxArea, lineDrawer)
                         Some(
                             PlayerState
-                                .editing(
-                                    EditorModel(model.beaconID, points),
-                                    createBossBar(area, maxArea, player),
-                                    maxArea,
-                                    lineDrawer,
-                                )
+                                .editing(emodel, bar, maxArea, lineDrawer)
                         )
                     case _ =>
                         None
