@@ -512,7 +512,7 @@ class PolygonEditor(using
                                                     case BattleError.beaconIsTooNew =>
                                                         player
                                                             .sendServerMessage(
-                                                                txt"Your beacon needs to be at least 4 days old to launch a battle!"
+                                                                txt"Your beacon needs to be at least 12 hours old to launch a battle!"
                                                             )
                                                 Some(state)
                                             case Right(value) =>

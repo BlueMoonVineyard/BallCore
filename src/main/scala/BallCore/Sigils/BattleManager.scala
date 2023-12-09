@@ -392,7 +392,7 @@ class BattleManager(using
             now <- clock.nowIO()
             offensiveCreatedAt <- OptionT(cbm.beaconCreatedAt(offensive))
                 .getOrElseF(clock.nowIO())
-            offensiveAge = ChronoUnit.DAYS.between(offensiveCreatedAt, now)
+            offensiveAge = ChronoUnit.HOURS.between(offensiveCreatedAt, now)
             primeTime <- OptionT(cbm.getGroup(defensive))
                 .flatMap { group =>
                     OptionT.liftF(primeTime.checkPrimeTime(group))
@@ -409,7 +409,7 @@ class BattleManager(using
                     ).map(Right.apply)
                 case PrimeTimeResult.isInPrimeTime =>
                     IO.pure(Left(BattleError.beaconIsTooNew))
-                case PrimeTimeResult.notInPrimeTime(_) if offensiveAge <= 3 =>
+                case PrimeTimeResult.notInPrimeTime(_) if offensiveAge <= 12 =>
                     IO.pure(Left(BattleError.beaconIsTooNew))
                 case PrimeTimeResult.notInPrimeTime(reopens) =>
                     IO.pure(Left(BattleError.opponentIsInPrimeTime(reopens)))
