@@ -9,7 +9,6 @@ import BallCore.Storage.SQLManager
 import BallCore.TextComponents.*
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask
 import net.kyori.adventure.text.format.{NamedTextColor, TextDecoration}
-import org.bukkit.Particle.DustOptions
 import org.bukkit.entity.Player
 import org.bukkit.event.block.Action
 import org.bukkit.event.player.{
@@ -20,11 +19,10 @@ import org.bukkit.event.player.{
 import org.bukkit.event.{EventHandler, EventPriority, Listener}
 import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.plugin.Plugin
-import org.bukkit.{Color, Location, Particle, World}
+import org.bukkit.{Location, World}
 import org.locationtech.jts.geom.Coordinate
 
 import java.util as ju
-import java.util.Arrays
 import java.util.concurrent.TimeUnit
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.{Future, Promise}
@@ -35,13 +33,19 @@ import net.kyori.adventure.bossbar.BossBar
 import net.kyori.adventure.text.Component
 import BallCore.Sigils.BattleError
 import org.locationtech.jts.geom.Polygon
+import org.bukkit.entity.ItemDisplay
+import org.bukkit.entity.EntityType
+import org.bukkit.inventory.ItemStack
+import org.bukkit.Material
+import org.bukkit.util.Transformation
+import org.joml.Vector3f
+import org.joml.AxisAngle4f
 
 object PolygonEditor:
     def register()(using e: PolygonEditor, p: Plugin): Unit =
         p.getServer.getPluginManager.registerEvents(EditorListener(), p)
 
 class EditorListener()(using e: PolygonEditor) extends Listener:
-
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     def interact(event: PlayerInteractEvent): Unit =
         if event.getHand != EquipmentSlot.HAND then return
@@ -73,15 +77,81 @@ class EditorListener()(using e: PolygonEditor) extends Listener:
     def quit(event: PlayerQuitEvent): Unit =
         e.leave(event.getPlayer)
 
+enum LineColour:
+    case red
+    case orange
+    case yellow
+    case white
+    case teal
+    case lime
+    case gray
+
+class LineDrawer(player: Player)(using p: Plugin):
+    import scala.util.chaining._
+
+    private var lineEntities = List[ItemDisplay]()
+
+    private def itemStackOfColour(l: LineColour): ItemStack =
+        val _ = l
+        val is = ItemStack(Material.STICK)
+        is.setItemMeta(is.getItemMeta().tap(_.setCustomModelData(9)))
+        is
+
+    def clear(): Unit =
+        lineEntities.foreach(_.remove())
+
+    def setLines(lines: List[(Location, Location, LineColour)]): Unit =
+        if lineEntities.size < lines.size then
+            for i <- (lineEntities.size + 1 to lines.size).map(_ - 1) do
+                lineEntities = lineEntities.appended(
+                    lines(i)._1.getWorld()
+                        .spawnEntity(lines(i)._1, EntityType.ITEM_DISPLAY)
+                        .asInstanceOf[ItemDisplay]
+                        .tap(_.setVisibleByDefault(false))
+                        .tap(x => player.showEntity(p, x))
+                )
+        else if lines.size < lineEntities.size then
+            lineEntities
+                .takeRight(lineEntities.size - lines.size)
+                .foreach(_.remove())
+            lineEntities = lineEntities.take(lines.size)
+
+        println(s"drawing ${lines.size} count with ${lineEntities.size} entities")
+        lineEntities.lazyZip(lines).foreach {
+            case (display, (from, to, colour)) =>
+                display.setItemStack(itemStackOfColour(colour))
+
+                val targetFrom =
+                    from
+                        .clone()
+                        .setDirection(
+                            to.clone()
+                                .subtract(from)
+                                .toVector()
+                        )
+                println(targetFrom)
+                val _ = display.teleportAsync(targetFrom)
+                val distance = from.distance(to)
+                val transformation = Transformation(
+                    Vector3f(0f, 0f, distance.toFloat / 2f),
+                    AxisAngle4f(),
+                    Vector3f(1f, 1f, 16f * distance.toFloat),
+                    AxisAngle4f(),
+                )
+                display.setTransformation(transformation)
+        }
+
 enum PlayerState:
-    case editing(state: EditorModel, bar: BossBar, maxArea: Int)
+    case editing(state: EditorModel, bar: BossBar, maxArea: Int, lineDrawer: LineDrawer)
     case creating(
         state: CreatorModel,
         actions: List[CreatorAction],
         maxArea: Int,
+        lineDrawer: LineDrawer,
     )
     case viewing(
-        beacons: List[(Polygon, World, BeaconID)]
+        beacons: List[(Polygon, World, BeaconID)],
+        lineDrawer: LineDrawer,
     )
 
 class PolygonEditor(using
@@ -134,8 +204,10 @@ class PolygonEditor(using
         ()
 
     def view(player: Player, beacons: List[(Polygon, World, BeaconID)]): Unit =
-        player.sendServerMessage(txt"You are looking at ${beacons.size} nearby claims within 32 blocks of you.")
-        playerPolygons(player) = PlayerState.viewing(beacons)
+        player.sendServerMessage(
+            txt"You are looking at ${beacons.size} nearby claims within 32 blocks of you."
+        )
+        playerPolygons(player) = PlayerState.viewing(beacons, LineDrawer(player))
 
     def create(player: Player, world: World, beaconID: BeaconID): Unit =
         import BallCore.UI.ChatElements.*
@@ -152,6 +224,7 @@ class PolygonEditor(using
                     CreatorModel(beaconID, CreatorModelState.definingPointA()),
                     List(),
                     area,
+                    LineDrawer(player),
                 )
             case Some(polygon) =>
                 player.sendServerMessage(
@@ -161,6 +234,7 @@ class PolygonEditor(using
                     EditorModel(beaconID, polygon, world),
                     createBossBar(polygon.getArea().toInt, area, player),
                     area,
+                    LineDrawer(player),
                 )
         )))
 
@@ -171,13 +245,13 @@ class PolygonEditor(using
                     p,
                     _ => {
                         model match
-                            case PlayerState.editing(state, bar, maxArea) =>
-                                renderEditor(player, state, bar, maxArea)
+                            case PlayerState.editing(state, bar, maxArea, lineDrawer) =>
+                                renderEditor(player, state, bar, maxArea, lineDrawer)
                             case PlayerState
-                                    .creating(state, actions, maxArea) =>
-                                renderCreator(player, state, actions)
-                            case PlayerState.viewing(polygons) =>
-                                renderViewer(player, polygons)
+                                    .creating(state, actions, maxArea, lineDrawer) =>
+                                renderCreator(player, state, actions, lineDrawer)
+                            case PlayerState.viewing(polygons, lineDrawer) =>
+                                renderViewer(player, polygons, lineDrawer)
                     },
                     null,
                 )
@@ -186,8 +260,9 @@ class PolygonEditor(using
     private def renderViewer(
         player: Player,
         polygons: List[(Polygon, World, BeaconID)],
+        lineDrawer: LineDrawer,
     ) =
-        polygons.foreach { case (polygon, world, _) =>
+        val lines =polygons.flatMap { case (polygon, world, _) =>
             val points =
                 polygon.getCoordinates
                     .map(coord =>
@@ -204,28 +279,32 @@ class PolygonEditor(using
             player.sendActionBar(
                 txt"${txt("/done").style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Stop viewing these claims"
             )
-            lines.foreach { (p1, p2) =>
-                drawLine(p1, p2, player, Color.ORANGE, 0.5)
-            }
+            lines.map( (p1, p2) => (p1, p2, LineColour.orange) )
         }
+        lineDrawer.setLines(lines)
 
     private def renderCreator(
         player: Player,
         model: CreatorModel,
         actions: List[CreatorAction],
+        lineDrawer: LineDrawer,
     ): Unit =
-        actions.foreach {
+        lineDrawer.setLines(actions.flatMap {
             case CreatorAction.drawLine(from, to) =>
-                drawLine(from, to, player, Color.WHITE, 0.5)
+                Some((from, to, LineColour.white))
+                None
             case CreatorAction.drawSelectionLine(from) =>
                 val to = player.getTargetBlockExact(100).getLocation()
-                drawLine(from, to, player, Color.AQUA, 0.5)
+                Some((from, to, LineColour.teal))
+                None
             case CreatorAction.drawFinisherLine(to) =>
                 val from = player.getTargetBlockExact(100).getLocation()
-                drawLine(from, to, player, Color.fromRGB(0xa8abb0), 1.0)
+                Some((from, to, LineColour.gray))
             case CreatorAction.finished(_) =>
+                None
             case CreatorAction.notifyPlayer(_) =>
-        }
+                None
+        })
         model.state match
             case CreatorModelState.definingPointA() =>
                 player.sendActionBar(
@@ -249,12 +328,13 @@ class PolygonEditor(using
         model: EditorModel,
         bar: BossBar,
         maxArea: Int,
+        lineViewer: LineDrawer,
     ): Unit =
         import EditorModelState.*
 
         updateBossBar(model.polygonArea, maxArea, bar)
-        model.couldWarGroup match
-            case None =>
+        val couldWarLines = model.couldWarGroup match
+            case None => List()
             case Some((_, _, polygon)) =>
                 val world = model.lines(0)._1.getWorld()
                 val points =
@@ -270,26 +350,30 @@ class PolygonEditor(using
                         .concat(List(List(points.last, points.head)))
                         .map(pair => (pair.head, pair(1)))
                         .toList
-                lines.foreach { (p1, p2) =>
-                    drawLine(p1, p2, player, Color.ORANGE, 0.5)
-                }
-        model.lines.foreach { (p1, p2) =>
-            drawLine(p1, p2, player, Color.WHITE, 0.5)
-        }
-        model.polygon.zipWithIndex.foreach { (point, idx) =>
-            val colour =
-                if model.state == lookingAt(point) then Color.TEAL
-                else if model.state == editingPoint(idx, false) then Color.RED
-                else if model.state == editingPoint(idx, true) then Color.YELLOW
-                else Color.ORANGE
-            drawLine(point, point.clone().add(0, 2, 0), player, colour, 0.5)
-        }
-        model.midpoints.foreach { (_, point) =>
-            val colour =
-                if model.state == lookingAt(point) then Color.TEAL
-                else Color.LIME
-            drawLine(point, point.clone().add(0, 2, 0), player, colour, 0.5)
-        }
+                lines.map( (p1, p2) => (p1, p2, LineColour.orange) )
+        val normalLines =  model.lines.map { (p1, p2) => (p1, p2, LineColour.white) }
+
+        val pointLines =
+            model.polygon.zipWithIndex.map { (point, idx) =>
+                val colour =
+                    if model.state == lookingAt(point) then LineColour.teal
+                    else if model.state == editingPoint(idx, false) then LineColour.red
+                    else if model.state == editingPoint(idx, true) then LineColour.yellow
+                    else LineColour.orange
+                (point, point.clone().add(0, 2, 0), colour)
+            }
+
+        val midpointLines =
+            model.midpoints.map { (_, point) =>
+                val colour =
+                    if model.state == lookingAt(point) then LineColour.teal
+                    else LineColour.lime
+                (point, point.clone().add(0, 2, 0), colour)
+            }
+
+        val allLines = couldWarLines.concat(normalLines).concat(pointLines).concat(midpointLines)
+        lineViewer.setLines(allLines)
+
         model.state match
             case idle() =>
                 player.sendActionBar(
@@ -318,6 +402,7 @@ class PolygonEditor(using
         actions: List[EditorAction],
         bar: BossBar,
         maxArea: Int,
+        lineDrawer: LineDrawer,
     ): Option[PlayerState] =
         val done = actions
             .filter { action =>
@@ -379,18 +464,19 @@ class PolygonEditor(using
             }
         done.lastOption match
             case None =>
-                Some(PlayerState.editing(model, bar, maxArea))
+                Some(PlayerState.editing(model, bar, maxArea, lineDrawer))
             case Some(None) =>
                 bar.removeViewer(player)
                 None
             case Some(Some(newModel)) =>
-                Some(PlayerState.editing(newModel, bar, maxArea))
+                Some(PlayerState.editing(newModel, bar, maxArea, lineDrawer))
 
     private def handleCreator(
         player: Player,
         model: CreatorModel,
         actions: List[CreatorAction],
         maxArea: Int,
+        lineDrawer: LineDrawer,
     ): PlayerState =
         val done = actions
             .filter { action =>
@@ -424,6 +510,7 @@ class PolygonEditor(using
                                     EditorModel(model.beaconID, points),
                                     createBossBar(area, maxArea, player),
                                     maxArea,
+                                    lineDrawer,
                                 )
                         )
                     case _ =>
@@ -431,7 +518,7 @@ class PolygonEditor(using
             }
         done.lastOption match
             case None =>
-                PlayerState.creating(model, actions, maxArea)
+                PlayerState.creating(model, actions, maxArea, lineDrawer)
             case Some(state) =>
                 state
 
@@ -446,7 +533,7 @@ class PolygonEditor(using
         val newState =
             oldState.flatMap { state =>
                 state match
-                    case PlayerState.editing(model, _, _) =>
+                    case PlayerState.editing(model, _, _, _) =>
                         model.couldWarGroup match
                             case None =>
                                 Some(state)
@@ -539,18 +626,20 @@ class PolygonEditor(using
             case Some(value) =>
                 value.failure(null)
         playerPolygons.remove(player) match
-            case Some(PlayerState.editing(_, bar, _)) =>
+            case Some(PlayerState.editing(_, bar, _, lines)) =>
                 val _ = bar.removeViewer(player)
+                lines.clear()
             case _ =>
 
     def done(player: Player): Unit =
         val _ = playerPolygons.updateWith(player) { state =>
             state.flatMap(state =>
                 state match
-                    case PlayerState.editing(state, bar, maxArea) =>
+                    case PlayerState.editing(state, bar, maxArea, lineDrawer) =>
                         val (model, actions) = state.update(EditorMsg.done())
-                        handleEditor(player, model, actions, bar, maxArea)
-                    case PlayerState.viewing(_) =>
+                        handleEditor(player, model, actions, bar, maxArea, lineDrawer)
+                    case PlayerState.viewing(_, lineDrawer) =>
+                        lineDrawer.clear()
                         None
                     case _ =>
                         Some(state)
@@ -563,11 +652,11 @@ class PolygonEditor(using
             playerPolygons.updateWith(player) { state =>
                 state.flatMap(state =>
                     state match
-                        case PlayerState.editing(state, bar, maxArea) =>
+                        case PlayerState.editing(state, bar, maxArea, lineDrawer) =>
                             val (model, actions) =
                                 state.update(EditorMsg.leftClick())
-                            handleEditor(player, model, actions, bar, maxArea)
-                        case PlayerState.viewing(_) =>
+                            handleEditor(player, model, actions, bar, maxArea, lineDrawer)
+                        case PlayerState.viewing(_, _) =>
                             viewing = true
                             Some(state)
                         case _ =>
@@ -587,15 +676,15 @@ class PolygonEditor(using
             val _ = playerPolygons.updateWith(player) { state =>
                 state.flatMap(state =>
                     state match
-                        case PlayerState.editing(state, bar, maxArea) =>
+                        case PlayerState.editing(state, bar, maxArea, lineDrawer) =>
                             val (model, actions) =
                                 state.update(EditorMsg.rightClick())
-                            handleEditor(player, model, actions, bar, maxArea)
-                        case PlayerState.creating(state, _, maxArea) =>
+                            handleEditor(player, model, actions, bar, maxArea, lineDrawer)
+                        case PlayerState.creating(state, _, maxArea, lineDrawer) =>
                             val (model, actions) =
                                 state.update(CreatorMsg.click(on))
-                            Some(handleCreator(player, model, actions, maxArea))
-                        case PlayerState.viewing(_) =>
+                            Some(handleCreator(player, model, actions, maxArea, lineDrawer))
+                        case PlayerState.viewing(_, _) =>
                             viewing = true
                             Some(state)
                 )
@@ -609,10 +698,10 @@ class PolygonEditor(using
         val _ = playerPolygons.updateWith(player) { state =>
             state.flatMap(state =>
                 state match
-                    case PlayerState.editing(state, bar, maxArea) =>
+                    case PlayerState.editing(state, bar, maxArea, lineDrawer) =>
                         val (model, actions) =
                             state.update(EditorMsg.look(targetLoc))
-                        handleEditor(player, model, actions, bar, maxArea)
+                        handleEditor(player, model, actions, bar, maxArea, lineDrawer)
                     case _ =>
                         Some(state)
             )
@@ -625,35 +714,35 @@ class PolygonEditor(using
         clickPromises(player) = prom
         prom.future
 
-    def drawLine(
-        fromBlock: Location,
-        toBlock: Location,
-        showingTo: Player,
-        color: Color,
-        detail: Double,
-    ): Unit =
-        val start = fromBlock.clone().add(0.5, 1.0, 0.5)
-        val finish = toBlock.clone().add(0.5, 1.0, 0.5)
+    // def drawLine(
+    //     fromBlock: Location,
+    //     toBlock: Location,
+    //     showingTo: Player,
+    //     color: Color,
+    //     detail: Double,
+    // ): Unit =
+    //     val start = fromBlock.clone().add(0.5, 1.0, 0.5)
+    //     val finish = toBlock.clone().add(0.5, 1.0, 0.5)
 
-        val dir = finish.toVector.subtract(start.toVector).normalize()
-        val len = start.distance(finish)
+    //     val dir = finish.toVector.subtract(start.toVector).normalize()
+    //     val len = start.distance(finish)
 
-        for i <- Iterator.iterate(0.0)(_ + detail).takeWhile(_ < len) do
-            val offset = dir.clone().multiply(i)
-            val pos = start.clone().add(offset)
+    //     for i <- Iterator.iterate(0.0)(_ + detail).takeWhile(_ < len) do
+    //         val offset = dir.clone().multiply(i)
+    //         val pos = start.clone().add(offset)
 
-            pos.getWorld
-                .spawnParticle(
-                    Particle.REDSTONE,
-                    ju.Arrays.asList(showingTo),
-                    showingTo,
-                    pos.getX,
-                    pos.getY,
-                    pos.getZ,
-                    4,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    DustOptions(color, 1.0),
-                )
+    //         pos.getWorld
+    //             .spawnParticle(
+    //                 Particle.REDSTONE,
+    //                 ju.Arrays.asList(showingTo),
+    //                 showingTo,
+    //                 pos.getX,
+    //                 pos.getY,
+    //                 pos.getZ,
+    //                 4,
+    //                 0.0,
+    //                 0.0,
+    //                 0.0,
+    //                 0.0,
+    //                 DustOptions(color, 1.0),
+    //             )
