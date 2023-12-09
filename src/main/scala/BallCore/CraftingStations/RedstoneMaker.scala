@@ -128,6 +128,16 @@ object RedstoneMaker {
             5,
             1,
         ),
+        Recipe(
+            "Make Redstone Torches",
+            List(
+                (Vanilla(Material.STICK), 16),
+                (Vanilla(Material.REDSTONE), 16),
+            ),
+            List((ItemStack(Material.LODESTONE), 64)),
+            5,
+            1,
+        ),
     )
 
     val template: CustomItemStack = CustomItemStack.make(
