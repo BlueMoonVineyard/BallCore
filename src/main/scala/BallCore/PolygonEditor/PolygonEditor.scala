@@ -33,15 +33,6 @@ import net.kyori.adventure.bossbar.BossBar
 import net.kyori.adventure.text.Component
 import BallCore.Sigils.BattleError
 import org.locationtech.jts.geom.Polygon
-import org.bukkit.entity.ItemDisplay
-import org.bukkit.entity.EntityType
-import org.bukkit.inventory.ItemStack
-import org.bukkit.Material
-import org.bukkit.util.Transformation
-import org.joml.Vector3f
-import org.joml.AxisAngle4f
-import org.bukkit.entity.Display.Brightness
-import org.bukkit.Color
 import BallCore.Folia.EntityExecutionContext
 
 object PolygonEditor:
@@ -79,90 +70,6 @@ class EditorListener()(using e: PolygonEditor) extends Listener:
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     def quit(event: PlayerQuitEvent): Unit =
         e.leave(event.getPlayer)
-
-enum LineColour:
-    case red
-    case orange
-    case yellow
-    case white
-    case teal
-    case lime
-    case gray
-
-    def asBukkitColor: Color =
-        this match
-            case LineColour.red => Color.RED
-            case LineColour.orange => Color.ORANGE
-            case LineColour.yellow => Color.YELLOW
-            case LineColour.white => Color.WHITE
-            case LineColour.teal => Color.TEAL
-            case LineColour.lime => Color.LIME
-            case LineColour.gray => Color.GRAY
-
-class LineDrawer(val player: Player)(using p: Plugin):
-    import scala.util.chaining._
-
-    private var lineEntities = List[ItemDisplay]()
-    private var previousLines = List[(Location, Location, LineColour)]()
-
-    private def itemStackOfColour(l: LineColour): ItemStack =
-        val _ = l
-        val is = ItemStack(Material.STICK)
-        is.setItemMeta(is.getItemMeta().tap(_.setCustomModelData(9)))
-        is
-
-    def clear(): Unit =
-        lineEntities.foreach(_.remove())
-
-    def setLines(lines: List[(Location, Location, LineColour)]): Unit =
-        if previousLines == lines then return
-
-        previousLines = lines
-
-        if lineEntities.size < lines.size then
-            for i <- (lineEntities.size + 1 to lines.size).map(_ - 1) do
-                lineEntities = lineEntities.appended(
-                    lines(i)._1
-                        .getWorld()
-                        .spawnEntity(lines(i)._1, EntityType.ITEM_DISPLAY)
-                        .asInstanceOf[ItemDisplay]
-                        .tap(_.setVisibleByDefault(false))
-                        .tap(_.setGlowing(true))
-                        .tap(_.setBrightness(Brightness(15, 15)))
-                        .tap(x => player.showEntity(p, x))
-                )
-        else if lines.size < lineEntities.size then
-            lineEntities
-                .takeRight(lineEntities.size - lines.size)
-                .foreach(_.remove())
-            lineEntities = lineEntities.take(lines.size)
-
-        lineEntities.lazyZip(lines).foreach {
-            case (display, (lineStart, lineEnd, colour)) =>
-                display.setItemStack(itemStackOfColour(colour))
-                val from = lineStart.clone().add(0.5, 1, 0.5)
-                val to = lineEnd.clone().add(0.5, 1, 0.5)
-
-                display.setGlowColorOverride(colour.asBukkitColor)
-
-                val targetFrom =
-                    from
-                        .clone()
-                        .setDirection(
-                            to.clone()
-                                .subtract(from)
-                                .toVector()
-                        )
-                val _ = display.teleportAsync(targetFrom)
-                val distance = from.distance(to)
-                val transformation = Transformation(
-                    Vector3f(0f, 0f, distance.toFloat / 2f),
-                    AxisAngle4f(),
-                    Vector3f(1f, 1f, 16f * distance.toFloat),
-                    AxisAngle4f(),
-                )
-                display.setTransformation(transformation)
-        }
 
 enum PlayerState:
     case editing(
@@ -235,7 +142,7 @@ class PolygonEditor(using
         player.sendServerMessage(
             txt"You are looking at ${beacons.size} nearby claims within 32 blocks of you."
         )
-        val lineDrawer = LineDrawer(player)
+        val lineDrawer = LineDrawer(player, org.bukkit.util.Vector(0.5, 1, 0.5))
 
         val lines = beacons.flatMap { case (polygon, world, _) =>
             val points =
@@ -272,7 +179,7 @@ class PolygonEditor(using
                     CreatorModel(beaconID, CreatorModelState.definingPointA()),
                     List(),
                     area,
-                    LineDrawer(player),
+                    LineDrawer(player, org.bukkit.util.Vector(0.5, 1, 0.5)),
                 )
             case Some(polygon) =>
                 player.sendServerMessage(
@@ -280,7 +187,7 @@ class PolygonEditor(using
                 )
                 val model = EditorModel(beaconID, polygon, world)
                 val bar = createBossBar(polygon.getArea().toInt, area, player)
-                val lineDrawer = LineDrawer(player)
+                val lineDrawer = LineDrawer(player, org.bukkit.util.Vector(0.5, 1, 0.5))
                 updateEditorPersistent(model, bar, area, lineDrawer)
                 playerPolygons(player) = PlayerState.editing(
                     model,
@@ -297,19 +204,10 @@ class PolygonEditor(using
                     p,
                     _ => {
                         model match
+                            case PlayerState.editing(state, _, _, _) =>
+                                renderEditor(player, state)
                             case PlayerState
-                                    .editing(state, bar, maxArea, lineDrawer) =>
-                                renderEditor(
-                                    player,
-                                    state,
-                                )
-                            case PlayerState
-                                    .creating(
-                                        state,
-                                        actions,
-                                        maxArea,
-                                        lineDrawer,
-                                    ) =>
+                                    .creating(state, actions, _, lineDrawer) =>
                                 renderCreator(
                                     player,
                                     state,
@@ -330,9 +228,8 @@ class PolygonEditor(using
             txt"${txt("/done").style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Stop viewing these claims"
         )
 
-    private def renderCreator(
+    private def updateCreatorPersistent(
         player: Player,
-        model: CreatorModel,
         actions: List[CreatorAction],
         lineDrawer: LineDrawer,
     ): Unit =
@@ -352,6 +249,14 @@ class PolygonEditor(using
             case CreatorAction.notifyPlayer(_) =>
                 None
         })
+
+    private def renderCreator(
+        player: Player,
+        model: CreatorModel,
+        actions: List[CreatorAction],
+        lineDrawer: LineDrawer,
+    ): Unit =
+        updateCreatorPersistent(player, actions, lineDrawer)
         model.state match
             case CreatorModelState.definingPointA() =>
                 player.sendActionBar(
