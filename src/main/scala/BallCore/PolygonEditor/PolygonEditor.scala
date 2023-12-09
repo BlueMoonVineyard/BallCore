@@ -40,6 +40,8 @@ import org.bukkit.Material
 import org.bukkit.util.Transformation
 import org.joml.Vector3f
 import org.joml.AxisAngle4f
+import org.bukkit.entity.Display.Brightness
+import org.bukkit.Color
 
 object PolygonEditor:
     def register()(using e: PolygonEditor, p: Plugin): Unit =
@@ -86,10 +88,21 @@ enum LineColour:
     case lime
     case gray
 
+    def asBukkitColor: Color =
+        this match
+            case LineColour.red => Color.RED
+            case LineColour.orange => Color.ORANGE
+            case LineColour.yellow => Color.YELLOW
+            case LineColour.white => Color.WHITE
+            case LineColour.teal => Color.TEAL
+            case LineColour.lime => Color.LIME
+            case LineColour.gray => Color.GRAY
+
 class LineDrawer(player: Player)(using p: Plugin):
     import scala.util.chaining._
 
     private var lineEntities = List[ItemDisplay]()
+    private var previousLines = List[(Location, Location, LineColour)]()
 
     private def itemStackOfColour(l: LineColour): ItemStack =
         val _ = l
@@ -101,13 +114,20 @@ class LineDrawer(player: Player)(using p: Plugin):
         lineEntities.foreach(_.remove())
 
     def setLines(lines: List[(Location, Location, LineColour)]): Unit =
+        if previousLines == lines then return
+
+        previousLines = lines
+
         if lineEntities.size < lines.size then
             for i <- (lineEntities.size + 1 to lines.size).map(_ - 1) do
                 lineEntities = lineEntities.appended(
-                    lines(i)._1.getWorld()
+                    lines(i)._1
+                        .getWorld()
                         .spawnEntity(lines(i)._1, EntityType.ITEM_DISPLAY)
                         .asInstanceOf[ItemDisplay]
                         .tap(_.setVisibleByDefault(false))
+                        .tap(_.setGlowing(true))
+                        .tap(_.setBrightness(Brightness(15, 15)))
                         .tap(x => player.showEntity(p, x))
                 )
         else if lines.size < lineEntities.size then
@@ -116,10 +136,13 @@ class LineDrawer(player: Player)(using p: Plugin):
                 .foreach(_.remove())
             lineEntities = lineEntities.take(lines.size)
 
-        println(s"drawing ${lines.size} count with ${lineEntities.size} entities")
         lineEntities.lazyZip(lines).foreach {
-            case (display, (from, to, colour)) =>
+            case (display, (lineStart, lineEnd, colour)) =>
                 display.setItemStack(itemStackOfColour(colour))
+                val from = lineStart.clone().add(0.5, 1, 0.5)
+                val to = lineEnd.clone().add(0.5, 1, 0.5)
+
+                display.setGlowColorOverride(colour.asBukkitColor)
 
                 val targetFrom =
                     from
@@ -129,7 +152,6 @@ class LineDrawer(player: Player)(using p: Plugin):
                                 .subtract(from)
                                 .toVector()
                         )
-                println(targetFrom)
                 val _ = display.teleportAsync(targetFrom)
                 val distance = from.distance(to)
                 val transformation = Transformation(
@@ -142,7 +164,12 @@ class LineDrawer(player: Player)(using p: Plugin):
         }
 
 enum PlayerState:
-    case editing(state: EditorModel, bar: BossBar, maxArea: Int, lineDrawer: LineDrawer)
+    case editing(
+        state: EditorModel,
+        bar: BossBar,
+        maxArea: Int,
+        lineDrawer: LineDrawer,
+    )
     case creating(
         state: CreatorModel,
         actions: List[CreatorAction],
@@ -207,7 +234,28 @@ class PolygonEditor(using
         player.sendServerMessage(
             txt"You are looking at ${beacons.size} nearby claims within 32 blocks of you."
         )
-        playerPolygons(player) = PlayerState.viewing(beacons, LineDrawer(player))
+        val lineDrawer = LineDrawer(player)
+
+        val lines = beacons.flatMap { case (polygon, world, _) =>
+            val points =
+                polygon.getCoordinates
+                    .map(coord =>
+                        Location(world, coord.getX, coord.getZ, coord.getY)
+                    )
+                    .toList
+                    .dropRight(1)
+            val lines =
+                points
+                    .sliding(2, 1)
+                    .concat(List(List(points.last, points.head)))
+                    .map(pair => (pair.head, pair(1)))
+                    .toList
+            lines.map((p1, p2) => (p1, p2, LineColour.orange))
+        }
+        lineDrawer.setLines(lines)
+
+        playerPolygons(player) =
+            PlayerState.viewing(beacons, lineDrawer)
 
     def create(player: Player, world: World, beaconID: BeaconID): Unit =
         import BallCore.UI.ChatElements.*
@@ -245,43 +293,41 @@ class PolygonEditor(using
                     p,
                     _ => {
                         model match
-                            case PlayerState.editing(state, bar, maxArea, lineDrawer) =>
-                                renderEditor(player, state, bar, maxArea, lineDrawer)
                             case PlayerState
-                                    .creating(state, actions, maxArea, lineDrawer) =>
-                                renderCreator(player, state, actions, lineDrawer)
-                            case PlayerState.viewing(polygons, lineDrawer) =>
-                                renderViewer(player, polygons, lineDrawer)
+                                    .editing(state, bar, maxArea, lineDrawer) =>
+                                renderEditor(
+                                    player,
+                                    state,
+                                    bar,
+                                    maxArea,
+                                    lineDrawer,
+                                )
+                            case PlayerState
+                                    .creating(
+                                        state,
+                                        actions,
+                                        maxArea,
+                                        lineDrawer,
+                                    ) =>
+                                renderCreator(
+                                    player,
+                                    state,
+                                    actions,
+                                    lineDrawer,
+                                )
+                            case PlayerState.viewing(_, _) =>
+                                renderViewer(player)
                     },
                     null,
                 )
         }
 
     private def renderViewer(
-        player: Player,
-        polygons: List[(Polygon, World, BeaconID)],
-        lineDrawer: LineDrawer,
+        player: Player
     ) =
-        val lines =polygons.flatMap { case (polygon, world, _) =>
-            val points =
-                polygon.getCoordinates
-                    .map(coord =>
-                        Location(world, coord.getX, coord.getZ, coord.getY)
-                    )
-                    .toList
-                    .dropRight(1)
-            val lines =
-                points
-                    .sliding(2, 1)
-                    .concat(List(List(points.last, points.head)))
-                    .map(pair => (pair.head, pair(1)))
-                    .toList
-            player.sendActionBar(
-                txt"${txt("/done").style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Stop viewing these claims"
-            )
-            lines.map( (p1, p2) => (p1, p2, LineColour.orange) )
-        }
-        lineDrawer.setLines(lines)
+        player.sendActionBar(
+            txt"${txt("/done").style(NamedTextColor.GOLD, TextDecoration.BOLD)}: Stop viewing these claims"
+        )
 
     private def renderCreator(
         player: Player,
@@ -350,15 +396,19 @@ class PolygonEditor(using
                         .concat(List(List(points.last, points.head)))
                         .map(pair => (pair.head, pair(1)))
                         .toList
-                lines.map( (p1, p2) => (p1, p2, LineColour.orange) )
-        val normalLines =  model.lines.map { (p1, p2) => (p1, p2, LineColour.white) }
+                lines.map((p1, p2) => (p1, p2, LineColour.orange))
+        val normalLines = model.lines.map { (p1, p2) =>
+            (p1, p2, LineColour.white)
+        }
 
         val pointLines =
             model.polygon.zipWithIndex.map { (point, idx) =>
                 val colour =
                     if model.state == lookingAt(point) then LineColour.teal
-                    else if model.state == editingPoint(idx, false) then LineColour.red
-                    else if model.state == editingPoint(idx, true) then LineColour.yellow
+                    else if model.state == editingPoint(idx, false) then
+                        LineColour.red
+                    else if model.state == editingPoint(idx, true) then
+                        LineColour.yellow
                     else LineColour.orange
                 (point, point.clone().add(0, 2, 0), colour)
             }
@@ -371,7 +421,10 @@ class PolygonEditor(using
                 (point, point.clone().add(0, 2, 0), colour)
             }
 
-        val allLines = couldWarLines.concat(normalLines).concat(pointLines).concat(midpointLines)
+        val allLines = couldWarLines
+            .concat(normalLines)
+            .concat(pointLines)
+            .concat(midpointLines)
         lineViewer.setLines(allLines)
 
         model.state match
@@ -467,6 +520,7 @@ class PolygonEditor(using
                 Some(PlayerState.editing(model, bar, maxArea, lineDrawer))
             case Some(None) =>
                 bar.removeViewer(player)
+                lineDrawer.clear()
                 None
             case Some(Some(newModel)) =>
                 Some(PlayerState.editing(newModel, bar, maxArea, lineDrawer))
@@ -637,7 +691,14 @@ class PolygonEditor(using
                 state match
                     case PlayerState.editing(state, bar, maxArea, lineDrawer) =>
                         val (model, actions) = state.update(EditorMsg.done())
-                        handleEditor(player, model, actions, bar, maxArea, lineDrawer)
+                        handleEditor(
+                            player,
+                            model,
+                            actions,
+                            bar,
+                            maxArea,
+                            lineDrawer,
+                        )
                     case PlayerState.viewing(_, lineDrawer) =>
                         lineDrawer.clear()
                         None
@@ -652,10 +713,18 @@ class PolygonEditor(using
             playerPolygons.updateWith(player) { state =>
                 state.flatMap(state =>
                     state match
-                        case PlayerState.editing(state, bar, maxArea, lineDrawer) =>
+                        case PlayerState
+                                .editing(state, bar, maxArea, lineDrawer) =>
                             val (model, actions) =
                                 state.update(EditorMsg.leftClick())
-                            handleEditor(player, model, actions, bar, maxArea, lineDrawer)
+                            handleEditor(
+                                player,
+                                model,
+                                actions,
+                                bar,
+                                maxArea,
+                                lineDrawer,
+                            )
                         case PlayerState.viewing(_, _) =>
                             viewing = true
                             Some(state)
@@ -676,14 +745,31 @@ class PolygonEditor(using
             val _ = playerPolygons.updateWith(player) { state =>
                 state.flatMap(state =>
                     state match
-                        case PlayerState.editing(state, bar, maxArea, lineDrawer) =>
+                        case PlayerState
+                                .editing(state, bar, maxArea, lineDrawer) =>
                             val (model, actions) =
                                 state.update(EditorMsg.rightClick())
-                            handleEditor(player, model, actions, bar, maxArea, lineDrawer)
-                        case PlayerState.creating(state, _, maxArea, lineDrawer) =>
+                            handleEditor(
+                                player,
+                                model,
+                                actions,
+                                bar,
+                                maxArea,
+                                lineDrawer,
+                            )
+                        case PlayerState
+                                .creating(state, _, maxArea, lineDrawer) =>
                             val (model, actions) =
                                 state.update(CreatorMsg.click(on))
-                            Some(handleCreator(player, model, actions, maxArea, lineDrawer))
+                            Some(
+                                handleCreator(
+                                    player,
+                                    model,
+                                    actions,
+                                    maxArea,
+                                    lineDrawer,
+                                )
+                            )
                         case PlayerState.viewing(_, _) =>
                             viewing = true
                             Some(state)
@@ -701,7 +787,14 @@ class PolygonEditor(using
                     case PlayerState.editing(state, bar, maxArea, lineDrawer) =>
                         val (model, actions) =
                             state.update(EditorMsg.look(targetLoc))
-                        handleEditor(player, model, actions, bar, maxArea, lineDrawer)
+                        handleEditor(
+                            player,
+                            model,
+                            actions,
+                            bar,
+                            maxArea,
+                            lineDrawer,
+                        )
                     case _ =>
                         Some(state)
             )
