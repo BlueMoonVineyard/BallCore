@@ -134,7 +134,7 @@ object RedstoneMaker {
                 (Vanilla(Material.STICK), 16),
                 (Vanilla(Material.REDSTONE), 16),
             ),
-            List((ItemStack(Material.LODESTONE), 64)),
+            List((ItemStack(Material.REDSTONE_TORCH), 64)),
             5,
             1,
         ),
