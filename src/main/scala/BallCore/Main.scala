@@ -201,6 +201,8 @@ final class Main extends JavaPlugin:
             given pbm: PlantBatchManager = Plants.Plants.register()
             given chatActor: ChatActor = Chat.Chat.register()
 
+            given e: NoodleEditor.NoodleEditor =
+                NoodleEditor.NoodleEditor.register()
 
             val chatCommands = ChatCommands()
             Order.register()
