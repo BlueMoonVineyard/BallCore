@@ -238,11 +238,9 @@ class PolygonEditor(using
         lineDrawer.setLines(actions.flatMap {
             case CreatorAction.drawLine(from, to) =>
                 Some((from, to, LineColour.white))
-                None
             case CreatorAction.drawSelectionLine(from) =>
                 val to = player.getTargetBlockExact(100).getLocation()
                 Some((from, to, LineColour.teal))
-                None
             case CreatorAction.drawFinisherLine(to) =>
                 val from = player.getTargetBlockExact(100).getLocation()
                 Some((from, to, LineColour.gray))
