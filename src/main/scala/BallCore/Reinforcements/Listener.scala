@@ -43,6 +43,9 @@ import BallCore.CustomItems.ItemRegistry
 import BallCore.Sigils.BattleManager
 import cats.effect.kernel.Resource
 import skunk.Session
+import org.bukkit.block.data.`type`.Switch
+import org.bukkit.Tag
+import org.bukkit.event.entity.EntityInteractEvent
 
 object Listener:
     private def centered(at: Location): Location =
@@ -606,6 +609,38 @@ class Listener(using
             playDamageEffect(player.getLocation(), ReinforcementTypes.Stone)
             event.setCancelled(true)
 
+    // prevent unauthorized switch (button, lever) uses
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    def preventSwitchPresses(event: PlayerInteractEvent): Unit =
+        if event.getAction != Action.RIGHT_CLICK_BLOCK then return
+        if !event.getClickedBlock.getBlockData.isInstanceOf[Switch] then
+            return
+
+        val block = event.getClickedBlock
+        val player = event.getPlayer
+
+        checkAt(block, player, Permissions.Doors) match
+            case Right(ok) if ok =>
+            case _ =>
+                playDamageEffect(block.getLocation(), ReinforcementTypes.Stone)
+                event.setCancelled(true)
+
+    // prevent unauthorized pressure plate uses
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    def preventPressurePlateUses(event: PlayerInteractEvent): Unit =
+        if event.getAction != Action.PHYSICAL then return
+        if !Tag.PRESSURE_PLATES.isTagged(event.getClickedBlock.getType) then
+            return
+
+        val block = event.getClickedBlock
+        val player = event.getPlayer
+
+        checkAt(block, player, Permissions.Doors) match
+            case Right(ok) if ok =>
+            case _ =>
+                playDamageEffect(block.getLocation(), ReinforcementTypes.Stone)
+                event.setCancelled(true)
+
     //
     //// Stuff that enforces reinforcements in the face of non-permissions; i.e. stuff like preventing water from killing reinforced blocks
     //
@@ -622,6 +657,20 @@ class Listener(using
                 } yield lBeacon == rBeacon
             )
         }
+
+    // prevent pressure plate use by mobs
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    def preventPressurePlateUses(event: EntityInteractEvent): Unit =
+        if !Tag.PRESSURE_PLATES.isTagged(event.getBlock.getType) then
+            return
+
+        if sql
+            .useBlocking(
+                sql.withS(
+                    cbm.beaconContaining(event.getBlock.getLocation())
+                )
+            )
+            .isDefined then event.setCancelled(true)
 
     // prevent pistons from pushing blocks
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
