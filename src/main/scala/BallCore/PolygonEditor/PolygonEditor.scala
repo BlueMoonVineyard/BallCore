@@ -160,7 +160,9 @@ class PolygonEditor(using
                     .toList
             lines.map((p1, p2) => (p1, p2, LineColour.orange))
         }
-        lineDrawer.setLines(lines)
+        sql.useFireAndForget(IO {
+            lineDrawer.setLines(lines)
+        }.evalOn(EntityExecutionContext(player)))
 
         playerPolygons(player) = PlayerState.viewing(beacons, lineDrawer)
 
