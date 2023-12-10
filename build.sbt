@@ -4,10 +4,10 @@
 
 val scala3Version = "3.3.1"
 val circeVersion = "0.14.1"
-val scoreBoardLibraryVersion = "2.0.0-RC9"
+val scoreBoardLibraryVersion = "2.0.1"
 val AkkaVersion = "2.7.0"
 val AkkaHttpVersion = "10.5.2"
-val foliaVersion = "1.20.1-R0.1-SNAPSHOT"
+val foliaVersion = "1.20.2-R0.1-SNAPSHOT"
 
 lazy val dependencyPlugin = project
     .in(file("dependency-plugin"))
@@ -38,7 +38,7 @@ lazy val dependencyPlugin = project
         libraryDependencies += "org.locationtech.jts.io" % "jts-io-common" % "1.19.0",
         libraryDependencies += "com.github.megavexnetwork.scoreboard-library" % "scoreboard-library-api" % scoreBoardLibraryVersion,
         libraryDependencies += "com.github.megavexnetwork.scoreboard-library" % "scoreboard-library-implementation" % scoreBoardLibraryVersion,
-        libraryDependencies += "com.github.megavexnetwork.scoreboard-library" % "scoreboard-library-v1_20_R1" % scoreBoardLibraryVersion,
+        libraryDependencies += "com.github.megavexnetwork.scoreboard-library" % "scoreboard-library-modern" % scoreBoardLibraryVersion,
         libraryDependencies += "com.github.retrooper.packetevents" % "spigot" % "2.0.0-SNAPSHOT" % "provided",
         libraryDependencies += "org.spongepowered" % "configurate-core" % "4.1.2",
         libraryDependencies += "org.spongepowered" % "configurate-yaml" % "4.1.2",
@@ -48,7 +48,7 @@ lazy val dependencyPlugin = project
         libraryDependencies += "org.typelevel" %% "cats-effect-cps" % "0.4.0",
         libraryDependencies += "org.tpolecat" %% "skunk-core" % "0.6.0",
         libraryDependencies += "org.tpolecat" %% "skunk-circe" % "0.6.0",
-        libraryDependencies += "dev.jorel" % "commandapi-bukkit-shade" % "9.1.0",
+        libraryDependencies += "dev.jorel" % "commandapi-bukkit-shade" % "9.2.0",
         libraryDependencies += "com.github.tommyettinger" % "colorful-pure" % "0.8.5",
         libraryDependencies += "io.chrisdavenport" %% "rediculous" % "0.5.1",
 
