@@ -60,9 +60,9 @@ class LineDrawer(val player: Player, offset: org.bukkit.util.Vector)(using
     def clear(): Unit =
         lineEntities.foreach(_.remove())
 
-    def setLines(lines: List[(Location, Location, LineColour)]): Unit =
-        if previousLines == lines then return
-
+    private def doTeleport(
+        lines: List[(Location, Location, LineColour)]
+    ): Unit =
         if lineEntities.size < lines.size then
             for i <- (lineEntities.size + 1 to lines.size).map(_ - 1) do
                 lineEntities = lineEntities.appended(
@@ -86,24 +86,28 @@ class LineDrawer(val player: Player, offset: org.bukkit.util.Vector)(using
 
         lineEntities.lazyZip(lines).zipWithIndex.foreach {
             case ((display, (lineStart, lineEnd, colour)), idx) =>
-                if previousLines.size != lines.size || previousLines(
+                val from = lineStart.clone().add(offset)
+                val to = lineEnd.clone().add(offset)
+                val targetFrom =
+                    from
+                        .clone()
+                        .setDirection(
+                            to.clone()
+                                .subtract(from)
+                                .toVector()
+                        )
+
+                val sizeOrLineChanged =
+                    previousLines.size != lines.size || previousLines(
                         idx
                     ) != lines(idx)
-                then
+                val locationChanged =
+                    display.getLocation() != targetFrom || true
+                if sizeOrLineChanged || locationChanged then
                     display.setItemStack(itemStackOfColour(colour))
-                    val from = lineStart.clone().add(offset)
-                    val to = lineEnd.clone().add(offset)
 
                     display.setGlowColorOverride(colour.asBukkitColor)
 
-                    val targetFrom =
-                        from
-                            .clone()
-                            .setDirection(
-                                to.clone()
-                                    .subtract(from)
-                                    .toVector()
-                            )
                     val _ = display.teleportAsync(targetFrom)
                     val distance = from.distance(to)
                     val transformation = Transformation(
@@ -116,3 +120,19 @@ class LineDrawer(val player: Player, offset: org.bukkit.util.Vector)(using
         }
 
         previousLines = lines
+
+    def setLines(lines: List[(Location, Location, LineColour)]): Unit =
+        if lines == previousLines then
+            return
+
+        doTeleport(lines)
+        val _ = player
+            .getScheduler()
+            .runDelayed(
+                p,
+                _ => {
+                    doTeleport(lines)
+                },
+                () => (),
+                10,
+            )
