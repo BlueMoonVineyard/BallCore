@@ -56,6 +56,8 @@ import org.http4s.ember.client.EmberClientBuilder
 import cats.effect.kernel.Deferred
 import BallCore.Beacons.IngameBeaconManagerHooks
 import BallCore.PrimeTime.PrimeTimeManager
+import dev.jorel.commandapi.CommandTree
+import dev.jorel.commandapi.executors.PlayerCommandExecutor
 
 class ExceptionLogger extends Listener:
     @EventHandler
@@ -121,7 +123,10 @@ final class Main extends JavaPlugin:
 
             given hm: HologramManager = new HologramManager
 
-            given beaconHooks: Deferred[IO, BeaconManagerHooks] = Deferred[IO, BeaconManagerHooks].unsafeRunSync()(cats.effect.unsafe.IORuntime.global)
+            given beaconHooks: Deferred[IO, BeaconManagerHooks] =
+                Deferred[IO, BeaconManagerHooks].unsafeRunSync()(
+                    cats.effect.unsafe.IORuntime.global
+                )
 
             given hn: CivBeaconManager = new CivBeaconManager
 
@@ -143,7 +148,9 @@ final class Main extends JavaPlugin:
             given battleManager: BattleManager = new BattleManager()
             given spm: SlimePillarManager = SlimePillarManager()
 
-            beaconHooks.complete(IngameBeaconManagerHooks()).unsafeRunSync()(cats.effect.unsafe.IORuntime.global)
+            beaconHooks
+                .complete(IngameBeaconManagerHooks())
+                .unsafeRunSync()(cats.effect.unsafe.IORuntime.global)
 
             given editor: PolygonEditor = new PolygonEditor()
             given ott: OneTimeTeleporter = OneTimeTeleporter(
@@ -203,6 +210,11 @@ final class Main extends JavaPlugin:
 
             given e: NoodleEditor.NoodleEditor =
                 NoodleEditor.NoodleEditor.register()
+            CommandTree("noodle-editor")
+                .executesPlayer({ (sender, args) =>
+                    e.create(sender)
+                }: PlayerCommandExecutor)
+                .register()
 
             val chatCommands = ChatCommands()
             Order.register()
