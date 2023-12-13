@@ -80,6 +80,7 @@ import BallCore.PrimeTime.PrimeTimeManager
 import BallCore.Sigils.GameBattleHooks
 import BallCore.SpawnInventory.BattlesAndYou
 import BallCore.SpawnInventory.SigilsAndYou
+import BallCore.NoodleEditor.NoodleEditor
 
 class OTTCommand(using sql: SQLManager, ott: OneTimeTeleporter):
     private def errorText(err: OTTError): Component =
@@ -1071,6 +1072,7 @@ class PlantsCommand(using prompts: UI.Prompts, plugin: Plugin):
 class CancelCommand(using
     editor: PolygonEditor,
     polyhedraEditor: PolyhedraEditor,
+    noodleEditor: NoodleEditor,
 ):
     val node =
         CommandTree("cancel")
@@ -1078,11 +1080,13 @@ class CancelCommand(using
                 val plr = sender.asInstanceOf[Player]
                 editor.cancel(plr)
                 polyhedraEditor.cancel(plr)
+                noodleEditor.cancel(plr)
             }: PlayerCommandExecutor)
 
 class DoneCommand(using
     editor: PolygonEditor,
     polyhedraEditor: PolyhedraEditor,
+    noodleEditor: NoodleEditor,
 ):
     val node =
         CommandTree("done")
@@ -1090,6 +1094,7 @@ class DoneCommand(using
                 val plr = sender.asInstanceOf[Player]
                 editor.done(plr)
                 polyhedraEditor.done(plr)
+                noodleEditor.done(plr)
             }: PlayerCommandExecutor)
 
 class DeclareCommand(using

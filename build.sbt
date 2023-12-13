@@ -51,6 +51,7 @@ lazy val dependencyPlugin = project
         libraryDependencies += "dev.jorel" % "commandapi-bukkit-shade" % "9.2.0",
         libraryDependencies += "com.github.tommyettinger" % "colorful-pure" % "0.8.5",
         libraryDependencies += "io.chrisdavenport" %% "rediculous" % "0.5.1",
+        libraryDependencies += "org.scala-graph" % "graph-core_2.13" % "2.0.0",
 
         // currently vendored in lib for a bugfix
         // libraryDependencies += "com.github.stefvanschie.inventoryframework" % "IF" % "0.10.8",
@@ -115,6 +116,7 @@ lazy val actualPlugin = project
         libraryDependencies += "org.locationtech.jts" % "jts-io" % "1.16.1" % "provided",
         libraryDependencies += "dev.folia" % "folia-api" % foliaVersion % "provided", // intransitive()
         libraryDependencies += "com.mojang" % "brigadier" % "1.0.18" % "provided",
+        libraryDependencies += "org.scala-graph" % "graph-core_2.13" % "2.0.0" % "provided",
 
         Test / fork := true,
         Test / run / javaOptions += "--enable-preview",
