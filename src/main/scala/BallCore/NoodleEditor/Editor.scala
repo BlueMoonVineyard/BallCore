@@ -18,6 +18,9 @@ import scalax.collection.edges._
 import scalax.collection.immutable.Graph
 import scala.util.chaining._
 import BallCore.PolygonEditor.LineColour
+import net.kyori.adventure.bossbar.BossBar
+import net.kyori.adventure.audience.Audience
+import BallCore.TextComponents._
 
 class EditorListener()(using e: NoodleEditor) extends Listener:
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
@@ -62,11 +65,21 @@ case class PlayerState(
     graph: Graph[Location, UnDiEdge[Location]],
     target: Location,
     state: State,
+    costBar: BossBar,
+    costBarAudience: Audience,
 ):
     def leave(): Unit =
+        costBar.removeViewer(costBarAudience)
         lineDrawer.clear()
 
     def render(): Unit =
+        val noodleLength = graph.edges.foldLeft(0d) {
+            case (accumulator, edge) => accumulator + edge._1.distance(edge._2)
+        }
+        val noodleCostInEssencePerDay = (noodleLength / 250d).ceil
+        costBar.name(
+            txt"Maintenance Cost: ${noodleCostInEssencePerDay} essence per day"
+        )
         state match
             case State.noPoints =>
             case State.onePoint(previous) =>
@@ -118,7 +131,11 @@ case class PlayerState(
                 }
                 val newLines = List(
                     (origin, target, LineColour.white),
-                    (target, target.clone().tap(_.add(0, 1, 0)), LineColour.teal),
+                    (
+                        target,
+                        target.clone().tap(_.add(0, 1, 0)),
+                        LineColour.teal,
+                    ),
                 )
                 lineDrawer.setLines(nodeHandles.concat(edges).concat(newLines))
 
@@ -165,7 +182,10 @@ case class PlayerState(
             case State.dragging(_) =>
                 copy(state = State.idle(None))
             case State.creatingFrom(origin) =>
-                copy(state = State.idle(None), graph = graph + target + origin ~ target)
+                copy(
+                    state = State.idle(None),
+                    graph = graph + target + origin ~ target,
+                )
 
     def leftClick(): PlayerState =
         this
@@ -185,6 +205,15 @@ class NoodleEditor(using p: Plugin):
             Graph.empty,
             (p.getLocation()),
             State.noPoints,
+            BossBar
+                .bossBar(
+                    txt"Maintenance Cost: N/A",
+                    1f,
+                    BossBar.Color.GREEN,
+                    BossBar.Overlay.PROGRESS,
+                )
+                .addViewer(p),
+            p,
         )
 
     def done(p: Player): Unit =
