@@ -23,6 +23,9 @@ import BallCore.Groups.UserID
 import cats.data.EitherT
 import BallCore.Reinforcements.WorldID
 import BallCore.Groups.nullUUID
+import BallCore.Groups.GroupError
+import BallCore.Groups.GroupManager
+import BallCore.Groups.Permissions
 
 val NoodleSize = 4
 
@@ -34,16 +37,14 @@ trait NoodleVerifier[Error]:
         Transaction[IO],
     ): IO[Either[Error, Unit]]
 
-class NoodleManager[E, V <: NoodleVerifier[E]](verifier: NoodleVerifier[E])(
-    using sql: SQLManager
-):
+class NoodleManager()(using sql: SQLManager, gm: GroupManager):
     sql.applyMigration(
         Migration(
             "Initial Noodle Manager",
             List(
                 sql"""
                 CREATE TABLE Noodles (
-                    Area GEOMETRY(MultiLineString) NOT NULL,
+                    Area GEOMETRY(MultiLineStringZ) NOT NULL,
                     GroupID UUID NOT NULL REFERENCES GroupStates(ID) ON DELETE CASCADE,
                     SubgroupID UUID REFERENCES Subgroups(SubgroupID) ON DELETE CASCADE,
                     WorldID UUID NOT NULL,
@@ -58,6 +59,9 @@ class NoodleManager[E, V <: NoodleVerifier[E]](verifier: NoodleVerifier[E])(
             ),
         )
     )
+
+    private def verify(user: UserID, group: NoodleKey)(using Session[IO], Transaction[IO]): IO[Either[GroupError, Unit]] =
+        gm.checkE(user, group.group, group.subgroup, Permissions.ManageClaims).value
 
     private case class WorldData(
         var noodleRTree: RTree[(Geometry, NoodleKey)],
@@ -78,6 +82,11 @@ class NoodleManager[E, V <: NoodleVerifier[E]](verifier: NoodleVerifier[E])(
         import org.locationtech.jts.geom.Polygon
 
         val polygon = noodle.buffer(NoodleSize, 2, BufferParameters.CAP_FLAT)
+        polygon.apply { (coord: Coordinate) =>
+            val closestNoodle = noodle.getCoordinates().sortWith(_.distance(coord) < _.distance(coord)).head
+            coord.setZ(closestNoodle.getZ())
+        }
+        polygon.geometryChanged()
 
         val triangulator = DelaunayTriangulationBuilder()
         triangulator.setSites(polygon)
@@ -129,7 +138,7 @@ class NoodleManager[E, V <: NoodleVerifier[E]](verifier: NoodleVerifier[E])(
         FROM
             Noodles
         WHERE
-            World = $uuid;
+            WorldID = $uuid;
         """,
                 (uuid *: subgroupCodec).to[NoodleKey] *: multiLineStringCodec,
                 world,
@@ -160,7 +169,7 @@ class NoodleManager[E, V <: NoodleVerifier[E]](verifier: NoodleVerifier[E])(
         triangulator.setSites(geo)
         val edge = triangulator.getSubdivision().locate(coord)
         Vertex(coord.x, coord.y)
-            .interpolateZValue(edge.orig(), edge.dest(), edge.oNext().dest())
+            .interpolateZValue(edge.orig(), edge.dest(), edge.oPrev().dest())
 
     def noodleAt(l: Location)(using
         Resource[IO, Session[IO]]
@@ -174,15 +183,18 @@ class NoodleManager[E, V <: NoodleVerifier[E]](verifier: NoodleVerifier[E])(
                 .filter { entry =>
                     val (polygon, _) = entry.value
                     val coord = Coordinate(l.getX, l.getZ)
-                    polygon.covers(
+                    val covers = polygon.covers(
                         geometryFactory.createPoint(coord)
                     )
+                    covers
                 }
                 // filter in 3D
                 .filter { entry =>
                     val (polygon, _) = entry.value
                     val coord = Coordinate(l.getX, l.getZ)
-                    (interpolateZ(polygon, coord) - l.getY).abs <= NoodleSize
+                    val zOnPolygon = interpolateZ(polygon, coord)
+                    val dZ = zOnPolygon - l.getY
+                    dZ.abs <= NoodleSize
                 }
                 .map(_.value._2)
                 .headOption
@@ -205,9 +217,9 @@ class NoodleManager[E, V <: NoodleVerifier[E]](verifier: NoodleVerifier[E])(
         key: NoodleKey,
         multiLineString: MultiLineString,
         world: WorldID,
-    )(using Session[IO], Transaction[IO]): IO[Either[E, Unit]] =
+    )(using Session[IO], Transaction[IO]): IO[Either[GroupError, Unit]] =
         (for {
-            _ <- EitherT(verifier.verify(as, key))
+            _ <- EitherT(verify(as, key))
             _ <- EitherT.right(
                 sql.commandIO(
                     sql"""
@@ -215,7 +227,7 @@ class NoodleManager[E, V <: NoodleVerifier[E]](verifier: NoodleVerifier[E])(
                 GroupID, SubgroupID, WorldID, Area
             ) VALUES (
                 $uuid, $subgroupCodec, $uuid, ST_GeomFromGeoJSON($multiLineStringCodec)
-            ) ON CONFLICT DO UPDATE SET Area = EXCLUDED.Area;
+            ) ON CONFLICT (GroupID, SubgroupID, WorldID) DO UPDATE SET Area = EXCLUDED.Area;
             """,
                     (key.group, key.subgroup, world, multiLineString),
                 )
