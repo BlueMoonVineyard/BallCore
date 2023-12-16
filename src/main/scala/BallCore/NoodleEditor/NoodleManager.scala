@@ -26,16 +26,42 @@ import BallCore.Groups.nullUUID
 import BallCore.Groups.GroupError
 import BallCore.Groups.GroupManager
 import BallCore.Groups.Permissions
+import scalax.collection.immutable.Graph
+import scalax.collection.edges.UnDiEdge
+import org.bukkit.World
+import org.locationtech.jts.geom.LineString
+import scalax.collection.edges._
 
 val NoodleSize = 4
 
 case class NoodleKey(group: GroupID, subgroup: SubgroupID)
 
-trait NoodleVerifier[Error]:
-    def verify(user: UserID, group: NoodleKey)(using
-        Session[IO],
-        Transaction[IO],
-    ): IO[Either[Error, Unit]]
+object NoodleManager:
+    private val gf = GeometryFactory()
+    def convert(g: Graph[Location, UnDiEdge[Location]]): MultiLineString =
+        gf.createMultiLineString(g.edges.toArray.map { edge =>
+            val from: Location = edge._1
+            val to: Location = edge._2
+
+            gf.createLineString(Array(
+                Coordinate(from.getX, from.getZ, from.getY),
+                Coordinate(to.getX, to.getZ, to.getY),
+            ))
+        })
+    def recover(from: MultiLineString, in: World): Graph[Location, UnDiEdge[Location]] =
+        val lineStrings =
+            for i <- 0 until from.getNumGeometries
+            yield from.getGeometryN(i)
+
+        lineStrings.foldLeft(Graph()) { (graph, lineString) =>
+            val string = lineString.asInstanceOf[LineString]
+            graph ++ string.getCoordinates()
+                .map(coord => Location(in, coord.getX, coord.getZ, coord.getY))
+                .sliding(2, 1)
+                .map { case Array(a, b) =>
+                    a ~ b
+                }
+        }
 
 class NoodleManager()(using sql: SQLManager, gm: GroupManager):
     sql.applyMigration(
