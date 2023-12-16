@@ -908,6 +908,7 @@ class GroupsCommand(using
     primeTime: PrimeTimeManager,
     kv: KeyVal,
     gameBattleHooks: GameBattleHooks,
+    noodleEditor: NoodleEditor,
 ):
     val viewNearbyClaimsNode =
         CommandTree("nearby-claims")

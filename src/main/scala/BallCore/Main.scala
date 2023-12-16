@@ -56,8 +56,7 @@ import org.http4s.ember.client.EmberClientBuilder
 import cats.effect.kernel.Deferred
 import BallCore.Beacons.IngameBeaconManagerHooks
 import BallCore.PrimeTime.PrimeTimeManager
-import dev.jorel.commandapi.CommandTree
-import dev.jorel.commandapi.executors.PlayerCommandExecutor
+import BallCore.NoodleEditor.NoodleManager
 
 class ExceptionLogger extends Listener:
     @EventHandler
@@ -208,13 +207,9 @@ final class Main extends JavaPlugin:
             given pbm: PlantBatchManager = Plants.Plants.register()
             given chatActor: ChatActor = Chat.Chat.register()
 
-            given e: NoodleEditor.NoodleEditor =
-                NoodleEditor.NoodleEditor.register()
-            CommandTree("noodle-editor")
-                .executesPlayer({ (sender, args) =>
-                    e.create(sender)
-                }: PlayerCommandExecutor)
-                .register()
+            val (noodleEditor, noodleManager) = NoodleEditor.NoodleEditor.register()
+            given NoodleEditor.NoodleEditor = noodleEditor
+            // given NoodleEditor.NoodleManager = noodleManager
 
             val chatCommands = ChatCommands()
             Order.register()

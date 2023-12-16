@@ -43,19 +43,25 @@ object NoodleManager:
             val from: Location = edge._1
             val to: Location = edge._2
 
-            gf.createLineString(Array(
-                Coordinate(from.getX, from.getZ, from.getY),
-                Coordinate(to.getX, to.getZ, to.getY),
-            ))
+            gf.createLineString(
+                Array(
+                    Coordinate(from.getX, from.getZ, from.getY),
+                    Coordinate(to.getX, to.getZ, to.getY),
+                )
+            )
         })
-    def recover(from: MultiLineString, in: World): Graph[Location, UnDiEdge[Location]] =
+    def recover(
+        from: MultiLineString,
+        in: World,
+    ): Graph[Location, UnDiEdge[Location]] =
         val lineStrings =
             for i <- 0 until from.getNumGeometries
             yield from.getGeometryN(i)
 
         lineStrings.foldLeft(Graph()) { (graph, lineString) =>
             val string = lineString.asInstanceOf[LineString]
-            graph ++ string.getCoordinates()
+            graph ++ string
+                .getCoordinates()
                 .map(coord => Location(in, coord.getX, coord.getZ, coord.getY))
                 .sliding(2, 1)
                 .map { case Array(a, b) =>
@@ -76,7 +82,11 @@ class NoodleManager()(using sql: SQLManager, gm: GroupManager):
                     WorldID UUID NOT NULL,
                     UNIQUE(GroupID, SubgroupID, WorldID)
                 )
-                """.command
+                """.command,
+                sql"""
+                CREATE UNIQUE INDEX NoodlesNullTest ON Noodles
+                    (GroupID, (SubgroupID IS NULL), WorldID) WHERE SubgroupID IS NULL;
+                """.command,
             ),
             List(
                 sql"""
@@ -86,8 +96,12 @@ class NoodleManager()(using sql: SQLManager, gm: GroupManager):
         )
     )
 
-    private def verify(user: UserID, group: NoodleKey)(using Session[IO], Transaction[IO]): IO[Either[GroupError, Unit]] =
-        gm.checkE(user, group.group, group.subgroup, Permissions.ManageClaims).value
+    private def verify(user: UserID, group: NoodleKey)(using
+        Session[IO],
+        Transaction[IO],
+    ): IO[Either[GroupError, Unit]] =
+        gm.checkE(user, group.group, group.subgroup, Permissions.ManageClaims)
+            .value
 
     private case class WorldData(
         var noodleRTree: RTree[(Geometry, NoodleKey)],
@@ -109,7 +123,10 @@ class NoodleManager()(using sql: SQLManager, gm: GroupManager):
 
         val polygon = noodle.buffer(NoodleSize, 2, BufferParameters.CAP_FLAT)
         polygon.apply { (coord: Coordinate) =>
-            val closestNoodle = noodle.getCoordinates().sortWith(_.distance(coord) < _.distance(coord)).head
+            val closestNoodle = noodle
+                .getCoordinates()
+                .sortWith(_.distance(coord) < _.distance(coord))
+                .head
             coord.setZ(closestNoodle.getZ())
         }
         polygon.geometryChanged()
@@ -232,7 +249,7 @@ class NoodleManager()(using sql: SQLManager, gm: GroupManager):
             sql"""
         SELECT ST_AsGeoJSON(Area) FROM Noodles
             WHERE GroupID = $uuid
-            AND SubgroupID = $subgroupCodec
+            AND SubgroupID IS NOT DISTINCT FROM $subgroupCodec
             AND WorldID = $uuid;
         """,
             multiLineStringCodec,
@@ -246,17 +263,29 @@ class NoodleManager()(using sql: SQLManager, gm: GroupManager):
     )(using Session[IO], Transaction[IO]): IO[Either[GroupError, Unit]] =
         (for {
             _ <- EitherT(verify(as, key))
+            existing <- EitherT.right(getNoodleFor(key, world))
             _ <- EitherT.right(
-                sql.commandIO(
-                    sql"""
-            INSERT INTO Noodles (
-                GroupID, SubgroupID, WorldID, Area
-            ) VALUES (
-                $uuid, $subgroupCodec, $uuid, ST_GeomFromGeoJSON($multiLineStringCodec)
-            ) ON CONFLICT (GroupID, SubgroupID, WorldID) DO UPDATE SET Area = EXCLUDED.Area;
-            """,
-                    (key.group, key.subgroup, world, multiLineString),
-                )
+                if existing.isEmpty then
+                    sql.commandIO(
+                        sql"""
+                INSERT INTO Noodles (
+                    GroupID, SubgroupID, WorldID, Area
+                ) VALUES (
+                    $uuid, $subgroupCodec, $uuid, ST_GeomFromGeoJSON($multiLineStringCodec)
+                );
+                """,
+                        (key.group, key.subgroup, world, multiLineString),
+                    )
+                else
+                    sql.commandIO(
+                        sql"""
+                UPDATE Noodles SET Area = ST_GeomFromGeoJSON($multiLineStringCodec)
+                    WHERE GroupID = $uuid
+                      AND SubgroupID IS NOT DISTINCT FROM $subgroupCodec
+                      AND WorldID = $uuid;
+                """,
+                        (multiLineString, key.group, key.subgroup, world),
+                    )
             )
             newEntries = triangulate(key, multiLineString)
             worldData <- EitherT.right(

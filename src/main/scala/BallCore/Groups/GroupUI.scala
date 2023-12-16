@@ -35,6 +35,8 @@ import BallCore.PrimeTime.PrimeTimeError
 import java.time.LocalTime
 import org.bukkit.OfflinePlayer
 import cats.effect.IO
+import BallCore.NoodleEditor.NoodleEditor
+import BallCore.NoodleEditor.NoodleKey
 
 extension (p: BallCore.Groups.Permissions)
     def displayItem(): Material =
@@ -114,6 +116,7 @@ class GroupManagementProgram(using
     editor: PolyhedraEditor,
     primeTime: PrimeTimeManager,
     kv: KeyVal,
+    noodleEditor: NoodleEditor,
 ) extends UIProgram:
     case class Flags(groupID: GroupID, userID: UserID)
 
@@ -135,6 +138,7 @@ class GroupManagementProgram(using
     enum Message:
         case View(what: ViewingWhat)
         case InviteMember
+        case EditArterialClaims
         case BindToHeart
         case ClickRole(role: RoleID)
         case CreateSubgroup
@@ -226,6 +230,19 @@ class GroupManagementProgram(using
                         txt"Bind to Beacon".style(NamedTextColor.GREEN),
                         Message.BindToHeart,
                     )()
+                if group.check(
+                        Permissions.ManageClaims,
+                        model.userID,
+                        nullUUID,
+                    )
+                then
+                    Button(
+                        Material.RAIL,
+                        txt"Edit Arterial Claims".style(NamedTextColor.GREEN),
+                        Message.EditArterialClaims,
+                    ) {
+                        Lore(txt"Claim strings of land on behalf of this group")
+                    }
                 if group.check(
                         Permissions.UpdateGroupInformation,
                         model.userID,
@@ -647,6 +664,11 @@ class GroupManagementProgram(using
                 )
                 services.transferTo(p, p.Flags())
                 model
+            case Message.EditArterialClaims =>
+                val player = Bukkit.getPlayer(model.userID)
+                noodleEditor.edit(player, NoodleKey(model.group.metadata.id, nullUUID), player.getWorld)
+                services.quit()
+                model
             case Message.KickPlayer(target) =>
                 sql.useFuture(for {
                     result <- sql.withS(
@@ -789,6 +811,7 @@ class SubgroupManagementProgram(using
     editor: PolyhedraEditor,
     primeTime: PrimeTimeManager,
     kv: KeyVal,
+    noodleEditor: NoodleEditor,
 ) extends UIProgram:
     case class Flags(groupID: GroupID, subgroupID: SubgroupID, userID: UserID)
 
@@ -798,6 +821,7 @@ class SubgroupManagementProgram(using
         case DeleteSubgroup
         case ClickRole(role: RoleID)
         case EditClaims
+        case EditArterialClaims
         case GoBack
 
     override def init(flags: Flags): Model =
@@ -866,6 +890,12 @@ class SubgroupManagementProgram(using
                         model.subgroup.id,
                     )
                 }
+                noodleEditor.edit(player, NoodleKey(model.group.metadata.id, model.subgroup.id), player.getWorld)
+                services.quit()
+                model
+            case Message.EditArterialClaims =>
+                val player = Bukkit.getPlayer(model.userID)
+                noodleEditor.edit(player, NoodleKey(model.group.metadata.id, model.subgroup.id), player.getWorld)
                 services.quit()
                 model
 
@@ -887,9 +917,18 @@ class SubgroupManagementProgram(using
                 )()
                 Button(
                     Material.SPYGLASS,
-                    txt"Edit Claims".style(NamedTextColor.GREEN),
+                    txt"Assign Land".style(NamedTextColor.GREEN),
                     Message.EditClaims,
-                )()
+                ) {
+                    Lore(txt"Assign portions of beacon-covered land to this subgroup")
+                }
+                Button(
+                    Material.RAIL,
+                    txt"Edit Arterial Claims".style(NamedTextColor.GREEN),
+                    Message.EditArterialClaims,
+                ) {
+                    Lore(txt"Claim strings of land on behalf of this subgroup")
+                }
             }
             OutlinePane(1, 0, 1, 6, priority = Priority.LOWEST, repeat = true) {
                 Item(
@@ -941,6 +980,7 @@ class RoleManagementProgram(using
     editor: PolyhedraEditor,
     primeTime: PrimeTimeManager,
     kv: KeyVal,
+    noodleEditor: NoodleEditor,
 ) extends UIProgram:
     case class Flags(
         groupID: GroupID,
@@ -1290,6 +1330,7 @@ class InvitesListProgram(using
     phe: PolyhedraEditor,
     primeTime: PrimeTimeManager,
     kv: KeyVal,
+    noodleEditor: NoodleEditor,
 ) extends UIProgram:
     case class Flags(userID: UserID)
 
@@ -1449,6 +1490,7 @@ class GroupListProgram(using
     editor: PolyhedraEditor,
     primeTime: PrimeTimeManager,
     kv: KeyVal,
+    noodleEditor: NoodleEditor,
 ) extends UIProgram:
     case class Flags(userID: UserID)
 

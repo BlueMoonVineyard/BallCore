@@ -21,6 +21,13 @@ import BallCore.PolygonEditor.LineColour
 import net.kyori.adventure.bossbar.BossBar
 import net.kyori.adventure.audience.Audience
 import BallCore.TextComponents._
+import org.bukkit.World
+import BallCore.Storage.SQLManager
+import org.locationtech.jts.geom.MultiLineString
+import BallCore.Folia.EntityExecutionContext
+import cats.effect.IO
+import BallCore.DataStructures.ShutdownCallbacks
+import BallCore.Groups.GroupManager
 
 class EditorListener()(using e: NoodleEditor) extends Listener:
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
@@ -57,8 +64,66 @@ enum State:
     case dragging(location: Location)
     case creatingFrom(location: Location)
 
+    def isIdle: Boolean =
+        this match
+            case idle(lookingAt) =>
+                true
+            case _ =>
+                false
+
 def round(l: Location): Location =
     Location(l.getWorld, l.blockX + 0.5d, l.blockY, l.blockZ + 0.5d)
+
+object PlayerState:
+    def cost(graph: Graph[Location, UnDiEdge[Location]]): Int =
+        val noodleLength = graph.edges.foldLeft(0d) {
+            case (accumulator, edge) => accumulator + edge._1.distance(edge._2)
+        }
+        (noodleLength / 250d).ceil.toInt
+    def existing(
+        p: Player,
+        noodle: MultiLineString,
+        key: NoodleKey,
+        world: World,
+    )(using Plugin): PlayerState =
+        val graph = NoodleManager.recover(noodle, world)
+        PlayerState(
+            LineDrawer(p, org.bukkit.util.Vector()),
+            graph,
+            p.getLocation(),
+            State.idle(None),
+            BossBar
+                .bossBar(
+                    txt"Maintenance Cost: ${cost(graph)} essence per day",
+                    1f,
+                    BossBar.Color.GREEN,
+                    BossBar.Overlay.PROGRESS,
+                )
+                .addViewer(p),
+            p,
+            key,
+            world,
+        )
+    def newFor(p: Player, key: NoodleKey, world: World)(using
+        Plugin
+    ): PlayerState =
+        PlayerState(
+            LineDrawer(p, org.bukkit.util.Vector()),
+            Graph.empty,
+            p.getLocation(),
+            State.noPoints,
+            BossBar
+                .bossBar(
+                    txt"Maintenance Cost: N/A",
+                    1f,
+                    BossBar.Color.GREEN,
+                    BossBar.Overlay.PROGRESS,
+                )
+                .addViewer(p),
+            p,
+            key,
+            world,
+        )
 
 case class PlayerState(
     lineDrawer: LineDrawer,
@@ -67,6 +132,8 @@ case class PlayerState(
     state: State,
     costBar: BossBar,
     costBarAudience: Audience,
+    key: NoodleKey,
+    world: World,
 ):
     def leave(): Unit =
         costBar.removeViewer(costBarAudience)
@@ -191,33 +258,76 @@ case class PlayerState(
         this
 
 object NoodleEditor:
-    def register()(using p: Plugin): NoodleEditor =
+    def register()(using
+        p: Plugin,
+        sql: SQLManager,
+        gm: GroupManager,
+        callbacks: ShutdownCallbacks,
+    ): (NoodleEditor, NoodleManager) =
+        given NoodleManager = NoodleManager()
         given NoodleEditor = NoodleEditor()
+        callbacks.addIO_(summon[NoodleEditor].cleanup)
         p.getServer().getPluginManager().registerEvents(EditorListener(), p)
-        summon[NoodleEditor]
+        (summon[NoodleEditor], summon[NoodleManager])
 
-class NoodleEditor(using p: Plugin):
+class NoodleEditor(using p: Plugin, manager: NoodleManager, sql: SQLManager):
     private val states = TrieMap[Player, PlayerState]()
 
-    def create(p: Player): Unit =
-        states(p) = PlayerState(
-            LineDrawer(p, org.bukkit.util.Vector()),
-            Graph.empty,
-            (p.getLocation()),
-            State.noPoints,
-            BossBar
-                .bossBar(
-                    txt"Maintenance Cost: N/A",
-                    1f,
-                    BossBar.Color.GREEN,
-                    BossBar.Overlay.PROGRESS,
-                )
-                .addViewer(p),
-            p,
-        )
+    def cleanup: IO[Unit] =
+        import cats.syntax.all._
+        states.values.toList.traverse_(_.lineDrawer.clearIO())
+
+    def edit(p: Player, key: NoodleKey, world: World): Unit =
+        sql.useFireAndForget(for
+            noodle <- sql.withS(manager.getNoodleFor(key, world.getUID))
+            state =
+                noodle match
+                    case None =>
+                        p.sendServerMessage(txt"You've started the process of creating string claims.")
+                        p.sendServerMessage(txt"These strings can extend out from your group's beacon(s) and protect nearby blocks.")
+                        p.sendServerMessage(txt"Blocks within ${NoodleSize} to the left, right, top, or bottom of the strings will be covered.")
+                        PlayerState.newFor(p, key, world)
+                    case Some(it) =>
+                        p.sendServerMessage(txt"You've editing the string claims.")
+                        PlayerState.existing(p, it, key, world)
+            _ <- IO { states(p) = state }
+            _ <- IO { state.render() }.evalOn(EntityExecutionContext(p))
+        yield ())
 
     def done(p: Player): Unit =
-        ???
+        states.get(p) match
+            case Some(value) if value.state.isIdle =>
+                val converted = NoodleManager.convert(value.graph)
+                sql.useFireAndForget(for
+                    result <- sql.withS(
+                        sql.withTX(
+                            manager.setNoodleFor(
+                                p.getUniqueId,
+                                value.key,
+                                converted,
+                                value.world.getUID,
+                            )
+                        )
+                    )
+                    _ <- result match
+                        case Left(err) =>
+                            IO {
+                                p.sendServerMessage(
+                                    txt"Could not save claims because ${err.explain()}."
+                                )
+                            }
+                        case Right(_) =>
+                            IO {
+                                p.sendServerMessage(txt"Saved claims!")
+                                states.remove(p).foreach(_.leave())
+                            }
+                yield ())
+            case Some(value) =>
+                p.sendServerMessage(
+                    txt"You aren't in the right state to save and quit."
+                )
+            case _ =>
+                ()
 
     def cancel(p: Player): Unit =
         states.remove(p).foreach(_.leave())

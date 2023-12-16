@@ -22,6 +22,9 @@ class ShutdownCallbacks:
     def add(fn: () => Future[Unit]): Unit =
         items = items.appended(IO.fromFuture { IO { fn() } })
 
+    def addIO_(fn: IO[Unit]): Unit =
+        items = items.appended(fn)
+
     def addIO[A](fn: (A, IO[Unit])): A =
         resources = resources.appended(fn._2)
         fn._1
