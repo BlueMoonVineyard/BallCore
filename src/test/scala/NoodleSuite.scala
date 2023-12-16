@@ -12,9 +12,7 @@ import be.seeseemelk.mockbukkit.WorldMock
 import scalax.collection.immutable.Graph
 import org.bukkit.Location
 import scalax.collection.edges.UnDiEdge
-import org.locationtech.jts.geom.MultiLineString
 import org.locationtech.jts.geom.GeometryFactory
-import org.locationtech.jts.geom.Coordinate
 import scalax.collection.edges._
 import scalax.collection.OuterImplicits._
 import cats.effect.IO
@@ -28,23 +26,12 @@ class NoodleSuite extends munit.CatsEffectSuite {
     val world = WorldMock()
     val gf = GeometryFactory()
 
-    private def convert(g: Graph[Location, UnDiEdge[Location]]): MultiLineString =
-        gf.createMultiLineString(g.edges.toArray.map { edge =>
-            val from: Location = edge._1
-            val to: Location = edge._2
-
-            gf.createLineString(Array(
-                Coordinate(from.getX, from.getZ, from.getY),
-                Coordinate(to.getX, to.getZ, to.getY),
-            ))
-        })
-
     sql.test("basic noodle functionality") { implicit sql =>
         given gm: GroupManager = GroupManager()
         val noodleManager = NoodleManager()
         val ownerID = UUID.randomUUID()
 
-        val noodle = convert(
+        val noodle = NoodleManager.convert(
             Graph(
                 Location(world, 0, 1, 0) ~ Location(world, 5, 1, 0)
             )
@@ -65,5 +52,23 @@ class NoodleSuite extends munit.CatsEffectSuite {
             testKey3 <- noodleManager.noodleAt(Location(world, 0, -10, 0))(using resource)
             _ <- IO.pure(testKey3).assertEquals(None, "noodle should not contain that (going below)")
         } yield ()))
+    }
+    test("a simple noodle can be recovered from jts") {
+        val graph = Graph(
+            Location(world, 0, 1, 0) ~ Location(world, 5, 1, 0)
+        )
+        val noodle = NoodleManager.convert(graph)
+        val recoveredGraph = NoodleManager.recover(noodle, world)
+        assertEquals(graph, recoveredGraph)
+    }
+    test("a y-shaped noodle can be recovered from jts") {
+        val graph = Graph(
+            Location(world, 0, 1, 0) ~ Location(world, 5, 1, 0),
+            Location(world, 5, 1, 0) ~ Location(world, 7, 1, 10),
+            Location(world, 5, 1, 0) ~ Location(world, 7, 1, -10),
+        )
+        val noodle = NoodleManager.convert(graph)
+        val recoveredGraph = NoodleManager.recover(noodle, world)
+        assertEquals(graph, recoveredGraph)
     }
 }
