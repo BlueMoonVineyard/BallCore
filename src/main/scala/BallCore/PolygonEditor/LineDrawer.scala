@@ -12,6 +12,9 @@ import org.bukkit.entity.Display.Brightness
 import org.bukkit.util.Transformation
 import org.joml.Vector3f
 import org.joml.AxisAngle4f
+import BallCore.Folia.EntityExecutionContext
+import cats.effect.IO
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask
 
 enum LineColour:
     case red
@@ -57,8 +60,14 @@ class LineDrawer(val player: Player, offset: org.bukkit.util.Vector)(using
         )
         is
 
+    def clearIO(): IO[Unit] =
+        import cats.syntax.all._
+        lineEntities.traverse_(ent => IO {
+            ent.remove()
+        }.evalOn(EntityExecutionContext(ent)))
+
     def clear(): Unit =
-        lineEntities.foreach(_.remove())
+        clearIO().unsafeRunAndForget()(using cats.effect.unsafe.IORuntime.global)
 
     private def doTeleport(
         lines: List[(Location, Location, LineColour)]
