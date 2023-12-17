@@ -184,7 +184,6 @@ final class Main extends JavaPlugin:
             QuadrantGear.registerItems()
             CardinalOres.registerItems()
             Furnace.registerItems()
-            Reinforcements.register()
             CustomItemListener.register()
             given List[CraftingStation] = CraftingStations.register()
             Rest.Rest.register()
@@ -209,7 +208,9 @@ final class Main extends JavaPlugin:
 
             val (noodleEditor, noodleManager) = NoodleEditor.NoodleEditor.register()
             given NoodleEditor.NoodleEditor = noodleEditor
-            // given NoodleEditor.NoodleManager = noodleManager
+            given NoodleEditor.NoodleManager = noodleManager
+
+            Reinforcements.register()
 
             val chatCommands = ChatCommands()
             Order.register()

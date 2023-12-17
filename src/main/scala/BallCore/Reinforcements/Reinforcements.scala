@@ -19,6 +19,7 @@ import org.bukkit.inventory.ShapelessRecipe
 import org.bukkit.inventory.ShapedRecipe
 import org.bukkit.Material
 import BallCore.Sigils.BattleManager
+import BallCore.NoodleEditor.NoodleManager
 
 object Reinforcements:
     private def registerBlockListener()(using
@@ -34,6 +35,7 @@ object Reinforcements:
         blockManager: BlockManager,
         ir: ItemRegistry,
         battles: BattleManager,
+        noodle: NoodleManager,
     ): Unit =
         server.getPluginManager.registerEvents(Listener(), plugin)
 
@@ -96,6 +98,7 @@ object Reinforcements:
         primeTime: PrimeTimeManager,
         blockManager: BlockManager,
         battles: BattleManager,
+        noodle: NoodleManager,
     ): Unit =
         registerBlockListener()
         registerEntityListener()
