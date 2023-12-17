@@ -211,8 +211,13 @@ class NoodleManager()(using sql: SQLManager, gm: GroupManager):
         val triangulator = DelaunayTriangulationBuilder()
         triangulator.setSites(geo)
         val edge = triangulator.getSubdivision().locate(coord)
-        Vertex(coord.x, coord.y)
+        val res = Vertex(coord.x, coord.y)
             .interpolateZValue(edge.orig(), edge.dest(), edge.oPrev().dest())
+        if !res.isNaN then
+            res
+        else
+            Vertex(coord.x, coord.y)
+                .interpolateZValue(edge.orig(), edge.dest(), edge.oNext().dest())
 
     def noodleAt(l: Location)(using
         Resource[IO, Session[IO]]
@@ -220,6 +225,7 @@ class NoodleManager()(using sql: SQLManager, gm: GroupManager):
         val lx = l.getX.toFloat
         val ly = l.getZ.toFloat
         getWorldData(l.getWorld.getUID).map { worldData =>
+            println(worldData.noodleRTree)
             worldData.noodleRTree
                 .searchAll(lx, ly)
                 // filter in 2D
@@ -237,6 +243,8 @@ class NoodleManager()(using sql: SQLManager, gm: GroupManager):
                     val coord = Coordinate(l.getX, l.getZ)
                     val zOnPolygon = interpolateZ(polygon, coord)
                     val dZ = zOnPolygon - l.getY
+                    if dZ.isNaN then
+                        throw new IllegalStateException(s"polygon interpolation shouldn't be a NaN!")
                     dZ.abs <= NoodleSize
                 }
                 .map(_.value._2)

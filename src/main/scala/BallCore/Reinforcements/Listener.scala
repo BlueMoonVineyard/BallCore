@@ -46,6 +46,10 @@ import skunk.Session
 import org.bukkit.block.data.`type`.Switch
 import org.bukkit.Tag
 import org.bukkit.event.entity.EntityInteractEvent
+import BallCore.Groups.GroupID
+import BallCore.Groups.SubgroupID
+import skunk.Transaction
+import BallCore.NoodleEditor.NoodleManager
 
 object Listener:
     private def centered(at: Location): Location =
@@ -122,6 +126,7 @@ class Listener(using
     blockManager: BlockManager,
     ir: ItemRegistry,
     battle: BattleManager,
+    noodle: NoodleManager,
 ) extends org.bukkit.event.Listener:
 
     import Listener.*
@@ -130,164 +135,187 @@ class Listener(using
     //// Stuff that interacts with the RSM; i.e. that mutates block states
     //
 
-    private def checkAt(
-        location: Location,
-        player: Player,
-        permission: Permissions,
-        breaking: Boolean,
-    ): Either[GroupError, Boolean] =
+    private case class RelevantData(
+        group: GroupID,
+        subgroup: SubgroupID,
+        permissionGranted: Either[GroupError, Boolean],
+        primeTime: PrimeTimeResult,
+        blockIsHeart: Boolean,
+        isCoveredByBattle: Boolean,
+    )
+
+    private def getGroupCovering(location: Location)(using
+        Session[IO],
+        Transaction[IO],
+    ): OptionT[IO, (GroupID, SubgroupID)] =
         val position = Position(
             location.getX.toInt,
             location.getY.toInt,
             location.getZ.toInt,
             location.getWorld.getUID,
         )
-        sql.useBlocking(sql.withS(sql.withTX(for {
-            beaconContaining <- cbm.beaconContaining(location)
-            group <- OptionT
-                .fromOption[IO](beaconContaining)
-                .flatMapF(beacon => cbm.getGroup(beacon))
-                .flatMapF(groupID =>
-                    for {
-                        claims <- gm.getSubclaims(groupID)
-                        subgroup = claims
-                            .getOrElse(Map())
-                            .find(_._2.contains(position))
-                            .map(_._1)
-                            .getOrElse(nullUUID)
-                        permissionGranted <-
-                            gm.check(
-                                player.getUniqueId,
-                                groupID,
-                                subgroup,
-                                permission,
-                            ).value
-                        extantBattle <- battle.bufferZoneAt(location)(using
-                            Resource.make(IO.pure(summon[Session[IO]]))(_ =>
-                                IO.unit
+        val findByBeacon =
+            for
+                beacon <- OptionT(cbm.beaconContaining(location))
+                group <- OptionT(cbm.getGroup(beacon))
+                claims <- OptionT.liftF(gm.getSubclaims(group))
+                subgroup =
+                    claims
+                        .getOrElse(Map())
+                        .find(_._2.contains(position))
+                        .map(_._1)
+                        .getOrElse(nullUUID)
+            yield (group, subgroup)
+        val findByNoodle =
+            for noodle <- OptionT(
+                    IO.println("finding by noodle") *> noodle.noodleAt(location)(using
+                        Resource.pure[IO, Session[IO]](summon[Session[IO]])
+                    ).flatTap(IO.println)
+                )
+            yield (noodle.group, noodle.subgroup)
+        findByBeacon.orElse(findByNoodle)
+
+    private def getRelevantGroupData(
+        player: Player,
+        location: Location,
+        permission: Permissions,
+        breaking: Boolean,
+    )(using Session[IO], Transaction[IO]): OptionT[IO, RelevantData] =
+        for
+            covered <- getGroupCovering(location)
+            (group, subgroup) = covered
+            permissionGranted <- OptionT.liftF(
+                gm.check(player.getUniqueId, group, subgroup, permission).value
+            )
+            extantBattle <- OptionT.liftF(
+                battle.bufferZoneAt(location)(using
+                    Resource.pure[IO, Session[IO]](summon[Session[IO]])
+                )
+            )
+            isOk =
+                extantBattle.isDefined || permissionGranted == Right(true)
+            isInPrimeTime <-
+                if breaking && !isOk then
+                    OptionT.liftF(primeTime.checkPrimeTime(group))
+                else OptionT.pure[IO](PrimeTimeResult.isInPrimeTime)
+            heart <- OptionT.liftF(cbm.heartAt(location))
+        yield RelevantData(
+            group,
+            subgroup,
+            permissionGranted,
+            isInPrimeTime,
+            heart.isDefined,
+            extantBattle.isDefined,
+        )
+
+    private def doBustThrough(
+        l: Location,
+        p: Player,
+        r: RelevantData,
+    )(using Session[IO], Transaction[IO]): IO[(BustResult, Boolean)] =
+        IO { busts.bust(l) }.flatMap {
+            case BustResult.alreadyBusted =>
+                IO.pure(
+                    (BustResult.alreadyBusted, true)
+                )
+            case BustResult.busting =>
+                IO.pure(
+                    (BustResult.busting, false)
+                )
+            case BustResult.notBusting =>
+                IO.pure(
+                    (BustResult.notBusting, false)
+                )
+            case BustResult.bustingBlocked(x) =>
+                IO.pure(
+                    (BustResult.bustingBlocked(x), false)
+                )
+            case BustResult.justBusted =>
+                for
+                    _ <- fingerprints.storeFingerprintAt(
+                        l.getX.toInt,
+                        l.getY.toInt,
+                        l.getZ.toInt,
+                        l.getWorld.getUID,
+                        p.getUniqueId,
+                        FingerprintReason.bustedThrough,
+                    )
+                    audience <- gm
+                        .groupAudience(r.group)
+                        .value
+                    coords <- IO {
+                        val xOffset =
+                            Random.between(-3, 3)
+                        val zOffset =
+                            Random.between(-3, 3)
+                        val x = l.getBlockX() + xOffset
+                        val z = l.getBlockZ() + zOffset
+                        (x, z)
+                    }
+                    _ <- IO {
+                        audience.foreach((name, aud) =>
+                            aud.sendServerMessage(
+                                txt"[$name] Someone busted through your beacon approximately around ${coords._1} ± 3 / ${l.getBlockY} / ${coords._2} ± 3"
                             )
                         )
-                        isOk =
-                            extantBattle.isDefined || permissionGranted == Right(
-                                true
-                            )
-                        isInPrimeTime <-
-                            if breaking && !isOk then
-                                primeTime.checkPrimeTime(groupID)
-                            else IO.pure(PrimeTimeResult.isInPrimeTime)
-                        heart <- cbm.heartAt(location)
-                    } yield Some(
-                        (
-                            groupID,
-                            subgroup,
-                            permissionGranted,
-                            isInPrimeTime,
-                            heart,
-                            extantBattle,
+                    }.flatMap { _ =>
+                        webhooks.broadcastTo(
+                            r.group,
+                            s"Someone busted through your beacon approximately around ${coords._1} ± 3 / ${l.getBlockY} / ${coords._2} ± 3",
                         )
+                    }
+                yield (BustResult.justBusted, true)
+        }
+
+    private def decideOn(breaking: Boolean, location: Location, player: Player)(
+        r: RelevantData
+    )(using
+        Session[IO],
+        Transaction[IO],
+    ): IO[Either[GroupError, (BustResult, Boolean)]] =
+        (r.permissionGranted, r.primeTime) match
+            case _ if r.isCoveredByBattle && !r.blockIsHeart =>
+                IO.pure(Right((BustResult.notBusting, true)))
+            case (Right(false), PrimeTimeResult.isInPrimeTime)
+                if breaking && !r.blockIsHeart =>
+                doBustThrough(location, player, r).map(Right.apply)
+            case (Right(false), PrimeTimeResult.notInPrimeTime(reopens))
+                if breaking =>
+                IO.pure(
+                    Right(
+                        (BustResult.bustingBlocked(reopens), false)
                     )
                 )
-                .value
-            ok: Either[GroupError, (BustResult, Boolean)] <- group match
-                case None =>
-                    IO.pure(Right((BustResult.notBusting, true)))
-                case Some(
-                        (
-                            groupID,
-                            subgroupID,
-                            permissionGranted,
-                            isInPrimeTime,
-                            heart,
-                            extantBattle,
-                        )
-                    ) =>
-                    (permissionGranted, isInPrimeTime) match
-                        case _ if extantBattle.isDefined && heart.isEmpty =>
-                            IO.pure(Right((BustResult.notBusting, true)))
-                        case (Right(false), PrimeTimeResult.isInPrimeTime)
-                            if breaking && heart.isEmpty =>
-                            for {
-                                result <- IO { busts.bust(location) }
-                                bustResult <- result match
-                                    case BustResult.alreadyBusted =>
-                                        IO.pure(
-                                            Right(
-                                                BustResult.alreadyBusted,
-                                                true,
-                                            )
-                                        )
-                                    case BustResult.busting =>
-                                        IO.pure(
-                                            Right(BustResult.busting, false)
-                                        )
-                                    case BustResult.notBusting =>
-                                        IO.pure(
-                                            Right(BustResult.notBusting, false)
-                                        )
-                                    case BustResult.bustingBlocked(x) =>
-                                        IO.pure(
-                                            Right(
-                                                BustResult.bustingBlocked(x),
-                                                false,
-                                            )
-                                        )
-                                    case BustResult.justBusted =>
-                                        for {
-                                            _ <- fingerprints.storeFingerprintAt(
-                                                location.getX.toInt,
-                                                location.getY.toInt,
-                                                location.getZ.toInt,
-                                                location.getWorld.getUID,
-                                                player.getUniqueId,
-                                                FingerprintReason.bustedThrough,
-                                            )
-                                            audience <- gm
-                                                .groupAudience(groupID)
-                                                .value
-                                            coords <- IO {
-                                                val xOffset =
-                                                    Random.between(-3, 3)
-                                                val zOffset =
-                                                    Random.between(-3, 3)
-                                                val x =
-                                                    location
-                                                        .getBlockX() + xOffset
-                                                val z =
-                                                    location
-                                                        .getBlockZ() + zOffset
-                                                (x, z)
-                                            }
-                                            _ <- IO {
-                                                audience.foreach((name, aud) =>
-                                                    aud.sendServerMessage(
-                                                        txt"[$name] Someone busted through your beacon approximately around ${coords._1} ± 3 / ${location.getBlockY} / ${coords._2} ± 3"
-                                                    )
-                                                )
-                                            }.flatMap { _ =>
-                                                webhooks.broadcastTo(
-                                                    groupID,
-                                                    s"Someone busted through your beacon approximately around ${coords._1} ± 3 / ${location.getBlockY} / ${coords._2} ± 3",
-                                                )
-                                            }
-                                        } yield Right(
-                                            (BustResult.justBusted, true)
-                                        )
-                            } yield bustResult
-                        case (
-                                Right(false),
-                                PrimeTimeResult.notInPrimeTime(reopens),
-                            ) if breaking =>
-                            IO.pure(
-                                Right(
-                                    (BustResult.bustingBlocked(reopens), false)
-                                )
-                            )
-                        case (Right(false), _) =>
-                            IO.pure(Right((BustResult.notBusting, false)))
-                        case (Right(true), _) =>
-                            IO.pure(Right((BustResult.notBusting, true)))
-                        case (Left(err), _) =>
-                            IO.pure(Left(err))
+            case (Right(false), _) =>
+                IO.pure(Right((BustResult.notBusting, false)))
+            case (Right(true), _) =>
+                IO.pure(Right((BustResult.notBusting, true)))
+            case (Left(err), _) =>
+                IO.pure(Left(err))
+
+    private def decideOn(breaking: Boolean, location: Location, player: Player)(
+        r: Option[RelevantData]
+    )(using
+        Session[IO],
+        Transaction[IO],
+    ): IO[Either[GroupError, (BustResult, Boolean)]] =
+        r.map(decideOn(breaking, location, player))
+            .getOrElse(IO.pure(Right((BustResult.notBusting, true))))
+
+    private def checkAt(
+        location: Location,
+        player: Player,
+        permission: Permissions,
+        breaking: Boolean,
+    ): Either[GroupError, Boolean] =
+        sql.useBlocking(sql.withS(sql.withTX(for {
+            data <- getRelevantGroupData(
+                player,
+                location,
+                permission,
+                breaking,
+            ).value
+            ok <- decideOn(breaking, location, player)(data)
         } yield ok)))
             .map { (result, ok) =>
                 result match
@@ -613,8 +641,7 @@ class Listener(using
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     def preventSwitchPresses(event: PlayerInteractEvent): Unit =
         if event.getAction != Action.RIGHT_CLICK_BLOCK then return
-        if !event.getClickedBlock.getBlockData.isInstanceOf[Switch] then
-            return
+        if !event.getClickedBlock.getBlockData.isInstanceOf[Switch] then return
 
         val block = event.getClickedBlock
         val player = event.getPlayer
@@ -661,16 +688,16 @@ class Listener(using
     // prevent pressure plate use by mobs
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     def preventPressurePlateUses(event: EntityInteractEvent): Unit =
-        if !Tag.PRESSURE_PLATES.isTagged(event.getBlock.getType) then
-            return
+        if !Tag.PRESSURE_PLATES.isTagged(event.getBlock.getType) then return
 
         if sql
-            .useBlocking(
-                sql.withS(
-                    cbm.beaconContaining(event.getBlock.getLocation())
+                .useBlocking(
+                    sql.withS(
+                        cbm.beaconContaining(event.getBlock.getLocation())
+                    )
                 )
-            )
-            .isDefined then event.setCancelled(true)
+                .isDefined
+        then event.setCancelled(true)
 
     // prevent pistons from pushing blocks
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
