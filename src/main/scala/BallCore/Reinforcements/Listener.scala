@@ -50,6 +50,7 @@ import BallCore.Groups.GroupID
 import BallCore.Groups.SubgroupID
 import skunk.Transaction
 import BallCore.NoodleEditor.NoodleManager
+import BallCore.Beacons.BeaconID
 
 object Listener:
     private def centered(at: Location): Location =
@@ -144,6 +145,15 @@ class Listener(using
         isCoveredByBattle: Boolean,
     )
 
+    private def getGroupOrBeaconCovering(location: Location)(using
+        Session[IO],
+        Transaction[IO],
+    ): IO[Option[(GroupID, SubgroupID) | BeaconID]] =
+        getGroupCovering(location).value.flatMap {
+            case x @ Some(_) => IO.pure(x)
+            case None => cbm.beaconContaining(location)
+        }
+
     private def getGroupCovering(location: Location)(using
         Session[IO],
         Transaction[IO],
@@ -168,9 +178,11 @@ class Listener(using
             yield (group, subgroup)
         val findByNoodle =
             for noodle <- OptionT(
-                    IO.println("finding by noodle") *> noodle.noodleAt(location)(using
-                        Resource.pure[IO, Session[IO]](summon[Session[IO]])
-                    ).flatTap(IO.println)
+                    IO.println("finding by noodle") *> noodle
+                        .noodleAt(location)(using
+                            Resource.pure[IO, Session[IO]](summon[Session[IO]])
+                        )
+                        .flatTap(IO.println)
                 )
             yield (noodle.group, noodle.subgroup)
         findByBeacon.orElse(findByNoodle)
@@ -678,10 +690,23 @@ class Listener(using
     ): Boolean =
         sql.useBlocking {
             sql.withS(
-                for {
-                    lBeacon <- cbm.beaconContaining(l)
-                    rBeacon <- cbm.beaconContaining(r)
-                } yield lBeacon == rBeacon
+                sql.withTX(
+                    for {
+                        lBeacon <- getGroupOrBeaconCovering(l)
+                        rBeacon <- getGroupOrBeaconCovering(r)
+                    } yield lBeacon == rBeacon
+                )
+            )
+        }
+
+    private def locationIsCoveredBySomething(l: Location): Boolean =
+        sql.useBlocking {
+            sql.withS(
+                sql.withTX(
+                    for {
+                        lBeacon <- getGroupOrBeaconCovering(l)
+                    } yield lBeacon.isDefined
+                )
             )
         }
 
@@ -690,13 +715,7 @@ class Listener(using
     def preventPressurePlateUses(event: EntityInteractEvent): Unit =
         if !Tag.PRESSURE_PLATES.isTagged(event.getBlock.getType) then return
 
-        if sql
-                .useBlocking(
-                    sql.withS(
-                        cbm.beaconContaining(event.getBlock.getLocation())
-                    )
-                )
-                .isDefined
+        if locationIsCoveredBySomething(event.getBlock.getLocation())
         then event.setCancelled(true)
 
     // prevent pistons from pushing blocks
@@ -740,28 +759,16 @@ class Listener(using
                     ()
                 case _ =>
                     event.setCancelled(true)
-        else if sql
-                .useBlocking(
-                    sql.withS(
-                        cbm.beaconContaining(event.getBlock.getLocation())
-                    )
-                )
-                .isDefined
+        else if locationIsCoveredBySomething(event.getBlock.getLocation())
         then event.setCancelled(true)
 
     // prevent reinforced blocks from falling
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     def preventFallingReinforcement(event: EntitySpawnEvent): Unit =
         if event.getEntityType != EntityType.FALLING_BLOCK then return
-        if sql
-                .useBlocking(
-                    sql.withS(
-                        cbm.beaconContaining(
-                            event.getLocation.getBlock.getLocation()
-                        )
-                    )
-                )
-                .isDefined
+        if locationIsCoveredBySomething(
+                event.getLocation.getBlock.getLocation()
+            )
         then
             event.getEntity.setGravity(false)
             event.setCancelled(true)
@@ -771,19 +778,10 @@ class Listener(using
     def preventLiquidWashAway(event: BlockFromToEvent): Unit =
         if event.getToBlock.getY < event.getToBlock.getWorld.getMinHeight
         then return
-        if sql
-                .useBlocking(
-                    sql.withS(
-                        for {
-                            fromBlock <- cbm.beaconContaining(
-                                event.getBlock.getLocation()
-                            )
-                            toBlock <- cbm.beaconContaining(
-                                event.getToBlock.getLocation()
-                            )
-                        } yield fromBlock != toBlock
-                    )
-                )
+        if !locationsAreCoveredByTheSameBeacon(
+                event.getBlock.getLocation,
+                event.getToBlock.getLocation,
+            )
         then event.setCancelled(true)
 
     // prevent plants from breaking reinforced blocks
@@ -804,7 +802,5 @@ class Listener(using
         while it.hasNext do
             val block = it.next()
             val loc = BlockAdjustment.adjustBlock(block)
-            if sql.useBlocking(
-                    sql.withS(cbm.beaconContaining(loc.getLocation()))
-                ).isDefined
+            if locationIsCoveredBySomething(loc.getLocation())
             then it.remove()
