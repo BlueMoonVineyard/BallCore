@@ -179,7 +179,6 @@ final class Main extends JavaPlugin:
 
             CompressedCobblestone.register()
             Datekeeping.Datekeeping.startSidebarClock()
-            Beacons.registerItems()
             QuadrantOres.registerItems()
             QuadrantGear.registerItems()
             CardinalOres.registerItems()
@@ -206,10 +205,13 @@ final class Main extends JavaPlugin:
             given pbm: PlantBatchManager = Plants.Plants.register()
             given chatActor: ChatActor = Chat.Chat.register()
 
-            val (noodleEditor, noodleManager) = NoodleEditor.NoodleEditor.register()
+            val (noodleEditor, noodleManager, essenceManager) =
+                NoodleEditor.NoodleEditor.register()
             given NoodleEditor.NoodleEditor = noodleEditor
             given NoodleEditor.NoodleManager = noodleManager
+            given NoodleEditor.EssenceManager = essenceManager
 
+            Beacons.registerItems()
             Reinforcements.register()
 
             val chatCommands = ChatCommands()

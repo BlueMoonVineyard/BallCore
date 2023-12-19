@@ -11,6 +11,7 @@ import BallCore.Storage.SQLManager
 import org.bukkit.inventory.ItemStack
 import org.bukkit.{Material, NamespacedKey}
 import BallCore.Sigils.BattleManager
+import BallCore.NoodleEditor.EssenceManager
 
 object Beacons:
     val group: ItemGroup = ItemGroup(
@@ -26,5 +27,6 @@ object Beacons:
         hn: CivBeaconManager,
         sql: SQLManager,
         battleManager: BattleManager,
+        essence: EssenceManager,
     ): Unit =
         registry.register(new HeartBlock())
