@@ -28,6 +28,8 @@ import BallCore.Folia.EntityExecutionContext
 import cats.effect.IO
 import BallCore.DataStructures.ShutdownCallbacks
 import BallCore.Groups.GroupManager
+import BallCore.CustomItems.ItemRegistry
+import BallCore.Beacons.CivBeaconManager
 
 class EditorListener()(using e: NoodleEditor) extends Listener:
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
@@ -263,12 +265,17 @@ object NoodleEditor:
         sql: SQLManager,
         gm: GroupManager,
         callbacks: ShutdownCallbacks,
-    ): (NoodleEditor, NoodleManager) =
+        ir: ItemRegistry,
+        cbm: CivBeaconManager,
+    ): (NoodleEditor, NoodleManager, EssenceManager) =
         given NoodleManager = NoodleManager()
         given NoodleEditor = NoodleEditor()
+        val hooks = GameEssenceManagerHooks()
+        given EssenceManager = EssenceManager(hooks)
         callbacks.addIO_(summon[NoodleEditor].cleanup)
         p.getServer().getPluginManager().registerEvents(EditorListener(), p)
-        (summon[NoodleEditor], summon[NoodleManager])
+        ir.register(Essence())
+        (summon[NoodleEditor], summon[NoodleManager], summon[EssenceManager])
 
 class NoodleEditor(using p: Plugin, manager: NoodleManager, sql: SQLManager):
     private val states = TrieMap[Player, PlayerState]()

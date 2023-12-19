@@ -17,6 +17,8 @@ import org.bukkit.{Material, NamespacedKey}
 import java.util.UUID
 import BallCore.Sigils.BattleManager
 import io.sentry.Sentry
+import BallCore.NoodleEditor.EssenceManager
+import BallCore.NoodleEditor.Essence
 
 object HeartBlock:
     val itemStack: CustomItemStack = CustomItemStack.make(
@@ -34,6 +36,8 @@ class HeartBlock()(using
     bm: BlockManager,
     sql: SQLManager,
     battleManager: BattleManager,
+    essence: EssenceManager,
+    ir: ItemRegistry,
 ) extends CustomItem,
       Listeners.BlockPlaced,
       Listeners.BlockRemoved,
@@ -46,7 +50,7 @@ class HeartBlock()(using
     private def playerHeartCoords(p: Player): Option[(Long, Long, Long)] =
         sql.useBlocking(sql.withS(hn.getBeaconLocationFor(p.getUniqueId)))
 
-    def onBlockClicked(event: PlayerInteractEvent): Unit =
+    private def onBlockClickedNonEssence(event: PlayerInteractEvent): Unit =
         sql
             .useBlocking(
                 sql.withS(hn.heartAt(event.getClickedBlock.getLocation()))
@@ -95,6 +99,28 @@ class HeartBlock()(using
                 event.getPlayer.sendServerMessage(
                     txt"You need to bind this beacon to a group in order to edit its claims."
                 )
+
+    private def onBlockClickedEssence(event: PlayerInteractEvent): Unit =
+        val owner = sql
+            .useBlocking(
+                sql.withS(hn.heartAt(event.getClickedBlock.getLocation()))
+            )
+            .map(_._1)
+            .get
+        val location = event.getClickedBlock.getLocation
+        val amount =
+            sql.useBlocking(sql.withS(essence.addEssence(owner, location)))
+        event.getItem.setAmount(event.getItem.getAmount - 1)
+        event.getPlayer.sendServerMessage(
+            txt"This heart now has ${amount} essence."
+        )
+
+    def onBlockClicked(event: PlayerInteractEvent): Unit =
+        ir.lookup(event.getItem()) match
+            case Some(_: Essence) =>
+                onBlockClickedEssence(event)
+            case _ =>
+                onBlockClickedNonEssence(event)
 
     def onBlockPlace(event: BlockPlaceEvent): Unit =
         playerHeartCoords(event.getPlayer) match
@@ -155,11 +181,14 @@ class HeartBlock()(using
                 owner <- bm.retrieve[UUID](event.getBlock, "owner")
                 res <- hn.removeHeart(event.getBlock.getLocation, owner.get)
             } yield res))
-                .redeem({ case e =>
-                    Left(e)
-                }, { case it =>
-                    Right(it)
-                })
+                .redeem(
+                    { case e =>
+                        Left(e)
+                    },
+                    { case it =>
+                        Right(it)
+                    },
+                )
         ) match
             case Left(err) =>
                 event.getPlayer

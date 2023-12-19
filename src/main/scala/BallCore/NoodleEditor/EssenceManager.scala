@@ -41,7 +41,7 @@ class EssenceManager(hooks: EssenceManagerHooks)(using
     )
     val _ = cbm
 
-    def addEssence(owner: OwnerID, l: Location)(using Session[IO]): IO[Unit] =
+    def addEssence(owner: OwnerID, l: Location)(using Session[IO]): IO[Int] =
         sql.queryUniqueIO(
             sql"""
         INSERT INTO HeartEssence (
@@ -53,8 +53,8 @@ class EssenceManager(hooks: EssenceManagerHooks)(using
         """,
             int4,
             owner,
-        ).flatMap { amount =>
-            hooks.updateHeart(l, amount)
+        ).flatTap { amount =>
+            hooks.updateHeart(l, amount).start
         }
 
     def depleteEssenceFor(group: GroupID, amount: Integer)(using
