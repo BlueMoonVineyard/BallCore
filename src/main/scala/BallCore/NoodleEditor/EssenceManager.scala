@@ -28,7 +28,7 @@ class EssenceManager(hooks: EssenceManagerHooks)(using
                 sql"""
                 CREATE TABLE HeartEssence (
                     Count INTEGER NOT NULL,
-                    Owner UUID NOT NULL REFERENCES Hearts(OWNER) ON DELETE CASCADE
+                    Owner UUID UNIQUE NOT NULL REFERENCES Hearts(OWNER) ON DELETE CASCADE
                 );
                 """.command
             ),
@@ -48,7 +48,7 @@ class EssenceManager(hooks: EssenceManagerHooks)(using
             Count, Owner
         ) VALUES (
             1, $uuid
-        ) ON CONFLICT (Owner) DO UPDATE SET Count = Count + 1
+        ) ON CONFLICT (Owner) DO UPDATE SET Count = HeartEssence.Count + 1
         RETURNING Count;
         """,
             int4,
@@ -65,8 +65,9 @@ class EssenceManager(hooks: EssenceManagerHooks)(using
             hearts <- sql.queryListIO(
                 sql"""
             SELECT Hearts.Owner, HeartEssence.Count, Hearts.X, Hearts.Y, Hearts.Z, CivBeacons.World FROM Hearts
-                JOIN CivBeacons ON Beacon = ID WHERE Hearts.GroupID = $uuid
-                LEFT JOIN HeartEssence ON HeartEssence.Owner = Hearts.Owner
+                INNER JOIN CivBeacons ON Beacon = ID
+                INNER JOIN HeartEssence ON HeartEssence.Owner = Hearts.Owner
+                WHERE CivBeacons.GroupID = $uuid
             ORDER BY RANDOM();
             """,
                 (uuid *: int4 *: int8 *: int8 *: int8 *: uuid),
