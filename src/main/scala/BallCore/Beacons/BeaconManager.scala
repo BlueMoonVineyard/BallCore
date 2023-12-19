@@ -222,12 +222,6 @@ class CivBeaconManager()(using
             }
         else IO.pure(worldData(w.getUID))
 
-    def getHeartsForGroup(group: GroupID)(using Session[IO]): IO[List[(OwnerID, BeaconID)]] =
-        sql.queryListIO(sql"""
-        SELECT Owner, Beacon FROM Hearts JOIN Beacon = ID WHERE
-            Hearts.GroupID = $uuid;
-        """, (uuid *: uuid), group)
-
     def getBeaconFor(player: OwnerID)(using Session[IO]): IO[Option[BeaconID]] =
         sql.queryOptionIO(
             sql"""
