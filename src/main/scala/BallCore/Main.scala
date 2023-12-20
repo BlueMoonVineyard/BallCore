@@ -205,11 +205,14 @@ final class Main extends JavaPlugin:
             given pbm: PlantBatchManager = Plants.Plants.register()
             given chatActor: ChatActor = Chat.Chat.register()
 
-            val (noodleEditor, noodleManager, essenceManager) =
+            val (noodleEditor, noodleManager, essenceManager, delinquency, drainer) =
                 NoodleEditor.NoodleEditor.register()
             given NoodleEditor.NoodleEditor = noodleEditor
             given NoodleEditor.NoodleManager = noodleManager
             given NoodleEditor.EssenceManager = essenceManager
+            given NoodleEditor.DelinquencyManager = delinquency
+            given NoodleEditor.EssenceDrainer = drainer
+
 
             Beacons.registerItems()
             Reinforcements.register()

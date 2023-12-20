@@ -22,8 +22,13 @@ class BustThroughTracker(using c: Clock):
     private val bustedBlocks =
         LRUCache[Location, OffsetDateTime](1000, (_, _) => ())
 
-    def bust(at: Location): BustResult =
+    def bust(at: Location, delinquencyDays: Int): BustResult =
         import BustResult._
+
+        val multiplier = if delinquencyDays <= 7 then
+            delinquencyDays.max(1)
+        else
+            blockHealth
 
         bustedBlocks.get(at) match
             case Some(time)
@@ -37,7 +42,7 @@ class BustThroughTracker(using c: Clock):
                     time,
                     c.now(),
                 ) <= expiryMinutes =>
-                val nextNums = nums + 1
+                val nextNums = nums + multiplier
                 if nextNums < blockHealth then
                     breakTracker.update(at, (nextNums, c.now()))
                     busting
@@ -46,5 +51,5 @@ class BustThroughTracker(using c: Clock):
                     bustedBlocks.update(at, c.now())
                     justBusted
             case _ =>
-                breakTracker.update(at, (1, c.now()))
+                breakTracker.update(at, (multiplier, c.now()))
                 busting

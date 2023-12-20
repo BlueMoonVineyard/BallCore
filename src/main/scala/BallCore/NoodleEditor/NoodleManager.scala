@@ -225,7 +225,6 @@ class NoodleManager()(using sql: SQLManager, gm: GroupManager):
         val lx = l.getX.toFloat
         val ly = l.getZ.toFloat
         getWorldData(l.getWorld.getUID).map { worldData =>
-            println(worldData.noodleRTree)
             worldData.noodleRTree
                 .searchAll(lx, ly)
                 // filter in 2D

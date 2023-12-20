@@ -31,6 +31,13 @@ import BallCore.Groups.GroupManager
 import BallCore.CustomItems.ItemRegistry
 import BallCore.Beacons.CivBeaconManager
 import BallCore.DataStructures.Clock
+import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
+import java.time.Duration
+import java.util.concurrent.TimeUnit
+import BallCore.WebHooks.WebHookManager
+import net.kyori.adventure.text.format.NamedTextColor
+import net.kyori.adventure.text.format.TextDecoration
 
 class EditorListener()(using e: NoodleEditor) extends Listener:
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
@@ -82,7 +89,7 @@ object PlayerState:
         val noodleLength = graph.edges.foldLeft(0d) {
             case (accumulator, edge) => accumulator + edge._1.distance(edge._2)
         }
-        (noodleLength / 250d).ceil.toInt
+        (noodleLength / 128d).ceil.toInt
     def existing(
         p: Player,
         noodle: MultiLineString,
@@ -258,9 +265,20 @@ case class PlayerState(
                 )
 
     def leftClick(): PlayerState =
-        this
+        state match
+            case State.idle(Some(target)) =>
+                copy(state = State.idle(None), graph = graph - target)
+            case _ =>
+                this
 
 object NoodleEditor:
+    private def millisToNextDay(): Long =
+        val nextDay =
+            LocalDateTime.now().plusDays(1).truncatedTo(ChronoUnit.DAYS)
+        LocalDateTime.now().until(nextDay, ChronoUnit.MILLIS)
+
+    val dayMillis = Duration.ofDays(1).toMillis()
+
     def register()(using
         p: Plugin,
         sql: SQLManager,
@@ -269,20 +287,71 @@ object NoodleEditor:
         ir: ItemRegistry,
         cbm: CivBeaconManager,
         c: Clock,
-    ): (NoodleEditor, NoodleManager, EssenceManager) =
-        given NoodleManager = NoodleManager()
-        given NoodleEditor = NoodleEditor()
+        webhooks: WebHookManager,
+    ): (
+        NoodleEditor,
+        NoodleManager,
+        EssenceManager,
+        DelinquencyManager,
+        EssenceDrainer,
+    ) =
+        given manager: NoodleManager = NoodleManager()
+        given editor: NoodleEditor = NoodleEditor()
         val hooks = GameEssenceManagerHooks()
-        given EssenceManager = EssenceManager(hooks)
+        given essence: EssenceManager = EssenceManager(hooks)
         callbacks.addIO_(summon[NoodleEditor].cleanup)
         p.getServer().getPluginManager().registerEvents(EditorListener(), p)
         given EssenceGiver = EssenceGiver()
+        given delinquency: DelinquencyManager = DelinquencyManager()
+        val drain = EssenceDrainer()
         p.getServer().getPluginManager().registerEvents(EssenceListener(), p)
         ir.register(Essence())
-        (summon[NoodleEditor], summon[NoodleManager], summon[EssenceManager])
+        val _ = p.getServer.getAsyncScheduler
+            .runAtFixedRate(
+                p,
+                _ =>
+                    sql.useFireAndForget(
+                        sql.withS(sql.withTX(drain.drainEssence))
+                    ),
+                millisToNextDay(),
+                dayMillis,
+                TimeUnit.MILLISECONDS,
+            )
+        (editor, manager, essence, delinquency, drain)
 
 class NoodleEditor(using p: Plugin, manager: NoodleManager, sql: SQLManager):
     private val states = TrieMap[Player, PlayerState]()
+
+    p.getServer.getAsyncScheduler
+        .runAtFixedRate(
+            p,
+            t => renderActionBars(),
+            1 * 50,
+            10 * 50,
+            TimeUnit.MILLISECONDS,
+        )
+
+    def renderActionBars(): Unit =
+        val use = keybind("key.use").style(NamedTextColor.GOLD, TextDecoration.BOLD)
+        val attack = keybind("key.attack").style(NamedTextColor.GOLD, TextDecoration.BOLD)
+        val sneak = keybind("key.sneak").style(NamedTextColor.GOLD, TextDecoration.BOLD)
+        val done = txt("/done").style(NamedTextColor.GOLD, TextDecoration.BOLD)
+        val cancel = txt("/cancel").style(NamedTextColor.GOLD, TextDecoration.BOLD)
+        states.foreach { (player, state) =>
+            state.state match
+                case State.noPoints =>
+                    player.sendActionBar(txt"$use: Place Point 1")
+                case State.onePoint(previous) =>
+                    player.sendActionBar(txt"$use: Place Point 2")
+                case State.idle(Some(_)) =>
+                    player.sendActionBar(txt"$use: Start a new line from this point  |  $sneak+$use: Drag this point  |  $attack: Delete this point")
+                case State.idle(None) =>
+                    player.sendActionBar(txt"$done: Save and quit  |  $cancel: Quit without saving")
+                case State.dragging(_) =>
+                    player.sendActionBar(txt"$use: Place point")
+                case State.creatingFrom(_) =>
+                    player.sendActionBar(txt"$use: Place point")
+        }
 
     def cleanup: IO[Unit] =
         import cats.syntax.all._
@@ -294,12 +363,20 @@ class NoodleEditor(using p: Plugin, manager: NoodleManager, sql: SQLManager):
             state =
                 noodle match
                     case None =>
-                        p.sendServerMessage(txt"You've started the process of creating string claims.")
-                        p.sendServerMessage(txt"These strings can extend out from your group's beacon(s) and protect nearby blocks.")
-                        p.sendServerMessage(txt"Blocks within ${NoodleSize} to the left, right, top, or bottom of the strings will be covered.")
+                        p.sendServerMessage(
+                            txt"You've started the process of creating string claims."
+                        )
+                        p.sendServerMessage(
+                            txt"These strings can extend out from your group's beacon(s) and protect nearby blocks."
+                        )
+                        p.sendServerMessage(
+                            txt"Blocks within ${NoodleSize} to the left, right, top, or bottom of the strings will be covered."
+                        )
                         PlayerState.newFor(p, key, world)
                     case Some(it) =>
-                        p.sendServerMessage(txt"You've editing the string claims.")
+                        p.sendServerMessage(
+                            txt"You've editing the string claims."
+                        )
                         PlayerState.existing(p, it, key, world)
             _ <- IO { states(p) = state }
             _ <- IO { state.render() }.evalOn(EntityExecutionContext(p))
