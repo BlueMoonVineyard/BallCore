@@ -51,6 +51,7 @@ import BallCore.Groups.SubgroupID
 import skunk.Transaction
 import BallCore.NoodleEditor.NoodleManager
 import BallCore.Beacons.BeaconID
+import BallCore.NoodleEditor.DelinquencyManager
 
 object Listener:
     private def centered(at: Location): Location =
@@ -128,6 +129,7 @@ class Listener(using
     ir: ItemRegistry,
     battle: BattleManager,
     noodle: NoodleManager,
+    delinquency: DelinquencyManager,
 ) extends org.bukkit.event.Listener:
 
     import Listener.*
@@ -143,6 +145,7 @@ class Listener(using
         primeTime: PrimeTimeResult,
         blockIsHeart: Boolean,
         isCoveredByBattle: Boolean,
+        delinquentDays: Int,
     )
 
     private def getGroupOrBeaconCovering(location: Location)(using
@@ -178,11 +181,10 @@ class Listener(using
             yield (group, subgroup)
         val findByNoodle =
             for noodle <- OptionT(
-                    IO.println("finding by noodle") *> noodle
+                    noodle
                         .noodleAt(location)(using
                             Resource.pure[IO, Session[IO]](summon[Session[IO]])
                         )
-                        .flatTap(IO.println)
                 )
             yield (noodle.group, noodle.subgroup)
         findByBeacon.orElse(findByNoodle)
@@ -211,6 +213,7 @@ class Listener(using
                     OptionT.liftF(primeTime.checkPrimeTime(group))
                 else OptionT.pure[IO](PrimeTimeResult.isInPrimeTime)
             heart <- OptionT.liftF(cbm.heartAt(location))
+            daysDelinquent <- OptionT.liftF(delinquency.daysOfGroupDelinquency(group))
         yield RelevantData(
             group,
             subgroup,
@@ -218,6 +221,7 @@ class Listener(using
             isInPrimeTime,
             heart.isDefined,
             extantBattle.isDefined,
+            daysDelinquent,
         )
 
     private def doBustThrough(
@@ -225,7 +229,7 @@ class Listener(using
         p: Player,
         r: RelevantData,
     )(using Session[IO], Transaction[IO]): IO[(BustResult, Boolean)] =
-        IO { busts.bust(l) }.flatMap {
+        IO { busts.bust(l, r.delinquentDays) }.flatMap {
             case BustResult.alreadyBusted =>
                 IO.pure(
                     (BustResult.alreadyBusted, true)
@@ -290,6 +294,9 @@ class Listener(using
                 IO.pure(Right((BustResult.notBusting, true)))
             case (Right(false), PrimeTimeResult.isInPrimeTime)
                 if breaking && !r.blockIsHeart =>
+                doBustThrough(location, player, r).map(Right.apply)
+            case (Right(false), PrimeTimeResult.notInPrimeTime(reopens))
+                if breaking && r.delinquentDays > 7 && !r.blockIsHeart =>
                 doBustThrough(location, player, r).map(Right.apply)
             case (Right(false), PrimeTimeResult.notInPrimeTime(reopens))
                 if breaking =>

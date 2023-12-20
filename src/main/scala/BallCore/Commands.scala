@@ -81,6 +81,7 @@ import BallCore.Sigils.GameBattleHooks
 import BallCore.SpawnInventory.BattlesAndYou
 import BallCore.SpawnInventory.SigilsAndYou
 import BallCore.NoodleEditor.NoodleEditor
+import BallCore.NoodleEditor.EssenceDrainer
 
 class OTTCommand(using sql: SQLManager, ott: OneTimeTeleporter):
     private def errorText(err: OTTError): Component =
@@ -691,6 +692,7 @@ class CheatCommand(using
     storage: BallCore.Acclimation.Storage,
     sql: SQLManager,
     rs: RandomSpawn,
+    drainer: EssenceDrainer,
 ):
     val node =
         CommandTree("cheat")
@@ -729,6 +731,15 @@ class CheatCommand(using
                                 txt"Gave 1 item"
                             )
                         }
+                    }: PlayerCommandExecutor)
+            )
+            .`then`(
+                LiteralArgument("eat-noodle-essence")
+                    .executesPlayer({ (sender, args) =>
+                        sql.useFireAndForget(for
+                            _ <- sql.withS(sql.withTX(drainer.drainEssence))
+                            _ <- IO { sender.sendServerMessage(txt"Drained essence!") }
+                        yield ())
                     }: PlayerCommandExecutor)
             )
             .`then`(

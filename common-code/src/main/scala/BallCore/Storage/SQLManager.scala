@@ -250,6 +250,21 @@ class SQLManager(resource: Resource[IO, Session[IO]], val database: String):
             res
         }
 
+    /** Executes a SQL query with the given parameters that returns 0 or more
+      * values as a stream
+      */
+    def queryStreamIO[I, O](
+        fragmentP: Fragment[I],
+        decoder: Decoder[O],
+        parameters: I,
+    )(using s: Session[IO]): IO[fs2.Stream[IO, O]] =
+        val fragment = fragmentP
+        async[IO] {
+            val prepared = s.prepare(fragment.query(decoder)).await
+            val res = prepared.stream(parameters, 64)
+            res
+        }
+
     /** Executes a SQL query with the given parameters that returns 0 or 1
       * values
       *

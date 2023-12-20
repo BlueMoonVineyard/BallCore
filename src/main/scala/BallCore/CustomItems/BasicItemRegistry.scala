@@ -24,6 +24,7 @@ class BasicItemRegistry(using s: Server) extends ItemRegistry:
         itemMap += item.id -> item
 
     def lookup(from: ItemStack): Option[CustomItem] =
+        if from == null then return None
         val meta = from.getItemMeta
         if meta == null then return None
 

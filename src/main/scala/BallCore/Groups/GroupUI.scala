@@ -241,7 +241,10 @@ class GroupManagementProgram(using
                         txt"Edit Arterial Claims".style(NamedTextColor.GREEN),
                         Message.EditArterialClaims,
                     ) {
-                        Lore(txt"Claim strings of land on behalf of this group")
+                        Lore(
+                            txt"Claim strings of land on behalf of this group"
+                                .color(NamedTextColor.GRAY)
+                        )
                     }
                 if group.check(
                         Permissions.UpdateGroupInformation,
@@ -666,7 +669,11 @@ class GroupManagementProgram(using
                 model
             case Message.EditArterialClaims =>
                 val player = Bukkit.getPlayer(model.userID)
-                noodleEditor.edit(player, NoodleKey(model.group.metadata.id, nullUUID), player.getWorld)
+                noodleEditor.edit(
+                    player,
+                    NoodleKey(model.group.metadata.id, nullUUID),
+                    player.getWorld,
+                )
                 services.quit()
                 model
             case Message.KickPlayer(target) =>
@@ -890,12 +897,20 @@ class SubgroupManagementProgram(using
                         model.subgroup.id,
                     )
                 }
-                noodleEditor.edit(player, NoodleKey(model.group.metadata.id, model.subgroup.id), player.getWorld)
+                noodleEditor.edit(
+                    player,
+                    NoodleKey(model.group.metadata.id, model.subgroup.id),
+                    player.getWorld,
+                )
                 services.quit()
                 model
             case Message.EditArterialClaims =>
                 val player = Bukkit.getPlayer(model.userID)
-                noodleEditor.edit(player, NoodleKey(model.group.metadata.id, model.subgroup.id), player.getWorld)
+                noodleEditor.edit(
+                    player,
+                    NoodleKey(model.group.metadata.id, model.subgroup.id),
+                    player.getWorld,
+                )
                 services.quit()
                 model
 
@@ -920,14 +935,19 @@ class SubgroupManagementProgram(using
                     txt"Assign Land".style(NamedTextColor.GREEN),
                     Message.EditClaims,
                 ) {
-                    Lore(txt"Assign portions of beacon-covered land to this subgroup")
+                    Lore(
+                        txt"Assign portions of beacon-covered land to this subgroup"
+                    )
                 }
                 Button(
                     Material.RAIL,
                     txt"Edit Arterial Claims".style(NamedTextColor.GREEN),
                     Message.EditArterialClaims,
                 ) {
-                    Lore(txt"Claim strings of land on behalf of this subgroup")
+                    Lore(
+                        txt"Claim strings of land on behalf of this subgroup"
+                            .color(NamedTextColor.GRAY)
+                    )
                 }
             }
             OutlinePane(1, 0, 1, 6, priority = Priority.LOWEST, repeat = true) {

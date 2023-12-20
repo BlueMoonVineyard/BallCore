@@ -47,7 +47,7 @@ class EssenceListener(using eg: EssenceGiver, sql: SQLManager, p: Plugin)
                                 )
                             },
                             () => (),
-                            20,
+                            10 * 60 * 20,
                         )
                 },
                 IO.pure(()),
