@@ -213,7 +213,9 @@ class Listener(using
                     OptionT.liftF(primeTime.checkPrimeTime(group))
                 else OptionT.pure[IO](PrimeTimeResult.isInPrimeTime)
             heart <- OptionT.liftF(cbm.heartAt(location))
-            daysDelinquent <- OptionT.liftF(delinquency.daysOfGroupDelinquency(group))
+            daysDelinquent <- OptionT.liftF(
+                delinquency.daysOfGroupDelinquency(group)
+            )
         yield RelevantData(
             group,
             subgroup,

@@ -48,7 +48,9 @@ object CraftingStations:
         )
         stations.foreach(registry.register(_))
 
-        p.getServer().getPluginManager().registerEvents(BundleStufferListener(), p)
+        p.getServer()
+            .getPluginManager()
+            .registerEvents(BundleStufferListener(), p)
         registry.register(BundleStuffer())
 
         val bundleRecipe = ShapedRecipe(

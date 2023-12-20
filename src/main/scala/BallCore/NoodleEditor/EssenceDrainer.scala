@@ -12,7 +12,11 @@ import org.bukkit.Bukkit
 import java.util.UUID
 import cats.syntax.all._
 
-class EssenceDrainer(using sql: SQLManager, em: EssenceManager, dm: DelinquencyManager):
+class EssenceDrainer(using
+    sql: SQLManager,
+    em: EssenceManager,
+    dm: DelinquencyManager,
+):
     private val geometryFactory = GeometryFactory()
     private val multiLineStringCodec =
         import org.locationtech.jts.io.geojson.{GeoJsonReader, GeoJsonWriter}
@@ -34,20 +38,24 @@ class EssenceDrainer(using sql: SQLManager, em: EssenceManager, dm: DelinquencyM
                 (multiLineStringCodec *: uuid *: uuid),
                 skunk.Void,
             )
-            payments <- stream.parEvalMapUnordered(10) {
-                (noodle, group, world) =>
+            payments <- stream
+                .parEvalMapUnordered(10) { (noodle, group, world) =>
                     val noodleGraph =
                         NoodleManager.recover(noodle, Bukkit.getWorld(world))
                     val cost = PlayerState.cost(noodleGraph)
                     em.depleteEssenceFor(group, cost).map((group, cost, _))
-            }.compile.toList
-            _ <- payments.foldLeft(Map[UUID, (Int, Int)]()) { case (map, (group, cost, unpaid)) =>
-                val (cost_, unpaid_) = map.getOrElse(group, (0, 0))
-                map + (group -> (cost + cost_, unpaid_ + unpaid))
-            }.toList.traverse_ { case (group, (cost, unpaid)) =>
-                if unpaid == 0 then
-                    dm.paid(group, cost)
-                else
-                    dm.failedToPay(group, cost)
-            }
+                }
+                .compile
+                .toList
+            _ <- payments
+                .foldLeft(Map[UUID, (Int, Int)]()) {
+                    case (map, (group, cost, unpaid)) =>
+                        val (cost_, unpaid_) = map.getOrElse(group, (0, 0))
+                        map + (group -> (cost + cost_, unpaid_ + unpaid))
+                }
+                .toList
+                .traverse_ { case (group, (cost, unpaid)) =>
+                    if unpaid == 0 then dm.paid(group, cost)
+                    else dm.failedToPay(group, cost)
+                }
         yield ()

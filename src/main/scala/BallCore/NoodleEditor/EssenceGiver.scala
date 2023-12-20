@@ -33,7 +33,9 @@ class EssenceListener(using eg: EssenceGiver, sql: SQLManager, p: Plugin)
                             _ => {
                                 val is = Essence.template.clone()
                                 is.setAmount(4)
-                                plr.sendServerMessage(txt"You've gotten your daily essence!")
+                                plr.sendServerMessage(
+                                    txt"You've gotten your daily essence!"
+                                )
                                 plr.getInventory.addItem(is).forEach {
                                     (_, is) =>
                                         val _ = plr.getWorld

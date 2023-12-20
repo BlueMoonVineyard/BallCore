@@ -359,8 +359,7 @@ class GroupsSuite extends munit.FunSuite:
             val res = sql.useBlocking(
                 sql.withS(
                     sql.withTX(
-                        gm.assignRole(ownerID, user, gid, modRoleID, true)
-                            .value
+                        gm.assignRole(ownerID, user, gid, modRoleID, true).value
                     )
                 )
             )
@@ -380,7 +379,11 @@ class GroupsSuite extends munit.FunSuite:
                 )
             )
         )
-        assertEquals(res1, Left(Groups.GroupError.TargetIsAboveYou), "mods can't kick owners")
+        assertEquals(
+            res1,
+            Left(Groups.GroupError.TargetIsAboveYou),
+            "mods can't kick owners",
+        )
 
         val res3 = sql.useBlocking(
             sql.withS(
@@ -393,7 +396,11 @@ class GroupsSuite extends munit.FunSuite:
                 )
             )
         )
-        assertEquals(res3, Left(Groups.GroupError.NoPermissions), "randos don't have perms")
+        assertEquals(
+            res3,
+            Left(Groups.GroupError.NoPermissions),
+            "randos don't have perms",
+        )
 
         val res2 = sql.useBlocking(
             sql.withS(
@@ -419,7 +426,11 @@ class GroupsSuite extends munit.FunSuite:
                 )
             )
         )
-        assertEquals(res4, Left(Groups.GroupError.MustBeInGroup), "people outside can't kick")
+        assertEquals(
+            res4,
+            Left(Groups.GroupError.MustBeInGroup),
+            "people outside can't kick",
+        )
 
         val res5 = sql.useBlocking(
             sql.withS(
@@ -432,7 +443,11 @@ class GroupsSuite extends munit.FunSuite:
                 )
             )
         )
-        assertEquals(res5, Left(Groups.GroupError.TargetIsAboveYou), "mods can't kick eachother")
+        assertEquals(
+            res5,
+            Left(Groups.GroupError.TargetIsAboveYou),
+            "mods can't kick eachother",
+        )
 
         val res6 = sql.useBlocking(
             sql.withS(

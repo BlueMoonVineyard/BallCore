@@ -103,9 +103,18 @@ object PlumbAndSquare:
     val mainRecipe = NamespacedKey("ballcore", "plumb_and_square")
     val kinds = List(
         (NamespacedKey("ballcore", "plumb_and_square_stone"), Material.STONE),
-        (NamespacedKey("ballcore", "plumb_and_square_deepslate"), Material.DEEPSLATE),
-        (NamespacedKey("ballcore", "plumb_and_square_iron"), Material.IRON_INGOT),
-        (NamespacedKey("ballcore", "plumb_and_square_copper"), Material.COPPER_INGOT),
+        (
+            NamespacedKey("ballcore", "plumb_and_square_deepslate"),
+            Material.DEEPSLATE,
+        ),
+        (
+            NamespacedKey("ballcore", "plumb_and_square_iron"),
+            Material.IRON_INGOT,
+        ),
+        (
+            NamespacedKey("ballcore", "plumb_and_square_copper"),
+            Material.COPPER_INGOT,
+        ),
     )
 
 class PlumbAndSquare extends CustomItem:

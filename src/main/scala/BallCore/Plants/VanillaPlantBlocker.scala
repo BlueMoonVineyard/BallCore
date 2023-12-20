@@ -102,7 +102,9 @@ class VanillaPlantBlocker() extends Listener:
         val possiblePlants = Plant.values.filter(_.growingClimate == climate)
 
         if possiblePlants.size > 0 then
-            val chosenPlant = possiblePlants(Random.nextInt(possiblePlants.length))
+            val chosenPlant = possiblePlants(
+                Random.nextInt(possiblePlants.length)
+            )
 
             loc.getWorld
                 .dropItemNaturally(

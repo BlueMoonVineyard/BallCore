@@ -162,7 +162,9 @@ class SlimePillarManager(using
     def slapPillar(
         interaction: Interaction,
         player: Audience,
-    )(using battleManager: BattleManager)(using Session[IO], NotGiven[Transaction[IO]]): IO[PillarResult] =
+    )(using
+        battleManager: BattleManager
+    )(using Session[IO], NotGiven[Transaction[IO]]): IO[PillarResult] =
         for {
             health <- sql.queryUniqueIO(
                 sql"""
@@ -195,7 +197,9 @@ class SlimePillarManager(using
     def healPillar(
         interaction: Interaction,
         player: Audience,
-    )(using battleManager: BattleManager)(using Session[IO], NotGiven[Transaction[IO]]): IO[PillarResult] =
+    )(using
+        battleManager: BattleManager
+    )(using Session[IO], NotGiven[Transaction[IO]]): IO[PillarResult] =
         for {
             health <- sql.queryUniqueIO(
                 sql"""
@@ -264,8 +268,7 @@ class SlimePillarSlapDetector()(using
         val intr = event.getEntity().asInstanceOf[Interaction]
 
         val result = plr.rayTraceEntities(10)
-        if result == null then
-            return
+        if result == null then return
         val position = result.getHitPosition()
         val location = position.toLocation(plr.getWorld(), 0, 0)
 
@@ -293,8 +296,7 @@ class SlimePillarSlapDetector()(using
         lastSlaps.update(event.getPlayer(), clock.now())
 
         val result = event.getPlayer().rayTraceEntities(10)
-        if result == null then
-            return
+        if result == null then return
         val position = result.getHitPosition()
         val location = position.toLocation(event.getPlayer().getWorld(), 0, 0)
 

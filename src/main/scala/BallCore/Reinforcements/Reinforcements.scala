@@ -63,7 +63,10 @@ object Reinforcements:
 
         // plumb-and-square crafting registration
 
-        val rezept = ShapedRecipe(PlumbAndSquare.mainRecipe, PlumbAndSquare.itemStack.clone())
+        val rezept = ShapedRecipe(
+            PlumbAndSquare.mainRecipe,
+            PlumbAndSquare.itemStack.clone(),
+        )
         rezept.shape(
             "TTT",
             " RT",
