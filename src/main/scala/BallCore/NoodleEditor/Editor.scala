@@ -30,6 +30,7 @@ import BallCore.DataStructures.ShutdownCallbacks
 import BallCore.Groups.GroupManager
 import BallCore.CustomItems.ItemRegistry
 import BallCore.Beacons.CivBeaconManager
+import BallCore.DataStructures.Clock
 
 class EditorListener()(using e: NoodleEditor) extends Listener:
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
@@ -267,6 +268,7 @@ object NoodleEditor:
         callbacks: ShutdownCallbacks,
         ir: ItemRegistry,
         cbm: CivBeaconManager,
+        c: Clock,
     ): (NoodleEditor, NoodleManager, EssenceManager) =
         given NoodleManager = NoodleManager()
         given NoodleEditor = NoodleEditor()
@@ -274,6 +276,8 @@ object NoodleEditor:
         given EssenceManager = EssenceManager(hooks)
         callbacks.addIO_(summon[NoodleEditor].cleanup)
         p.getServer().getPluginManager().registerEvents(EditorListener(), p)
+        given EssenceGiver = EssenceGiver()
+        p.getServer().getPluginManager().registerEvents(EssenceListener(), p)
         ir.register(Essence())
         (summon[NoodleEditor], summon[NoodleManager], summon[EssenceManager])
 
