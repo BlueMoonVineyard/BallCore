@@ -46,34 +46,55 @@ class NoodleSuite extends munit.CatsEffectSuite {
         sql.withS(sql.withTX(for {
             groupID <- gm.createGroup(ownerID, "test")
             key = NoodleKey(groupID, nullUUID)
-            _ <- noodleManager.setNoodleFor(ownerID, key, noodle, world.getUID)
+            _ <- noodleManager
+                .setNoodleFor(ownerID, key, noodle, world.getUID)
                 .assert(_.isRight, "should be able to set noodle")
 
             resource = Resource.pure[IO, Session[IO]](summon[Session[IO]])
 
-            _ <- noodleManager.noodleAt(Location(world, 0, 0, 0))(using resource)
+            _ <- noodleManager
+                .noodleAt(Location(world, 0, 0, 0))(using resource)
                 .assertEquals(Some(key), "noodle should contain that")
 
-            _ <- noodleManager.noodleAt(Location(world, 0, 10, 0))(using resource)
-                .assertEquals(None, "noodle should not contain that (going above)")
+            _ <- noodleManager
+                .noodleAt(Location(world, 0, 10, 0))(using resource)
+                .assertEquals(
+                    None,
+                    "noodle should not contain that (going above)",
+                )
 
-            _ <- noodleManager.noodleAt(Location(world, 0, -10, 0))(using resource)
-                .assertEquals(None, "noodle should not contain that (going below)")
+            _ <- noodleManager
+                .noodleAt(Location(world, 0, -10, 0))(using resource)
+                .assertEquals(
+                    None,
+                    "noodle should not contain that (going below)",
+                )
 
-            _ <- noodleManager.getNoodleFor(key, world.getUID)
+            _ <- noodleManager
+                .getNoodleFor(key, world.getUID)
                 .assert(_.isDefined, "noodle should be persisted to database")
 
-            _ <- noodleManager.setNoodleFor(ownerID, key, noodle2, world.getUID)
+            _ <- noodleManager
+                .setNoodleFor(ownerID, key, noodle2, world.getUID)
                 .assert(_.isRight, "should be able to set noodle again")
 
-            _ <- noodleManager.noodleAt(Location(world, 0, 10, 0))(using resource)
+            _ <- noodleManager
+                .noodleAt(Location(world, 0, 10, 0))(using resource)
                 .assertEquals(Some(key), "noodle should contain that")
 
-            _ <- noodleManager.noodleAt(Location(world, 0, 20, 0))(using resource)
-                .assertEquals(None, "noodle should not contain that (going above)")
+            _ <- noodleManager
+                .noodleAt(Location(world, 0, 20, 0))(using resource)
+                .assertEquals(
+                    None,
+                    "noodle should not contain that (going above)",
+                )
 
-            _ <- noodleManager.noodleAt(Location(world, 0, 0, 0))(using resource)
-                .assertEquals(None, "noodle should not contain that (going below)")
+            _ <- noodleManager
+                .noodleAt(Location(world, 0, 0, 0))(using resource)
+                .assertEquals(
+                    None,
+                    "noodle should not contain that (going below)",
+                )
         } yield ()))
     }
     test("a simple noodle can be recovered from jts") {

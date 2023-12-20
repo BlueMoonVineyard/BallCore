@@ -189,7 +189,8 @@ class PolygonEditor(using
                 )
                 val model = EditorModel(beaconID, polygon, world)
                 val bar = createBossBar(polygon.getArea().toInt, area, player)
-                val lineDrawer = LineDrawer(player, org.bukkit.util.Vector(0.5, 1, 0.5))
+                val lineDrawer =
+                    LineDrawer(player, org.bukkit.util.Vector(0.5, 1, 0.5))
                 updateEditorPersistent(model, bar, area, lineDrawer)
                 playerPolygons(player) = PlayerState.editing(
                     model,

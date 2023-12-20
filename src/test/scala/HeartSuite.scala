@@ -40,7 +40,11 @@ class HeartSuite extends munit.FunSuite {
 
         val res3 =
             sql.useBlocking(
-                sql.withS(sql.withTX(hn.removeHeart(Location(world, 0, 0, 0), ownerID)))
+                sql.withS(
+                    sql.withTX(
+                        hn.removeHeart(Location(world, 0, 0, 0), ownerID)
+                    )
+                )
             )
         assert(res3.isEmpty, res3)
     }
@@ -203,7 +207,11 @@ class HeartSuite extends munit.FunSuite {
 
             val res3 =
                 sql.useBlocking(
-                    sql.withS(sql.withTX(hn.removeHeart(Location(world, x, y, z), id2)))
+                    sql.withS(
+                        sql.withTX(
+                            hn.removeHeart(Location(world, x, y, z), id2)
+                        )
+                    )
                 )
             assert(res3.isDefined, res3)
             val (hid3, hni3) = res3.get

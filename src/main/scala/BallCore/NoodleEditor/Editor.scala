@@ -332,11 +332,17 @@ class NoodleEditor(using p: Plugin, manager: NoodleManager, sql: SQLManager):
         )
 
     def renderActionBars(): Unit =
-        val use = keybind("key.use").style(NamedTextColor.GOLD, TextDecoration.BOLD)
-        val attack = keybind("key.attack").style(NamedTextColor.GOLD, TextDecoration.BOLD)
-        val sneak = keybind("key.sneak").style(NamedTextColor.GOLD, TextDecoration.BOLD)
+        val use =
+            keybind("key.use").style(NamedTextColor.GOLD, TextDecoration.BOLD)
+        val attack = keybind("key.attack").style(
+            NamedTextColor.GOLD,
+            TextDecoration.BOLD,
+        )
+        val sneak =
+            keybind("key.sneak").style(NamedTextColor.GOLD, TextDecoration.BOLD)
         val done = txt("/done").style(NamedTextColor.GOLD, TextDecoration.BOLD)
-        val cancel = txt("/cancel").style(NamedTextColor.GOLD, TextDecoration.BOLD)
+        val cancel =
+            txt("/cancel").style(NamedTextColor.GOLD, TextDecoration.BOLD)
         states.foreach { (player, state) =>
             state.state match
                 case State.noPoints =>
@@ -344,9 +350,13 @@ class NoodleEditor(using p: Plugin, manager: NoodleManager, sql: SQLManager):
                 case State.onePoint(previous) =>
                     player.sendActionBar(txt"$use: Place Point 2")
                 case State.idle(Some(_)) =>
-                    player.sendActionBar(txt"$use: Start a new line from this point  |  $sneak+$use: Drag this point  |  $attack: Delete this point")
+                    player.sendActionBar(
+                        txt"$use: Start a new line from this point  |  $sneak+$use: Drag this point  |  $attack: Delete this point"
+                    )
                 case State.idle(None) =>
-                    player.sendActionBar(txt"$done: Save and quit  |  $cancel: Quit without saving")
+                    player.sendActionBar(
+                        txt"$done: Save and quit  |  $cancel: Quit without saving"
+                    )
                 case State.dragging(_) =>
                     player.sendActionBar(txt"$use: Place point")
                 case State.creatingFrom(_) =>

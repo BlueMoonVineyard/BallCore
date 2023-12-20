@@ -62,12 +62,16 @@ class LineDrawer(val player: Player, offset: org.bukkit.util.Vector)(using
 
     def clearIO(): IO[Unit] =
         import cats.syntax.all._
-        lineEntities.traverse_(ent => IO {
-            ent.remove()
-        }.evalOn(EntityExecutionContext(ent)))
+        lineEntities.traverse_(ent =>
+            IO {
+                ent.remove()
+            }.evalOn(EntityExecutionContext(ent))
+        )
 
     def clear(): Unit =
-        clearIO().unsafeRunAndForget()(using cats.effect.unsafe.IORuntime.global)
+        clearIO().unsafeRunAndForget()(using
+            cats.effect.unsafe.IORuntime.global
+        )
 
     private def doTeleport(
         lines: List[(Location, Location, LineColour)]
@@ -131,8 +135,7 @@ class LineDrawer(val player: Player, offset: org.bukkit.util.Vector)(using
         previousLines = lines
 
     def setLines(lines: List[(Location, Location, LineColour)]): Unit =
-        if lines == previousLines then
-            return
+        if lines == previousLines then return
 
         doTeleport(lines)
         val _ = player

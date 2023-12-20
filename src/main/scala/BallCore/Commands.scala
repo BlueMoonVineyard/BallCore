@@ -539,7 +539,9 @@ class BookCommand(using
                 LiteralArgument("battles-and-you")
                     .executesPlayer({ (sender, args) =>
                         sql.useFireAndForget(for {
-                            book <- sql.withS(BattlesAndYou.viewForPlayer(sender))
+                            book <- sql.withS(
+                                BattlesAndYou.viewForPlayer(sender)
+                            )
                             _ <- IO { sender.openBook(book) }
                         } yield ())
                     }: PlayerCommandExecutor)
@@ -548,7 +550,9 @@ class BookCommand(using
                 LiteralArgument("sigils-and-you")
                     .executesPlayer({ (sender, args) =>
                         sql.useFireAndForget(for {
-                            book <- sql.withS(SigilsAndYou.viewForPlayer(sender))
+                            book <- sql.withS(
+                                SigilsAndYou.viewForPlayer(sender)
+                            )
                             _ <- IO { sender.openBook(book) }
                         } yield ())
                     }: PlayerCommandExecutor)
@@ -594,7 +598,8 @@ class InformationGiver():
         txt"[CivCubed] Consider helping us keep the lights on by donating to https://opencollective.com/civcubed!",
         txt"[CivCubed] Browse the selection of ${txt("/book").color(Colors.teal)} and learn more about the server!",
         txt"[CivCubed] Rest accumulates when you log off and come back the next day!",
-        txt"[CivCubed] Set up a relay of important events to a Discord webhook with ${txt("/relay").color(Colors.teal)}!",
+        txt"[CivCubed] Set up a relay of important events to a Discord webhook with ${txt("/relay")
+                .color(Colors.teal)}!",
         txt"[CivCubed] See what plants grow in your area with ${txt("/plants")
                 .color(Colors.teal)}!",
         txt"[CivCubed] Remember to take breaks and drink plenty of water!",
@@ -738,7 +743,9 @@ class CheatCommand(using
                     .executesPlayer({ (sender, args) =>
                         sql.useFireAndForget(for
                             _ <- sql.withS(sql.withTX(drainer.drainEssence))
-                            _ <- IO { sender.sendServerMessage(txt"Drained essence!") }
+                            _ <- IO {
+                                sender.sendServerMessage(txt"Drained essence!")
+                            }
                         yield ())
                     }: PlayerCommandExecutor)
             )
@@ -925,7 +932,9 @@ class GroupsCommand(using
         CommandTree("nearby-claims")
             .executesPlayer({ (sender, args) =>
                 sql.useFireAndForget(for {
-                    nearbyBeacons <- sql.withS(cbm.beaconsNearby(sender.getLocation()))
+                    nearbyBeacons <- sql.withS(
+                        cbm.beaconsNearby(sender.getLocation())
+                    )
                     _ <- IO { polygons.view(sender, nearbyBeacons) }
                 } yield ())
             }: PlayerCommandExecutor)

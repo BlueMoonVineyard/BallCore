@@ -732,11 +732,17 @@ class GroupManager()(using sql: Storage.SQLManager):
             .flatMap { group =>
                 val rid = ju.UUID.randomUUID()
                 val prevOrd = group.roles.find(_.id == groupMemberUUID).get.ord
-                val ord = group.roles.filterNot(x => x.id == everyoneUUID || x.id == groupMemberUUID).lastOption.map { x =>
-                    Lexorank.rank(x.ord, prevOrd)
-                }.getOrElse {
-                    Lexorank.rank(prevOrd, "")
-                }
+                val ord = group.roles
+                    .filterNot(x =>
+                        x.id == everyoneUUID || x.id == groupMemberUUID
+                    )
+                    .lastOption
+                    .map { x =>
+                        Lexorank.rank(x.ord, prevOrd)
+                    }
+                    .getOrElse {
+                        Lexorank.rank(prevOrd, "")
+                    }
 
                 EitherT.right(
                     sql

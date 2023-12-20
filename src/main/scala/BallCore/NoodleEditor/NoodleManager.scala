@@ -213,11 +213,14 @@ class NoodleManager()(using sql: SQLManager, gm: GroupManager):
         val edge = triangulator.getSubdivision().locate(coord)
         val res = Vertex(coord.x, coord.y)
             .interpolateZValue(edge.orig(), edge.dest(), edge.oPrev().dest())
-        if !res.isNaN then
-            res
+        if !res.isNaN then res
         else
             Vertex(coord.x, coord.y)
-                .interpolateZValue(edge.orig(), edge.dest(), edge.oNext().dest())
+                .interpolateZValue(
+                    edge.orig(),
+                    edge.dest(),
+                    edge.oNext().dest(),
+                )
 
     def noodleAt(l: Location)(using
         Resource[IO, Session[IO]]
@@ -243,7 +246,9 @@ class NoodleManager()(using sql: SQLManager, gm: GroupManager):
                     val zOnPolygon = interpolateZ(polygon, coord)
                     val dZ = zOnPolygon - l.getY
                     if dZ.isNaN then
-                        throw new IllegalStateException(s"polygon interpolation shouldn't be a NaN!")
+                        throw new IllegalStateException(
+                            s"polygon interpolation shouldn't be a NaN!"
+                        )
                     dZ.abs <= NoodleSize
                 }
                 .map(_.value._2)

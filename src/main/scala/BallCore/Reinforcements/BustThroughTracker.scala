@@ -25,10 +25,9 @@ class BustThroughTracker(using c: Clock):
     def bust(at: Location, delinquencyDays: Int): BustResult =
         import BustResult._
 
-        val multiplier = if delinquencyDays <= 7 then
-            delinquencyDays.max(1)
-        else
-            blockHealth
+        val multiplier =
+            if delinquencyDays <= 7 then delinquencyDays.max(1)
+            else blockHealth
 
         bustedBlocks.get(at) match
             case Some(time)
