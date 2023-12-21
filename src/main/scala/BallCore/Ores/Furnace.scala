@@ -20,6 +20,7 @@ import BallCore.Ores.QuadrantOres.ItemStacks
 import org.bukkit.inventory.RecipeChoice.MaterialChoice
 import org.bukkit.inventory.ShapedRecipe
 import org.bukkit.inventory.RecipeChoice.ExactChoice
+import BallCore.Alloys.Tier2
 
 enum FurnaceTier:
     // tier 0 (vanilla furnace)
@@ -136,14 +137,14 @@ object Furnace:
     private val tierTwoLore =
         txt"Capable of smelting ores with astounding efficiency"
 
-    private val entschloseniteFurnace: CustomItemStack = CustomItemStack.make(
-        NamespacedKey("ballcore", "entschlossenite_furnace"),
+    private val adamantiteFurnace: CustomItemStack = CustomItemStack.make(
+        NamespacedKey("ballcore", "adamantite_forge"),
         Material.FURNACE,
-        txt"Entschlossenite Furnace",
+        txt"Adamantite Forge",
         tierTwoLore,
     )
 
-    private val tierTwo: List[CustomItemStack] = List(entschloseniteFurnace)
+    private val tierTwo: List[(CustomItemStack, CustomItemStack)] = List((adamantiteFurnace, Tier2.adamantite.stack))
 
     private val tierThreeLore =
         txt"Capable of smelting ores with supernatural efficiency"
@@ -180,7 +181,8 @@ object Furnace:
         server.getPluginManager.registerEvents(FurnaceListener(), plugin)
         val _ = (tierTwo, tierThree)
         List(
-            (FurnaceTier.One, tierOne)
+            (FurnaceTier.One, tierOne),
+            (FurnaceTier.Two, tierTwo),
         )
             .foreach { (tier, items) =>
                 items.foreach { item =>

@@ -34,6 +34,12 @@ object Listeners:
     trait ItemUsed:
         def onItemUsed(event: PlayerInteractEvent): Unit
 
+    trait ItemBrokeBlock:
+        def onItemBrokeBlock(event: BlockBreakEvent): Unit
+
+    trait ItemLeftUsedOnBlock:
+        def onItemLeftUsedOnBlock(event: PlayerInteractEvent): Unit
+
 trait CustomItem:
     def group: ItemGroup
 

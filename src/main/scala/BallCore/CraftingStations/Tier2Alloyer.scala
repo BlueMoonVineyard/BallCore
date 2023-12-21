@@ -95,7 +95,7 @@ object Tier2Alloyer:
             2,
         ),
         Recipe(
-            s"Alloy Entschlossenite",
+            s"Alloy Adamantite",
             List(
                 (Custom(orichalcum.ingot), 64),
                 (Custom(plutonium), 32),
@@ -103,7 +103,7 @@ object Tier2Alloyer:
                 (Vanilla(Material.EMERALD), 32),
                 (Vanilla(Material.JUNGLE_LOG), 128),
             ),
-            List((entschlossenite.stack, 16)),
+            List((adamantite.stack, 16)),
             10,
             2,
         ),

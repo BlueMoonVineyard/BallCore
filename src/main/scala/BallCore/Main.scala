@@ -58,6 +58,7 @@ import BallCore.Beacons.IngameBeaconManagerHooks
 import BallCore.PrimeTime.PrimeTimeManager
 import BallCore.NoodleEditor.NoodleManager
 import BallCore.Gear.SkyBronzeGear
+import BallCore.Gear.AdamantiteGear
 
 class ExceptionLogger extends Listener:
     @EventHandler
@@ -193,6 +194,7 @@ final class Main extends JavaPlugin:
             Alloys.Tier2.register()
             Tier1Gear.registerItems()
             SkyBronzeGear.registerItems()
+            AdamantiteGear.register()
             InformationGiver().register()
 
             given aa: AcclimationActor = AcclimationActor.register()

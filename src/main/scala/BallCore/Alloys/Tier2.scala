@@ -94,17 +94,17 @@ object Tier2:
         suno.stack.getItemMeta().tap(_.setCustomModelData(420))
     )
 
-    val entschlossenite = Alloy(
-        "Entschlossenite",
-        "entschlossenite",
+    val adamantite = Alloy(
+        "Adamantite",
+        "adamantite",
         CustomItemStack.make(
-            NamespacedKey("ballcore", "entschlossenite_ingot"),
+            NamespacedKey("ballcore", "adamantite_ingot"),
             Material.IRON_INGOT,
-            txt"Entschlossenite Ingot",
+            txt"Adamantite Ingot",
         ),
     )
-    entschlossenite.stack.setItemMeta(
-        entschlossenite.stack.getItemMeta().tap(_.setCustomModelData(430))
+    adamantite.stack.setItemMeta(
+        adamantite.stack.getItemMeta().tap(_.setCustomModelData(430))
     )
 
     val hepatizon = Alloy(
@@ -144,7 +144,7 @@ object Tier2:
             skyBronzeEvening,
             skyBronzeNight,
             suno,
-            entschlossenite,
+            adamantite,
             hepatizon,
             manyullyn,
         )

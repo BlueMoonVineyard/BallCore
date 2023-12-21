@@ -109,20 +109,26 @@ class CustomItemListener(using
             case _ =>
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    def onBlockBreakWithItem(event: BlockBreakEvent): Unit =
+        val item = event.getPlayer.getInventory.getItemInMainHand
+        reg.lookup(item) match
+            case Some(item: Listeners.ItemBrokeBlock) =>
+                item.onItemBrokeBlock(event)
+            case _ =>
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     def onInteractItemBlock(event: PlayerInteractEvent): Unit =
-        if !event.hasItem || event.getAction != Action.RIGHT_CLICK_BLOCK then
+        if !event.hasItem then
             return ()
 
-        reg.lookup(event.getItem) match
-            case Some(item) =>
-                val cancel =
-                    item match
-                        case click: Listeners.ItemUsedOnBlock =>
-                            click.onItemUsedOnBlock(event)
-                            true
-                        case _ => false
-                event.setCancelled(cancel)
-            case None =>
+        (reg.lookup(event.getItem), event.getAction) match
+            case (Some(click: Listeners.ItemUsedOnBlock), Action.RIGHT_CLICK_BLOCK) =>
+                event.setCancelled(true)
+                click.onItemUsedOnBlock(event)
+            case (Some(click: Listeners.ItemLeftUsedOnBlock), Action.LEFT_CLICK_BLOCK) =>
+                event.setCancelled(true)
+                click.onItemLeftUsedOnBlock(event)
+            case _ =>
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
     def onInteractItem(event: PlayerInteractEvent): Unit =
