@@ -699,6 +699,8 @@ class CheatCommand(using
     rs: RandomSpawn,
     drainer: EssenceDrainer,
 ):
+    import scala.jdk.CollectionConverters._
+
     val node =
         CommandTree("cheat")
             .withRequirement(_.hasPermission("ballcore.cheat"))
@@ -706,6 +708,13 @@ class CheatCommand(using
                 LiteralArgument("spawn")
                     .`then`(
                         NamespacedKeyArgument("item")
+                            .replaceSuggestions(
+                                ArgumentSuggestions.strings(
+                                    registry.items().map(item =>
+                                        item.id.toString()
+                                    ).asJava
+                                )
+                            )
                             .executesPlayer({ (sender, args) =>
                                 registry.lookup(
                                     args.getUnchecked[NamespacedKey]("item")

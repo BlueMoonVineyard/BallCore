@@ -38,6 +38,7 @@ object Tier1Alloyer:
         Material.BLAST_FURNACE,
         txt"Alloyer",
         txt"Alloys ores together into more valuable ores",
+        txt"(Tier 1 Alloyer)",
     )
 
 class Tier1Alloyer()(using
