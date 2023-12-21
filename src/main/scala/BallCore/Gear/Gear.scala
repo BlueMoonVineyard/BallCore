@@ -42,7 +42,10 @@ enum GoldToolSetCustomModelDatas(val num: Int) extends CustomModelDatas:
     case magnesium extends GoldToolSetCustomModelDatas(4)
 
 enum DiamondToolSetCustomModelDatas(val num: Int) extends CustomModelDatas:
-    case placeholder extends DiamondToolSetCustomModelDatas(1)
+    case skyBronzeMorning extends DiamondToolSetCustomModelDatas(1)
+    case skyBronzeDay extends DiamondToolSetCustomModelDatas(2)
+    case skyBronzeEvening extends DiamondToolSetCustomModelDatas(3)
+    case skyBronzeNight extends DiamondToolSetCustomModelDatas(4)
 
 enum ToolSet[E <: CustomModelDatas](
     val pick: Material,
