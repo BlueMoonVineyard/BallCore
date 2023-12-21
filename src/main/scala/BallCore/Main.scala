@@ -59,6 +59,7 @@ import BallCore.PrimeTime.PrimeTimeManager
 import BallCore.NoodleEditor.NoodleManager
 import BallCore.Gear.SkyBronzeGear
 import BallCore.Gear.AdamantiteGear
+import BallCore.Commands.CardinalCommand
 
 class ExceptionLogger extends Listener:
     @EventHandler
@@ -227,6 +228,7 @@ final class Main extends JavaPlugin:
             Beacons.registerItems()
             Reinforcements.register()
 
+            CardinalCommand().tree.register()
             val chatCommands = ChatCommands()
             Order.register()
             // HTTP.register()
