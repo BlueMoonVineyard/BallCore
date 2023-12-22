@@ -47,6 +47,9 @@ enum DiamondToolSetCustomModelDatas(val num: Int) extends CustomModelDatas:
     case skyBronzeDay extends DiamondToolSetCustomModelDatas(2)
     case skyBronzeEvening extends DiamondToolSetCustomModelDatas(3)
     case skyBronzeNight extends DiamondToolSetCustomModelDatas(4)
+    case suno extends DiamondToolSetCustomModelDatas(5)
+    case hepatizon extends DiamondToolSetCustomModelDatas(6)
+    case manyullyn extends DiamondToolSetCustomModelDatas(7)
 
 enum ToolSet[E <: CustomModelDatas](
     val pick: Material,
@@ -240,6 +243,34 @@ object Gear:
             base.sword,
             txt"$name Sword",
         )
+        register(is, cmd, enchants)
+
+        val recipe =
+            ShapedRecipe(NamespacedKey("bc", s"${id.toLowerCase()}_sword"), is)
+        recipe.shape(
+            "I",
+            "I",
+            "S",
+        )
+        recipe.setIngredient('I', ExactChoice(ore))
+        recipe.setIngredient('S', Material.STICK)
+        registry.addRecipe(recipe)
+
+    def swordCustom[E <: CustomModelDatas](
+        base: ToolSet[E],
+        ore: ItemStack,
+        name: String,
+        id: String,
+        cmd: E,
+        processor: (ItemStack => Unit),
+        enchants: (Enchantment, Int)*
+    )(using registry: ItemRegistry): Unit =
+        val is = CustomItemStack.make(
+            NamespacedKey("ballcore", s"${id}_sword"),
+            base.sword,
+            txt"$name Sword",
+        )
+        processor(is)
         register(is, cmd, enchants)
 
         val recipe =

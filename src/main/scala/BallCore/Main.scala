@@ -60,6 +60,9 @@ import BallCore.NoodleEditor.NoodleManager
 import BallCore.Gear.SkyBronzeGear
 import BallCore.Gear.AdamantiteGear
 import BallCore.Commands.CardinalCommand
+import BallCore.Gear.SunoGear
+import BallCore.Gear.HepatizonGear
+import BallCore.Gear.ManyullynGear
 
 class ExceptionLogger extends Listener:
     @EventHandler
@@ -197,6 +200,9 @@ final class Main extends JavaPlugin:
             SkyBronzeGear.registerItems()
             AdamantiteGear.register()
             InformationGiver().register()
+            SunoGear.registerItems()
+            HepatizonGear.registerItems()
+            ManyullynGear.registerItems()
 
             given aa: AcclimationActor = AcclimationActor.register()
             given rs: RandomSpawn = RandomSpawn()
