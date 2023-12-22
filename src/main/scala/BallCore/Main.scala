@@ -203,6 +203,7 @@ final class Main extends JavaPlugin:
             SunoGear.registerItems()
             HepatizonGear.registerItems()
             ManyullynGear.registerItems()
+            Ferrobyte.Ferrobyte.registerItems()
 
             given aa: AcclimationActor = AcclimationActor.register()
             given rs: RandomSpawn = RandomSpawn()
