@@ -155,7 +155,7 @@ object StationMaker:
             "Make Smeltery",
             List(
                 (Custom(Tier1Alloyer.template), 1),
-                (Vanilla(Material.OBSIDIAN), 64),
+                (Vanilla(Material.DEEPSLATE), 64),
                 (Custom(Tier1.all.map(_.stack): _*), 64),
             ),
             List(
