@@ -82,6 +82,7 @@ import BallCore.SpawnInventory.BattlesAndYou
 import BallCore.SpawnInventory.SigilsAndYou
 import BallCore.NoodleEditor.NoodleEditor
 import BallCore.NoodleEditor.EssenceDrainer
+import BallCore.SpawnInventory.SmelteryAndYou
 
 class OTTCommand(using sql: SQLManager, ott: OneTimeTeleporter):
     private def errorText(err: OTTError): Component =
@@ -541,6 +542,17 @@ class BookCommand(using
                         sql.useFireAndForget(for {
                             book <- sql.withS(
                                 BattlesAndYou.viewForPlayer(sender)
+                            )
+                            _ <- IO { sender.openBook(book) }
+                        } yield ())
+                    }: PlayerCommandExecutor)
+            )
+            .`then`(
+                LiteralArgument("smeltery-and-you")
+                    .executesPlayer({ (sender, args) =>
+                        sql.useFireAndForget(for {
+                            book <- sql.withS(
+                                SmelteryAndYou.viewForPlayer(sender)
                             )
                             _ <- IO { sender.openBook(book) }
                         } yield ())
