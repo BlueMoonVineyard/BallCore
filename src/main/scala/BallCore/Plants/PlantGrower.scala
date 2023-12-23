@@ -7,7 +7,7 @@ package BallCore.Plants
 import org.bukkit.Material
 import org.bukkit.block.data.Ageable
 import org.bukkit.block.{Block, BlockFace, BlockState}
-import java.util.function.Consumer
+import org.bukkit.util.Consumer
 import scala.util.chaining.*
 import scala.util.Try
 import scala.util.Failure

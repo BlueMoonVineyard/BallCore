@@ -7,7 +7,7 @@ val circeVersion = "0.14.1"
 val scoreBoardLibraryVersion = "2.0.1"
 val AkkaVersion = "2.7.0"
 val AkkaHttpVersion = "10.5.2"
-val foliaVersion = "1.20.2-R0.1-SNAPSHOT"
+val foliaVersion = "1.20.1-R0.1-SNAPSHOT"
 
 lazy val dependencyPlugin = project
     .in(file("dependency-plugin"))
