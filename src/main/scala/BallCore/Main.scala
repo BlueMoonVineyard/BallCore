@@ -63,6 +63,7 @@ import BallCore.Commands.CardinalCommand
 import BallCore.Gear.SunoGear
 import BallCore.Gear.HepatizonGear
 import BallCore.Gear.ManyullynGear
+import BallCore.Commands.VoteCommand
 
 class ExceptionLogger extends Listener:
     @EventHandler
@@ -270,6 +271,7 @@ final class Main extends JavaPlugin:
             StationCommand().node.register()
             RelayCommand().root.register()
             SettingsCommand().node.register()
+            VoteCommand().tree.register()
         catch
             case e: Throwable =>
                 getSLF4JLogger().error(

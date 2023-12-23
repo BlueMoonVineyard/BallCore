@@ -608,6 +608,7 @@ class BookCommand(using
 class InformationGiver():
     private val informations = List(
         txt"[CivCubed] Consider helping us keep the lights on by donating to https://opencollective.com/civcubed!",
+        txt"[CivCubed] ${txt("/vote").color(Colors.teal)} to get some more essence every day!",
         txt"[CivCubed] Browse the selection of ${txt("/book").color(Colors.teal)} and learn more about the server!",
         txt"[CivCubed] Rest accumulates when you log off and come back the next day!",
         txt"[CivCubed] Set up a relay of important events to a Discord webhook with ${txt("/relay")

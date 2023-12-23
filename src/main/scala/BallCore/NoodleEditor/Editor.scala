@@ -306,6 +306,7 @@ object NoodleEditor:
         val drain = EssenceDrainer()
         p.getServer().getPluginManager().registerEvents(EssenceListener(), p)
         ir.register(Essence())
+        p.getServer().getPluginManager().registerEvents(EssenceVoteGiver(), p)
         val _ = p.getServer.getAsyncScheduler
             .runAtFixedRate(
                 p,

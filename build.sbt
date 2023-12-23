@@ -117,6 +117,8 @@ lazy val actualPlugin = project
         libraryDependencies += "dev.folia" % "folia-api" % foliaVersion % "provided", // intransitive()
         libraryDependencies += "com.mojang" % "brigadier" % "1.0.18" % "provided",
         libraryDependencies += "org.scala-graph" % "graph-core_2.13" % "2.0.0" % "provided",
+        libraryDependencies += "com.github.NuVotifier.NuVotifier" % "nuvotifier-api" % "2.7.2" % "provided",
+        libraryDependencies += "com.github.NuVotifier.NuVotifier" % "nuvotifier-bukkit" % "2.7.2" % "provided",
 
         Test / fork := true,
         Test / run / javaOptions += "--enable-preview",

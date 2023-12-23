@@ -8,6 +8,7 @@ import org.bukkit.plugin.Plugin
 import org.bukkit.event.EventPriority
 import org.bukkit.event.entity.PlayerDeathEvent
 import cats.effect.IO
+import org.bukkit.Bukkit
 
 object Listener:
     def register()(using rs: RandomSpawn, sql: SQLManager, p: Plugin): Unit =
@@ -54,6 +55,12 @@ class Listener(using rs: RandomSpawn, sql: SQLManager, p: Plugin)
         sql.useFireAndForget(for {
             block <- rs.randomSpawnLocation
             _ <- IO.fromCompletableFuture(IO {
+                Bukkit
+                    .getServer()
+                    .sendMessage(
+                        txt"Welcome ${player.displayName} to CivCubed!"
+                            .color(Colors.teal)
+                    )
                 player.teleportAsync(block.getLocation())
             })
         } yield ())
