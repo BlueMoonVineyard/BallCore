@@ -305,8 +305,8 @@ object NoodleEditor:
         given delinquency: DelinquencyManager = DelinquencyManager()
         val drain = EssenceDrainer()
         p.getServer().getPluginManager().registerEvents(EssenceListener(), p)
-        ir.register(Essence())
         p.getServer().getPluginManager().registerEvents(EssenceVoteGiver(), p)
+        ir.register(Essence())
         val _ = p.getServer.getAsyncScheduler
             .runAtFixedRate(
                 p,
