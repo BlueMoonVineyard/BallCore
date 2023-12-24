@@ -205,6 +205,7 @@ final class Main extends JavaPlugin:
             HepatizonGear.registerItems()
             Ferrobyte.Ferrobyte.registerItems()
             ManyullynGear.registerItems()
+            Rails.Rails.register()
 
             given aa: AcclimationActor = AcclimationActor.register()
             given rs: RandomSpawn = RandomSpawn()
