@@ -3,6 +3,7 @@ package BallCore
 import net.kyori.adventure.audience.Audience
 import net.kyori.adventure.text.format.{Style, TextColor, TextDecoration}
 import net.kyori.adventure.text.{Component, ComponentLike}
+import net.kyori.adventure.translation.Translatable
 
 class TextComponents:
     extension (sc: StringContext)
@@ -39,6 +40,10 @@ class TextComponents:
     extension (o: Any)
         def toComponent: Component =
             Component.text(o.toString)
+
+    extension (t: Translatable)
+        def asComponent: Component =
+            Component.translatable(t)
 
     object Colors:
         val red: TextColor = TextColor.fromHexString("#e93d58")

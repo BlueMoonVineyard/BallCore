@@ -18,7 +18,8 @@ import BallCore.Ores.QuadrantOres.ItemStacks.goldLikes
 object RedstoneMaker {
     val recipes: List[Recipe] = List(
         Recipe(
-            "Make Observer",
+            txt"Make Observer",
+            NamespacedKey("ballcore", "make_observer"),
             List(
                 (Vanilla(Material.REDSTONE), 8),
                 (Vanilla(Material.COBBLESTONE), 24),
@@ -31,7 +32,8 @@ object RedstoneMaker {
             1,
         ),
         Recipe(
-            "Make Redstone Repeater",
+            txt"Make Redstone Repeater",
+            NamespacedKey("ballcore", "make_redstone_repeater"),
             List(
                 (Vanilla(Material.STONE), 12),
                 (Vanilla(Material.REDSTONE_TORCH), 8),
@@ -42,7 +44,8 @@ object RedstoneMaker {
             1,
         ),
         Recipe(
-            "Make Redstone Comparator",
+            txt"Make Redstone Comparator",
+            NamespacedKey("ballcore", "make_redstone_comparator"),
             List(
                 (Vanilla(Material.REDSTONE_TORCH), 12),
                 (Vanilla(Material.QUARTZ), 4),
@@ -53,7 +56,8 @@ object RedstoneMaker {
             1,
         ),
         Recipe(
-            "Make Piston",
+            txt"Make Piston",
+            NamespacedKey("ballcore", "make_piston"),
             List(
                 (TagList(Tag.PLANKS), 12),
                 (Vanilla(Material.STONE), 16),
@@ -65,7 +69,8 @@ object RedstoneMaker {
             1,
         ),
         Recipe(
-            "Make Sticky Piston",
+            txt"Make Sticky Piston",
+            NamespacedKey("ballcore", "make_sticky_piston"),
             List(
                 (Vanilla(Material.PISTON), 32),
                 (Vanilla(Material.SLIME_BALL), 8),
@@ -75,7 +80,8 @@ object RedstoneMaker {
             1,
         ),
         Recipe(
-            "Make Dispenser",
+            txt"Make Dispenser",
+            NamespacedKey("ballcore", "make_dispenser"),
             List(
                 (Vanilla(Material.STICK), 12),
                 (Vanilla(Material.STRING), 12),
@@ -87,7 +93,8 @@ object RedstoneMaker {
             1,
         ),
         Recipe(
-            "Make Dropper",
+            txt"Make Dropper",
+            NamespacedKey("ballcore", "make_dropper"),
             List(
                 (Vanilla(Material.COBBLESTONE), 28),
                 (Vanilla(Material.REDSTONE), 4),
@@ -97,7 +104,8 @@ object RedstoneMaker {
             1,
         ),
         Recipe(
-            "Make Hopper",
+            txt"Make Hopper",
+            NamespacedKey("ballcore", "make_hopper"),
             List(
                 (Vanilla(Material.IRON_INGOT), 20),
                 (TagList(Tag.PLANKS), 32),
@@ -107,7 +115,8 @@ object RedstoneMaker {
             1,
         ),
         Recipe(
-            "Make Redstone Lamp",
+            txt"Make Redstone Lamp",
+            NamespacedKey("ballcore", "make_redstone_lamp"),
             List(
                 (Vanilla(Material.GLOWSTONE), 4),
                 (Vanilla(Material.REDSTONE), 16),
@@ -117,7 +126,8 @@ object RedstoneMaker {
             1,
         ),
         Recipe(
-            "Make Elevators",
+            txt"Make Elevators",
+            NamespacedKey("ballcore", "make_elevators"),
             List(
                 (Custom(ironLikes.map(_.ingot): _*), 8),
                 (Custom(goldLikes.map(_.ingot): _*), 8),
@@ -129,7 +139,8 @@ object RedstoneMaker {
             1,
         ),
         Recipe(
-            "Make Redstone Torches",
+            txt"Make Redstone Torches",
+            NamespacedKey("ballcore", "make_redstone_torches"),
             List(
                 (Vanilla(Material.STICK), 16),
                 (Vanilla(Material.REDSTONE), 16),

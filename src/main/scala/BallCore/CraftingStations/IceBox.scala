@@ -15,7 +15,8 @@ import org.bukkit.inventory.ItemStack
 object IceBox:
     val recipes = List(
         Recipe(
-            "Pack Ice",
+            txt"Pack Ice",
+            NamespacedKey("ballcore", "pack_ice"),
             List(
                 (Vanilla(Material.ICE), 512)
             ),
@@ -24,7 +25,8 @@ object IceBox:
             1,
         ),
         Recipe(
-            "Pack Blue Ice",
+            txt"Pack Blue Ice",
+            NamespacedKey("ballcore", "pack_blue_ice"),
             List(
                 (Vanilla(Material.PACKED_ICE), 512)
             ),
@@ -33,7 +35,8 @@ object IceBox:
             2,
         ),
         Recipe(
-            "Chill Lava",
+            txt"Chill Lava",
+            NamespacedKey("ballcore", "chill_lava"),
             List(
                 (Vanilla(Material.BLUE_ICE), 64),
                 (Vanilla(Material.LAVA_BUCKET), 1), // todo: overstuffed bundles

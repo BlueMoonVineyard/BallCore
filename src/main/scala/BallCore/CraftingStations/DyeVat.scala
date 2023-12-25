@@ -15,35 +15,28 @@ import BallCore.Storage.SQLManager
 import BallCore.CustomItems.ItemRegistry
 
 object DyeVat:
-    val pairs: List[(Material, Material, String)] = List(
-        (Material.ORANGE_DYE, Material.ORANGE_WOOL, "Dye Wool Orange"),
-        (Material.MAGENTA_DYE, Material.MAGENTA_WOOL, "Dye Wool Magenta"),
-        (
-            Material.LIGHT_BLUE_DYE,
-            Material.LIGHT_BLUE_WOOL,
-            "Dye Wool Light Blue",
-        ),
-        (Material.YELLOW_DYE, Material.YELLOW_WOOL, "Dye Wool Yellow"),
-        (Material.LIME_DYE, Material.LIME_WOOL, "Dye Wool Lime"),
-        (Material.PINK_DYE, Material.PINK_WOOL, "Dye Wool Pink"),
-        (Material.GRAY_DYE, Material.GRAY_WOOL, "Dye Wool Gray"),
-        (
-            Material.LIGHT_GRAY_DYE,
-            Material.LIGHT_GRAY_WOOL,
-            "Dye Wool Light Gray",
-        ),
-        (Material.CYAN_DYE, Material.CYAN_WOOL, "Dye Wool Cyan"),
-        (Material.PURPLE_DYE, Material.PURPLE_WOOL, "Dye Wool Purple"),
-        (Material.BLUE_DYE, Material.BLUE_WOOL, "Dye Wool Blue"),
-        (Material.BROWN_DYE, Material.BROWN_WOOL, "Dye Wool Brown"),
-        (Material.GREEN_DYE, Material.GREEN_WOOL, "Dye Wool Green"),
-        (Material.RED_DYE, Material.RED_WOOL, "Dye Wool Red"),
-        (Material.BLACK_DYE, Material.BLACK_WOOL, "Dye Wool Black"),
+    val pairs: List[(Material, Material)] = List(
+        (Material.ORANGE_DYE, Material.ORANGE_WOOL),
+        (Material.MAGENTA_DYE, Material.MAGENTA_WOOL),
+        (Material.LIGHT_BLUE_DYE, Material.LIGHT_BLUE_WOOL),
+        (Material.YELLOW_DYE, Material.YELLOW_WOOL),
+        (Material.LIME_DYE, Material.LIME_WOOL),
+        (Material.PINK_DYE, Material.PINK_WOOL),
+        (Material.GRAY_DYE, Material.GRAY_WOOL),
+        (Material.LIGHT_GRAY_DYE, Material.LIGHT_GRAY_WOOL),
+        (Material.CYAN_DYE, Material.CYAN_WOOL),
+        (Material.PURPLE_DYE, Material.PURPLE_WOOL),
+        (Material.BLUE_DYE, Material.BLUE_WOOL),
+        (Material.BROWN_DYE, Material.BROWN_WOOL),
+        (Material.GREEN_DYE, Material.GREEN_WOOL),
+        (Material.RED_DYE, Material.RED_WOOL),
+        (Material.BLACK_DYE, Material.BLACK_WOOL),
     )
-    val recipes: List[Recipe] = pairs.map { it =>
-        val (dye, wool, name) = it
+    val recipes: List[Recipe] = pairs.map { (dye, wool) =>
+        val key = wool.getKey().toString().replace(':', '_')
         Recipe(
-            name,
+            txt"Dye ${wool.asComponent}",
+            NamespacedKey("ballcore", s"dye_$key"),
             List(
                 (Vanilla(dye), 4),
                 (Vanilla(Material.WHITE_WOOL), 64),

@@ -1,7 +1,7 @@
 package BallCore.CraftingStations
 
 import BallCore.CustomItems.{CustomItemStack, ItemGroup}
-import BallCore.TextComponents.txt
+import BallCore.TextComponents.*
 import BallCore.UI.Prompts
 import org.bukkit.inventory.ItemStack
 import org.bukkit.plugin.Plugin
@@ -11,17 +11,15 @@ import BallCore.Storage.SQLManager
 import BallCore.CustomItems.ItemRegistry
 
 object HerbivoreKitchen {
-    val pairs: List[(List[(Vanilla, Int)], List[(Material, Int)], String)] =
+    val pairs: List[(List[(Vanilla, Int)], List[(Material, Int)])] =
         List(
             (
                 List((Vanilla(Material.WHEAT), 32)),
                 List(((Material.BREAD), 32)),
-                "Bread",
             ),
             (
                 List((Vanilla(Material.POTATO), 32)),
                 List((Material.BAKED_POTATO, 32)),
-                "Baked Potato",
             ),
             (
                 List(
@@ -29,7 +27,6 @@ object HerbivoreKitchen {
                     (Vanilla(Material.COCOA_BEANS), 16),
                 ),
                 List((Material.COOKIE, 32)),
-                "Cookie",
             ),
             (
                 List(
@@ -38,7 +35,6 @@ object HerbivoreKitchen {
                     (Vanilla(Material.EGG), 32),
                 ),
                 List((Material.PUMPKIN_PIE, 64)),
-                "Pumpkin Pie",
             ),
             (
                 List(
@@ -46,7 +42,6 @@ object HerbivoreKitchen {
                     (Vanilla(Material.CARROT), 16),
                 ),
                 List((Material.GOLDEN_CARROT, 32)),
-                "Golden Carrot",
             ),
             (
                 List(
@@ -56,16 +51,17 @@ object HerbivoreKitchen {
                     (Vanilla(Material.WHEAT), 3),
                 ),
                 List((Material.CAKE, 1), (Material.BUCKET, 3)),
-                "Cake",
             ),
         )
 
-    val recipes: List[Recipe] = pairs.flatMap { it =>
-        val (recipe, output, name) = it
+    val recipes: List[Recipe] = pairs.flatMap { (recipe, output) =>
+        val first = output.head._1
+        val key = first.getKey().toString().replace(':', '_')
 
         List(
             Recipe(
-                s"Make $name (low players, low efficiency)",
+                txt"Make ${first.asComponent} (low players & efficiency)",
+                NamespacedKey("ballcore", s"make_$key"),
                 recipe,
                 output.map { (material, count) =>
                     (ItemStack(material), count * 2)
@@ -74,7 +70,8 @@ object HerbivoreKitchen {
                 1,
             ),
             Recipe(
-                s"Make $name (medium players, medium efficiency)",
+                txt"Make ${first.asComponent} (medium players & efficiency)",
+                NamespacedKey("ballcore", s"make_$key"),
                 recipe,
                 output.map { (material, count) =>
                     (ItemStack(material), count * 3)
@@ -83,7 +80,8 @@ object HerbivoreKitchen {
                 2,
             ),
             Recipe(
-                s"Make $name (high players, high efficiency)",
+                txt"Make ${first.asComponent} (high players & efficiency)",
+                NamespacedKey("ballcore", s"make_$key"),
                 recipe,
                 output.map { (material, count) =>
                     (ItemStack(material), count * 5)

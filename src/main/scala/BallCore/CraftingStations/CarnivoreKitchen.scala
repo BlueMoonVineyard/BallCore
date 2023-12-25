@@ -1,7 +1,7 @@
 package BallCore.CraftingStations
 
 import BallCore.CustomItems.{CustomItemStack, ItemGroup}
-import BallCore.TextComponents.txt
+import BallCore.TextComponents.*
 import BallCore.UI.Prompts
 import org.bukkit.inventory.ItemStack
 import org.bukkit.plugin.Plugin
@@ -29,7 +29,8 @@ object CarnivoreKitchen {
     val recipes: List[Recipe] = mushrooms.flatMap { it =>
         List(
             Recipe(
-                "Make Rabbit Stew",
+                txt"Make ${Material.RABBIT_STEW.asComponent}",
+                NamespacedKey("ballcore", "make_rabbit_stew"),
                 List(
                     (Vanilla(Material.COOKED_RABBIT), 4),
                     (Vanilla(Material.CARROT), 4),
@@ -47,23 +48,28 @@ object CarnivoreKitchen {
     } ::: meats.flatMap { it =>
         val (input, output) = it
 
+        val key = input.getKey().toString().replace(':', '_')
+
         List(
             Recipe(
-                "Cook meat (low players, low efficiency)",
+                txt"Cook ${input.asComponent} (low players & efficiency)",
+                NamespacedKey("ballcore", s"cook_${key}_low"),
                 List((Vanilla(input), 32)),
                 List((ItemStack(output), 64)), // 32 * 2
                 10,
                 1,
             ),
             Recipe(
-                "Cook meat (medium players, medium efficiency)",
+                txt"Cook ${input.asComponent} (medium players & efficiency)",
+                NamespacedKey("ballcore", s"cook_${key}_medium"),
                 List((Vanilla(input), 32)),
                 List((ItemStack(output), 96)), // 32 * 3
                 10,
                 2,
             ),
             Recipe(
-                "Cook meat (high players, high efficiency)",
+                txt"Cook ${input.asComponent} (high players & efficiency)",
+                NamespacedKey("ballcore", s"cook_${key}_high"),
                 List((Vanilla(input), 32)),
                 List((ItemStack(output), 160)), // 32 * 5
                 20,

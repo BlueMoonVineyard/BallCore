@@ -29,24 +29,28 @@ object Woodcutter:
     )
     val recipes: List[Recipe] = woods.flatMap { it =>
         val (input, output) = it
+        val key = output.getKey().toString().replace(':', '_')
 
         List(
             Recipe(
-                "Process logs into planks (low players, low efficiency)",
+                txt"Process logs into planks (low players, low efficiency)",
+                NamespacedKey("ballcore", s"process_${key}_low"),
                 List((TagList(input), 64)),
                 List((ItemStack(output), 64 * 5)),
                 10,
                 1,
             ),
             Recipe(
-                "Process logs into planks (medium players, medium efficiency)",
+                txt"Process logs into planks (medium players & efficiency)",
+                NamespacedKey("ballcore", s"process_${key}_medium"),
                 List((TagList(input), 64)),
                 List((ItemStack(output), 64 * 6)),
                 10,
                 2,
             ),
             Recipe(
-                "Process logs into planks (high players, high efficiency)",
+                txt"Process logs into planks (high players & efficiency)",
+                NamespacedKey("ballcore", s"process_${key}_high"),
                 List((TagList(input), 64)),
                 List((ItemStack(output), 64 * 8)),
                 20,

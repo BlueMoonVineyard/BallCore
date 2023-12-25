@@ -13,56 +13,94 @@ import org.bukkit.{Material, NamespacedKey}
 import RecipeIngredient.*
 import BallCore.Storage.SQLManager
 import BallCore.CustomItems.ItemRegistry
+import net.kyori.adventure.text.Component
 
 object Kiln:
-    val pairs: List[(Material, Material, (Int, Int), String)] = List(
-        (Material.COBBLESTONE, Material.STONE, (3, 2), "Smelt Stone"),
+    val pairs: List[(Material, Material, (Int, Int), Component, NamespacedKey)] = List(
+        (
+            Material.COBBLESTONE,
+            Material.STONE,
+            (3, 2),
+            txt"Smelt Stone",
+            NamespacedKey("ballcore", "smelt_stone"),
+        ),
         (
             Material.COBBLED_DEEPSLATE,
             Material.DEEPSLATE,
             (3, 2),
-            "Smelt Deepslate",
+            txt"Smelt Deepslate",
+            NamespacedKey("ballcore", "smelt_deepslate"),
         ),
-        (Material.STONE, Material.SMOOTH_STONE, (1, 1), "Smelt Smooth Stone"),
+        (
+            Material.STONE,
+            Material.SMOOTH_STONE,
+            (1, 1),
+            txt"Smelt Smooth Stone",
+            NamespacedKey("ballcore", "smelt_smooth_stone"),
+        ),
         (
             Material.STONE_BRICKS,
             Material.CRACKED_STONE_BRICKS,
             (1, 1),
-            "Crack Stone Bricks",
+            txt"Crack Stone Bricks",
+            NamespacedKey("ballcore", "crack_stone_bricks"),
         ),
         (
             Material.DEEPSLATE_BRICKS,
             Material.DEEPSLATE_BRICKS,
             (1, 1),
-            "Crack Deepslate Bricks",
+            txt"Crack Deepslate Bricks",
+            NamespacedKey("ballcore", "crack_deepslate_bricks"),
         ),
-        (Material.CLAY_BALL, Material.BRICK, (2, 1), "Fire Bricks"),
-        (Material.CLAY, Material.TERRACOTTA, (2, 1), "Fire Terracotta"),
-        (Material.SAND, Material.SANDSTONE, (1, 1), "Smelt Sandstone"),
+        (
+            Material.CLAY_BALL,
+            Material.BRICK,
+            (2, 1),
+            txt"Fire Bricks",
+            NamespacedKey("ballcore", "fire_bricks"),
+        ),
+        (
+            Material.CLAY,
+            Material.TERRACOTTA,
+            (2, 1),
+            txt"Fire Terracotta",
+            NamespacedKey("ballcore", "fire_terracotta"),
+        ),
+        (
+            Material.SAND,
+            Material.SANDSTONE,
+            (1, 1),
+            txt"Smelt Sandstone",
+            NamespacedKey("ballcore", "smelt_sandstone"),
+        ),
         (
             Material.SANDSTONE,
             Material.SMOOTH_SANDSTONE,
             (1, 1),
-            "Smelt Smooth Sandstone",
+            txt"Smelt Smooth Sandstone",
+            NamespacedKey("ballcore", "smelt_smooth_sandstone"),
         ),
         (
             Material.RED_SAND,
             Material.RED_SANDSTONE,
             (1, 1),
-            "Smelt Red Sandstone",
+            txt"Smelt Red Sandstone",
+            NamespacedKey("ballcore", "smelt_red_sandstone"),
         ),
         (
             Material.RED_SANDSTONE,
             Material.SMOOTH_RED_SANDSTONE,
             (1, 1),
-            "Smelt Red Smooth Sandstone",
+            txt"Smelt Red Smooth Sandstone",
+            NamespacedKey("ballcore", "smelt_smooth_red_sandstone"),
         ),
     )
     val recipes: List[Recipe] = pairs
-        .map { (in, out, ratio, name) =>
+        .map { (in, out, ratio, name, id) =>
             val (mult, div) = ratio
             Recipe(
                 name,
+                id,
                 List((Vanilla(in), 64)),
                 List((ItemStack(out), (64 * mult) / div)),
                 10,
@@ -71,7 +109,8 @@ object Kiln:
         }
         .appended {
             Recipe(
-                "Smelt Glass",
+                txt"Smelt Glass",
+                NamespacedKey("ballcore", "smelt_glass"),
                 List(
                     (
                         Vanilla(

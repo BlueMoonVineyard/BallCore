@@ -16,7 +16,8 @@ import BallCore.CustomItems.ItemRegistry
 object Economist:
     val recipes = List(
         Recipe(
-            "Create Shop Chest",
+            txt"Create Shop Chest",
+            NamespacedKey("ballcore", "create_shop_chest"),
             List(
                 (Vanilla(Material.CHEST), 1)
             ),
@@ -25,7 +26,8 @@ object Economist:
             1,
         ),
         Recipe(
-            "Create Sell Order",
+            txt"Create Sell Order",
+            NamespacedKey("ballcore", "create_sell_order"),
             List(
                 (Vanilla(Material.PAPER), 1)
             ),

@@ -17,7 +17,8 @@ import BallCore.Alloys.Tier1
 object StationMaker:
     val recipes: List[Recipe] = List(
         Recipe(
-            "Make Dye Vat",
+            txt"Make Dye Vat",
+            NamespacedKey("ballcore", "make_dye_vat"),
             List(
                 (Vanilla(Material.CAULDRON), 1),
                 (Vanilla(Material.CYAN_DYE), 32),
@@ -32,7 +33,8 @@ object StationMaker:
             1,
         ),
         Recipe(
-            "Make Glazing Kiln",
+            txt"Make Glazing Kiln",
+            NamespacedKey("ballcore", "make_glazing_kiln"),
             List(
                 (Vanilla(Material.SMOKER), 1),
                 (Vanilla(Material.CYAN_DYE), 32),
@@ -47,7 +49,8 @@ object StationMaker:
             1,
         ),
         Recipe(
-            "Make Kiln",
+            txt"Make Kiln",
+            NamespacedKey("ballcore", "make_kiln"),
             List(
                 (Vanilla(Material.SMOKER), 1),
                 (Vanilla(Material.SAND, Material.RED_SAND), 32),
@@ -61,7 +64,8 @@ object StationMaker:
             1,
         ),
         Recipe(
-            "Make Woodcutter",
+            txt"Make Woodcutter",
+            NamespacedKey("ballcore", "make_woodcutter"),
             List(
                 (Vanilla(Material.STONECUTTER), 1),
                 (Vanilla(Material.CHEST), 8),
@@ -74,7 +78,8 @@ object StationMaker:
             1,
         ),
         Recipe(
-            "Make Concrete Mixer",
+            txt"Make Concrete Mixer",
+            NamespacedKey("ballcore", "make_concrete_mixer"),
             List(
                 (Vanilla(Material.DECORATED_POT), 1),
                 (Vanilla(Material.SAND), 64),
@@ -87,7 +92,8 @@ object StationMaker:
             1,
         ),
         Recipe(
-            "Make Rail Manufactory",
+            txt"Make Rail Manufactory",
+            NamespacedKey("ballcore", "make_rail_manufactory"),
             List(
                 (Vanilla(Material.PISTON), 1),
                 (Vanilla(Material.RAIL), 32),
@@ -100,7 +106,8 @@ object StationMaker:
             1,
         ),
         Recipe(
-            "Make Redstone Maker",
+            txt"Make Redstone Maker",
+            NamespacedKey("ballcore", "make_redstone_maker"),
             List(
                 (Vanilla(Material.PISTON), 1),
                 (Vanilla(Material.REDSTONE), 64),
@@ -112,7 +119,8 @@ object StationMaker:
             1,
         ),
         Recipe(
-            "Make Carnivore Kitchen",
+            txt"Make Carnivore Kitchen",
+            NamespacedKey("ballcore", "make_carnivore_kitchen"),
             List(
                 (Vanilla(Material.SMOKER), 1),
                 (Vanilla(Material.BEEF), 16),
@@ -127,7 +135,8 @@ object StationMaker:
             1,
         ),
         Recipe(
-            "Make Herbivore Kitchen",
+            txt"Make Herbivore Kitchen",
+            NamespacedKey("ballcore", "make_herbivore_kitchen"),
             List(
                 (Vanilla(Material.SMOKER), 1),
                 (Vanilla(Material.BREAD), 64),
@@ -139,7 +148,8 @@ object StationMaker:
             1,
         ),
         Recipe(
-            "Make Alloyer",
+            txt"Make Alloyer",
+            NamespacedKey("ballcore", "make_alloyer"),
             List(
                 (Vanilla(Material.BLAST_FURNACE), 1),
                 (Vanilla(Material.STONE), 64),
@@ -152,7 +162,8 @@ object StationMaker:
             1,
         ),
         Recipe(
-            "Make Smeltery",
+            txt"Make Smeltery",
+            NamespacedKey("ballcore", "make_smeltery"),
             List(
                 (Custom(Tier1Alloyer.template), 1),
                 (Vanilla(Material.DEEPSLATE), 64),
@@ -165,7 +176,8 @@ object StationMaker:
             2,
         ),
         Recipe(
-            "Make Slimer",
+            txt"Make Slimer",
+            NamespacedKey("ballcore", "make_slimer"),
             List(
                 (Vanilla(Material.CRAFTING_TABLE), 1),
                 (Vanilla(Material.SLIME_BALL), 1),
@@ -177,7 +189,8 @@ object StationMaker:
             1,
         ),
         Recipe(
-            "Make Economist",
+            txt"Make Economist",
+            NamespacedKey("ballcore", "make_economist"),
             List(
                 (Vanilla(Material.CARTOGRAPHY_TABLE), 1),
                 (Vanilla(Material.CHEST), 4),
@@ -190,7 +203,8 @@ object StationMaker:
             1,
         ),
         Recipe(
-            "Make Ice Box",
+            txt"Make Ice Box",
+            NamespacedKey("ballcore", "make_ice_box"),
             List(
                 (Vanilla(Material.CAULDRON), 1),
                 (Vanilla(Material.ICE), 256),
@@ -204,7 +218,8 @@ object StationMaker:
             1,
         ),
         Recipe(
-            "Make Bundle Stuffer",
+            txt"Make Bundle Stuffer",
+            NamespacedKey("ballcore", "make_bundle_stuffer"),
             List(
                 (Vanilla(Material.FLETCHING_TABLE), 1),
                 (Custom(Tier1.all.map(_.stack): _*), 64),

@@ -11,6 +11,8 @@ import org.bukkit.Material
 import BallCore.CustomItems.CustomItemStack
 import org.bukkit.Tag
 import BallCore.CustomItems.ItemRegistry
+import org.bukkit.NamespacedKey
+import net.kyori.adventure.text.Component
 
 enum RecipeIngredient:
     case Vanilla(oneOf: Material*)
@@ -29,7 +31,8 @@ enum RecipeIngredient:
                 tag.isTagged(stack.getType())
 
 case class Recipe(
-    name: String,
+    name: Component,
+    id: NamespacedKey,
     inputs: List[(RecipeIngredient, Int)],
     outputs: List[(ItemStack, Int)],
     /// amount of player "work" needed to craft this recipe, in ticks

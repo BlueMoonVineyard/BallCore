@@ -23,13 +23,12 @@ object RailManufactory:
         goldLikes.map(_.ingot): _*
     )
     val pairs
-        : List[(List[(RecipeIngredient, Int)], Material, (Int, Int), String)] =
+        : List[(List[(RecipeIngredient, Int)], Material, (Int, Int))] =
         List(
             (
                 List(ironChoice -> 64, Vanilla(Material.STICK) -> 8),
                 Material.RAIL,
                 (256, 342),
-                "Make Rail",
             ),
             (
                 List(
@@ -39,7 +38,6 @@ object RailManufactory:
                 ),
                 Material.POWERED_RAIL,
                 (256, 342),
-                "Make Powered Rail",
             ),
             (
                 List(
@@ -49,28 +47,29 @@ object RailManufactory:
                 ),
                 Material.DETECTOR_RAIL,
                 (8, 16),
-                "Make Detector Rail",
             ),
             (
                 List(ironChoice -> 64),
                 Material.MINECART,
                 (16, 24),
-                "Make Minecarts",
             ),
         )
     val recipes: List[Recipe] = pairs.flatMap {
-        (ingredients, output, outputCounts, name) =>
+        (ingredients, output, outputCounts) =>
             val (lo, hi) = outputCounts
+            val key = output.getKey().toString().replace(':', '_')
             List(
                 Recipe(
-                    s"$name (low people, low efficiency)",
+                    txt"Make ${output.asComponent} (low people & efficiency)",
+                    NamespacedKey("ballcore", s"make_${key}_low"),
                     ingredients,
                     List((ItemStack(output), lo)),
                     10,
                     1,
                 ),
                 Recipe(
-                    s"$name (high people, high efficiency)",
+                    txt"Make ${output.asComponent} (high people & efficiency)",
+                    NamespacedKey("ballcore", s"make_${key}_high"),
                     ingredients,
                     List((ItemStack(output), hi)),
                     15,

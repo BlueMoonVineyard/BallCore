@@ -18,7 +18,8 @@ import BallCore.CustomItems.ItemRegistry
 object Tier2Alloyer:
     val recipes = List(
         Recipe(
-            s"Alloy Ferrobyte",
+            txt"Alloy Ferrobyte",
+            NamespacedKey("ballcore", "alloy_ferrobyte"),
             List(
                 (Custom(gildedIron.stack), 32),
                 (Custom(sillicon.ingot), 32),
@@ -31,7 +32,8 @@ object Tier2Alloyer:
             2,
         ),
         Recipe(
-            s"Alloy Dawn Bronze",
+            txt"Alloy Dawn Bronze",
+            NamespacedKey("ballcore", "alloy_dawn_bronze"),
             List(
                 (Custom(bronze.stack), 32),
                 (Custom(meteorite.ingot), 64),
@@ -44,7 +46,8 @@ object Tier2Alloyer:
             2,
         ),
         Recipe(
-            s"Alloy Sky Bronze",
+            txt"Alloy Sky Bronze",
+            NamespacedKey("ballcore", "alloy_sky_bronze"),
             List(
                 (Custom(bronze.stack), 32),
                 (Custom(meteorite.ingot), 64),
@@ -57,7 +60,8 @@ object Tier2Alloyer:
             2,
         ),
         Recipe(
-            s"Alloy Dusk Bronze",
+            txt"Alloy Dusk Bronze",
+            NamespacedKey("ballcore", "alloy_dusk_bronze"),
             List(
                 (Custom(bronze.stack), 32),
                 (Custom(meteorite.ingot), 64),
@@ -70,7 +74,8 @@ object Tier2Alloyer:
             2,
         ),
         Recipe(
-            s"Alloy Star Bronze",
+            txt"Alloy Star Bronze",
+            NamespacedKey("ballcore", "alloy_star_bronze"),
             List(
                 (Custom(bronze.stack), 32),
                 (Custom(meteorite.ingot), 64),
@@ -83,7 +88,8 @@ object Tier2Alloyer:
             2,
         ),
         Recipe(
-            s"Alloy Suno",
+            txt"Alloy Suno",
+            NamespacedKey("ballcore", "alloy_suno"),
             List(
                 (Custom(silver.ingot), 64),
                 (Custom(diamond), 32),
@@ -95,7 +101,8 @@ object Tier2Alloyer:
             2,
         ),
         Recipe(
-            s"Alloy Adamantite",
+            txt"Alloy Adamantite",
+            NamespacedKey("ballcore", "alloy_adamantite"),
             List(
                 (Custom(orichalcum.ingot), 64),
                 (Custom(plutonium), 32),
@@ -108,7 +115,8 @@ object Tier2Alloyer:
             2,
         ),
         Recipe(
-            s"Alloy Hepatizon",
+            txt"Alloy Hepatizon",
+            NamespacedKey("ballcore", "alloy_hepatizon"),
             List(
                 (Custom(sapphire), 32),
                 (Custom(lead.ingot), 32),
@@ -120,7 +128,8 @@ object Tier2Alloyer:
             2,
         ),
         Recipe(
-            s"Alloy Manyullyn",
+            txt"Alloy Manyullyn",
+            NamespacedKey("ballcore", "alloy_manyullyn"),
             List(
                 (Custom(sulfur.ingot), 32),
                 (Custom(cobalt.ingot), 32),

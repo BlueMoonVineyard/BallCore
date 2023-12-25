@@ -195,7 +195,7 @@ class CraftingActor(using p: Plugin, ir: ItemRegistry)
         val component =
             Component
                 .text()
-                .append(Component.text(job.recipe.name, NamedTextColor.GOLD))
+                .append(job.recipe.name.color(NamedTextColor.GOLD))
                 .append(Component.text(" "))
                 .append(Component.text("|".repeat(40), NamedTextColor.GREEN))
                 .append(Component.text(" "))
@@ -207,7 +207,7 @@ class CraftingActor(using p: Plugin, ir: ItemRegistry)
         val component =
             Component
                 .text()
-                .append(Component.text(job.recipe.name, NamedTextColor.GOLD))
+                .append(job.recipe.name.color(NamedTextColor.GOLD))
                 .append(Component.text(" "))
                 .append(Component.text("|".repeat(40), NamedTextColor.RED))
                 .append(Component.text(" "))
@@ -223,7 +223,7 @@ class CraftingActor(using p: Plugin, ir: ItemRegistry)
         val component =
             Component
                 .text()
-                .append(Component.text(job.recipe.name, NamedTextColor.GOLD))
+                .append(job.recipe.name.color(NamedTextColor.GOLD))
                 .append(Component.text(" "))
                 .append(Component.text("|".repeat(done), NamedTextColor.GREEN))
                 .append(

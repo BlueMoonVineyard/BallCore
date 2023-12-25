@@ -22,7 +22,8 @@ object Tier1Alloyer:
     )
     val recipes = alloys.map { (a, b, alloy) =>
         Recipe(
-            s"Alloy ${alloy.name}",
+            txt"Alloy ${alloy.name}",
+            NamespacedKey("ballcore", s"alloy_${alloy.id}"),
             List(
                 (Custom(a.ingot), 32),
                 (Custom(b.ingot), 32),

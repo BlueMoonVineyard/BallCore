@@ -15,119 +15,94 @@ import BallCore.Storage.SQLManager
 import BallCore.CustomItems.ItemRegistry
 
 object ConcreteMixer:
-    val pairs: List[(Material, Material, Material, String, String)] = List(
+    val pairs: List[(Material, Material, Material)] = List(
         (
             Material.ORANGE_DYE,
             Material.ORANGE_CONCRETE_POWDER,
             Material.ORANGE_CONCRETE,
-            "Mix Orange Concrete",
-            "Harden Orange Concrete",
         ),
         (
             Material.MAGENTA_DYE,
             Material.MAGENTA_CONCRETE_POWDER,
             Material.MAGENTA_CONCRETE,
-            "Mix Magenta Concrete",
-            "Harden Magenta Concrete",
         ),
         (
             Material.LIGHT_BLUE_DYE,
             Material.LIGHT_BLUE_CONCRETE_POWDER,
             Material.LIGHT_BLUE_CONCRETE,
-            "Mix Light Blue Concrete",
-            "Harden Light Blue Concrete",
         ),
         (
             Material.YELLOW_DYE,
             Material.YELLOW_CONCRETE_POWDER,
             Material.YELLOW_CONCRETE,
-            "Mix Yellow Concrete",
-            "Harden Yellow Concrete",
         ),
         (
             Material.LIME_DYE,
             Material.LIME_CONCRETE_POWDER,
             Material.LIME_CONCRETE,
-            "Mix Lime Concrete",
-            "Harden Lime Concrete",
         ),
         (
             Material.PINK_DYE,
             Material.PINK_CONCRETE_POWDER,
             Material.PINK_CONCRETE,
-            "Mix Pink Concrete",
-            "Harden Pink Concrete",
         ),
         (
             Material.GRAY_DYE,
             Material.GRAY_CONCRETE_POWDER,
             Material.GRAY_CONCRETE,
-            "Mix Gray Concrete",
-            "Harden Gray Concrete",
         ),
         (
             Material.LIGHT_GRAY_DYE,
             Material.LIGHT_GRAY_CONCRETE_POWDER,
             Material.LIGHT_GRAY_CONCRETE,
-            "Mix Light Gray Concrete",
-            "Harden Light Gray Concrete",
         ),
         (
             Material.CYAN_DYE,
             Material.CYAN_CONCRETE_POWDER,
             Material.CYAN_CONCRETE,
-            "Mix Cyan Concrete",
-            "Harden Cyan Concrete",
         ),
         (
             Material.PURPLE_DYE,
             Material.PURPLE_CONCRETE_POWDER,
             Material.PURPLE_CONCRETE,
-            "Mix Purple Concrete",
-            "Harden Purple Concrete",
         ),
         (
             Material.BLUE_DYE,
             Material.BLUE_CONCRETE_POWDER,
             Material.BLUE_CONCRETE,
-            "Mix Blue Concrete",
-            "Harden Blue Concrete",
         ),
         (
             Material.BROWN_DYE,
             Material.BROWN_CONCRETE_POWDER,
             Material.BROWN_CONCRETE,
-            "Mix Brown Concrete",
-            "Harden Brown Concrete",
         ),
         (
             Material.GREEN_DYE,
             Material.GREEN_CONCRETE_POWDER,
             Material.GREEN_CONCRETE,
-            "Mix Green Concrete",
-            "Harden Green Concrete",
         ),
         (
             Material.RED_DYE,
             Material.RED_CONCRETE_POWDER,
             Material.RED_CONCRETE,
-            "Mix Red Concrete",
-            "Harden Red Concrete",
         ),
         (
             Material.BLACK_DYE,
             Material.BLACK_CONCRETE_POWDER,
             Material.BLACK_CONCRETE,
-            "Mix Black Concrete",
-            "Harden Black Concrete",
         ),
     )
     val recipes: List[Recipe] = pairs.flatMap { it =>
-        val (dye, concretePowder, concrete, concretePowderName, concreteName) =
+        val (dye, concretePowder, concrete) =
             it
+
+        val cpKey = concretePowder.getKey().toString().replace(':', '_')
+        val cKey = concrete.getKey().toString().replace(':', '_')
+
         List(
             Recipe(
-                concretePowderName,
+                txt"Mix ${concretePowder.asComponent}",
+                NamespacedKey("ballcore", s"mix_$cpKey"),
                 List(
                     (Vanilla(dye), 4),
                     (Vanilla(Material.SAND), 16),
@@ -138,7 +113,8 @@ object ConcreteMixer:
                 1,
             ),
             Recipe(
-                concreteName,
+                txt"Harden ${concrete.asComponent}",
+                NamespacedKey("ballcore", s"harden_$cKey"),
                 List(
                     (Vanilla(concretePowder), 64)
                 ),

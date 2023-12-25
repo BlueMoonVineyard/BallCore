@@ -16,7 +16,8 @@ import BallCore.CustomItems.ItemRegistry
 object Slimer:
     val recipes = List(
         Recipe(
-            "Create Sigil Slime Egg",
+            txt"Create Sigil Slime Egg",
+            NamespacedKey("ballcore", "create_sigil_slime_egg"),
             List(
                 (Vanilla(Material.EGG), 1),
                 (Vanilla(Material.SLIME_BALL), 1),
@@ -26,7 +27,8 @@ object Slimer:
             2,
         ),
         Recipe(
-            "Create Sigils",
+            txt"Create Sigils",
+            NamespacedKey("ballcore", "create_sigils"),
             List(
                 (Vanilla(Material.HONEYCOMB), 2),
                 (Vanilla(Material.RED_DYE), 2),
