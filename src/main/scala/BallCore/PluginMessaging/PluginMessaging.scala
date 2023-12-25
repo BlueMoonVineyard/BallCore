@@ -16,6 +16,8 @@ import org.bukkit.plugin.messaging.PluginMessageListener
 
 import java.nio.charset.StandardCharsets
 import java.util.UUID
+import BallCore.CraftingStations.CraftingStation
+import BallCore.CustomItems.ItemRegistry
 
 object ClientMessage:
     given Decoder[ClientMessage] = (c: HCursor) =>
@@ -60,21 +62,51 @@ case class ServerMessage(result: Either[RPCError, Json], respondingTo: Int)
 
 object Messaging:
     val channel: String = NamespacedKey("civcubed", "integration").asString()
+    val recipes: String = NamespacedKey("civcubed", "recipes").asString()
 
-    def register()(using p: Plugin, gm: GroupManager, sql: SQLManager): Unit =
+    def register()(using
+        p: Plugin,
+        gm: GroupManager,
+        sql: SQLManager,
+        s: List[CraftingStation],
+        ir: ItemRegistry,
+    ): Unit =
         p.getServer.getMessenger.registerOutgoingPluginChannel(p, channel)
         p.getServer.getMessenger
             .registerIncomingPluginChannel(p, channel, PluginMessaging())
+
+        p.getServer.getMessenger.registerOutgoingPluginChannel(p, recipes)
+        p.getServer.getMessenger
+            .registerIncomingPluginChannel(p, recipes, DummyListener)
+        p.getServer.getPluginManager.registerEvents(JoinListener(), p)
+
+object DummyListener extends PluginMessageListener:
+    override def onPluginMessageReceived(c: String, p: Player, a: Array[Byte]): Unit =
         ()
 
 class PluginMessaging()(using p: Plugin, gm: GroupManager, sql: SQLManager)
     extends PluginMessageListener:
-    object Extensions:
-        extension (plr: Player)
-            def sendPluginMessage(ba: Array[Byte]): Unit =
-                plr.sendPluginMessage(p, Messaging.channel, ba)
 
-    import Extensions.*
+    extension (j: Json)
+        def encodeToBytes: Array[Byte] =
+            val byted = j.noSpaces.toString.getBytes(StandardCharsets.UTF_8)
+            val stream = java.io.ByteArrayOutputStream()
+            var size = byted.length
+            while (size & -128) != 0 do
+                stream.write(size & 127 | 128)
+                size >>>= 7
+            stream.write(size)
+            stream.write(byted, 0, byted.length)
+            stream.toByteArray
+
+    extension (plr: Player)
+        def sendPluginMessage[T](ba: T)(using Encoder[T]): Unit =
+            val jsonned = ba.asJson
+            plr.sendPluginMessage(
+                p,
+                Messaging.recipes,
+                jsonned.encodeToBytes,
+            )
 
     private val handlers
         : Map[String, (Player, Json) => IO[Either[RPCError, Json]]] = Map(
@@ -121,8 +153,7 @@ class PluginMessaging()(using p: Plugin, gm: GroupManager, sql: SQLManager)
                                     )
                                 ),
                                 id,
-                            ).asJson.toString
-                                .getBytes(StandardCharsets.UTF_8)
+                            )
                         )
                     case Some(handler) =>
                         handler(player, params).unsafeRunAsync {
@@ -137,24 +168,21 @@ class PluginMessaging()(using p: Plugin, gm: GroupManager, sql: SQLManager)
                                             )
                                         ),
                                         id,
-                                    ).asJson.toString
-                                        .getBytes(StandardCharsets.UTF_8)
+                                    )
                                 )
                             case Right(Left(err)) =>
                                 player.sendPluginMessage(
                                     ServerMessage(
                                         Left(err),
                                         id,
-                                    ).asJson.toString
-                                        .getBytes(StandardCharsets.UTF_8)
+                                    )
                                 )
                             case Right(Right(resp)) =>
                                 player.sendPluginMessage(
                                     ServerMessage(
                                         Right(resp),
                                         id,
-                                    ).asJson.toString
-                                        .getBytes(StandardCharsets.UTF_8)
+                                    )
                                 )
                         }
 
