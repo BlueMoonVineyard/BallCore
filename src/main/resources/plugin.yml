@@ -23,3 +23,6 @@ permissions:
   ballcore.cheat:
     description: Allows using /cheat
     default: op
+  ballcore.bypass:
+    description: Allows bypassing reinforcements
+    default: op

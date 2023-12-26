@@ -329,7 +329,9 @@ class Listener(using
         permission: Permissions,
         breaking: Boolean,
     ): Either[GroupError, Boolean] =
-        sql.useBlocking(sql.withS(sql.withTX(for {
+        if player.hasPermission("ballcore.bypass") then
+            Right(true)
+        else sql.useBlocking(sql.withS(sql.withTX(for {
             data <- getRelevantGroupData(
                 player,
                 location,
