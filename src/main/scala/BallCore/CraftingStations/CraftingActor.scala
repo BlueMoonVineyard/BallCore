@@ -19,11 +19,37 @@ import org.bukkit.block.{Block, BlockFace, Chest, DoubleChest}
 import org.bukkit.entity.Player
 import org.bukkit.inventory.{Inventory, ItemStack}
 import org.bukkit.plugin.Plugin
-
 import java.util.concurrent.TimeUnit
 import scala.concurrent.ExecutionContext
 import scala.util.chaining.*
 import BallCore.CustomItems.ItemRegistry
+import BallCore.Advancements.BallAdvancement
+import org.bukkit.NamespacedKey
+import BallCore.Advancements.MakeTierTwoAlloy
+import BallCore.Advancements.MakeTierOneAlloy
+import BallCore.Advancements.UseStation
+
+private class AdvancementTracker(
+    matches: Set[NamespacedKey],
+    advancement: BallAdvancement[_],
+    criteria: advancement.Criteria,
+):
+    def check(player: Player, recipe: Recipe): Unit =
+        if matches.contains(recipe.id) then
+            val _ = advancement.grant(player, criteria)
+
+private val advancements = List(
+    AdvancementTracker(
+        Tier2Alloyer.recipes.map(_.id).toSet,
+        MakeTierTwoAlloy,
+        "worked_recipe",
+    ),
+    AdvancementTracker(
+        Tier1Alloyer.recipes.map(_.id).toSet,
+        MakeTierOneAlloy,
+        "worked_recipe",
+    ),
+)
 
 enum CraftingMessage:
     case startWorking(p: Player, f: Block, r: Recipe)
@@ -201,6 +227,8 @@ class CraftingActor(using p: Plugin, ir: ItemRegistry)
                 .append(Component.text(" "))
                 .append(Component.text(s"All Done!"))
                 .build()
+        UseStation.grant(player, "worked_recipe")
+        advancements.foreach(_.check(player, job.recipe))
         player.sendActionBar(component)
 
     private def notifyFailedJob(player: Player, job: Job, what: String): Unit =

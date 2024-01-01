@@ -44,4 +44,3 @@ object SmelteryAndYou:
             .book(txt"Smeltery And You", txt"Janet", pages.asJava)
 
         IO.pure(book)
-

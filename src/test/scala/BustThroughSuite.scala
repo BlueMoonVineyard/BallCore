@@ -19,9 +19,15 @@ class BustThroughSuite extends munit.FunSuite {
 
         for i <- 1 to btt.blockHealth - 1 do
             tc.changeTimeBy(Duration.ofSeconds(30))
-            assertEquals(btt.bust(Location(world, 0, 0, 0), 0), BustResult.busting)
+            assertEquals(
+                btt.bust(Location(world, 0, 0, 0), 0),
+                BustResult.busting,
+            )
 
-        assertEquals(btt.bust(Location(world, 0, 0, 0), 0), BustResult.justBusted)
+        assertEquals(
+            btt.bust(Location(world, 0, 0, 0), 0),
+            BustResult.justBusted,
+        )
         assertEquals(
             btt.bust(Location(world, 0, 0, 0), 0),
             BustResult.alreadyBusted,
@@ -35,9 +41,15 @@ class BustThroughSuite extends munit.FunSuite {
 
         for i <- 1 to btt.blockHealth - 1 do
             tc.changeTimeBy(Duration.ofSeconds(30))
-            assertEquals(btt.bust(Location(world, 0, 0, 0), 0), BustResult.busting)
+            assertEquals(
+                btt.bust(Location(world, 0, 0, 0), 0),
+                BustResult.busting,
+            )
 
-        assertEquals(btt.bust(Location(world, 0, 0, 0), 0), BustResult.justBusted)
+        assertEquals(
+            btt.bust(Location(world, 0, 0, 0), 0),
+            BustResult.justBusted,
+        )
         assertEquals(
             btt.bust(Location(world, 0, 0, 0), 0),
             BustResult.alreadyBusted,
@@ -54,7 +66,10 @@ class BustThroughSuite extends munit.FunSuite {
 
         for i <- 1 to btt.blockHealth - 1 do
             tc.changeTimeBy(Duration.ofSeconds(30))
-            assertEquals(btt.bust(Location(world, 0, 0, 0), 0), BustResult.busting)
+            assertEquals(
+                btt.bust(Location(world, 0, 0, 0), 0),
+                BustResult.busting,
+            )
 
         tc.changeTimeBy(Duration.ofMinutes(btt.expiryMinutes + 1))
         assertEquals(btt.bust(Location(world, 0, 0, 0), 0), BustResult.busting)

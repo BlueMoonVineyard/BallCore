@@ -10,6 +10,7 @@ import org.bukkit.{Material, NamespacedKey}
 import java.util.UUID
 import scala.collection.concurrent.TrieMap
 import scala.util.chaining.*
+import BallCore.Advancements.UseShopChest
 
 object ShopChest:
     val template: CustomItemStack = CustomItemStack.make(
@@ -145,6 +146,7 @@ class ShopChest(using ItemRegistry)
                                     )
 
                         case Right(_) =>
+                            UseShopChest.grant(player, "did_exchange")
                             player.sendServerMessage(
                                 txt"You paid ${order.price._1.displayName()} × ${order.price._2} and received ${order.selling._1
                                         .displayName()

@@ -22,8 +22,7 @@ object RailManufactory:
     private val goldChoice: RecipeIngredient = Custom(
         goldLikes.map(_.ingot): _*
     )
-    val pairs
-        : List[(List[(RecipeIngredient, Int)], Material, (Int, Int))] =
+    val pairs: List[(List[(RecipeIngredient, Int)], Material, (Int, Int))] =
         List(
             (
                 List(ironChoice -> 64, Vanilla(Material.STICK) -> 8),

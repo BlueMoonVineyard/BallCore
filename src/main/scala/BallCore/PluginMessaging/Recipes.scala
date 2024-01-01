@@ -114,7 +114,8 @@ object RecipeMessage:
 
     given Encoder[RecipeMessage] = deriveEncoder[RecipeMessage]
 
-class JoinListener(using p: Plugin, s: List[CraftingStation], ir: ItemRegistry) extends Listener:
+class JoinListener(using p: Plugin, s: List[CraftingStation], ir: ItemRegistry)
+    extends Listener:
     extension (j: Json)
         def encodeToBytes: Array[Byte] =
             val byted = j.noSpaces.toString.getBytes(StandardCharsets.UTF_8)
@@ -126,7 +127,7 @@ class JoinListener(using p: Plugin, s: List[CraftingStation], ir: ItemRegistry) 
             stream.write(size)
             stream.write(byted, 0, byted.length)
             stream.toByteArray
-        
+
     extension (plr: Player)
         def sendPluginMessage(ba: RecipeMessage): Unit =
             val jsonned = ba.asJson

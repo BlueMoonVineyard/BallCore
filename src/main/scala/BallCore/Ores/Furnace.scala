@@ -144,7 +144,9 @@ object Furnace:
         tierTwoLore,
     )
 
-    private val tierTwo: List[(CustomItemStack, CustomItemStack)] = List((adamantiteFurnace, Tier2.adamantite.stack))
+    private val tierTwo: List[(CustomItemStack, CustomItemStack)] = List(
+        (adamantiteFurnace, Tier2.adamantite.stack)
+    )
 
     private val tierThreeLore =
         txt"Capable of smelting ores with supernatural efficiency"

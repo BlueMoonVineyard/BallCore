@@ -118,14 +118,19 @@ class CustomItemListener(using
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     def onInteractItemBlock(event: PlayerInteractEvent): Unit =
-        if !event.hasItem then
-            return ()
+        if !event.hasItem then return ()
 
         (reg.lookup(event.getItem), event.getAction) match
-            case (Some(click: Listeners.ItemUsedOnBlock), Action.RIGHT_CLICK_BLOCK) =>
+            case (
+                    Some(click: Listeners.ItemUsedOnBlock),
+                    Action.RIGHT_CLICK_BLOCK,
+                ) =>
                 event.setCancelled(true)
                 click.onItemUsedOnBlock(event)
-            case (Some(click: Listeners.ItemLeftUsedOnBlock), Action.LEFT_CLICK_BLOCK) =>
+            case (
+                    Some(click: Listeners.ItemLeftUsedOnBlock),
+                    Action.LEFT_CLICK_BLOCK,
+                ) =>
                 event.setCancelled(true)
                 click.onItemLeftUsedOnBlock(event)
             case _ =>

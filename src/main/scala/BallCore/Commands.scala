@@ -83,6 +83,9 @@ import BallCore.SpawnInventory.SigilsAndYou
 import BallCore.NoodleEditor.NoodleEditor
 import BallCore.NoodleEditor.EssenceDrainer
 import BallCore.SpawnInventory.SmelteryAndYou
+import BallCore.Advancements.ViewOres
+import BallCore.Advancements.ViewPlants
+import BallCore.Advancements.BindCivHeart
 
 class OTTCommand(using sql: SQLManager, ott: OneTimeTeleporter):
     private def errorText(err: OTTError): Component =
@@ -379,6 +382,7 @@ class BindHeartCommand(using
                                             txt"Failed to bind ${group.name} to your Civilization Beacon!"
                                         )
                                     case Some(Right(_)) =>
+                                        BindCivHeart.grant(sender, "bind")
                                         sender.sendServerMessage(
                                             txt"Bound ${group.name} to your Civilization Beacon!"
                                         )
@@ -530,6 +534,7 @@ class BookCommand(using
             .`then`(
                 LiteralArgument("ores-and-you")
                     .executesPlayer({ (sender, args) =>
+                        ViewOres.grant(sender, "book_used")
                         sql.useFireAndForget(for {
                             book <- sql.withS(OresAndYou.viewForPlayer(sender))
                             _ <- IO { sender.openBook(book) }
@@ -723,9 +728,10 @@ class CheatCommand(using
                         NamespacedKeyArgument("item")
                             .replaceSuggestions(
                                 ArgumentSuggestions.strings(
-                                    registry.items().map(item =>
-                                        item.id.toString()
-                                    ).asJava
+                                    registry
+                                        .items()
+                                        .map(item => item.id.toString())
+                                        .asJava
                                 )
                             )
                             .executesPlayer({ (sender, args) =>
@@ -1099,6 +1105,7 @@ class PlantsCommand(using prompts: UI.Prompts, plugin: Plugin):
     val node =
         CommandTree("plants")
             .executesPlayer({ (sender, args) =>
+                ViewPlants.grant(sender, "plants_used")
                 given ExecutionContext = EntityExecutionContext(sender)
                 FireAndForget {
                     val climate = Climate.climateAt(

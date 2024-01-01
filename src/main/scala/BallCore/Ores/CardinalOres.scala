@@ -58,6 +58,9 @@ object CardinalOres:
         )
         emerald.setItemMeta(emerald.getItemMeta().tap(_.setCustomModelData(1)))
 
+        val blackOres = List(sulfur, sillicon, cobalt, lead).map(_.raw)
+        val blueOres = List(sapphire, diamond, plutonium, emerald)
+
     val group: ItemGroup = ItemGroup(
         NamespacedKey("ballcore", "cardinal_ores"),
         ItemStack(Material.IRON_INGOT),

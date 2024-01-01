@@ -17,7 +17,7 @@ import BallCore.CustomItems.ItemRegistry
 object GlazingKiln:
     val dyes: List[(Material, Material)] = List(
         (Material.WHITE_DYE, Material.WHITE_TERRACOTTA),
-        (Material.ORANGE_DYE,Material.ORANGE_TERRACOTTA),
+        (Material.ORANGE_DYE, Material.ORANGE_TERRACOTTA),
         (Material.MAGENTA_DYE, Material.MAGENTA_TERRACOTTA),
         (Material.LIGHT_BLUE_DYE, Material.LIGHT_BLUE_TERRACOTTA),
         (Material.YELLOW_DYE, Material.YELLOW_TERRACOTTA),

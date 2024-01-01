@@ -19,7 +19,9 @@ class EssenceVoteGiver(using sql: SQLManager, p: Plugin) extends Listener:
         sql.useFireAndForget(IO {
             val toGive = Essence.template.clone()
             toGive.setAmount(1)
-            player.sendServerMessage(txt"You voted on ${event.getVote.getServiceName}!")
+            player.sendServerMessage(
+                txt"You voted on ${event.getVote.getServiceName}!"
+            )
             player.getInventory.addItem(toGive).forEach { (_, item) =>
                 val _ =
                     player.getWorld.dropItemNaturally(player.getLocation, item)

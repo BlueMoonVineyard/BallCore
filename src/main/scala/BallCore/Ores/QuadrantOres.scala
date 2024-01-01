@@ -47,6 +47,10 @@ object QuadrantOres:
         val copperLikes: List[OreVariants] =
             List(copper, orichalcum, hihiirogane, meteorite)
 
+        val whiteOres = ironLikes.map(_.raw)
+        val yellowOres = goldLikes.map(_.raw)
+        val redOres = copperLikes.map(_.raw)
+
     val group: ItemGroup = ItemGroup(
         NamespacedKey("ballcore", "quadrant_ores"),
         ItemStack(Material.IRON_INGOT),

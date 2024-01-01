@@ -81,7 +81,11 @@ object Messaging:
         p.getServer.getPluginManager.registerEvents(JoinListener(), p)
 
 object DummyListener extends PluginMessageListener:
-    override def onPluginMessageReceived(c: String, p: Player, a: Array[Byte]): Unit =
+    override def onPluginMessageReceived(
+        c: String,
+        p: Player,
+        a: Array[Byte],
+    ): Unit =
         ()
 
 class PluginMessaging()(using p: Plugin, gm: GroupManager, sql: SQLManager)

@@ -79,7 +79,8 @@ class BackpackListener extends Listener:
         openInventory.getHolder match
             case it: BackpackHolder =>
                 event.getClick match
-                    case ClickType.NUMBER_KEY if event.getClickedInventory.getType != InventoryType.PLAYER =>
+                    case ClickType.NUMBER_KEY
+                        if event.getClickedInventory.getType != InventoryType.PLAYER =>
                         val hotbar = event.getWhoClicked.getInventory.getItem(
                             event.getHotbarButton
                         )

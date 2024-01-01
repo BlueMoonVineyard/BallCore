@@ -37,6 +37,7 @@ import org.bukkit.OfflinePlayer
 import cats.effect.IO
 import BallCore.NoodleEditor.NoodleEditor
 import BallCore.NoodleEditor.NoodleKey
+import BallCore.Advancements.BindCivHeart
 
 extension (p: BallCore.Groups.Permissions)
     def displayItem(): Material =
@@ -487,6 +488,10 @@ class GroupManagementProgram(using
                         )
                     case Some(ok) =>
                         if ok then
+                            BindCivHeart.grant(
+                                Bukkit.getPlayer(model.userID),
+                                "bind",
+                            )
                             services.notify(
                                 s"Bound ${model.group.metadata.name} to your Civilization Beacon!"
                             )

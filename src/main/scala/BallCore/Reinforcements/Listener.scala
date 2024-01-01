@@ -329,37 +329,46 @@ class Listener(using
         permission: Permissions,
         breaking: Boolean,
     ): Either[GroupError, Boolean] =
-        if player.hasPermission("ballcore.bypass") then
-            Right(true)
-        else sql.useBlocking(sql.withS(sql.withTX(for {
-            data <- getRelevantGroupData(
-                player,
-                location,
-                permission,
-                breaking,
-            ).value
-            ok <- decideOn(breaking, location, player)(data)
-        } yield ok)))
-            .map { (result, ok) =>
-                result match
-                    case BustResult.alreadyBusted =>
-                    case BustResult.notBusting =>
-                    case BustResult.bustingBlocked(next) =>
-                        playBreakEffect(location, ReinforcementTypes.Stone)
-                        val time =
-                            ChronoUnit.HOURS.between(OffsetDateTime.now(), next)
-                        player.sendServerMessage(
-                            txt"This group's vulnerability window isn't active."
-                        )
-                        player.sendServerMessage(
-                            txt"It opens in ${time} hours."
-                        )
-                    case BustResult.busting =>
-                        playDamageEffect(location, ReinforcementTypes.IronLike)
-                    case BustResult.justBusted =>
-                        playBreakEffect(location, ReinforcementTypes.IronLike)
-                ok
-            }
+        if player.hasPermission("ballcore.bypass") then Right(true)
+        else
+            sql.useBlocking(sql.withS(sql.withTX(for {
+                data <- getRelevantGroupData(
+                    player,
+                    location,
+                    permission,
+                    breaking,
+                ).value
+                ok <- decideOn(breaking, location, player)(data)
+            } yield ok)))
+                .map { (result, ok) =>
+                    result match
+                        case BustResult.alreadyBusted =>
+                        case BustResult.notBusting =>
+                        case BustResult.bustingBlocked(next) =>
+                            playBreakEffect(location, ReinforcementTypes.Stone)
+                            val time =
+                                ChronoUnit.HOURS.between(
+                                    OffsetDateTime.now(),
+                                    next,
+                                )
+                            player.sendServerMessage(
+                                txt"This group's vulnerability window isn't active."
+                            )
+                            player.sendServerMessage(
+                                txt"It opens in ${time} hours."
+                            )
+                        case BustResult.busting =>
+                            playDamageEffect(
+                                location,
+                                ReinforcementTypes.IronLike,
+                            )
+                        case BustResult.justBusted =>
+                            playBreakEffect(
+                                location,
+                                ReinforcementTypes.IronLike,
+                            )
+                    ok
+                }
 
     private inline def checkAt(
         location: Block,

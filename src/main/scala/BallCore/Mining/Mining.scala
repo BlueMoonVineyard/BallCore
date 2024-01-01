@@ -19,6 +19,21 @@ import scala.collection.immutable.Range.Inclusive
 import scala.util.Random
 import scala.util.chaining.*
 import BallCore.Rest.RestManager
+import BallCore.CustomItems.CustomItemStack
+import BallCore.Advancements.BallAdvancement
+import org.bukkit.entity.Player
+import BallCore.Advancements.GetToolBaseOres
+import BallCore.Advancements.GetNonToolBaseOres
+import BallCore.Mining.Mining.advancements
+
+private class AdvancementTracker(
+    matches: List[CustomItemStack],
+    advancement: BallAdvancement[_],
+    criteria: advancement.Criteria,
+):
+    def check(player: Player, item: ItemStack): Unit =
+        if matches.exists(_.isSimilar(item)) then
+            val _ = advancement.grant(player, criteria)
 
 object Mining:
     val stoneBlocks: Set[Material] =
@@ -136,6 +151,34 @@ object Mining:
             )
         )
     }
+
+    val advancements = List(
+        AdvancementTracker(
+            QuadrantOres.ItemStacks.redOres,
+            GetToolBaseOres,
+            "red_ore",
+        ),
+        AdvancementTracker(
+            QuadrantOres.ItemStacks.whiteOres,
+            GetToolBaseOres,
+            "white_ore",
+        ),
+        AdvancementTracker(
+            QuadrantOres.ItemStacks.yellowOres,
+            GetToolBaseOres,
+            "yellow_ore",
+        ),
+        AdvancementTracker(
+            CardinalOres.ItemStacks.blackOres,
+            GetNonToolBaseOres,
+            "black_ore",
+        ),
+        AdvancementTracker(
+            CardinalOres.ItemStacks.blueOres,
+            GetNonToolBaseOres,
+            "blue_ore",
+        ),
+    )
 
     def register()(using
         ac: AntiCheeser,
@@ -278,6 +321,7 @@ class MiningListener()(using
             else false
         } match
             case Some(maybe) =>
+                advancements.foreach(_.check(event.getPlayer, maybe.what))
                 val dropAmount =
                     maybe.amount(randomizer.nextInt(maybe.amount.length))
                 val drop = maybe.what.clone().tap(_.setAmount(dropAmount))

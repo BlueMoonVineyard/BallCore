@@ -18,6 +18,7 @@ import org.bukkit.event.{EventHandler, EventPriority, Listener}
 
 import scala.util.Random
 import scala.util.chaining.*
+import BallCore.Advancements.GetSeed
 
 object VanillaPlantBlocker:
     private val bonemealables: Set[Material] = Set(
@@ -99,12 +100,16 @@ class VanillaPlantBlocker() extends Listener:
 
         val loc = event.getBlock
         val climate = Climate.climateAt(loc.getX, loc.getY, loc.getZ)
-        val possiblePlants = Plant.values.filter(_.growingClimate == climate)
+        val possiblePlants =
+            Plant.values.filter(_.growingClimate.growsWithin(climate))
+
+        event.getPlayer.sendMessage(s"${possiblePlants.toList}")
 
         if possiblePlants.size > 0 then
             val chosenPlant = possiblePlants(
                 Random.nextInt(possiblePlants.length)
             )
+            GetSeed.grant(event.getPlayer, "seed_dropped")
 
             loc.getWorld
                 .dropItemNaturally(

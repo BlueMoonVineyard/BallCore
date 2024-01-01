@@ -19,6 +19,7 @@ import BallCore.Sigils.BattleManager
 import io.sentry.Sentry
 import BallCore.NoodleEditor.EssenceManager
 import BallCore.NoodleEditor.Essence
+import BallCore.Advancements.PlaceCivHeart
 
 object HeartBlock:
     val itemStack: CustomItemStack = CustomItemStack.make(
@@ -151,6 +152,7 @@ class HeartBlock()(using
             )
         ) match
             case Right((_, x)) if x == 1 =>
+                PlaceCivHeart.grant(event.getPlayer, "placed_heart")
                 event.getPlayer
                     .sendServerMessage(
                         txt"Your heart is the first block of a new beacon!"
@@ -168,6 +170,7 @@ class HeartBlock()(using
                         txt"(use /bind-heart to bind a group to this beacon)"
                     )
             case Right((_, x)) =>
+                PlaceCivHeart.grant(event.getPlayer, "placed_heart")
                 event.getPlayer
                     .sendServerMessage(
                         txt"You've joined your heart to a beacon with ${x - 1} other players!"

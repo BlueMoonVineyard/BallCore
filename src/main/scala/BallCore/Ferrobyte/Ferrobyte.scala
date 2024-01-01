@@ -51,7 +51,7 @@ object Ferrobyte:
 
         val backpackRecipe = ShapedRecipe(
             NamespacedKey("ballcore", "backpack"),
-            Backpack.template.clone()
+            Backpack.template.clone(),
         )
         backpackRecipe.shape(
             "FFF",
