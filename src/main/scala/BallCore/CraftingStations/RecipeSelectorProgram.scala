@@ -39,15 +39,16 @@ class RecipeSelectorProgram(recipes: List[Recipe])(using
 
     case class Flags(player: Player, factory: Block)
 
-    case class Model(player: Player, factory: Block, page: Int)
+    case class Model(player: Player, factory: Block, page: Int, repeat: Boolean)
 
     enum Message:
         case selectRecipe(index: Int)
         case nextPage
         case prevPage
+        case toggleRepeat
 
     override def init(flags: Flags): Model =
-        Model(flags.player, flags.factory, 0)
+        Model(flags.player, flags.factory, 0, false)
 
     override def update(msg: Message, model: Model)(using
         services: UIServices
@@ -69,6 +70,7 @@ class RecipeSelectorProgram(recipes: List[Recipe])(using
                                         model.player,
                                         model.factory,
                                         recipes(index),
+                                        model.repeat,
                                     )
                                 )
                                 services.notify(
@@ -86,6 +88,8 @@ class RecipeSelectorProgram(recipes: List[Recipe])(using
                 model.copy(page = (model.page + 1).min(numPages - 1))
             case Message.prevPage =>
                 model.copy(page = (model.page - 1).max(0))
+            case Message.toggleRepeat =>
+                model.copy(repeat = !model.repeat)
 
     private def choiceToString(input: RecipeIngredient): Component =
         import RecipeIngredient._
@@ -201,5 +205,23 @@ class RecipeSelectorProgram(recipes: List[Recipe])(using
                     txt"Next Page".color(NamedTextColor.GREEN),
                     Message.nextPage,
                 )()
+                Button(
+                    Material.REDSTONE_TORCH,
+                    if model.repeat then
+                        txt"Repeat: On".color(NamedTextColor.GREEN)
+                    else txt"Repeat: Off".color(NamedTextColor.RED),
+                    Message.toggleRepeat,
+                ) {
+                    if model.repeat then
+                        Lore(
+                            txt"Click to turn off repeating this recipe"
+                                .color(NamedTextColor.GRAY)
+                        )
+                    else
+                        Lore(
+                            txt"Click to turn on repeating this recipe"
+                                .color(NamedTextColor.GRAY)
+                        )
+                }
             }
         }

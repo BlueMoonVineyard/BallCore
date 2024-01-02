@@ -48,4 +48,5 @@ case class Job(
     recipe: Recipe,
     currentWork: Int,
     workedBy: List[Player],
+    repeat: Boolean,
 )

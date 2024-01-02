@@ -89,6 +89,7 @@ abstract class CraftingStation(val recipes: List[Recipe])(using
 ) extends CustomItem,
       Listeners.BlockClicked:
     def onBlockClicked(event: PlayerInteractEvent): Unit =
+        act.send(CraftingMessage.stopWorking(event.getPlayer))
         val p = RecipeSelectorProgram(recipes)
         val plr = event.getPlayer
         val runner =

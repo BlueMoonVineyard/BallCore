@@ -28,6 +28,8 @@ import org.bukkit.NamespacedKey
 import BallCore.Advancements.MakeTierTwoAlloy
 import BallCore.Advancements.MakeTierOneAlloy
 import BallCore.Advancements.UseStation
+import cats.effect.IO
+import cats.syntax.all._
 
 private class AdvancementTracker(
     matches: Set[NamespacedKey],
@@ -52,7 +54,7 @@ private val advancements = List(
 )
 
 enum CraftingMessage:
-    case startWorking(p: Player, f: Block, r: Recipe)
+    case startWorking(p: Player, f: Block, r: Recipe, autorepeat: Boolean)
     case stopWorking(p: Player)
     case tick
 
@@ -177,7 +179,7 @@ class CraftingActor(using p: Plugin, ir: ItemRegistry)
         }
         rezept.forall(_._2 <= 0)
 
-    private def completeJob(job: Job): Unit =
+    private def completeJob(job: Job): Boolean =
         val (workChest, inventory) =
             WorkChestUtils.findWorkChest(job.factory) match
                 case None =>
@@ -189,7 +191,7 @@ class CraftingActor(using p: Plugin, ir: ItemRegistry)
                             notifyFailedJob(player, job, "Chest Missing!")
                         }
                     }
-                    return
+                    return false
                 case Some(value) => value
 
         ensureLoaded(workChest)
@@ -208,6 +210,7 @@ class CraftingActor(using p: Plugin, ir: ItemRegistry)
                     notifyFinishedJob(player, job)
                 }
             }
+            true
         else
             job.workedBy.foreach { player =>
                 given ec: ExecutionContext = EntityExecutionContext(player)
@@ -216,6 +219,7 @@ class CraftingActor(using p: Plugin, ir: ItemRegistry)
                     notifyFailedJob(player, job, "Ingredients Missing!")
                 }
             }
+            false
 
     private def notifyFinishedJob(player: Player, job: Job): Unit =
         val component =
@@ -280,11 +284,11 @@ class CraftingActor(using p: Plugin, ir: ItemRegistry)
 
     def handle(m: CraftingMessage): Unit =
         m match
-            case CraftingMessage.startWorking(p, f, r) =>
+            case CraftingMessage.startWorking(p, f, r, repeat) =>
                 stopWorking(p)
                 jobs.get(f) match
                     case None =>
-                        jobs = jobs.updated(f, Job(f, r, 0, List(p)))
+                        jobs = jobs.updated(f, Job(f, r, 0, List(p), repeat))
                     case Some(job) if job.recipe == r =>
                         jobs = jobs.updated(
                             f,
@@ -308,23 +312,31 @@ class CraftingActor(using p: Plugin, ir: ItemRegistry)
                         else j,
                     )
                 }
-                jobs = jobs.filterNot { (_, j) =>
-                    val cond = j.currentWork >= j.recipe.work
-                    if cond then
-                        given ec: ExecutionContext =
-                            LocationExecutionContext(j.factory.getLocation())
-
-                        FireAndForget {
-                            completeJob(j)
-                        }
-                    else
-                        j.workedBy.foreach { player =>
-                            given ec: ExecutionContext =
-                                EntityExecutionContext(player)
-
-                            FireAndForget {
-                                notifyInProgressJob(player, j)
-                            }
-                        }
-                    cond
-                }
+                jobs = fs2.Stream
+                    .iterable[IO, (Block, Job)](jobs)
+                    .parEvalMap(10) { (b, j) =>
+                        if j.currentWork >= j.recipe.work then
+                            for
+                                ok <- IO { completeJob(j) }
+                                    .evalOn(LocationExecutionContext(j.factory.getLocation()))
+                                shouldRepeat <- if j.repeat then IO {
+                                    CraftingActor.validateJob(j.recipe, j.factory)
+                                }.evalOn(LocationExecutionContext(j.factory.getLocation()))
+                                else IO.pure(false)
+                            yield
+                                if shouldRepeat then
+                                    Some((b, j.copy(currentWork = 0)))
+                                else
+                                    None
+                        else
+                            j.workedBy.traverse_ { player =>
+                                IO {
+                                    notifyInProgressJob(player, j)
+                                }.evalOn(EntityExecutionContext(player))
+                            }.map(_ => Some((b, j)))
+                    }
+                    .compile
+                    .toList
+                    .map(_.flatten)
+                    .unsafeRunSync()(using cats.effect.unsafe.IORuntime.global)
+                    .toMap
