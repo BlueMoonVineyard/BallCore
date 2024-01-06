@@ -69,9 +69,10 @@ enum PolygonAdjustmentError:
 
         this match
             case polygonTooLarge(maximum, actual) =>
-                txt"This beacon area is too large; the maximum area is ${txt(maximum.toString())
-                        .color(Colors.teal)} blocks but the actual area is ${txt(df.format(actual))
-                        .color(Colors.teal)}"
+                trans"errors.polygon-adjustment.too-large".args(
+                    maximum.toComponent.color(Colors.teal),
+                    df.format(actual).toComponent.color(Colors.teal),
+                )
             case heartsNotIncludedInPolygon(at) =>
                 val locations = at
                     .map { loc =>
@@ -80,20 +81,24 @@ enum PolygonAdjustmentError:
                                 .color(Colors.grellow)}"
                     }
                     .mkComponent(txt", ")
-                txt"There are hearts not included in this claim at $locations"
+                trans"errors.polygon-adjustment.hearts-not-included".args(
+                    locations
+                )
             case overlapsOneOtherPolygon(
                     beaconID,
                     groupID,
                     groupName,
                     Some(_),
                 ) =>
-                txt"This beacon area overlaps a beacon area belonging to ${txt(groupName)
-                        .color(Colors.grellow)} (you could start a battle to take the land)"
+                trans"errors.polygon-adjustment.overlaps-one-other-can-war".args(
+                    groupName.toComponent.color(Colors.grellow)
+                )
             case overlapsOneOtherPolygon(beaconID, groupID, groupName, None) =>
-                txt"This beacon area overlaps a beacon area belonging to ${txt(groupName)
-                        .color(Colors.grellow)} (you can't start a battle to take the land because that would make the opposing claim not a polygon)"
+                trans"errors.polygon-adjustment.overlaps-one-other-can-not-war".args(
+                    groupName.toComponent.color(Colors.grellow)
+                )
             case overlapsMultiplePolygons() =>
-                txt"This beacon area overlaps multiple other beacons' areas"
+                trans"errors.polygon-adjustment.overlaps-multiple-others"
 
 object CivBeaconManager:
     def populationToArea(count: Int): Int =

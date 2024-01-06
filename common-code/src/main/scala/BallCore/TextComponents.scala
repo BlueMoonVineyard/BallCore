@@ -17,8 +17,13 @@ class TextComponents:
                     case obj => it = it.append(Component.text(obj.toString))
                 it = it.append(Component.text(strings.next()))
             it
-        def trans(): TranslatableComponent =
-            Component.translatable(sc.parts.mkString)
+        def trans(keys: String*): TranslatableComponent =
+            val strings = sc.parts.iterator
+            var it = strings.next()
+            val expressions = keys.iterator
+            while strings.hasNext do
+                it += s".${expressions.next()}.${strings.next()}"
+            Component.translatable(it)
 
     extension (a: Audience)
         def sendServerMessage(txt: Component): Unit =

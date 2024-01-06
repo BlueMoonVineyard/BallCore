@@ -28,7 +28,7 @@ object Tier1:
         CustomItemStack.make(
             NamespacedKey("ballcore", "pallalumin_ingot"),
             Material.IRON_INGOT,
-            txt"Pallalumin Ingot",
+            trans"items.pallalumin.ingot",
         ),
     )
     pallalumin.stack.setItemMeta(
@@ -41,7 +41,7 @@ object Tier1:
         CustomItemStack.make(
             NamespacedKey("ballcore", "bronze_ingot"),
             Material.IRON_INGOT,
-            txt"Bronze Ingot",
+            trans"items.bronze.ingot",
         ),
     )
     bronze.stack.setItemMeta(
@@ -54,7 +54,7 @@ object Tier1:
         CustomItemStack.make(
             NamespacedKey("ballcore", "magnox_ingot"),
             Material.IRON_INGOT,
-            txt"Magnox Ingot",
+            trans"items.magnox.ingot",
         ),
     )
     magnox.stack.setItemMeta(
@@ -67,7 +67,7 @@ object Tier1:
         CustomItemStack.make(
             NamespacedKey("ballcore", "gilded_iron_ingot"),
             Material.IRON_INGOT,
-            txt"Gilded Iron Ingot",
+            trans"items.gilded-iron.ingot",
         ),
     )
     gildedIron.stack.setItemMeta(

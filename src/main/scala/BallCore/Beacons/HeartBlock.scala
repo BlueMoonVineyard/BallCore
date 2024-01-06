@@ -25,8 +25,12 @@ object HeartBlock:
     val itemStack: CustomItemStack = CustomItemStack.make(
         NamespacedKey("ballcore", "civilization_heart"),
         Material.WHITE_CONCRETE,
-        txt"Civilization Heart",
-        txt"It beats with the power of a budding civilization...",
+        trans"items.civilization-heart",
+        trans"items.civilization-heart.lore.0",
+        trans"items.civilization-heart.lore.1",
+        trans"items.civilization-heart.lore.2",
+        trans"items.civilization-heart.lore.3",
+        trans"items.civilization-heart.lore.4",
     )
 // val tickHandler = RainbowTickHandler(Material.WHITE_CONCRETE, Material.PINK_CONCRETE, Material.RED_CONCRETE, Material.PINK_CONCRETE)
 
@@ -77,7 +81,7 @@ class HeartBlock()(using
                     case Left(err) =>
                         event.getPlayer
                             .sendServerMessage(
-                                txt"You cannot edit claims because ${err.explain()}"
+                                trans"notifications.cannot-edit-claims-error".args(err.explain().toComponent)
                             )
                     case Right(_) =>
                         if sql.useBlocking(
@@ -88,7 +92,7 @@ class HeartBlock()(using
                         then
                             event.getPlayer
                                 .sendServerMessage(
-                                    txt"You cannot edit claims because you are currently in battle"
+                                    trans"notifications.cannot-edit-claims-war"
                                 )
                         else
                             editor.create(
@@ -98,7 +102,7 @@ class HeartBlock()(using
                             )
             case None =>
                 event.getPlayer.sendServerMessage(
-                    txt"You need to bind this beacon to a group in order to edit its claims."
+                    trans"notifications.cannot-edit-claims-no-group"
                 )
 
     private def onBlockClickedEssence(event: PlayerInteractEvent): Unit =
@@ -113,7 +117,7 @@ class HeartBlock()(using
             sql.useBlocking(sql.withS(essence.addEssence(owner, location)))
         event.getItem.setAmount(event.getItem.getAmount - 1)
         event.getPlayer.sendServerMessage(
-            txt"This heart now has ${amount} essence."
+            trans"notifications.heart-essence".args(amount.toComponent)
         )
 
     def onBlockClicked(event: PlayerInteractEvent): Unit =
@@ -129,7 +133,9 @@ class HeartBlock()(using
             case Some((x, y, z)) =>
                 event.getPlayer
                     .sendServerMessage(
-                        txt"Your heart is already placed at [$x, $y, $z]..."
+                        trans"notifications.heart-already-placed".args(
+                            x.toComponent, y.toComponent, z.toComponent
+                        )
                     )
                 event.setCancelled(true)
                 return
@@ -155,25 +161,25 @@ class HeartBlock()(using
                 PlaceCivHeart.grant(event.getPlayer, "placed_heart")
                 event.getPlayer
                     .sendServerMessage(
-                        txt"Your heart is the first block of a new beacon!"
+                        trans"notifications.heart-placed.new-beacon"
                     )
                 event.getPlayer
                     .sendServerMessage(
-                        txt"The beacon will help you adapt to the land here faster, which will get you increased resource drops over time, among other things."
+                        trans"notifications.heart-placed.adaptation"
                     )
                 event.getPlayer
                     .sendServerMessage(
-                        txt"Bind a group to this beacon, and you'll unlock the ability to claim land and allow other players to join your beacon!"
+                        trans"notifications.heart-placed.bind-group"
                     )
                 event.getPlayer
                     .sendServerMessage(
-                        txt"(use /bind-heart to bind a group to this beacon)"
+                        trans"notifications.heart-placed.bind-group-command"
                     )
             case Right((_, x)) =>
                 PlaceCivHeart.grant(event.getPlayer, "placed_heart")
                 event.getPlayer
                     .sendServerMessage(
-                        txt"You've joined your heart to a beacon with ${x - 1} other players!"
+                        trans"notifications.heart-placed.existing-beacon".args((x-1).toComponent)
                     )
             case Left(_) =>
                 ()
@@ -196,7 +202,7 @@ class HeartBlock()(using
             case Left(err) =>
                 event.getPlayer
                     .sendServerMessage(
-                        txt"An error happened while attempting to delete the beacon."
+                        trans"notifications.heart-removed.error"
                     )
                 Sentry.captureException(err)
                 event.setCancelled(true)
@@ -205,9 +211,9 @@ class HeartBlock()(using
                     case Some(_) =>
                         event.getPlayer
                             .sendServerMessage(
-                                txt"You've disconnected from the beacon..."
+                                trans"notifications.heart-removed.beacon-disconnected"
                             )
                     case None =>
                         event.getPlayer.sendServerMessage(
-                            txt"You've deleted the beacon..."
+                            trans"notifications.heart-removed.beacon-deleted"
                         )
