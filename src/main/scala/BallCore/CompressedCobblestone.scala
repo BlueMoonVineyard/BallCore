@@ -15,20 +15,20 @@ import org.bukkit.inventory.ItemStack
 
 object CompressedCobblestone:
     val ids = List(
-        ("", "", "9"),
-        ("Double ", "double_", "81"),
-        ("Triple ", "triple_", "729"),
-        ("Quadruple ", "quadruple_", "6,561"),
-        ("Quintuple ", "quintuple_", "59,049"),
-        ("Sextuple ", "sextuple_", "531,441"),
-        ("Septuple ", "septuple_", "4,782,969"),
-        ("Octuple ", "octuple_", "43,046,721"),
+        (trans"items.compressed-cobblestone", "", "9"),
+        (trans"items.double-compressed-cobblestone", "double_", "81"),
+        (trans"items.triple-compressed-cobblestone", "triple_", "729"),
+        (trans"items.quadruple-compressed-cobblestone ", "quadruple_", "6,561"),
+        (trans"items.quintuple-compressed-cobblestone ", "quintuple_", "59,049"),
+        (trans"items.sextuple-compressed-cobblestone ", "sextuple_", "531,441"),
+        (trans"items.septuple-compressed-cobblestone ", "septuple_", "4,782,969"),
+        (trans"items.octuple-compressed-cobblestone ", "octuple_", "43,046,721"),
     ).map((name, id, amount) =>
         CustomItemStack.make(
             NamespacedKey("ballcore", id + "compressed_cobblestone"),
             Material.COBBLESTONE,
-            txt"${name}Compressed Cobblestone",
-            txt"Contains ${amount} blocks of cobblestone",
+            name,
+            trans"items.compressed-cobblestone.lore".args(amount.toComponent)
         )
     )
     val group = ItemGroup(
