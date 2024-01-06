@@ -59,11 +59,10 @@ import BallCore.PrimeTime.PrimeTimeManager
 import BallCore.NoodleEditor.NoodleManager
 import BallCore.Gear.SkyBronzeGear
 import BallCore.Gear.AdamantiteGear
-import BallCore.Commands.CardinalCommand
 import BallCore.Gear.SunoGear
 import BallCore.Gear.HepatizonGear
 import BallCore.Gear.ManyullynGear
-import BallCore.Commands.VoteCommand
+import BallCore.Commands.*
 
 class ExceptionLogger extends Listener:
     @EventHandler

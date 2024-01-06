@@ -2,7 +2,7 @@ package BallCore
 
 import net.kyori.adventure.audience.Audience
 import net.kyori.adventure.text.format.{Style, TextColor, TextDecoration}
-import net.kyori.adventure.text.{Component, ComponentLike}
+import net.kyori.adventure.text.{Component, ComponentLike, TranslatableComponent}
 import net.kyori.adventure.translation.Translatable
 
 class TextComponents:
@@ -17,6 +17,8 @@ class TextComponents:
                     case obj => it = it.append(Component.text(obj.toString))
                 it = it.append(Component.text(strings.next()))
             it
+        def trans(): TranslatableComponent =
+            Component.translatable(sc.parts.mkString)
 
     extension (a: Audience)
         def sendServerMessage(txt: Component): Unit =
@@ -40,6 +42,10 @@ class TextComponents:
     extension (o: Any)
         def toComponent: Component =
             Component.text(o.toString)
+
+    extension (s: String)
+        def toComponent: Component =
+            Component.text(s)
 
     extension (t: Translatable)
         def asComponent: Component =
