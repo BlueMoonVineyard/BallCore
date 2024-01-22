@@ -110,20 +110,24 @@ class ChatActor(using gm: GroupManager, sql: SQLManager, sidebar: SidebarActor)
     ): Unit =
         if isMe then
             to.sendMessage(
-                txt"[DMs] from * ${from.displayName()} ${msg.color(NamedTextColor.WHITE)}"
+                trans"chat.whisper.recipient.me"
+                    .args(from.displayName(), msg.color(NamedTextColor.WHITE))
                     .color(whisperColor)
             )
             from.sendMessage(
-                txt"[DMs] to ${to.displayName()}: me ${msg.color(NamedTextColor.WHITE)}"
+                trans"chat.whisper.sender.me"
+                    .args(from.displayName(), msg.color(NamedTextColor.WHITE))
                     .color(whisperColor)
             )
         else
             to.sendMessage(
-                txt"[DMs] from ${from.displayName()} ${msg.color(NamedTextColor.WHITE)}"
+                trans"chat.whisper.recipient"
+                    .args(from.displayName(), msg.color(NamedTextColor.WHITE))
                     .color(whisperColor)
             )
             from.sendMessage(
-                txt"[DMs] to ${to.displayName()}: ${msg.color(NamedTextColor.WHITE)}"
+                trans"chat.whisper.sender"
+                    .args(from.displayName(), msg.color(NamedTextColor.WHITE))
                     .color(whisperColor)
             )
         playerReplies(to) = from
@@ -132,13 +136,21 @@ class ChatActor(using gm: GroupManager, sql: SQLManager, sidebar: SidebarActor)
         if isMe then
             Bukkit.getServer
                 .sendMessage(
-                    txt"[!] * ${from.displayName()} ${msg.color(NamedTextColor.WHITE)}"
+                    trans"chat.global.me"
+                        .args(
+                            from.displayName(),
+                            msg.color(NamedTextColor.WHITE),
+                        )
                         .color(globalGrey)
                 )
         else
             Bukkit.getServer
                 .sendMessage(
-                    txt"[!] ${from.displayName()}: ${msg.color(NamedTextColor.WHITE)}"
+                    trans"chat.global"
+                        .args(
+                            from.displayName(),
+                            msg.color(NamedTextColor.WHITE),
+                        )
                         .color(globalGrey)
                 )
 
@@ -158,14 +170,22 @@ class ChatActor(using gm: GroupManager, sql: SQLManager, sidebar: SidebarActor)
             Audience
                 .audience(nearby)
                 .sendMessage(
-                    txt"[Local] * ${from.displayName()} ${msg.color(NamedTextColor.WHITE)}"
+                    trans"chat.local.me"
+                        .args(
+                            from.displayName(),
+                            msg.color(NamedTextColor.WHITE),
+                        )
                         .color(localGrey)
                 )
         else
             Audience
                 .audience(nearby)
                 .sendMessage(
-                    txt"[Local] ${from.displayName()}: ${msg.color(NamedTextColor.WHITE)}"
+                    trans"chat.local"
+                        .args(
+                            from.displayName(),
+                            msg.color(NamedTextColor.WHITE),
+                        )
                         .color(localGrey)
                 )
 
@@ -185,14 +205,24 @@ class ChatActor(using gm: GroupManager, sql: SQLManager, sidebar: SidebarActor)
         if isMe then
             audience.foreach { (name, aud) =>
                 aud.sendMessage(
-                    txt"[$name] * ${from.displayName()} ${msg.color(NamedTextColor.WHITE)}"
+                    trans"chat.group.me"
+                        .args(
+                            name.toComponent,
+                            from.displayName(),
+                            msg.color(NamedTextColor.WHITE),
+                        )
                         .color(groupColor(name))
                 )
             }
         else
             audience.foreach { (name, aud) =>
                 aud.sendMessage(
-                    txt"[$name] ${from.displayName()}: ${msg.color(NamedTextColor.WHITE)}"
+                    trans"chat.group"
+                        .args(
+                            name.toComponent,
+                            from.displayName(),
+                            msg.color(NamedTextColor.WHITE),
+                        )
                         .color(groupColor(name))
                 )
             }
@@ -207,8 +237,8 @@ class ChatActor(using gm: GroupManager, sql: SQLManager, sidebar: SidebarActor)
                 )
             )
         c match
-            case PlayerState.globalChat => update(txt" Global Chat")
-            case PlayerState.localChat => update(txt" Local Chat")
+            case PlayerState.globalChat => update(trans"chat.sidebar.global")
+            case PlayerState.localChat => update(trans"chat.sidebar.local")
             case PlayerState.groupChat(group) =>
                 sql.useFireAndForget(for {
                     audience <- sql.withS(
@@ -216,12 +246,18 @@ class ChatActor(using gm: GroupManager, sql: SQLManager, sidebar: SidebarActor)
                     )
                     _ <- audience match
                         case Left(err) =>
-                            IO { update(txt" Unknown GC") }
+                            IO { update(trans"chat.sidebar.group.unknown") }
                         case Right((name, _)) =>
-                            IO { update(txt" GC: ${name}") }
+                            IO {
+                                update(
+                                    trans"chat.sidebar.group".args(
+                                        name.toComponent
+                                    )
+                                )
+                            }
                 } yield ())
             case PlayerState.chattingWith(target) =>
-                update(txt" DMs: ${target.displayName()}")
+                update(trans"chat.sidebar.dms".args(target.displayName))
 
     def handle(m: ChatMessage): Unit =
         m match
@@ -250,38 +286,40 @@ class ChatActor(using gm: GroupManager, sql: SQLManager, sidebar: SidebarActor)
             case ChatMessage.joined(p) =>
                 Bukkit.getServer
                     .sendMessage(
-                        txt"${p.displayName()} has joined the game"
+                        trans"chat.notification.join"
+                            .args(p.displayName())
                             .color(NamedTextColor.YELLOW)
                     )
                 updateChannel(p, states(p))
             case ChatMessage.left(p) =>
                 Bukkit.getServer
                     .sendMessage(
-                        txt"${p.displayName()} has left the game"
+                        trans"chat.notification.leave"
+                            .args(p.displayName())
                             .color(NamedTextColor.YELLOW)
                     )
             case ChatMessage.chattingInGroup(p, group) =>
                 states += p -> PlayerState.groupChat(group)
                 p.sendMessage(
-                    txt"You are now chatting in a group".color(
-                        NamedTextColor.GREEN
-                    )
+                    trans"chat.notification.switch.group"
+                        .args(p.displayName())
+                        .color(NamedTextColor.GREEN)
                 )
                 updateChannel(p, states(p))
             case ChatMessage.chattingInGlobal(p) =>
                 states += p -> PlayerState.globalChat
                 p.sendMessage(
-                    txt"You are now chatting in global chat".color(
-                        NamedTextColor.GREEN
-                    )
+                    trans"chat.notification.switch.global"
+                        .args(p.displayName())
+                        .color(NamedTextColor.GREEN)
                 )
                 updateChannel(p, states(p))
             case ChatMessage.chattingInLocal(p) =>
                 states += p -> PlayerState.localChat
                 p.sendMessage(
-                    txt"You are now chatting in local chat".color(
-                        NamedTextColor.GREEN
-                    )
+                    trans"chat.notification.switch.local"
+                        .args(p.displayName())
+                        .color(NamedTextColor.GREEN)
                 )
                 updateChannel(p, states(p))
             case ChatMessage.sendToPlayer(from, m, target) =>
@@ -296,16 +334,16 @@ class ChatActor(using gm: GroupManager, sql: SQLManager, sidebar: SidebarActor)
                 playerReplies.get(from) match
                     case None =>
                         from.sendServerMessage(
-                            txt"You have nobody to reply to."
+                            trans"chat.notification.no-reply"
+                                .color(NamedTextColor.GREEN)
                         )
                     case Some(target) =>
                         dm(from, target, m, false)
             case ChatMessage.chattingWithPlayer(from, target) =>
                 states += from -> PlayerState.chattingWith(target)
                 from.sendMessage(
-                    txt"You are now chatting with ${target.displayName()}"
-                        .color(
-                            NamedTextColor.GREEN
-                        )
+                    trans"chat.notification.switch.dm"
+                        .args(target.displayName())
+                        .color(NamedTextColor.GREEN)
                 )
                 updateChannel(from, states(from))

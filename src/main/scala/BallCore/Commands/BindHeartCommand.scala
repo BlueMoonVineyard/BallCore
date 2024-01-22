@@ -37,19 +37,19 @@ class BindHeartCommand(using
                                 result match
                                     case None =>
                                         sender.sendServerMessage(
-                                            txt"You don't have a Civilization Beacon to bind ${group.name} to!"
+                                            trans"commands.bind-heart.no-civ-beacon".args(group.name.toComponent)
                                         )
                                     case Some(Left(_)) =>
                                         sender.sendServerMessage(
-                                            txt"Failed to bind ${group.name} to your Civilization Beacon!"
+                                            trans"commands.bind-heart.failed".args(group.name.toComponent)
                                         )
                                     case Some(Right(_)) =>
                                         BindCivHeart.grant(sender, "bind")
                                         sender.sendServerMessage(
-                                            txt"Bound ${group.name} to your Civilization Beacon!"
+                                            trans"commands.bind-heart.success".args(group.name.toComponent)
                                         )
                                         sender.sendServerMessage(
-                                            txt"You can now right-click it to set up an area of protection!"
+                                            trans"commands.bind-heart.right-click"
                                         )
                             }
                         } yield ())
