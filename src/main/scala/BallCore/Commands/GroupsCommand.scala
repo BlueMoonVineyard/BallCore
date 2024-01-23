@@ -86,7 +86,7 @@ private def withGroupArgument(using sql: SQLManager, gm: GroupManager)(
             fn(sender, args, group)
         case Right(None) =>
             sender.sendServerMessage(
-                txt"I couldn't find a group matching '$group'"
+                trans"commands.groups.argument-not-found".args(group.toComponent)
             )
 }
 
@@ -140,7 +140,7 @@ class GroupsCommand(using
                                     case _ =>
                                         IO {
                                             sender.sendServerMessage(
-                                                txt"You can't cancel the battle!"
+                                                trans"commands.groups.cancel-battle.error",
                                             )
                                         }
 
@@ -158,15 +158,17 @@ class GroupsCommand(using
                             args.getUnchecked[OfflinePlayer]("player")
                         if target.getName() == null then
                             sender.sendServerMessage(
-                                txt"That player has never joined CivCubed"
+                                trans"commands.groups.invite.never-joined"
                             )
                         sql.useBlocking(
                             sql.withS(sql.withTX(gm.getGroup(group.id).value))
                         ) match
                             case Left(err) =>
                                 sender.sendServerMessage(
-                                    txt"Could not invite ${target
-                                            .getName()} because ${err.explain()}"
+                                    trans"commands.groups.invite.couldnt-invite".args(
+                                        target.getName().toComponent,
+                                        err.explain().toComponent,
+                                    )
                                 )
                             case Right(fullGroup) =>
                                 if fullGroup.check(
@@ -180,7 +182,10 @@ class GroupsCommand(using
                                         )
                                     then
                                         sender.sendServerMessage(
-                                            txt"${target.getName} is already in ${group.name}"
+                                            trans"commands.groups.invite.already-joined".args(
+                                                target.getName().toComponent,
+                                                group.name.toComponent,
+                                            )
                                         )
                                     else
                                         sql.useBlocking(
@@ -193,11 +198,16 @@ class GroupsCommand(using
                                             )
                                         )
                                         sender.sendServerMessage(
-                                            txt"Invited ${target.getName} to ${group.name}"
+                                            trans"commands.groups.invite.invited".args(
+                                                target.getName.toComponent,
+                                                group.name.toComponent,
+                                            )
                                         )
                                 else
                                     sender.sendServerMessage(
-                                        txt"You do not have the permission to invite people to ${group.name}"
+                                        trans"commands.groups.invite.no-permission".args(
+                                            group.name.toComponent,
+                                        )
                                     )
 
                     })

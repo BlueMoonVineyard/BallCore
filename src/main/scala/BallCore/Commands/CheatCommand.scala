@@ -54,13 +54,13 @@ class CheatCommand(using
                                 ) match
                                     case None =>
                                         sender.sendServerMessage(
-                                            txt"Unknown item"
+                                            trans"commands.cheat.spawn.unknown-item"
                                         )
                                     case Some(item) =>
                                         val is = item.template.clone()
                                         sender.getInventory.addItem(is)
                                         sender.sendServerMessage(
-                                            txt"Gave 1 item"
+                                            trans"commands.cheat.spawn.success"
                                         )
                             }: PlayerCommandExecutor)
                     )
@@ -75,7 +75,7 @@ class CheatCommand(using
                                     .dropItemNaturally(sender.getLocation, is)
                             }
                             sender.sendServerMessage(
-                                txt"Gave 1 item"
+                                trans"commands.cheat.spawn.success"
                             )
                         }
                     }: PlayerCommandExecutor)
@@ -86,7 +86,9 @@ class CheatCommand(using
                         sql.useFireAndForget(for
                             _ <- sql.withS(sql.withTX(drainer.drainEssence))
                             _ <- IO {
-                                sender.sendServerMessage(txt"Drained essence!")
+                                sender.sendServerMessage(
+                                    trans"commands.cheat.eat-noodle-essence"
+                                )
                             }
                         yield ())
                     }: PlayerCommandExecutor)
@@ -132,7 +134,7 @@ class CheatCommand(using
                                 do
                                     pbm.send(PlantMsg.tickPlants)
                                     sender.sendServerMessage(
-                                        txt"An hour of ingame time has passed"
+                                        trans"commands.cheat.tick-plants"
                                     )
                             }: PlayerCommandExecutor)
                     )
@@ -142,7 +144,7 @@ class CheatCommand(using
                     .executesPlayer({ (sender, args) =>
                         aa.send(AcclimationMessage.tick)
                         sender.sendServerMessage(
-                            txt"Six hours of ingame time have passed"
+                            trans"commands.cheat.tick-acclimation"
                         )
                     }: PlayerCommandExecutor)
             )
@@ -160,9 +162,20 @@ class CheatCommand(using
                             } yield (elevation, latitude, longitude, temperature)))
                         import Information.*
                         sender.sendServerMessage(
-                            txt"Your current elevation: ${elevation(plr.getLocation().getY.toInt).toComponent
-                                    .style(NamedTextColor.GOLD, TextDecoration.BOLD)} | Your adapted elevation: ${aElevation.toComponent
-                                    .style(NamedTextColor.GOLD, TextDecoration.BOLD)}"
+                            trans"commands.cheat.my-acclimation.elevation".args(
+                                elevation(
+                                    plr.getLocation().getY.toInt
+                                ).toComponent
+                                    .style(
+                                        NamedTextColor.GOLD,
+                                        TextDecoration.BOLD,
+                                    ),
+                                aElevation.toComponent
+                                    .style(
+                                        NamedTextColor.GOLD,
+                                        TextDecoration.BOLD,
+                                    ),
+                            )
                         )
                         val (lat, long) =
                             latLong(
@@ -170,14 +183,32 @@ class CheatCommand(using
                                 plr.getLocation().getZ,
                             )
                         sender.sendServerMessage(
-                            txt"Your current latitude: ${lat.toComponent
-                                    .style(NamedTextColor.GOLD, TextDecoration.BOLD)} | Your adapted latitude: ${aLatitude.toComponent
-                                    .style(NamedTextColor.GOLD, TextDecoration.BOLD)}"
+                            trans"commands.cheat.my-acclimation.latitude".args(
+                                lat.toComponent
+                                    .style(
+                                        NamedTextColor.GOLD,
+                                        TextDecoration.BOLD,
+                                    ),
+                                aLatitude.toComponent
+                                    .style(
+                                        NamedTextColor.GOLD,
+                                        TextDecoration.BOLD,
+                                    ),
+                            )
                         )
                         sender.sendServerMessage(
-                            txt"Your current longitude: ${lat.toComponent
-                                    .style(NamedTextColor.GOLD, TextDecoration.BOLD)} | Your adapted longitude: ${aLatitude.toComponent
-                                    .style(NamedTextColor.GOLD, TextDecoration.BOLD)}"
+                            trans"commands.cheat.my-acclimation.longitude".args(
+                                long.toComponent
+                                    .style(
+                                        NamedTextColor.GOLD,
+                                        TextDecoration.BOLD,
+                                    ),
+                                aLongitude.toComponent
+                                    .style(
+                                        NamedTextColor.GOLD,
+                                        TextDecoration.BOLD,
+                                    ),
+                            )
                         )
                         val temp = temperature(
                             plr.getLocation().getX.toInt,
@@ -185,9 +216,19 @@ class CheatCommand(using
                             plr.getLocation().getZ.toInt,
                         )
                         sender.sendServerMessage(
-                            txt"Your current temperature: ${temp.toComponent
-                                    .style(NamedTextColor.GOLD, TextDecoration.BOLD)} | Your adapted temperature: ${aTemperature.toComponent
-                                    .style(NamedTextColor.GOLD, TextDecoration.BOLD)}"
+                            trans"commands.cheat.my-acclimation.temperature"
+                                .args(
+                                    temp.toComponent
+                                        .style(
+                                            NamedTextColor.GOLD,
+                                            TextDecoration.BOLD,
+                                        ),
+                                    aTemperature.toComponent
+                                        .style(
+                                            NamedTextColor.GOLD,
+                                            TextDecoration.BOLD,
+                                        ),
+                                )
                         )
 
                         val dlat = Information.similarityNeg(lat, aLatitude)
@@ -196,8 +237,11 @@ class CheatCommand(using
                         // multiplier of the bonus on top of baseline rate
                         val bonusRateMultiplier = (dlat + dlong) / 2.0
                         sender.sendServerMessage(
-                            txt"Your bonus rate multiplier for mining: ${bonusRateMultiplier.toComponent
-                                    .style(NamedTextColor.GOLD)}"
+                            trans"commands.cheat.my-acclimation.bonus-rate"
+                                .args(
+                                    bonusRateMultiplier.toComponent
+                                        .style(NamedTextColor.GOLD)
+                                )
                         )
                     }: PlayerCommandExecutor)
             )
