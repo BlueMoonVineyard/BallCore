@@ -8,19 +8,31 @@ import java.util.concurrent.TimeUnit
 
 class InformationGiver():
     private val informations = List(
-        txt"[CivCubed] Consider helping us keep the lights on by donating to https://opencollective.com/civcubed!",
-        txt"[CivCubed] ${txt("/vote").color(Colors.teal)} to get some more essence every day!",
-        txt"[CivCubed] Browse the selection of ${txt("/book").color(Colors.teal)} and learn more about the server!",
-        txt"[CivCubed] Rest accumulates when you log off and come back the next day!",
-        txt"[CivCubed] Set up a relay of important events to a Discord webhook with ${txt("/relay")
-                .color(Colors.teal)}!",
-        txt"[CivCubed] See what plants grow in your area with ${txt("/plants")
-                .color(Colors.teal)}!",
-        txt"[CivCubed] Remember to take breaks and drink plenty of water!",
-        txt"[CivCubed] The more time you spend somewhere, the more ores you'll get when you mine!",
-        txt"[CivCubed] Join the Discord at https://discord.civcubed.net!",
-        txt"[CivCubed] Use ${txt("/workstations").color(Colors.teal)} to view the list of workstations!",
-    ).map(_.replaceText(ChatActor.urlReplacer))
+        trans"commands.information.donate".args(
+            ChatActor.linkIt("https://opencollective.com/civcubed"),
+        ),
+        trans"commands.information.vote".args(
+            txt("/vote").color(Colors.teal),
+        ),
+        trans"commands.information.book".args(
+            txt("/book").color(Colors.teal),
+        ),
+        trans"commands.information.rest",
+        trans"commands.information.relay".args(
+            txt("/relay").color(Colors.teal),
+        ),
+        trans"commands.information.plants".args(
+            txt("/plants").color(Colors.teal),
+        ),
+        trans"commands.information.breaks",
+        trans"commands.information.adaptation",
+        trans"commands.information.discord".args(
+            ChatActor.linkIt("https://discord.civcubed.net"),
+        ),
+        trans"commands.information.workstations".args(
+            txt("/workstations").color(Colors.teal),
+        ),
+    ).map(trans"commands.information.skeleton".args(_))
     private var informationCounter = 0
 
     private def sendInformation(): Unit =

@@ -68,6 +68,11 @@ object ChatActor:
                     .color(urlColor)
             )
             .build()
+    def linkIt(s: String): Component =
+        Component.text(s)
+            .clickEvent(ClickEvent.openUrl(s))
+            .decoration(TextDecoration.UNDERLINED, true)
+            .color(urlColor)
 
 class ChatActor(using gm: GroupManager, sql: SQLManager, sidebar: SidebarActor)
     extends Actor[ChatMessage]:
