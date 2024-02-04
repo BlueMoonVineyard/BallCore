@@ -20,13 +20,15 @@ class OneTimeAdaptation(using
         CommandTree("one-time-adaptation")
             .executesPlayer({ (sender, args) =>
                 sender.sendServerMessage(
-                    txt"This command can only be used one time."
+                    trans"commands.one-time-adaptation.can-only-be-used-once"
                 )
                 sender.sendServerMessage(
-                    txt"It will set your adaptation point to your current location, effectively maximising the bonuses you get for mining in this area."
+                    trans"commands.one-time-adaptation.explanation"
                 )
                 sender.sendServerMessage(
-                    txt"Run ${txt("/one-time-adaptation confirm").color(Colors.teal)} to continue."
+                    trans"commands.one-time-adaptation.prompt-to-continue".args(
+                        txt("/one-time-adaptation confirm").color(Colors.teal)
+                    )
                 )
             }: PlayerCommandExecutor)
             .`then`(
@@ -43,7 +45,7 @@ class OneTimeAdaptation(using
                                 case Some(x) if x =>
                                     IO {
                                         sender.sendServerMessage(
-                                            txt"You have already used up your one-time adaptation!"
+                                            trans"commands.one-time-adaptation.already-used"
                                         )
                                     }
                                 case _ =>
@@ -72,7 +74,7 @@ class OneTimeAdaptation(using
                                         )
                                         _ <- IO {
                                             sender.sendServerMessage(
-                                                txt"You have successfully used your one-time adaptation!"
+                                                trans"commands.one-time-adaptation.successfully-used"
                                             )
                                         }
                                     } yield ()

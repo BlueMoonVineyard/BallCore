@@ -18,7 +18,7 @@ class VoteCommand:
     val tree = CommandTree("vote")
         .executesPlayer({ (sender, args) =>
             sender.sendServerMessage(
-                txt"Vote daily on the following servers to receive bonus essence!"
+                trans"commands.vote.header"
             )
             sender.sendServerMessage(
                 url("https://minecraft-server-list.com/server/499283/vote/")

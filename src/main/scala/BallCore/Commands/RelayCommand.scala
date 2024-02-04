@@ -43,13 +43,13 @@ class RelayCommand(using
                                 case Left(err) =>
                                     IO {
                                         sender.sendServerMessage(
-                                            txt"Webhook not added because ${err}"
+                                            trans"commands.relay.webhook-add-error".args(err.explain)
                                         )
                                     }
                                 case Right(_) =>
                                     IO {
                                         sender.sendServerMessage(
-                                            txt"Webhook added!"
+                                            trans"commands.relay.webhook-added"
                                         )
                                     }
                         } yield ())
@@ -106,13 +106,13 @@ class RelayCommand(using
                                 case Left(err) =>
                                     IO {
                                         sender.sendServerMessage(
-                                            txt"Webhook not removed because ${err}"
+                                            trans"commands.relay.webhook-remove-error".args(err.explain)
                                         )
                                     }
                                 case Right(_) =>
                                     IO {
                                         sender.sendServerMessage(
-                                            txt"Webhook removed!"
+                                            trans"commands.relay.webhook-removed"
                                         )
                                     }
                         } yield ())

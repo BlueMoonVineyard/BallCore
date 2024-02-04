@@ -60,7 +60,7 @@ class StationCommand(using
                         ) match
                             case None =>
                                 sender.sendServerMessage(
-                                    txt"I couldn't find a workstation with that name!"
+                                    trans"commands.station.workstation-not-found"
                                 )
                             case Some(station) =>
                                 val p = RecipeViewerProgram(

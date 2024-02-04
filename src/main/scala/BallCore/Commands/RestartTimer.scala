@@ -23,11 +23,11 @@ class RestartTimer():
             if time <= 0 then
                 bossBar.progress(1.0f)
                 bossBar.color(BossBar.Color.RED)
-                val _ = bossBar.name(txt"Restarting...")
+                val _ = bossBar.name(trans"commands.restart-timer.restarting")
             else
                 bossBar.progress(time.toFloat / duration.toFloat)
                 val _ = bossBar.name(
-                    txt"Restart Timer: You will be sent to the hub in ${time} seconds"
+                    trans"commands.restart-timer.timer-indicator".args(time.toComponent)
                 )
 
     private val node =
@@ -49,7 +49,7 @@ class RestartTimer():
                                         bossBar.removeViewer(Bukkit.getServer())
 
                                 bossBar = BossBar.bossBar(
-                                    txt"Restart Timer: You will be sent to the hub in ${time} seconds",
+                                    trans"commands.restart-timer.timer-indicator".args(time.toComponent),
                                     1.0f,
                                     BossBar.Color.GREEN,
                                     BossBar.Overlay.PROGRESS,

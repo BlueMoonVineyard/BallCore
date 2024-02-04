@@ -78,7 +78,7 @@ class OTTCommand(using sql: SQLManager, ott: OneTimeTeleporter):
                                                 )
                                             case Right(_) =>
                                                 sender.sendServerMessage(
-                                                    txt"Teleport request accepted."
+                                                    trans"commands.one-time-teleport.accepted"
                                                 )
                                     }
                                 } yield ())

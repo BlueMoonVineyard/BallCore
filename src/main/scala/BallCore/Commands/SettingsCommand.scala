@@ -35,13 +35,18 @@ class SettingsCommand(using sql: SQLManager, kv: KeyVal):
                                 zid.getDisplayName(TextStyle.FULL, Locale.US)
                             val now = formatter.format(ZonedDateTime.now(zid))
                             sender.sendServerMessage(
-                                txt"Your current time zone is ${id} (${name}). The current time is ${now}."
+                                trans"commands.settings.timezone.current-sample"
+                                    .args(
+                                        id.toComponent,
+                                        name.toComponent,
+                                        now.toComponent,
+                                    )
                             )
                         }
                     case None =>
                         IO {
                             sender.sendServerMessage(
-                                txt"You have no time zone set currently."
+                                trans"commands.settings.timezone.no-current-timezone"
                             )
                         }
             } yield ()))
@@ -66,7 +71,12 @@ class SettingsCommand(using sql: SQLManager, kv: KeyVal):
                         _ <- kv.set(sender.getUniqueId, "time-zone", tz)
                         _ <- IO {
                             sender.sendServerMessage(
-                                txt"Your time zone has been set to ${id} (${name}). The current time is ${now}."
+                                trans"commands.settings.timezone.new-timezone"
+                                    .args(
+                                        id.toComponent,
+                                        name.toComponent,
+                                        now.toComponent,
+                                    )
                             )
                         }
                     } yield ()))
