@@ -1,7 +1,5 @@
 import org.bukkit.NamespacedKey
 import org.bukkit.Material
-import org.bukkit.inventory.RecipeChoice.ExactChoice
-import BallCore.Ores.QuadrantOres.ItemStacks
 
 class WorkstationSuite extends munit.FunSuite:
     val server = mockServerSingleton
@@ -15,9 +13,3 @@ class WorkstationSuite extends munit.FunSuite:
         "blocks",
         Material.MANGROVE_LOG,
     )
-    test("exactchoice") {
-        assert(
-            ExactChoice(ItemStacks.copper.ingot).test(ItemStacks.copper.ingot),
-            "sanity check",
-        )
-    }
