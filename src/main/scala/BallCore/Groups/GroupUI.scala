@@ -185,11 +185,16 @@ class GroupManagementProgram(using
 
     override def view(model: Model): Callback ?=> Gui =
         val group = model.group
-        Root(txt"Viewing ${group.metadata.name}", 6) {
+        Root(
+            trans"ui.groups.viewing.title".args(
+                group.metadata.name.toComponent
+            ),
+            6,
+        ) {
             VerticalPane(0, 0, 2, 6) {
                 Button(
                     Material.PLAYER_HEAD,
-                    txt"Members".style(NamedTextColor.GREEN),
+                    trans"ui.groups.members".style(NamedTextColor.GREEN),
                     Message.View(ViewingWhat.Players),
                     highlighted = model.viewing == ViewingWhat.Players,
                 )()
@@ -197,7 +202,9 @@ class GroupManagementProgram(using
                 then
                     Button(
                         Material.WRITABLE_BOOK,
-                        txt"Manage Roles".style(NamedTextColor.GREEN),
+                        trans"ui.groups.manage-roles".style(
+                            NamedTextColor.GREEN
+                        ),
                         Message.View(ViewingWhat.Roles),
                         highlighted = model.viewing == ViewingWhat.Roles,
                     )()
@@ -209,26 +216,28 @@ class GroupManagementProgram(using
                 then
                     Button(
                         Material.RED_BED,
-                        txt"Manage Subgroups".style(NamedTextColor.GREEN),
+                        trans"ui.groups.manage-subgroups".style(
+                            NamedTextColor.GREEN
+                        ),
                         Message.View(ViewingWhat.Subgroups),
                         highlighted = model.viewing == ViewingWhat.Subgroups,
                     )()
                 if !group.owners.contains(model.userID) then
                     Button(
                         Material.MINECART,
-                        txt"Leave Group".style(NamedTextColor.GREEN),
+                        trans"ui.groups.leave".style(NamedTextColor.GREEN),
                         Message.LeaveGroup,
                     )()
                 else if group.owners.length == 1 then
                     Button(
                         Material.LAVA_BUCKET,
-                        txt"Delete Group".style(NamedTextColor.GREEN),
+                        trans"ui.groups.delete".style(NamedTextColor.GREEN),
                         Message.DeleteGroup,
                     )()
                 if model.canBindToHeart then
                     Button(
                         Material.WHITE_CONCRETE,
-                        txt"Bind to Beacon".style(NamedTextColor.GREEN),
+                        trans"ui.groups.bind".style(NamedTextColor.GREEN),
                         Message.BindToHeart,
                     )()
                 if group.check(
@@ -239,11 +248,11 @@ class GroupManagementProgram(using
                 then
                     Button(
                         Material.RAIL,
-                        txt"Edit Arterial Claims".style(NamedTextColor.GREEN),
+                        trans"ui.groups.arterial".style(NamedTextColor.GREEN),
                         Message.EditArterialClaims,
                     ) {
                         Lore(
-                            txt"Claim strings of land on behalf of this group"
+                            trans"ui.groups.arterial.subtitle"
                                 .color(NamedTextColor.GRAY)
                         )
                     }
@@ -255,25 +264,30 @@ class GroupManagementProgram(using
                 then
                     Button(
                         Material.CLOCK,
-                        txt"Vulnerability Window".style(NamedTextColor.GREEN),
+                        trans"ui.groups.vulnerability-window".style(
+                            NamedTextColor.GREEN
+                        ),
                         Message.UpdateVulnerabilityWindow,
                     ) {
                         model.primeTime match
                             case None =>
                                 Lore(
-                                    txt"The vulnerability window is not set yet."
+                                    trans"ui.groups.vulnerability-window.unset"
                                         .color(NamedTextColor.WHITE)
                                 )
                                 model.userZone match
                                     case None =>
                                         Lore(
-                                            txt"You need to set a personal timezone with ${txt("/settings timezone <time-zone>")
-                                                    .color(Colors.teal)} in order to set the vulnerability window."
+                                            trans"ui.groups.vulnerability-window.timezone-required"
+                                                .args(
+                                                    trans"sample-commands.timezone"
+                                                        .color(Colors.teal)
+                                                )
                                                 .color(NamedTextColor.WHITE)
                                         )
                                     case Some(value) =>
                                         Lore(
-                                            txt"Right click to set the vulnerability window."
+                                            trans"ui.groups.vulnerability-window.set-lore"
                                                 .color(NamedTextColor.WHITE)
                                         )
                             case Some(time) =>
@@ -288,26 +302,29 @@ class GroupManagementProgram(using
                                         )
                                         val end =
                                             start.plus(primeTime.windowSize)
-                                        val startS = formatter.format(start)
-                                        val endS = formatter.format(end)
+                                        val startS =
+                                            formatter.format(start).toComponent
+                                        val endS =
+                                            formatter.format(end).toComponent
                                         Lore(
-                                            txt"The vulnerability window is from ${startS} to ${endS}."
+                                            trans"ui.groups.vulnerability-window.span"
+                                                .args(startS, endS)
                                                 .color(NamedTextColor.WHITE)
                                         )
                                         Lore(
-                                            txt"Right click to change the vulnerability window."
+                                            trans"ui.groups.vulnerability-window.set-lore"
                                                 .color(NamedTextColor.WHITE)
                                         )
                                         Lore(
-                                            txt"Warning: if you change the vulnerability window,"
+                                            trans"ui.groups.vulnerability-window.set.warning-line-one"
                                                 .color(NamedTextColor.WHITE)
                                         )
                                         Lore(
-                                            txt"the new one and the old one will coexist for today and tomorrow."
+                                            trans"ui.groups.vulnerability-window.set.warning-line-two"
                                                 .color(NamedTextColor.WHITE)
                                         )
                                         Lore(
-                                            txt"You will not be able to change it until the end of the old time tomorrow."
+                                            trans"ui.groups.vulnerability-window.set.warning-line-three"
                                                 .color(NamedTextColor.WHITE)
                                         )
                                     case None =>
@@ -316,15 +333,21 @@ class GroupManagementProgram(using
                                         )
                                         val end =
                                             start.plus(primeTime.windowSize)
-                                        val startS = formatter.format(start)
-                                        val endS = formatter.format(end)
+                                        val startS =
+                                            formatter.format(start).toComponent
+                                        val endS =
+                                            formatter.format(end).toComponent
                                         Lore(
-                                            txt"The vulnerability window is from ${startS} to ${endS}."
+                                            trans"ui.groups.vulnerability-window.span"
+                                                .args(startS, endS)
                                                 .color(NamedTextColor.WHITE)
                                         )
                                         Lore(
-                                            txt"You need to set a personal timezone with ${txt("/settings timezone <time-zone>")
-                                                    .color(Colors.teal)} in order to set the vulnerability window."
+                                            trans"ui.groups.vulnerability-window.timezone-required"
+                                                .args(
+                                                    trans"sample-commands.timezone"
+                                                        .color(Colors.teal)
+                                                )
                                                 .color(NamedTextColor.WHITE)
                                         )
                     }
@@ -341,12 +364,12 @@ class GroupManagementProgram(using
             group.subgroups.foreach { subgroup =>
                 Button(
                     randomBedFor(subgroup.name),
-                    txt"${subgroup.name}".style(NamedTextColor.WHITE),
+                    subgroup.name.toComponent.style(NamedTextColor.WHITE),
                     Message.ClickSubgroup(subgroup.id),
                 ) {
                     Lore(txt"")
                     Lore(
-                        txt"Click to edit this subgroup".color(
+                        trans"ui.groups.subgroup.edit".color(
                             NamedTextColor.GRAY
                         )
                     )
@@ -356,7 +379,7 @@ class GroupManagementProgram(using
         OutlinePane(2, 5, 7, 1) {
             Button(
                 Material.WRITABLE_BOOK,
-                txt"Create Subgroup".style(NamedTextColor.GREEN),
+                trans"ui.groups.subgroup.create".style(NamedTextColor.GREEN),
                 Message.CreateSubgroup,
             )()
         }
@@ -370,13 +393,13 @@ class GroupManagementProgram(using
                 .foreach { x =>
                     Button(
                         Material.PLAYER_HEAD,
-                        txt"${x.getName}",
+                        x.getName.toComponent,
                         Message.KickPlayer(x),
                     ) {
                         Skull(x)
                         if group.owners.contains(x.getUniqueId) then
                             Lore(
-                                txt"Owner".style(
+                                trans"ui.groups.owner-status".style(
                                     NamedTextColor.GREEN,
                                     TextDecoration.BOLD,
                                 )
@@ -389,7 +412,7 @@ class GroupManagementProgram(using
                         if roles.nonEmpty then
                             Lore(txt"")
                             Lore(
-                                txt"Roles"
+                                trans"ui.groups.roles"
                                     .style(
                                         NamedTextColor.WHITE,
                                         TextDecoration.UNDERLINED,
@@ -407,7 +430,7 @@ class GroupManagementProgram(using
                             )
                         then
                             Lore(
-                                txt"Click to remove from the group"
+                                trans"ui.groups.remove-user"
                                     .color(NamedTextColor.RED)
                             )
                     }
@@ -418,7 +441,7 @@ class GroupManagementProgram(using
             then
                 Button(
                     Material.COMPASS,
-                    txt"Invite A Member".style(NamedTextColor.GREEN),
+                    trans"ui.groups.invite-member".style(NamedTextColor.GREEN),
                     Message.InviteMember,
                 )()
         }
@@ -435,7 +458,7 @@ class GroupManagementProgram(using
                     if x.permissions.nonEmpty then
                         Lore(txt"")
                         Lore(
-                            txt"Permissions"
+                            trans"ui.group.permissions"
                                 .style(
                                     NamedTextColor.WHITE,
                                     TextDecoration.UNDERLINED,
@@ -462,7 +485,7 @@ class GroupManagementProgram(using
             then
                 Button(
                     Material.WRITABLE_BOOK,
-                    txt"Create Role",
+                    trans"ui.groups.roles.create",
                     Message.CreateRole,
                 )()
         }
@@ -586,13 +609,19 @@ class GroupManagementProgram(using
                     }
             case Message.DeleteGroup =>
                 val p = ConfirmationPrompt(
-                    txt"Delete ${model.group.metadata.name}?",
-                    txt"Delete ${model.group.metadata.name}",
-                    txt"Don't Delete ${model.group.metadata.name}",
+                    trans"ui.groups.delete.confirmation.title".args(
+                        model.group.metadata.name.toComponent
+                    ),
+                    trans"ui.groups.delete.confirmation.yes".args(
+                        model.group.metadata.name.toComponent
+                    ),
+                    trans"ui.groups.delete.confirmation.no".args(
+                        model.group.metadata.name.toComponent
+                    ),
                     Item(
                         Material.LEATHER_CHESTPLATE,
                         displayName = Some(
-                            txt"${model.group.metadata.name}"
+                            model.group.metadata.name.toComponent
                                 .color(NamedTextColor.GREEN)
                         ),
                     )(), {
@@ -630,13 +659,19 @@ class GroupManagementProgram(using
                 model
             case Message.LeaveGroup =>
                 val p = ConfirmationPrompt(
-                    txt"Leave ${model.group.metadata.name}?",
-                    txt"Leave ${model.group.metadata.name}",
-                    txt"Don't Leave ${model.group.metadata.name}",
+                    trans"ui.groups.leave.confirmation.title".args(
+                        model.group.metadata.name.toComponent
+                    ),
+                    trans"ui.groups.leave.confirmation.yes".args(
+                        model.group.metadata.name.toComponent
+                    ),
+                    trans"ui.groups.leave.confirmation.no".args(
+                        model.group.metadata.name.toComponent
+                    ),
                     Item(
                         Material.LEATHER_CHESTPLATE,
                         displayName = Some(
-                            txt"${model.group.metadata.name}"
+                            model.group.metadata.name.toComponent
                                 .color(NamedTextColor.GREEN)
                         ),
                     )(), {
@@ -921,36 +956,43 @@ class SubgroupManagementProgram(using
 
     override def view(model: Model): Callback ?=> Gui =
         Root(
-            txt"Viewing Subgroup ${model.subgroup.name} in ${model.group.metadata.name}",
+            trans"ui.groups.subgroup.title".args(
+                model.subgroup.name.toComponent,
+                model.group.metadata.name.toComponent,
+            ),
             6,
         ) {
             OutlinePane(0, 0, 1, 6) {
                 Button(
                     Material.OAK_DOOR,
-                    txt"Go Back".style(NamedTextColor.WHITE),
+                    trans"ui.go-back".style(NamedTextColor.WHITE),
                     Message.GoBack,
                 )()
                 Button(
                     Material.LAVA_BUCKET,
-                    txt"Delete Subgroup".style(NamedTextColor.GREEN),
+                    trans"ui.groups.subgroup.delete".style(
+                        NamedTextColor.GREEN
+                    ),
                     Message.DeleteSubgroup,
                 )()
                 Button(
                     Material.SPYGLASS,
-                    txt"Assign Land".style(NamedTextColor.GREEN),
+                    trans"ui.groups.subgroups.assign-land".style(
+                        NamedTextColor.GREEN
+                    ),
                     Message.EditClaims,
                 ) {
                     Lore(
-                        txt"Assign portions of beacon-covered land to this subgroup"
+                        trans"ui.groups.subgroups.assign-land.lore"
                     )
                 }
                 Button(
                     Material.RAIL,
-                    txt"Edit Arterial Claims".style(NamedTextColor.GREEN),
+                    trans"ui.groups.arterial".style(NamedTextColor.GREEN),
                     Message.EditArterialClaims,
                 ) {
                     Lore(
-                        txt"Claim strings of land on behalf of this subgroup"
+                        trans"ui.groups.arterial.subgroup.subtitle"
                             .color(NamedTextColor.GRAY)
                     )
                 }
@@ -973,7 +1015,7 @@ class SubgroupManagementProgram(using
                         if permissions.nonEmpty then
                             Lore(txt"")
                             Lore(
-                                txt"Permissions Overrides"
+                                trans"ui.groups.subgroups.permissions-overrides"
                                     .style(
                                         NamedTextColor.WHITE,
                                         TextDecoration.UNDERLINED,
@@ -1223,33 +1265,46 @@ class RoleManagementProgram(using
         val group = model.group
         val title = model.subgroup match
             case None =>
-                txt"Viewing Role ${role.name} in ${group.metadata.name}"
+                trans"ui.groups.role.title".args(
+                    role.name.toComponent,
+                    group.metadata.name.toComponent,
+                )
             case Some(subgroup) =>
-                txt"Viewing overrides for ${role.name} in ${subgroup.name} of ${group.metadata.name}"
+                trans"ui.groups.role.override.title".args(
+                    role.name.toComponent,
+                    subgroup.name.toComponent,
+                    group.metadata.name.toComponent,
+                )
 
         Root(title, 6) {
             OutlinePane(0, 0, 1, 6) {
                 Button(
                     Material.OAK_DOOR,
-                    txt"Go Back".style(NamedTextColor.WHITE),
+                    trans"ui.go-back".style(NamedTextColor.WHITE),
                     Message.GoBack,
                 )()
                 if model.subgroup.isEmpty && role.id != everyoneUUID && role.id != groupMemberUUID
                 then
                     Button(
                         Material.LAVA_BUCKET,
-                        txt"Delete Role".style(NamedTextColor.GREEN),
+                        trans"ui.groups.roles.delete".style(
+                            NamedTextColor.GREEN
+                        ),
                         Message.DeleteRole,
                     )()
                 if model.subgroup.isEmpty then
                     Button(
                         Material.GREEN_CONCRETE,
-                        txt"Assign to Member".style(NamedTextColor.WHITE),
+                        trans"ui.groups.roles.assign".style(
+                            NamedTextColor.WHITE
+                        ),
                         Message.AssignToMember,
                     )()
                     Button(
                         Material.RED_CONCRETE_POWDER,
-                        txt"Revoke from Member".style(NamedTextColor.WHITE),
+                        trans"ui.groups.roles.revoke".style(
+                            NamedTextColor.WHITE
+                        ),
                         Message.RevokeFromMember,
                     )()
             }
@@ -1291,36 +1346,39 @@ class RoleManagementProgram(using
                                 permissions.get(x) match
                                     case None =>
                                         Lore(
-                                            txt"This role does not affect this permission"
+                                            trans"ui.groups.roles.permissions.neutral"
                                                 .color(
                                                     NamedTextColor.GRAY
                                                 )
                                         )
                                     case Some(RuleMode.Allow) =>
                                         Lore(
-                                            txt"This role allows this permission unless overridden by a higher role or subgroup permission"
+                                            trans"ui.groups.roles.permissions.allow"
                                                 .color(NamedTextColor.GRAY)
                                         )
                                     case Some(RuleMode.Deny) =>
                                         Lore(
-                                            txt"This role denies this permission unless overridden by a higher role or subgroup permission"
+                                            trans"ui.groups.roles.permissions.deny"
                                                 .color(NamedTextColor.GRAY)
                                         )
                             case Some(subgroup) =>
                                 permissions.get(x) match
                                     case None =>
                                         Lore(
-                                            txt"This role does not affect this permission in ${subgroup.name}"
+                                            trans"ui.groups.roles.permissions.subgroup.neutral"
+                                                .args(subgroup.name.toComponent)
                                                 .color(NamedTextColor.GRAY)
                                         )
                                     case Some(RuleMode.Allow) =>
                                         Lore(
-                                            txt"This role allows this permission in ${subgroup.name} unless overridden by a higher role"
+                                            trans"ui.groups.roles.permissions.subgroup.allow"
+                                                .args(subgroup.name.toComponent)
                                                 .color(NamedTextColor.GRAY)
                                         )
                                     case Some(RuleMode.Deny) =>
                                         Lore(
-                                            txt"This role denies this permission in ${subgroup.name} unless overridden by a higher role"
+                                            trans"ui.groups.roles.permissions.subgroup.deny"
+                                                .args(subgroup.name.toComponent)
                                                 .color(NamedTextColor.GRAY)
                                         )
 
@@ -1432,11 +1490,11 @@ class InvitesListProgram(using
 
     def list(model: Model): Callback ?=> Gui =
         val rows = (model.invites.length / 7).max(1)
-        Root(txt"Invites", rows) {
+        Root(trans"ui.groups.invites.title", rows) {
             OutlinePane(0, 0, 1, rows) {
                 Button(
                     Material.OAK_DOOR,
-                    txt"Go Back".style(NamedTextColor.WHITE),
+                    trans"ui.go-back".style(NamedTextColor.WHITE),
                     Message.GoBack,
                 )()
             }
@@ -1458,13 +1516,16 @@ class InvitesListProgram(using
                     val player = Bukkit.getOfflinePlayer(invite._1)
                     Button(
                         Material.PLAYER_HEAD,
-                        txt"${player.getName}".color(NamedTextColor.WHITE),
+                        player.getName.toComponent.color(NamedTextColor.WHITE),
                         Message.ClickInvite(invite._1, invite._2.metadata.id),
                     ) {
                         Skull(player)
                         Lore(
-                            txt"Invited you to ${txt"${invite._2.metadata.name}"
-                                    .color(NamedTextColor.GREEN)}"
+                            trans"ui.groups.invites.invited-to-group"
+                                .args(
+                                    invite._2.metadata.name.toComponent
+                                        .color(NamedTextColor.GREEN)
+                                )
                                 .color(NamedTextColor.WHITE)
                         )
                     }
@@ -1476,11 +1537,13 @@ class InvitesListProgram(using
         inviter: UserID,
         group: GroupState,
     ): Callback ?=> Gui =
-        Root(txt"Accept / Reject Invite?", 1) {
+        Root(trans"ui.groups.invites.confirmation.title", 1) {
             OutlinePane(0, 0, 1, 1) {
                 Button(
                     Material.RED_DYE,
-                    txt"Reject Invite".color(NamedTextColor.WHITE),
+                    trans"ui.groups.invites.confirmation.deny".color(
+                        NamedTextColor.WHITE
+                    ),
                     Message.DenyInvite(group.metadata.id),
                 )()
             }
@@ -1489,20 +1552,26 @@ class InvitesListProgram(using
                 Item(
                     Material.PLAYER_HEAD,
                     displayName = Some(
-                        txt"§${player.getName}".style(NamedTextColor.WHITE)
+                        player.getName.toComponent.style(NamedTextColor.WHITE)
                     ),
                 ) {
                     Skull(player)
                     Lore(
-                        txt"Invited you to ${txt"${group.metadata.name}".style(NamedTextColor.GREEN)}"
-                            .style(NamedTextColor.WHITE)
+                        trans"ui.groups.invites.invited-to-group"
+                            .args(
+                                group.metadata.name.toComponent
+                                    .color(NamedTextColor.GREEN)
+                            )
+                            .color(NamedTextColor.WHITE)
                     )
                 }
             }
             OutlinePane(8, 0, 1, 1) {
                 Button(
                     Material.LIME_DYE,
-                    txt"Accept Invite".color(NamedTextColor.WHITE),
+                    trans"ui.groups.invites.confirmation.accept".color(
+                        NamedTextColor.WHITE
+                    ),
                     Message.AcceptInvite(group.metadata.id),
                 )()
             }
@@ -1562,16 +1631,16 @@ class GroupListProgram(using
 
     override def view(model: Model): Callback ?=> Gui =
         val groups = model.groups
-        Root(txt"Groups", 6) {
+        Root(trans"ui.groups.title", 6) {
             OutlinePane(0, 0, 1, 6) {
                 Button(
                     Material.NAME_TAG,
-                    txt"Create Group".color(NamedTextColor.GREEN),
+                    trans"ui.groups.create".color(NamedTextColor.GREEN),
                     Message.CreateGroup,
                 )()
                 Button(
                     Material.PAPER,
-                    txt"View Invites".color(NamedTextColor.GREEN),
+                    trans"ui.groups.invites".color(NamedTextColor.GREEN),
                     Message.Invites,
                 )()
             }
@@ -1585,7 +1654,7 @@ class GroupListProgram(using
                 groups.foreach { x =>
                     Button(
                         Material.LEATHER_CHESTPLATE,
-                        txt"${x.name}".color(NamedTextColor.GREEN),
+                        x.name.toComponent.color(NamedTextColor.GREEN),
                         Message.ClickGroup(x.id),
                     )()
                 }
