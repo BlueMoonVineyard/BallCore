@@ -5,7 +5,6 @@
 package BallCore.CraftingStations
 
 import BallCore.CustomItems.{CustomItemStack, ItemGroup}
-import BallCore.Ores.QuadrantOres.ItemStacks.{goldLikes, ironLikes}
 import BallCore.UI.Elements.*
 import BallCore.UI.Prompts
 import org.bukkit.inventory.ItemStack
@@ -16,22 +15,16 @@ import BallCore.Storage.SQLManager
 import BallCore.CustomItems.ItemRegistry
 
 object RailManufactory:
-    private val ironChoice: RecipeIngredient = Custom(
-        ironLikes.map(_.ingot): _*
-    )
-    private val goldChoice: RecipeIngredient = Custom(
-        goldLikes.map(_.ingot): _*
-    )
     val pairs: List[(List[(RecipeIngredient, Int)], Material, (Int, Int))] =
         List(
             (
-                List(ironChoice -> 64, Vanilla(Material.STICK) -> 8),
+                List(Vanilla(Material.IRON_INGOT) -> 64, Vanilla(Material.STICK) -> 8),
                 Material.RAIL,
                 (256, 342),
             ),
             (
                 List(
-                    goldChoice -> 64,
+                    Vanilla(Material.GOLD_INGOT) -> 64,
                     Vanilla(Material.STICK) -> 8,
                     Vanilla(Material.REDSTONE) -> 8,
                 ),
@@ -40,7 +33,7 @@ object RailManufactory:
             ),
             (
                 List(
-                    ironChoice -> 32,
+                    Vanilla(Material.IRON_INGOT) -> 32,
                     Vanilla(Material.STONE_PRESSURE_PLATE) -> 8,
                     Vanilla(Material.REDSTONE) -> 8,
                 ),
@@ -48,7 +41,7 @@ object RailManufactory:
                 (8, 16),
             ),
             (
-                List(ironChoice -> 64),
+                List(Vanilla(Material.IRON_INGOT) -> 64),
                 Material.MINECART,
                 (16, 24),
             ),

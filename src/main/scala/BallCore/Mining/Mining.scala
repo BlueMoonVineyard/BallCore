@@ -6,7 +6,6 @@ package BallCore.Mining
 
 import BallCore.Acclimation
 import BallCore.Acclimation.Information
-import BallCore.Ores.{CardinalOres, QuadrantOres}
 import BallCore.Storage.SQLManager
 import org.bukkit.Material
 import org.bukkit.block.Biome
@@ -22,8 +21,6 @@ import BallCore.Rest.RestManager
 import BallCore.CustomItems.CustomItemStack
 import BallCore.Advancements.BallAdvancement
 import org.bukkit.entity.Player
-import BallCore.Advancements.GetToolBaseOres
-import BallCore.Advancements.GetNonToolBaseOres
 import BallCore.Mining.Mining.advancements
 
 private class AdvancementTracker(
@@ -65,119 +62,9 @@ object Mining:
             ItemStack(Material.REDSTONE),
             WorldLocation.everywhere,
         ),
-    ).concat {
-        // black cardinal ores
-        val ores = List(
-            Cardinal.north -> CardinalOres.ItemStacks.sulfur.raw,
-            Cardinal.south -> CardinalOres.ItemStacks.sillicon.raw,
-            Cardinal.east -> CardinalOres.ItemStacks.cobalt.raw,
-            Cardinal.west -> CardinalOres.ItemStacks.lead.raw,
-        )
-        ores.map((cardinal, ore) =>
-            Drops(
-                0 to 320,
-                1 to 3,
-                0.012,
-                ore,
-                WorldLocation.cardinal(cardinal),
-            )
-        )
-    }.concat {
-        // blue cardinal ores
-        val ores = List(
-            Cardinal.north -> CardinalOres.ItemStacks.sapphire,
-            Cardinal.south -> CardinalOres.ItemStacks.diamond,
-            Cardinal.east -> CardinalOres.ItemStacks.plutonium,
-            Cardinal.west -> CardinalOres.ItemStacks.emerald,
-        )
-        ores.map((cardinal, ore) =>
-            Drops(
-                -64 to 16,
-                1 to 2,
-                0.012,
-                ore,
-                WorldLocation.cardinal(cardinal),
-            )
-        )
-    }.concat {
-        // white quadrant ores
-        val ores = List(
-            Quadrant.southeast -> QuadrantOres.ItemStacks.iron.raw,
-            Quadrant.southwest -> QuadrantOres.ItemStacks.tin.raw,
-            Quadrant.northwest -> QuadrantOres.ItemStacks.aluminum.raw,
-            Quadrant.northeast -> QuadrantOres.ItemStacks.zinc.raw,
-        )
-        ores.map((quadrant, ore) =>
-            Drops(
-                -64 to 320,
-                1 to 2,
-                0.018,
-                ore,
-                WorldLocation.quadrant(quadrant),
-            )
-        )
-    }.concat {
-        // yellow quadrant ores
-        val ores = List(
-            Quadrant.southeast -> QuadrantOres.ItemStacks.gold.raw,
-            Quadrant.southwest -> QuadrantOres.ItemStacks.silver.raw,
-            Quadrant.northwest -> QuadrantOres.ItemStacks.palladium.raw,
-            Quadrant.northeast -> QuadrantOres.ItemStacks.magnesium.raw,
-        )
-        ores.map((quadrant, ore) =>
-            Drops(
-                -64 to 32,
-                1 to 2,
-                0.018,
-                ore,
-                WorldLocation.quadrant(quadrant),
-            )
-        )
-    }.concat {
-        // red quadrant ores
-        val ores = List(
-            Quadrant.southeast -> QuadrantOres.ItemStacks.orichalcum.raw,
-            Quadrant.southwest -> QuadrantOres.ItemStacks.copper.raw,
-            Quadrant.northwest -> QuadrantOres.ItemStacks.hihiirogane.raw,
-            Quadrant.northeast -> QuadrantOres.ItemStacks.meteorite.raw,
-        )
-        ores.map((quadrant, ore) =>
-            Drops(
-                -16 to 112,
-                1 to 5,
-                0.03,
-                ore,
-                WorldLocation.quadrant(quadrant),
-            )
-        )
-    }
+    )
 
-    val advancements = List(
-        AdvancementTracker(
-            QuadrantOres.ItemStacks.redOres,
-            GetToolBaseOres,
-            "red_ore",
-        ),
-        AdvancementTracker(
-            QuadrantOres.ItemStacks.whiteOres,
-            GetToolBaseOres,
-            "white_ore",
-        ),
-        AdvancementTracker(
-            QuadrantOres.ItemStacks.yellowOres,
-            GetToolBaseOres,
-            "yellow_ore",
-        ),
-        AdvancementTracker(
-            CardinalOres.ItemStacks.blackOres,
-            GetNonToolBaseOres,
-            "black_ore",
-        ),
-        AdvancementTracker(
-            CardinalOres.ItemStacks.blueOres,
-            GetNonToolBaseOres,
-            "blue_ore",
-        ),
+    val advancements: List[AdvancementTracker] = List(
     )
 
     def register()(using

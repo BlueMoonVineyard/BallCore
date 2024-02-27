@@ -10,11 +10,10 @@ import BallCore.Chat.ChatActor
 import BallCore.CraftingStations.CraftingStations
 import BallCore.CustomItems.*
 import BallCore.DataStructures.{Clock, ShutdownCallbacks, WallClock}
-import BallCore.Gear.QuadrantGear
+import BallCore.Ores.Furnace
 import BallCore.Groups.GroupManager
 import BallCore.MapCloning.MapCloningListener
 import BallCore.Mining.AntiCheeser
-import BallCore.Ores.{CardinalOres, Furnace, QuadrantOres}
 import BallCore.Plants.PlantBatchManager
 import BallCore.PluginMessaging.Messaging
 import BallCore.PolygonEditor.PolygonEditor
@@ -185,9 +184,6 @@ final class Main extends JavaPlugin:
 
             CompressedCobblestone.register()
             Datekeeping.Datekeeping.startSidebarClock()
-            QuadrantOres.registerItems()
-            QuadrantGear.registerItems()
-            CardinalOres.registerItems()
             Furnace.registerItems()
             CustomItemListener.register()
             given List[CraftingStation] = CraftingStations.register()

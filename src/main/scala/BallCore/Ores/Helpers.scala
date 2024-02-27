@@ -25,23 +25,15 @@ import scala.util.chaining.*
 /// helper class for managing custom model data numbers of the oretier ore types
 enum OreTypes(val num: Int):
     case iron extends OreTypes(10)
-    case tin extends OreTypes(20)
-    case aluminum extends OreTypes(30)
-    case zinc extends OreTypes(40)
-    case sulfur extends OreTypes(220)
-    case sillicon extends OreTypes(60)
-    case cobalt extends OreTypes(70)
-    case lead extends OreTypes(80)
+    case palladium extends OreTypes(20)
+    case mythril extends OreTypes(30)
+    case orichalcum extends OreTypes(40)
+    case adamantite extends OreTypes(50)
+    case marilla extends OreTypes(60)
 
     case copper extends OreTypes(110)
-    case orichalcum extends OreTypes(120)
-    case hihiirogane extends OreTypes(130)
-    case meteorite extends OreTypes(140)
 
     case gold extends OreTypes(210)
-    case silver extends OreTypes(220)
-    case palladium extends OreTypes(230)
-    case magnesium extends OreTypes(240)
 
 enum OreTier:
     case Raw

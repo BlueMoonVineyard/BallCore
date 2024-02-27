@@ -10,10 +10,6 @@ import RecipeIngredient.*
 import scala.List
 import BallCore.Storage.SQLManager
 import BallCore.CustomItems.ItemRegistry
-import BallCore.Ores.QuadrantOres
-import BallCore.Ores.QuadrantOres.ItemStacks.ironLikes
-import BallCore.Ores.QuadrantOres.ItemStacks.copperLikes
-import BallCore.Ores.QuadrantOres.ItemStacks.goldLikes
 
 object RedstoneMaker {
     val recipes: List[Recipe] = List(
@@ -129,9 +125,9 @@ object RedstoneMaker {
             txt"Make Elevators",
             NamespacedKey("ballcore", "make_elevators"),
             List(
-                (Custom(ironLikes.map(_.ingot): _*), 8),
-                (Custom(goldLikes.map(_.ingot): _*), 8),
-                (Custom(copperLikes.map(_.ingot): _*), 16),
+                (Vanilla(Material.IRON_INGOT), 8),
+                (Vanilla(Material.GOLD_INGOT), 8),
+                (Vanilla(Material.COPPER_INGOT), 16),
                 (Vanilla(Material.REDSTONE), 16),
             ),
             List((ItemStack(Material.LODESTONE), 2)),

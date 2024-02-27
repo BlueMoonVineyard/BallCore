@@ -41,8 +41,6 @@ object CraftingStations:
             RedstoneMaker(),
             CarnivoreKitchen(),
             HerbivoreKitchen(),
-            Tier1Alloyer(),
-            Tier2Alloyer(),
             Slimer(),
             Economist(),
             IceBox(),

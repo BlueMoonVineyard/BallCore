@@ -148,34 +148,6 @@ object StationMaker:
             1,
         ),
         Recipe(
-            txt"Make Alloyer",
-            NamespacedKey("ballcore", "make_alloyer"),
-            List(
-                (Vanilla(Material.BLAST_FURNACE), 1),
-                (Vanilla(Material.STONE), 64),
-                (Vanilla(Material.LAVA_BUCKET), 1),
-            ),
-            List(
-                (Tier1Alloyer.template, 1)
-            ),
-            30,
-            1,
-        ),
-        Recipe(
-            txt"Make Smeltery",
-            NamespacedKey("ballcore", "make_smeltery"),
-            List(
-                (Custom(Tier1Alloyer.template), 1),
-                (Vanilla(Material.DEEPSLATE), 64),
-                (Custom(Tier1.all.map(_.stack): _*), 64),
-            ),
-            List(
-                (Tier2Alloyer.template, 1)
-            ),
-            30,
-            2,
-        ),
-        Recipe(
             txt"Make Slimer",
             NamespacedKey("ballcore", "make_slimer"),
             List(

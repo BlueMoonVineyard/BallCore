@@ -25,8 +25,6 @@ import scala.util.chaining.*
 import BallCore.CustomItems.ItemRegistry
 import BallCore.Advancements.BallAdvancement
 import org.bukkit.NamespacedKey
-import BallCore.Advancements.MakeTierTwoAlloy
-import BallCore.Advancements.MakeTierOneAlloy
 import BallCore.Advancements.UseStation
 import cats.effect.IO
 import cats.syntax.all._
@@ -40,17 +38,7 @@ private class AdvancementTracker(
         if matches.contains(recipe.id) then
             val _ = advancement.grant(player, criteria)
 
-private val advancements = List(
-    AdvancementTracker(
-        Tier2Alloyer.recipes.map(_.id).toSet,
-        MakeTierTwoAlloy,
-        "worked_recipe",
-    ),
-    AdvancementTracker(
-        Tier1Alloyer.recipes.map(_.id).toSet,
-        MakeTierOneAlloy,
-        "worked_recipe",
-    ),
+private val advancements: List[AdvancementTracker] = List(
 )
 
 enum CraftingMessage:

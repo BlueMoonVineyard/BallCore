@@ -29,22 +29,9 @@ object GetSeed extends BallAdvancement["seed_dropped"]:
     def key: NamespacedKey =
         NamespacedKey("civcubed", "civcubed/get_seed")
 
-object GetToolBaseOres
-    extends BallAdvancement["red_ore" | "white_ore" | "yellow_ore"]:
-    def key: NamespacedKey =
-        NamespacedKey("civcubed", "civcubed/get_tool_base_ores")
-
 object Groups extends BallAdvancement["joined_group"]:
     def key: NamespacedKey =
         NamespacedKey("civcubed", "civcubed/groups")
-
-object MakeTierOneAlloy extends BallAdvancement["worked_recipe"]:
-    def key: NamespacedKey =
-        NamespacedKey("civcubed", "civcubed/make_tier_one_alloy")
-
-object MakeTierTwoAlloy extends BallAdvancement["worked_recipe"]:
-    def key: NamespacedKey =
-        NamespacedKey("civcubed", "civcubed/make_tier_two_alloy")
 
 object PlaceCivHeart extends BallAdvancement["placed_heart"]:
     def key: NamespacedKey =
