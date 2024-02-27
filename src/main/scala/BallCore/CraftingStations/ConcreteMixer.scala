@@ -101,7 +101,7 @@ object ConcreteMixer:
 
         List(
             Recipe(
-                txt"Mix ${concretePowder.asComponent}",
+                trans"recipes.mix-concrete-powder".args(concretePowder.asComponent),
                 NamespacedKey("ballcore", s"mix_$cpKey"),
                 List(
                     (Vanilla(dye), 4),
@@ -113,7 +113,7 @@ object ConcreteMixer:
                 1,
             ),
             Recipe(
-                txt"Harden ${concrete.asComponent}",
+                trans"recipes.harden-concrete".args(concrete.asComponent),
                 NamespacedKey("ballcore", s"harden_$cKey"),
                 List(
                     (Vanilla(concretePowder), 64)
@@ -127,8 +127,8 @@ object ConcreteMixer:
     val template: CustomItemStack = CustomItemStack.make(
         NamespacedKey("ballcore", "concrete_mixer"),
         Material.DECORATED_POT,
-        txt"Concrete Mixer",
-        txt"Mixes and hardens concrete with greater efficiency",
+        trans"items.concrete-mixer",
+        trans"items.concrete-mixer.lore",
     )
 
 class ConcreteMixer()(using

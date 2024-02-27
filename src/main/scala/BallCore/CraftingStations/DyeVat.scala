@@ -35,7 +35,7 @@ object DyeVat:
     val recipes: List[Recipe] = pairs.map { (dye, wool) =>
         val key = wool.getKey().toString().replace(':', '_')
         Recipe(
-            txt"Dye ${wool.asComponent}",
+            trans"recipes.dye-wool".args(wool.asComponent),
             NamespacedKey("ballcore", s"dye_$key"),
             List(
                 (Vanilla(dye), 4),
@@ -49,8 +49,8 @@ object DyeVat:
     val template: CustomItemStack = CustomItemStack.make(
         NamespacedKey("ballcore", "dye_vat"),
         Material.CAULDRON,
-        txt"Dye Vat",
-        txt"Dyes more wools with less dyes than normal crafting",
+        trans"items.dye-vat",
+        trans"items.dye-vat.lore",
     )
 
 class DyeVat()(using CraftingActor, Plugin, Prompts, SQLManager, ItemRegistry)

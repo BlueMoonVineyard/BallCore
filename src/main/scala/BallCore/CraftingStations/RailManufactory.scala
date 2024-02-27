@@ -52,7 +52,7 @@ object RailManufactory:
             val key = output.getKey().toString().replace(':', '_')
             List(
                 Recipe(
-                    txt"Make ${output.asComponent} (low people & efficiency)",
+                    trans"recipes.rail-factory-make.low-efficiency".args(output.asComponent),
                     NamespacedKey("ballcore", s"make_${key}_low"),
                     ingredients,
                     List((ItemStack(output), lo)),
@@ -60,7 +60,7 @@ object RailManufactory:
                     1,
                 ),
                 Recipe(
-                    txt"Make ${output.asComponent} (high people & efficiency)",
+                    trans"recipes.rail-factory-make.high-efficiency".args(output.asComponent),
                     NamespacedKey("ballcore", s"make_${key}_high"),
                     ingredients,
                     List((ItemStack(output), hi)),
@@ -72,8 +72,8 @@ object RailManufactory:
     val template: CustomItemStack = CustomItemStack.make(
         NamespacedKey("ballcore", "rail_manufactory"),
         Material.PISTON,
-        txt"Rail Manufactory",
-        txt"Crafts metals into rails at bulk rates",
+        trans"items.rail-manufactory",
+        trans"items.rail-manufactory.lore",
     )
 
 class RailManufactory()(using

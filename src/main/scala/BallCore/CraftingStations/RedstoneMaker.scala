@@ -1,7 +1,7 @@
 package BallCore.CraftingStations
 
 import BallCore.CustomItems.{CustomItemStack, ItemGroup}
-import BallCore.TextComponents.txt
+import BallCore.TextComponents.*
 import BallCore.UI.Prompts
 import org.bukkit.inventory.ItemStack
 import org.bukkit.plugin.Plugin
@@ -14,7 +14,7 @@ import BallCore.CustomItems.ItemRegistry
 object RedstoneMaker {
     val recipes: List[Recipe] = List(
         Recipe(
-            txt"Make Observer",
+            trans"recipes.make-observer",
             NamespacedKey("ballcore", "make_observer"),
             List(
                 (Vanilla(Material.REDSTONE), 8),
@@ -28,7 +28,7 @@ object RedstoneMaker {
             1,
         ),
         Recipe(
-            txt"Make Redstone Repeater",
+            trans"recipes.make-repeater",
             NamespacedKey("ballcore", "make_redstone_repeater"),
             List(
                 (Vanilla(Material.STONE), 12),
@@ -40,7 +40,7 @@ object RedstoneMaker {
             1,
         ),
         Recipe(
-            txt"Make Redstone Comparator",
+            trans"recipes.make-comparator",
             NamespacedKey("ballcore", "make_redstone_comparator"),
             List(
                 (Vanilla(Material.REDSTONE_TORCH), 12),
@@ -52,7 +52,7 @@ object RedstoneMaker {
             1,
         ),
         Recipe(
-            txt"Make Piston",
+            trans"recipes.make-piston",
             NamespacedKey("ballcore", "make_piston"),
             List(
                 (TagList(Tag.PLANKS), 12),
@@ -65,7 +65,7 @@ object RedstoneMaker {
             1,
         ),
         Recipe(
-            txt"Make Sticky Piston",
+            trans"recipes.make-sticky-piston",
             NamespacedKey("ballcore", "make_sticky_piston"),
             List(
                 (Vanilla(Material.PISTON), 32),
@@ -76,7 +76,7 @@ object RedstoneMaker {
             1,
         ),
         Recipe(
-            txt"Make Dispenser",
+            trans"recipes.make-dispenser",
             NamespacedKey("ballcore", "make_dispenser"),
             List(
                 (Vanilla(Material.STICK), 12),
@@ -89,7 +89,7 @@ object RedstoneMaker {
             1,
         ),
         Recipe(
-            txt"Make Dropper",
+            trans"recipes.make-dropper",
             NamespacedKey("ballcore", "make_dropper"),
             List(
                 (Vanilla(Material.COBBLESTONE), 28),
@@ -100,7 +100,7 @@ object RedstoneMaker {
             1,
         ),
         Recipe(
-            txt"Make Hopper",
+            trans"recipes.make-hopper",
             NamespacedKey("ballcore", "make_hopper"),
             List(
                 (Vanilla(Material.IRON_INGOT), 20),
@@ -111,7 +111,7 @@ object RedstoneMaker {
             1,
         ),
         Recipe(
-            txt"Make Redstone Lamp",
+            trans"recipes.make-redstone-lamp",
             NamespacedKey("ballcore", "make_redstone_lamp"),
             List(
                 (Vanilla(Material.GLOWSTONE), 4),
@@ -122,7 +122,7 @@ object RedstoneMaker {
             1,
         ),
         Recipe(
-            txt"Make Elevators",
+            trans"recipes.make-elevators",
             NamespacedKey("ballcore", "make_elevators"),
             List(
                 (Vanilla(Material.IRON_INGOT), 8),
@@ -135,7 +135,7 @@ object RedstoneMaker {
             1,
         ),
         Recipe(
-            txt"Make Redstone Torches",
+            trans"recipes.make-redstone-torches",
             NamespacedKey("ballcore", "make_redstone_torches"),
             List(
                 (Vanilla(Material.STICK), 16),
@@ -150,8 +150,8 @@ object RedstoneMaker {
     val template: CustomItemStack = CustomItemStack.make(
         NamespacedKey("ballcore", "redstone_maker"),
         Material.PISTON,
-        txt"Redstone Maker",
-        txt"Crafts redstone related blocks at bulk rates",
+        trans"items.redstone-maker",
+        trans"items.redstone-maker.lore",
     )
 }
 

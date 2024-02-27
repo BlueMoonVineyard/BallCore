@@ -17,7 +17,7 @@ import BallCore.Alloys.Tier1
 object StationMaker:
     val recipes: List[Recipe] = List(
         Recipe(
-            txt"Make Dye Vat",
+            trans"recipes.make-dye-vat",
             NamespacedKey("ballcore", "make_dye_vat"),
             List(
                 (Vanilla(Material.CAULDRON), 1),
@@ -33,7 +33,7 @@ object StationMaker:
             1,
         ),
         Recipe(
-            txt"Make Glazing Kiln",
+            trans"recipes.make-glazing-kiln",
             NamespacedKey("ballcore", "make_glazing_kiln"),
             List(
                 (Vanilla(Material.SMOKER), 1),
@@ -49,7 +49,7 @@ object StationMaker:
             1,
         ),
         Recipe(
-            txt"Make Kiln",
+            trans"recipes.make-kiln",
             NamespacedKey("ballcore", "make_kiln"),
             List(
                 (Vanilla(Material.SMOKER), 1),
@@ -64,7 +64,7 @@ object StationMaker:
             1,
         ),
         Recipe(
-            txt"Make Woodcutter",
+            trans"recipes.make-woodcutter",
             NamespacedKey("ballcore", "make_woodcutter"),
             List(
                 (Vanilla(Material.STONECUTTER), 1),
@@ -78,7 +78,7 @@ object StationMaker:
             1,
         ),
         Recipe(
-            txt"Make Concrete Mixer",
+            trans"recipes.make-concrete-mixer",
             NamespacedKey("ballcore", "make_concrete_mixer"),
             List(
                 (Vanilla(Material.DECORATED_POT), 1),
@@ -92,7 +92,7 @@ object StationMaker:
             1,
         ),
         Recipe(
-            txt"Make Rail Manufactory",
+            trans"recipes.make-rail-manufactory",
             NamespacedKey("ballcore", "make_rail_manufactory"),
             List(
                 (Vanilla(Material.PISTON), 1),
@@ -106,7 +106,7 @@ object StationMaker:
             1,
         ),
         Recipe(
-            txt"Make Redstone Maker",
+            trans"recipes.make-redstone-maker",
             NamespacedKey("ballcore", "make_redstone_maker"),
             List(
                 (Vanilla(Material.PISTON), 1),
@@ -119,7 +119,7 @@ object StationMaker:
             1,
         ),
         Recipe(
-            txt"Make Carnivore Kitchen",
+            trans"recipes.make-carnivore-kitchen",
             NamespacedKey("ballcore", "make_carnivore_kitchen"),
             List(
                 (Vanilla(Material.SMOKER), 1),
@@ -135,7 +135,7 @@ object StationMaker:
             1,
         ),
         Recipe(
-            txt"Make Herbivore Kitchen",
+            trans"recipes.make-herbivore-kitchen",
             NamespacedKey("ballcore", "make_herbivore_kitchen"),
             List(
                 (Vanilla(Material.SMOKER), 1),
@@ -148,7 +148,7 @@ object StationMaker:
             1,
         ),
         Recipe(
-            txt"Make Slimer",
+            trans"recipes.make-slimer",
             NamespacedKey("ballcore", "make_slimer"),
             List(
                 (Vanilla(Material.CRAFTING_TABLE), 1),
@@ -161,7 +161,7 @@ object StationMaker:
             1,
         ),
         Recipe(
-            txt"Make Economist",
+            trans"recipes.make-economist",
             NamespacedKey("ballcore", "make_economist"),
             List(
                 (Vanilla(Material.CARTOGRAPHY_TABLE), 1),
@@ -175,7 +175,7 @@ object StationMaker:
             1,
         ),
         Recipe(
-            txt"Make Ice Box",
+            trans"recipes.make-ice-box",
             NamespacedKey("ballcore", "make_ice_box"),
             List(
                 (Vanilla(Material.CAULDRON), 1),
@@ -190,7 +190,7 @@ object StationMaker:
             1,
         ),
         Recipe(
-            txt"Make Bundle Stuffer",
+            trans"recipes.make-bundle-stuffer",
             NamespacedKey("ballcore", "make_bundle_stuffer"),
             List(
                 (Vanilla(Material.FLETCHING_TABLE), 1),
@@ -207,8 +207,8 @@ object StationMaker:
     val template: CustomItemStack = CustomItemStack.make(
         NamespacedKey("ballcore", "station_maker"),
         Material.CARTOGRAPHY_TABLE,
-        txt"Station Maker",
-        txt"Allows creating improved crafting stations",
+        trans"items.station-maker",
+        trans"items.station-maker.lore",
     )
 
 class StationMaker()(using

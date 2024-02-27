@@ -29,7 +29,7 @@ object CarnivoreKitchen {
     val recipes: List[Recipe] = mushrooms.flatMap { it =>
         List(
             Recipe(
-                txt"Make ${Material.RABBIT_STEW.asComponent}",
+                trans"recipes.make-rabbit-stew".args(Material.RABBIT_STEW.asComponent),
                 NamespacedKey("ballcore", "make_rabbit_stew"),
                 List(
                     (Vanilla(Material.COOKED_RABBIT), 4),
@@ -52,7 +52,7 @@ object CarnivoreKitchen {
 
         List(
             Recipe(
-                txt"Cook ${input.asComponent} (low players & efficiency)",
+                trans"recipes.cook-meat-low-efficiency".args(input.asComponent),
                 NamespacedKey("ballcore", s"cook_${key}_low"),
                 List((Vanilla(input), 32)),
                 List((ItemStack(output), 64)), // 32 * 2
@@ -60,7 +60,7 @@ object CarnivoreKitchen {
                 1,
             ),
             Recipe(
-                txt"Cook ${input.asComponent} (medium players & efficiency)",
+                trans"recipes.cook-meat-medium-efficiency".args(input.asComponent),
                 NamespacedKey("ballcore", s"cook_${key}_medium"),
                 List((Vanilla(input), 32)),
                 List((ItemStack(output), 96)), // 32 * 3
@@ -68,7 +68,7 @@ object CarnivoreKitchen {
                 2,
             ),
             Recipe(
-                txt"Cook ${input.asComponent} (high players & efficiency)",
+                trans"recipes.cook-meat-high-efficiency".args(input.asComponent),
                 NamespacedKey("ballcore", s"cook_${key}_high"),
                 List((Vanilla(input), 32)),
                 List((ItemStack(output), 160)), // 32 * 5
@@ -81,8 +81,8 @@ object CarnivoreKitchen {
     val template: CustomItemStack = CustomItemStack.make(
         NamespacedKey("ballcore", "carnivore_kitchen"),
         Material.SMOKER,
-        txt"Carnivore Kitchen",
-        txt"Cooks meat with greater efficiency",
+        trans"items.carnivore-kitchen",
+        trans"items.carnivore-kitchen.lore",
     )
 }
 

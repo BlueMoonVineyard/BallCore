@@ -16,7 +16,7 @@ import BallCore.CustomItems.ItemRegistry
 object Slimer:
     val recipes = List(
         Recipe(
-            txt"Create Sigil Slime Egg",
+            trans"recipes.create-sigil-slime-egg",
             NamespacedKey("ballcore", "create_sigil_slime_egg"),
             List(
                 (Vanilla(Material.EGG), 1),
@@ -27,7 +27,7 @@ object Slimer:
             2,
         ),
         Recipe(
-            txt"Create Sigils",
+            trans"recipes.create-sigil",
             NamespacedKey("ballcore", "create_sigils"),
             List(
                 (Vanilla(Material.HONEYCOMB), 2),
@@ -43,8 +43,8 @@ object Slimer:
     val template = CustomItemStack.make(
         NamespacedKey("ballcore", "slimer"),
         Material.CRAFTING_TABLE,
-        txt"Slimer",
-        txt"Creates sigils and sigil slimes",
+        trans"items.slimer",
+        trans"items.slimer.lore",
     )
 
 class Slimer()(using CraftingActor, Plugin, Prompts, SQLManager, ItemRegistry)

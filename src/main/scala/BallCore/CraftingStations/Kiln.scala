@@ -23,77 +23,77 @@ object Kiln:
                 Material.COBBLESTONE,
                 Material.STONE,
                 (3, 2),
-                txt"Smelt Stone",
+                trans"recipes.smelt-stone",
                 NamespacedKey("ballcore", "smelt_stone"),
             ),
             (
                 Material.COBBLED_DEEPSLATE,
                 Material.DEEPSLATE,
                 (3, 2),
-                txt"Smelt Deepslate",
+                trans"recipes.smelt-deepslate",
                 NamespacedKey("ballcore", "smelt_deepslate"),
             ),
             (
                 Material.STONE,
                 Material.SMOOTH_STONE,
                 (1, 1),
-                txt"Smelt Smooth Stone",
+                trans"recipes.smelt-smooth-stone",
                 NamespacedKey("ballcore", "smelt_smooth_stone"),
             ),
             (
                 Material.STONE_BRICKS,
                 Material.CRACKED_STONE_BRICKS,
                 (1, 1),
-                txt"Crack Stone Bricks",
+                trans"recipes.crack-stone-bricks",
                 NamespacedKey("ballcore", "crack_stone_bricks"),
             ),
             (
                 Material.DEEPSLATE_BRICKS,
                 Material.DEEPSLATE_BRICKS,
                 (1, 1),
-                txt"Crack Deepslate Bricks",
+                trans"recipes.crack-deepslate-bricks",
                 NamespacedKey("ballcore", "crack_deepslate_bricks"),
             ),
             (
                 Material.CLAY_BALL,
                 Material.BRICK,
                 (2, 1),
-                txt"Fire Bricks",
+                trans"recipes.fire-bricks",
                 NamespacedKey("ballcore", "fire_bricks"),
             ),
             (
                 Material.CLAY,
                 Material.TERRACOTTA,
                 (2, 1),
-                txt"Fire Terracotta",
+                trans"recipes.fire-terracotta",
                 NamespacedKey("ballcore", "fire_terracotta"),
             ),
             (
                 Material.SAND,
                 Material.SANDSTONE,
                 (1, 1),
-                txt"Smelt Sandstone",
+                trans"recipes.smelt-sandstone",
                 NamespacedKey("ballcore", "smelt_sandstone"),
             ),
             (
                 Material.SANDSTONE,
                 Material.SMOOTH_SANDSTONE,
                 (1, 1),
-                txt"Smelt Smooth Sandstone",
+                trans"recipes.smelt-smooth-sandstone",
                 NamespacedKey("ballcore", "smelt_smooth_sandstone"),
             ),
             (
                 Material.RED_SAND,
                 Material.RED_SANDSTONE,
                 (1, 1),
-                txt"Smelt Red Sandstone",
+                trans"recipes.smelt-red-sandstone",
                 NamespacedKey("ballcore", "smelt_red_sandstone"),
             ),
             (
                 Material.RED_SANDSTONE,
                 Material.SMOOTH_RED_SANDSTONE,
                 (1, 1),
-                txt"Smelt Red Smooth Sandstone",
+                trans"recipes.smelt-red-smooth-sandstone",
                 NamespacedKey("ballcore", "smelt_smooth_red_sandstone"),
             ),
         )
@@ -111,7 +111,7 @@ object Kiln:
         }
         .appended {
             Recipe(
-                txt"Smelt Glass",
+                trans"recipes.smelt-glass",
                 NamespacedKey("ballcore", "smelt_glass"),
                 List(
                     (
@@ -131,8 +131,8 @@ object Kiln:
     val template: CustomItemStack = CustomItemStack.make(
         NamespacedKey("ballcore", "kiln"),
         Material.SMOKER,
-        txt"Kiln",
-        txt"Smelts nonmetals more efficiently than normal smelting",
+        trans"items.kiln",
+        trans"items.kiln.lore",
     )
 
 class Kiln()(using CraftingActor, Plugin, Prompts, SQLManager, ItemRegistry)

@@ -284,7 +284,7 @@ class CraftingActor(using p: Plugin, ir: ItemRegistry)
                         )
                     case Some(_) =>
                         p.sendServerMessage(
-                            txt"Someone else is already working a different recipe with this workstation!"
+                            trans"errors.someone-else-using-workstation"
                         )
             case CraftingMessage.stopWorking(p) =>
                 stopWorking(p)

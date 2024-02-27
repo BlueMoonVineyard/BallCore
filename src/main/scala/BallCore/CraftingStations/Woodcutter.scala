@@ -33,7 +33,7 @@ object Woodcutter:
 
         List(
             Recipe(
-                txt"Process logs into planks (low players, low efficiency)",
+                trans"recipes.process-logs.low-efficiency",
                 NamespacedKey("ballcore", s"process_${key}_low"),
                 List((TagList(input), 64)),
                 List((ItemStack(output), 64 * 5)),
@@ -41,7 +41,7 @@ object Woodcutter:
                 1,
             ),
             Recipe(
-                txt"Process logs into planks (medium players & efficiency)",
+                trans"recipes.process-logs.medium-efficiency",
                 NamespacedKey("ballcore", s"process_${key}_medium"),
                 List((TagList(input), 64)),
                 List((ItemStack(output), 64 * 6)),
@@ -49,7 +49,7 @@ object Woodcutter:
                 2,
             ),
             Recipe(
-                txt"Process logs into planks (high players & efficiency)",
+                trans"recipes.process-logs.high-efficiency",
                 NamespacedKey("ballcore", s"process_${key}_high"),
                 List((TagList(input), 64)),
                 List((ItemStack(output), 64 * 8)),
@@ -61,8 +61,8 @@ object Woodcutter:
     val template: CustomItemStack = CustomItemStack.make(
         NamespacedKey("ballcore", "woodcutter"),
         Material.STONECUTTER,
-        txt"Woodcutter",
-        txt"Processes logs with greater efficiency",
+        trans"items.woodcutter",
+        trans"items.woodcutter.lore",
     )
 
 class Woodcutter()(using

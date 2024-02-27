@@ -29,9 +29,9 @@ object BundleStuffer:
     val template = CustomItemStack.make(
         id,
         Material.FLETCHING_TABLE,
-        txt"Bundle Stuffer",
-        txt"Right click to place a bundle on top",
-        txt"Overstuffs a bundle with items from adjacent chests when an attached button is pressed",
+        trans"items.bundle-stuffer.name",
+        trans"items.bundle-stuffer.lore1",
+        trans"items.bundle-stuffer.lore2",
     )
 
     def isBundleStufferBundle(item: Entity): Boolean =

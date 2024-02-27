@@ -55,7 +55,7 @@ object GlazingKiln:
     val recipes: List[Recipe] = dyes.map { (dye, terracotta) =>
         val key = terracotta.getKey().toString().replace(':', '_')
         Recipe(
-            txt"Dye ${terracotta.asComponent}",
+            trans"recipes.dye-terracotta".args(terracotta.asComponent),
             NamespacedKey("ballcore", s"dye_$key"),
             List(
                 (Vanilla(dye), 4),
@@ -68,7 +68,7 @@ object GlazingKiln:
     } concat glazes.map { (dye, glazed) =>
         val key = glazed.getKey().toString().replace(':', '_')
         Recipe(
-            txt"Glaze ${glazed.asComponent}",
+            trans"recipes.glaze-terracotta".args(glazed.asComponent),
             NamespacedKey("ballcore", s"glaze_$key"),
             List(
                 (Vanilla(dye), 4),
@@ -82,8 +82,8 @@ object GlazingKiln:
     val template: CustomItemStack = CustomItemStack.make(
         NamespacedKey("ballcore", "glazing_kiln"),
         Material.SMOKER,
-        txt"Glazing Kiln",
-        txt"Dyes and glazes more terracotta with less dyes than normal crafting",
+        trans"items.glazing-kiln",
+        trans"items.glazing-kiln.lore",
     )
 
 class GlazingKiln()(using

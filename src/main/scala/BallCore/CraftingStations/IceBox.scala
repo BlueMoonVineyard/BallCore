@@ -15,7 +15,7 @@ import org.bukkit.inventory.ItemStack
 object IceBox:
     val recipes = List(
         Recipe(
-            txt"Pack Ice",
+            trans"recipes.pack-ice",
             NamespacedKey("ballcore", "pack_ice"),
             List(
                 (Vanilla(Material.ICE), 512)
@@ -25,7 +25,7 @@ object IceBox:
             1,
         ),
         Recipe(
-            txt"Pack Blue Ice",
+            trans"recipes.pack-blue-ice",
             NamespacedKey("ballcore", "pack_blue_ice"),
             List(
                 (Vanilla(Material.PACKED_ICE), 512)
@@ -35,7 +35,7 @@ object IceBox:
             2,
         ),
         Recipe(
-            txt"Chill Lava",
+            trans"recipes.chill-lava",
             NamespacedKey("ballcore", "chill_lava"),
             List(
                 (Vanilla(Material.BLUE_ICE), 64),
@@ -53,8 +53,8 @@ object IceBox:
     val template = CustomItemStack.make(
         NamespacedKey("ballcore", "icebox"),
         Material.CAULDRON,
-        txt"Ice Box",
-        txt"For working with ice and lava",
+        trans"items.ice-box",
+        trans"items.ice-box.lore",
     )
 
 class IceBox()(using CraftingActor, Plugin, Prompts, SQLManager, ItemRegistry)

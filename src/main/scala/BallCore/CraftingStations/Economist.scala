@@ -16,7 +16,7 @@ import BallCore.CustomItems.ItemRegistry
 object Economist:
     val recipes = List(
         Recipe(
-            txt"Create Shop Chest",
+            trans"recipes.create-shop-chest",
             NamespacedKey("ballcore", "create_shop_chest"),
             List(
                 (Vanilla(Material.CHEST), 1)
@@ -26,7 +26,7 @@ object Economist:
             1,
         ),
         Recipe(
-            txt"Create Sell Order",
+            trans"recipes.create-sell-order",
             NamespacedKey("ballcore", "create_sell_order"),
             List(
                 (Vanilla(Material.PAPER), 1)
@@ -40,8 +40,8 @@ object Economist:
     val template = CustomItemStack.make(
         NamespacedKey("ballcore", "economist"),
         Material.CARTOGRAPHY_TABLE,
-        txt"Economist",
-        txt"Creates shop chests and orders",
+        trans"items.economist",
+        trans"items.economist.lore",
     )
 
 class Economist()(using

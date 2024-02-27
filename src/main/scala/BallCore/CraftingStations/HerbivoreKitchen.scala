@@ -60,7 +60,7 @@ object HerbivoreKitchen {
 
         List(
             Recipe(
-                txt"Make ${first.asComponent} (low players & efficiency)",
+                trans"recipes.make-herbivore-recipe.low-efficiency".args(first.asComponent),
                 NamespacedKey("ballcore", s"make_$key"),
                 recipe,
                 output.map { (material, count) =>
@@ -70,7 +70,7 @@ object HerbivoreKitchen {
                 1,
             ),
             Recipe(
-                txt"Make ${first.asComponent} (medium players & efficiency)",
+                trans"recipes.make-herbivore-recipe.medium-efficiency".args(first.asComponent),
                 NamespacedKey("ballcore", s"make_$key"),
                 recipe,
                 output.map { (material, count) =>
@@ -80,7 +80,7 @@ object HerbivoreKitchen {
                 2,
             ),
             Recipe(
-                txt"Make ${first.asComponent} (high players & efficiency)",
+                trans"recipes.make-herbivore-recipe.high-efficiency".args(first.asComponent),
                 NamespacedKey("ballcore", s"make_$key"),
                 recipe,
                 output.map { (material, count) =>
@@ -95,8 +95,8 @@ object HerbivoreKitchen {
     val template: CustomItemStack = CustomItemStack.make(
         NamespacedKey("ballcore", "herbivore_kitchen"),
         Material.SMOKER,
-        txt"Herbivore Kitchen",
-        txt"Makes non-meat foods with greater efficiency",
+        trans"items.herbivore-kitchen",
+        trans"items.herbivore-kitchen.lore",
     )
 }
 
