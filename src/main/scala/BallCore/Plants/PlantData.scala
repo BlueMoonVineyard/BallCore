@@ -24,17 +24,17 @@ object Fruit:
         .make(
             NamespacedKey("ballcore", "apricot"),
             Material.APPLE,
-            txt"Apricot",
+            trans"items.apricot",
         )
         .tap(is => is.setItemMeta(is.getItemMeta.tap(_.setCustomModelData(1))))
     val peach: CustomItemStack = CustomItemStack
-        .make(NamespacedKey("ballcore", "peach"), Material.APPLE, txt"Peach")
+        .make(NamespacedKey("ballcore", "peach"), Material.APPLE, trans"items.peach")
         .tap(is => is.setItemMeta(is.getItemMeta.tap(_.setCustomModelData(2))))
     val pear: CustomItemStack = CustomItemStack
-        .make(NamespacedKey("ballcore", "pear"), Material.APPLE, txt"Pear")
+        .make(NamespacedKey("ballcore", "pear"), Material.APPLE, trans"items.pear")
         .tap(is => is.setItemMeta(is.getItemMeta.tap(_.setCustomModelData(3))))
     val plum: CustomItemStack = CustomItemStack
-        .make(NamespacedKey("ballcore", "plum"), Material.APPLE, txt"Plum")
+        .make(NamespacedKey("ballcore", "plum"), Material.APPLE, trans"items.plum")
         .tap(is => is.setItemMeta(is.getItemMeta.tap(_.setCustomModelData(4))))
 
 class Fruit(val what: CustomItemStack) extends CustomItem:
@@ -48,12 +48,12 @@ enum Climate:
     case coldArid
     case coldHumid
 
-    def display: String =
+    def display: Component =
         this match
-            case Climate.warmArid => "warm, arid"
-            case Climate.warmHumid => "warm, humid"
-            case Climate.coldArid => "cold, arid"
-            case Climate.coldHumid => "cold, humid"
+            case Climate.warmArid => trans"climate.warm-arid"
+            case Climate.warmHumid => trans"climate.warm-humid"
+            case Climate.coldArid => trans"climate.cold-arid"
+            case Climate.coldHumid => trans"climate.cold-humid"
 
 object Climate:
     def climateAt(x: Int, y: Int, z: Int): Climate =
@@ -112,10 +112,10 @@ enum GrowingClimate:
     case specific(climate: Climate)
     case allClimates
 
-    def display: String =
+    def display: Component =
         this match
             case GrowingClimate.specific(climate) => climate.display
-            case GrowingClimate.allClimates => "all"
+            case GrowingClimate.allClimates => trans"climate.all"
 
     def growsWithin(climate: Climate): Boolean =
         this match
@@ -126,10 +126,10 @@ enum GrowingSeason:
     case specific(season: Season)
     case allYear
 
-    def display: String =
+    def display: Component =
         this match
             case GrowingSeason.specific(season) => season.display
-            case GrowingSeason.allYear => "all year"
+            case GrowingSeason.allYear => trans"season.all"
 
     def growsWithin(season: Season): Boolean =
         this match

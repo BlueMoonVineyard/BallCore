@@ -16,8 +16,8 @@ object ShopChest:
     val template: CustomItemStack = CustomItemStack.make(
         NamespacedKey("ballcore", "shop_chest"),
         Material.CHEST,
-        txt"Shop Chest",
-        txt"Can be stocked with sell orders and items to sell goods",
+        trans"items.shop-chest",
+        trans"items.shop-chest.lore",
     )
     template.setItemMeta(
         template.getItemMeta.tap(_.setCustomModelData(Order.sellOrderCMD))
@@ -71,7 +71,7 @@ class ShopChest(using ItemRegistry)
             orders.lift(state.index) match
                 case None =>
                     player.sendServerMessage(
-                        txt"This shop chest has no orders."
+                        trans"notifications.shop-chest-has-no-orders"
                     )
                 case Some(order) =>
                     val possibleExchanges =
@@ -79,19 +79,19 @@ class ShopChest(using ItemRegistry)
                             inv.getStorageContents.iterator
                         )
                     player.sendServerMessage(txt"")
-                    player.sendServerMessage(txt"==== Shop Chest ====")
+                    player.sendServerMessage(trans"notifications.shop-chest-title")
                     player.sendServerMessage(
-                        txt"Item ${state.index + 1} of ${orders.length}:"
+                        trans"notifications.shop-chest.item-page".args((state.index + 1).toComponent, orders.length.toComponent)
                     )
                     player.sendServerMessage(
-                        txt"Item: ${order.selling._1.displayName().hoverEvent(order.selling._1)} × ${order.selling._2} ($possibleExchanges sales available)"
+                        trans"notifications.shop-chest.item".args(order.selling._1.displayName().hoverEvent(order.selling._1), order.selling._2.toComponent, possibleExchanges.toComponent)
                     )
                     player.sendServerMessage(
-                        txt"Price: ${order.price._1.displayName()} × ${order.price._2}"
+                        trans"notifications.shop-chest.price".args(order.price._1.displayName(), order.price._2.toComponent)
                     )
                     player.sendServerMessage(txt"")
                     player.sendServerMessage(
-                        txt"Punch the chest with ${order.price._1.displayName()} to buy"
+                        trans"notifications.shop-chest.punch-to-buy".args(order.price._1.displayName())
                     )
         else
             val orders = SellOrderDescription
@@ -121,40 +121,36 @@ class ShopChest(using ItemRegistry)
                                         needed,
                                     ) =>
                                     player.sendServerMessage(
-                                        txt"You can't afford that purchase (it requires $needed ${order.price._1
-                                                .displayName()} but you only have $has)"
+                                        trans"notifications.shop-chest.buyer-cant-afford".args(needed.toComponent, order.price._1.displayName(), has.toComponent)
                                     )
                                 case ExchangeError.buyerCantReceive =>
                                     player.sendServerMessage(
-                                        txt"You can't store the purchased goods in your inventory"
+                                        trans"notifications.shop-chest.buyer-cant-receive"
                                     )
                                 case ExchangeError.sellerCantAfford(
                                         has,
                                         needed,
                                     ) =>
                                     player.sendServerMessage(
-                                        txt"The chest doesn't have enough items to sell (it requires $needed ${order.selling._1
-                                                .displayName()} but it only has $has)"
+                                        trans"notifications.shop-chest.seller-cant-afford".args(needed.toComponent, order.selling._1.displayName(), has.toComponent)
                                     )
                                 case ExchangeError.sellerCantReceive =>
                                     player.sendServerMessage(
-                                        txt"The chest doesn't have enough space to store the payment"
+                                        trans"notifications.shop-chest.seller-cant-receive"
                                     )
                                 case ExchangeError.unknownPrice =>
                                     player.sendServerMessage(
-                                        txt"The price is invalid"
+                                        trans"notifications.shop-chest.invalid-price"
                                     )
 
                         case Right(_) =>
                             UseShopChest.grant(player, "did_exchange")
                             player.sendServerMessage(
-                                txt"You paid ${order.price._1.displayName()} × ${order.price._2} and received ${order.selling._1
-                                        .displayName()
-                                        .hoverEvent(order.selling._1)} × ${order.selling._2} "
+                                trans"notifications.shop-chest.paid-received".args(order.price._1.displayName(), order.price._2.toComponent, order.selling._1.displayName().hoverEvent(order.selling._1), order.selling._2.toComponent)
                             )
                 case Some(order) =>
                     player.sendServerMessage(
-                        txt"Invalid payment, expected ${order.price._2}"
+                        trans"notifications.shop-chest.invalid-payment".args(order.price._2.toComponent)
                     )
                 case _ =>
                     ()

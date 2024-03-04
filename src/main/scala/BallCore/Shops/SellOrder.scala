@@ -215,16 +215,16 @@ case class SellOrderItemDescription(
         val sellingLore: List[Component] =
             selling.toList.flatMap { (is, count) =>
                 List(
-                    txt"Selling".color(NamedTextColor.GOLD),
-                    txt"  ${is.displayName()} × $count",
+                    trans"items.sell-order.selling".color(NamedTextColor.GOLD),
+                    trans"items.sell-order.item-count".args(is.displayName(), count.toComponent),
                 )
             }
 
         val priceLore: List[Component] =
             price.toList.flatMap { (is, count) =>
                 List(
-                    txt"Price".color(NamedTextColor.GOLD),
-                    txt"  ${is.displayName()} × $count",
+                    trans"items.sell-order.price".color(NamedTextColor.GOLD),
+                    trans"items.sell-order.item-count".args(is.displayName(), count.toComponent),
                 )
             }
 
@@ -246,16 +246,16 @@ case class SellOrderItemDescription(
 object SellOrder:
     val piss = s""
     val defaultLore: List[Component] = List(
-        txt"${keybind("key.use")}".color(NamedTextColor.BLUE),
-        txt"  Sets the sell order's result to the item in your offhand",
+        trans"items.keybind".args(keybind("key.use")).color(NamedTextColor.BLUE),
+        trans"items.sell-order.key-use-explanation",
         txt"",
-        txt"${keybind("key.use")} while sneaking".color(NamedTextColor.BLUE),
-        txt"  Sets the sell order's price to the item in your offhand",
+        trans"items.keybind.while-sneaking".args(keybind("key.use")).color(NamedTextColor.BLUE),
+        trans"items.sell-order.key-use-sneaking-explanation",
     )
     val template: CustomItemStack = CustomItemStack.make(
         NamespacedKey("ballcore", "sell_order"),
         Material.PAPER,
-        txt"Sell Order",
+        trans"items.sell-order.name",
         defaultLore: _*
     )
     template.setItemMeta(
@@ -296,9 +296,9 @@ class SellOrder(using registry: ItemRegistry)
             orderDescription.copy(price = kind).apply(order)
             kind match
                 case None =>
-                    player.sendActionBar(txt"Sell order price cleared")
+                    player.sendActionBar(trans"notifications.sell-order-price-cleared")
                 case Some(_) =>
-                    player.sendActionBar(txt"Sell order price set")
+                    player.sendActionBar(trans"notifications.sell-order-price-set")
         else
             val kind = Option(offhand)
                 .filterNot(_.getType == CustomMaterial.vanilla(Material.AIR))
@@ -309,5 +309,5 @@ class SellOrder(using registry: ItemRegistry)
             orderDescription.copy(selling = kind).apply(order)
 
             if offhand.getType == Material.AIR then
-                player.sendActionBar(txt"Sell order result cleared")
-            else player.sendActionBar(txt"Sell order result set")
+                player.sendActionBar(trans"notifications.sell-order-result-cleared")
+            else player.sendActionBar(trans"notifications.sell-order-result-set")

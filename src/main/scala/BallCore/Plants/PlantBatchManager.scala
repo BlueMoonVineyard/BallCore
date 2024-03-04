@@ -336,7 +336,7 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin, c: Clock)
         incrementPlantAges()
 
         val bossBar = BossBar.bossBar(
-            txt"Ticking plants...",
+            trans"notifications.ticking-plants",
             0.0f,
             BossBar.Color.GREEN,
             BossBar.Overlay.PROGRESS,
@@ -486,19 +486,19 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin, c: Clock)
                         (rightSeason, rightClimate) match
                             case (false, false) =>
                                 player.sendServerMessage(
-                                    txt"This plant is neither in the right climate nor season; it grows in ${plant.inner.what.growingClimate.display} climates during ${plant.inner.what.growingSeason.display}, but it is in a ${actualClimate.display} climate and it is currently ${actualSeason.display}"
+                                    trans"notifications.wrong-climate-and-season".args(plant.inner.what.growingClimate.display, plant.inner.what.growingSeason.display, actualClimate.display, actualSeason.display)
                                 )
                             case (false, true) =>
                                 player.sendServerMessage(
-                                    txt"This plant is out of season; it grows during ${plant.inner.what.growingSeason.display} (it is currently ${actualSeason.display})"
+                                    trans"notifications.wrong-season".args(plant.inner.what.growingSeason.display, actualSeason.display)
                                 )
                             case (true, false) =>
                                 player.sendServerMessage(
-                                    txt"This plant is in the wrong climate; it grows in ${plant.inner.what.growingClimate.display} climates (it is in a ${actualClimate.display} climate)"
+                                    trans"notifications.wrong-climate".args(plant.inner.what.growingClimate.display, actualClimate.display)
                                 )
                             case (true, true) =>
                                 player.sendServerMessage(
-                                    txt"This plant is in the right season and climate! It is ${plant.inner.ageIngameHours} hours old."
+                                    trans"notifications.right-climate".args(plant.inner.ageIngameHours.toComponent)
                                 )
                     }
                 }

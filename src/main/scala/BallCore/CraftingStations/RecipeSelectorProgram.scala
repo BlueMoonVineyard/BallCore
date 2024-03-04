@@ -102,7 +102,7 @@ class RecipeSelectorProgram(recipes: List[Recipe])(using
                             .style(NamedTextColor.GRAY, TextDecoration.BOLD)
                     )
                     .toList
-                    .mkComponent(txt" or ")
+                    .mkComponent(trans"ui.choice-separator")
             case Custom(choices: _*) =>
                 choices
                     .map(mat =>
@@ -110,7 +110,7 @@ class RecipeSelectorProgram(recipes: List[Recipe])(using
                             .style(NamedTextColor.GRAY, TextDecoration.BOLD)
                     )
                     .toList
-                    .mkComponent(txt" or ")
+                    .mkComponent(trans"ui.choice-separator")
             case TagList(tag) =>
                 tag.getValues.asScala
                     .map(mat =>
@@ -118,23 +118,23 @@ class RecipeSelectorProgram(recipes: List[Recipe])(using
                             .style(NamedTextColor.GRAY, TextDecoration.BOLD)
                     )
                     .toList
-                    .mkComponent(txt" or ")
+                    .mkComponent(trans"ui.choice-separator")
 
     private def nameOf(s: ItemStack): Component =
         if s.getItemMeta.hasDisplayName then s.getItemMeta.displayName()
         else Component.translatable(s)
 
     override def view(model: Model): Callback ?=> Gui =
-        Root(txt"Recipes (Page ${model.page + 1} of $numPages)", 6) {
+        Root(trans"ui.recipe-selector.title".args((model.page + 1).toComponent, numPages.toComponent), 6) {
             OutlinePane(0, 0, 9, 5) {
                 paginated(model.page).foreach { (recipe, idx) =>
                     Button(
                         recipe.outputs.head._1.clone().tap(_.setAmount(1)),
-                        txt"${recipe.name}".color(NamedTextColor.GREEN),
+                        recipe.name.toComponent.color(NamedTextColor.GREEN),
                         Message.selectRecipe(idx),
                     ) {
                         Lore(
-                            txt"Ingredients"
+                            trans"ui.recipe-selector.ingredients"
                                 .style(
                                     NamedTextColor.WHITE,
                                     TextDecoration.UNDERLINED,
@@ -150,7 +150,7 @@ class RecipeSelectorProgram(recipes: List[Recipe])(using
                         }
                         Lore(txt"")
                         Lore(
-                            txt"Results"
+                            trans"ui.recipe-selector.results"
                                 .style(
                                     NamedTextColor.WHITE,
                                     TextDecoration.UNDERLINED,
@@ -169,25 +169,19 @@ class RecipeSelectorProgram(recipes: List[Recipe])(using
                                 )
                         }
                         Lore(txt"")
-                        val time = txt"${recipe.work} seconds".color(
+                        val time = trans"ui.recipe-selector.seconds".args(recipe.work.toComponent).color(
                             NamedTextColor.GREEN
                         )
                         Lore(
-                            txt"Takes $time of work".color(NamedTextColor.WHITE)
+                            trans"ui.recipe-selector.work-time".args(time).color(NamedTextColor.WHITE)
                         )
                         val players =
-                            if recipe.minimumPlayersRequiredToWork > 1 then
-                                txt"${recipe.minimumPlayersRequiredToWork} players"
-                                    .color(
-                                        NamedTextColor.GREEN
-                                    )
-                            else
-                                txt"${recipe.minimumPlayersRequiredToWork} player"
-                                    .color(
-                                        NamedTextColor.GREEN
-                                    )
+                            trans"ui.recipe-selector.n-players".args(recipe.minimumPlayersRequiredToWork.toComponent)
+                                .color(
+                                    NamedTextColor.GREEN
+                                )
                         Lore(
-                            txt"Requires $players working".color(
+                            trans"ui.recipe-selector.requires-players-working".args(players).color(
                                 NamedTextColor.WHITE
                             )
                         )
@@ -197,29 +191,29 @@ class RecipeSelectorProgram(recipes: List[Recipe])(using
             OutlinePane(0, 5, 9, 1) {
                 Button(
                     Material.RED_DYE,
-                    txt"Previous Page".color(NamedTextColor.GREEN),
+                    trans"ui.previous-page".color(NamedTextColor.GREEN),
                     Message.prevPage,
                 )()
                 Button(
                     Material.LIME_DYE,
-                    txt"Next Page".color(NamedTextColor.GREEN),
+                    trans"ui.next-page".color(NamedTextColor.GREEN),
                     Message.nextPage,
                 )()
                 Button(
                     Material.REDSTONE_TORCH,
                     if model.repeat then
-                        txt"Repeat: On".color(NamedTextColor.GREEN)
-                    else txt"Repeat: Off".color(NamedTextColor.RED),
+                        trans"ui.recipe-selector.repeat.on".color(NamedTextColor.GREEN)
+                    else trans"ui.recipe-selector.repeat.off".color(NamedTextColor.RED),
                     Message.toggleRepeat,
                 ) {
                     if model.repeat then
                         Lore(
-                            txt"Click to turn off repeating this recipe"
+                            trans"ui.recipe-selector.repeat.turn-off"
                                 .color(NamedTextColor.GRAY)
                         )
                     else
                         Lore(
-                            txt"Click to turn on repeating this recipe"
+                            trans"ui.recipe-selector.repeat.turn-on"
                                 .color(NamedTextColor.GRAY)
                         )
                 }

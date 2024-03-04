@@ -46,7 +46,7 @@ class StationListProgram(stations: List[CraftingStation]) extends UIProgram:
                 model.copy(page = (model.page - 1).max(0))
 
     override def view(model: Model): Callback ?=> Gui =
-        Root(txt"Workstations (Page ${model.page + 1} of $numPages)", 6) {
+        Root(trans"ui.recipe-viewer.workstations.title".args((model.page + 1).toComponent, numPages.toComponent), 6) {
             OutlinePane(0, 0, 9, 5) {
                 paginated(model.page).foreach { (station) =>
                     Button(
@@ -66,12 +66,12 @@ class StationListProgram(stations: List[CraftingStation]) extends UIProgram:
             OutlinePane(0, 5, 9, 1) {
                 Button(
                     Material.RED_DYE,
-                    txt"Previous Page".color(NamedTextColor.GREEN),
+                    trans"ui.previous-page".color(NamedTextColor.GREEN),
                     Message.prevPage,
                 )()
                 Button(
                     Material.LIME_DYE,
-                    txt"Next Page".color(NamedTextColor.GREEN),
+                    trans"ui.next-page".color(NamedTextColor.GREEN),
                     Message.nextPage,
                 )()
             }
@@ -120,7 +120,7 @@ class RecipeViewerProgram(
                             .style(NamedTextColor.GRAY, TextDecoration.BOLD)
                     )
                     .toList
-                    .mkComponent(txt" or ")
+                    .mkComponent(trans"ui.choice-separator")
             case Custom(choices: _*) =>
                 choices
                     .map(mat =>
@@ -128,7 +128,7 @@ class RecipeViewerProgram(
                             .style(NamedTextColor.GRAY, TextDecoration.BOLD)
                     )
                     .toList
-                    .mkComponent(txt" or ")
+                    .mkComponent(trans"ui.choice-separator")
             case TagList(tag) =>
                 tag.getValues.asScala
                     .map(mat =>
@@ -136,14 +136,14 @@ class RecipeViewerProgram(
                             .style(NamedTextColor.GRAY, TextDecoration.BOLD)
                     )
                     .toList
-                    .mkComponent(txt" or ")
+                    .mkComponent(trans"ui.choice-separator")
 
     private def nameOf(s: ItemStack): Component =
         if s.getItemMeta.hasDisplayName then s.getItemMeta.displayName()
         else Component.translatable(s)
 
     override def view(model: Model): Callback ?=> Gui =
-        Root(txt"Recipes (Page ${model.page + 1} of $numPages)", 6) {
+        Root(trans"ui.recipe-selector.title".args((model.page + 1).toComponent, numPages.toComponent), 6) {
             OutlinePane(0, 0, 9, 5) {
                 paginated(model.page).foreach { (recipe, _) =>
                     Item(
@@ -151,7 +151,7 @@ class RecipeViewerProgram(
                         Some(txt"${recipe.name}".color(NamedTextColor.GREEN)),
                     ) {
                         Lore(
-                            txt"Ingredients"
+                            trans"ui.recipe-selector.ingredients"
                                 .style(
                                     NamedTextColor.WHITE,
                                     TextDecoration.UNDERLINED,
@@ -167,7 +167,7 @@ class RecipeViewerProgram(
                         }
                         Lore(txt"")
                         Lore(
-                            txt"Results"
+                            trans"ui.recipe-selector.results"
                                 .style(
                                     NamedTextColor.WHITE,
                                     TextDecoration.UNDERLINED,
@@ -186,25 +186,19 @@ class RecipeViewerProgram(
                                 )
                         }
                         Lore(txt"")
-                        val time = txt"${recipe.work} seconds".color(
+                        val time = trans"ui.recipe-selector.seconds".args(recipe.work.toComponent).color(
                             NamedTextColor.GREEN
                         )
                         Lore(
-                            txt"Takes $time of work".color(NamedTextColor.WHITE)
+                            trans"ui.recipe-selector.work-time".args(time).color(NamedTextColor.WHITE)
                         )
                         val players =
-                            if recipe.minimumPlayersRequiredToWork > 1 then
-                                txt"${recipe.minimumPlayersRequiredToWork} players"
-                                    .color(
-                                        NamedTextColor.GREEN
-                                    )
-                            else
-                                txt"${recipe.minimumPlayersRequiredToWork} player"
-                                    .color(
-                                        NamedTextColor.GREEN
-                                    )
+                            trans"ui.recipe-selector.n-players".args(recipe.minimumPlayersRequiredToWork.toComponent)
+                                .color(
+                                    NamedTextColor.GREEN
+                                )
                         Lore(
-                            txt"Requires $players working".color(
+                            trans"ui.recipe-selector.requires-players-working".args(players).color(
                                 NamedTextColor.WHITE
                             )
                         )
@@ -214,17 +208,17 @@ class RecipeViewerProgram(
             OutlinePane(0, 5, 9, 1) {
                 Button(
                     Material.OAK_DOOR,
-                    txt"Back to List Of Stations".color(NamedTextColor.GREEN),
+                    trans"ui.recipe-viewer.list-of-stations".color(NamedTextColor.GREEN),
                     Message.backToList,
                 )()
                 Button(
                     Material.RED_DYE,
-                    txt"Previous Page".color(NamedTextColor.GREEN),
+                    trans"ui.previous-page".color(NamedTextColor.GREEN),
                     Message.prevPage,
                 )()
                 Button(
                     Material.LIME_DYE,
-                    txt"Next Page".color(NamedTextColor.GREEN),
+                    trans"ui.next-page".color(NamedTextColor.GREEN),
                     Message.nextPage,
                 )()
             }

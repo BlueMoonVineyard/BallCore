@@ -14,6 +14,8 @@ import java.time.temporal.{Temporal, TemporalUnit}
 import java.time.{Duration, Instant, OffsetDateTime, ZoneOffset}
 import java.util.concurrent.TimeUnit
 import java.util.function.Consumer
+import BallCore.UI.Elements.*
+import net.kyori.adventure.text.Component
 
 case class GameDate(
     year: Long, // 12*31*24*60 minutes
@@ -42,12 +44,12 @@ enum Season:
     case autumn
     case winter
 
-    def display: String =
+    def display: Component =
         this match
-            case Season.spring => "spring"
-            case Season.summer => "summer"
-            case Season.autumn => "autumn"
-            case Season.winter => "winter"
+            case Season.spring => trans"season.spring"
+            case Season.summer => trans"season.summer"
+            case Season.autumn => trans"season.autumn"
+            case Season.winter => trans"season.winter"
 
 enum DateUnit(val width: Duration) extends TemporalUnit:
     case minute extends DateUnit(Datekeeping.Periods.minute)
