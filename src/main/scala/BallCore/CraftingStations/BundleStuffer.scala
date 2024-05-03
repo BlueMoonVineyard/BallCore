@@ -23,6 +23,16 @@ import org.bukkit.event.player.PlayerAttemptPickupItemEvent
 import org.bukkit.event.block.BlockRedstoneEvent
 import org.bukkit.inventory.meta.BundleMeta
 import org.bukkit.inventory.ItemStack
+import org.bukkit.inventory.meta.BookMeta
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer
+import net.kyori.adventure.text.Component
+import net.kyori.adventure.text.format.NamedTextColor
+import net.kyori.adventure.text.format.TextDecoration
+import net.kyori.adventure.text.format.TextDecoration.State
+import org.bukkit.Sound
+import org.bukkit.SoundCategory
+import org.bukkit.Particle
+import scala.util.chaining.*
 
 object BundleStuffer:
     val id = NamespacedKey("ballcore", "bundle_stuffer")
@@ -57,6 +67,7 @@ class BundleStufferListener extends Listener:
 class BundleStuffer(using p: Plugin)
     extends CustomItem,
       Listeners.BlockClicked,
+      Listeners.BlockLeftClicked,
       Listeners.BlockRemoved,
       Listeners.BlockRedstoneOn:
     override def group: ItemGroup =
@@ -113,6 +124,68 @@ class BundleStuffer(using p: Plugin)
             case Some(bundle) =>
                 bundle.removeMetadata("ballcore:is_bundle_stuffer_bundle", p)
 
+    override def onBlockLeftClicked(event: PlayerInteractEvent): Unit =
+        findPlacedBundle(event.getClickedBlock()) match
+            case None =>
+            case Some(bundle) =>
+                val item = Option(event.getItem()).map(_.getItemMeta())
+                item match
+                    case Some(x: BookMeta) =>
+                        val it = x.page(1)
+                        val plainText = PlainTextComponentSerializer
+                            .plainText()
+                            .serialize(it)
+                        val lines = plainText.linesIterator.map { str =>
+                            if str.contains(':') then
+                                val (before, after) =
+                                    str.splitAt(str.indexOf(':'))
+                                Component
+                                    .empty()
+                                    .append(
+                                        Component
+                                            .text(before, NamedTextColor.WHITE)
+                                            .decoration(
+                                                TextDecoration.ITALIC,
+                                                State.FALSE,
+                                            )
+                                    )
+                                    .append(
+                                        Component
+                                            .text(after, NamedTextColor.GRAY)
+                                            .decoration(
+                                                TextDecoration.ITALIC,
+                                                State.FALSE,
+                                            )
+                                    )
+                            else Component.text(str, NamedTextColor.GRAY)
+                        }
+                        val is = bundle.getItemStack()
+                        val im = is.getItemMeta()
+                        im.lore((Component.empty() :: lines.toList).asJava)
+                        is.setItemMeta(im)
+                        bundle.setItemStack(is)
+                        event.setCancelled(true)
+                        event
+                            .getPlayer()
+                            .playSound(
+                                event.getPlayer(),
+                                Sound.UI_BUTTON_CLICK,
+                                SoundCategory.BLOCKS,
+                                1f,
+                                1f,
+                            )
+                        event
+                            .getPlayer()
+                            .spawnParticle(
+                                Particle.EGG_CRACK,
+                                bundle.getLocation().tap(_.add(0, 0.3, 0)),
+                                5,
+                                0.2,
+                                0.2,
+                                0.2,
+                            )
+                    case _ =>
+
     override def onBlockRemoved(event: BlockBreakEvent): Unit =
         findPlacedBundle(event.getBlock()).foreach { bundle =>
             bundle.removeMetadata("ballcore:is_bundle_stuffer_bundle", p)
@@ -149,4 +222,15 @@ class BundleStuffer(using p: Plugin)
 
             bundleStack.setItemMeta(bundleMeta)
             bundle.setItemStack(bundleStack)
+
+            bundle
+                .getWorld()
+                .spawnParticle(
+                    Particle.EGG_CRACK,
+                    bundle.getLocation().tap(_.add(0, 0.3, 0)),
+                    5,
+                    0.2,
+                    0.2,
+                    0.2,
+                )
         ()
