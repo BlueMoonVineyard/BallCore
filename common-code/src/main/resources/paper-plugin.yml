@@ -1,0 +1,14 @@
+name: BallCoreCommonCode
+version: "0.1"
+main: BallCore.CommonCode.PaperPlugin
+description: Common code plugin of CivBalls
+authors: [Janet Blackquill]
+website: https://github.com/BlueMoonVineyard/BallCore
+api-version: "1.20"
+folia-supported: true
+dependencies:
+  server:
+    BallCoreDependencyPlugin:
+      load: BEFORE
+      required: true
+      join-classpath: true

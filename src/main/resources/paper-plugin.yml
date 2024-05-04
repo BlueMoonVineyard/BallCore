@@ -1,0 +1,45 @@
+# SPDX-FileCopyrightText: 2022 Janet Blackquill <uhhadd@gmail.com>
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+name: BallCore
+version: "0.1"
+main: BallCore.Main
+description: Hub plugin of CivBalls
+authors: [Janet Blackquill]
+website: https://github.com/BlueMoonVineyard/BallCore
+api-version: "1.20"
+folia-supported: true
+dependencies:
+  server:
+    BallCoreDependencyPlugin:
+      load: BEFORE
+      required: true
+      join-classpath: true
+    BallCoreCommonCode:
+      load: BEFORE
+      required: true
+      join-classpath: true
+    ProtocolLib:
+      load: BEFORE
+      required: false
+      join-classpath: false
+    ProtocolSupport:
+      load: BEFORE
+      required: false
+      join-classpath: false
+    ViaVersion:
+      load: BEFORE
+      required: false
+      join-classpath: false
+    ViaBackwards:
+      load: BEFORE
+      required: false
+      join-classpath: false
+    ViaRewind:
+      load: BEFORE
+      required: false
+      join-classpath: false
+    Geyser-Spigot:
+      load: BEFORE
+      required: false
+      join-classpath: false

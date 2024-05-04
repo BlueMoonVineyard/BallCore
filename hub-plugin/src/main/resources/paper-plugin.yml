@@ -2,13 +2,21 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 name: BallCoreHub
-version: 0.1
+version: "0.1"
 main: BallCoreHub.Main
 description: Hub plugin of CivBalls
 authors: [Janet Blackquill]
 website: https://github.com/BlueMoonVineyard/BallCore
-api-version: 1.13
+api-version: "1.20"
 folia-supported: true
-depend:
-- BallCoreDependencyPlugin
-- BallCoreCommonCode
+dependencies:
+  server:
+    BallCoreDependencyPlugin:
+      load: BEFORE
+      required: true
+      join-classpath: true
+    BallCoreCommonCode:
+      load: BEFORE
+      required: true
+      join-classpath: true
+

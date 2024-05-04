@@ -6,7 +6,7 @@ package BallCore.CommonCode
 
 import org.bukkit.plugin.java.JavaPlugin
 
-final class BukkitPlugin extends JavaPlugin:
+final class PaperPlugin extends JavaPlugin:
     override def onEnable(): Unit =
         ()
 
