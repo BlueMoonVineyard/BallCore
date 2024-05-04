@@ -11,6 +11,7 @@ import java.util.UUID
 import scala.collection.concurrent.TrieMap
 import scala.util.chaining.*
 import BallCore.Advancements.UseShopChest
+import org.bukkit.plugin.Plugin
 
 object ShopChest:
     val template: CustomItemStack = CustomItemStack.make(
@@ -23,7 +24,7 @@ object ShopChest:
         template.getItemMeta.tap(_.setCustomModelData(Order.sellOrderCMD))
     )
 
-class ShopChest(using ItemRegistry)
+class ShopChest(using ir: ItemRegistry, p: Plugin)
     extends CustomItem,
       Listeners.BlockLeftClicked:
     def group: ItemGroup = Order.group

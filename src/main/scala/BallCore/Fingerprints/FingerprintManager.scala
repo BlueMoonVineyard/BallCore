@@ -31,10 +31,12 @@ object FingerprintReason:
 
 enum FingerprintReason(val label: String):
     case bustedThrough extends FingerprintReason("busted_through")
+    case crossed extends FingerprintReason("walk_through_border")
 
     def explain: String =
         this match
-            case bustedThrough => "Busted through a beacon"
+            case FingerprintReason.bustedThrough => "Busted through a beacon"
+            case FingerprintReason.crossed => "Walked through a beacon's border"
 
 val reasonEnum = text.eimap[FingerprintReason](
     FingerprintReason.fromLabel(_).toRight("not found")

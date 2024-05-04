@@ -11,11 +11,13 @@ import cats.effect.IO
 import cats.data.OptionT
 import dev.jorel.commandapi.arguments.ArgumentSuggestions
 import BallCore.Advancements.BindCivHeart
+import org.bukkit.plugin.Plugin
 
 class BindHeartCommand(using
     gm: GroupManager,
     sql: SQLManager,
     cbm: CivBeaconManager,
+    p: Plugin,
 ):
     val node =
         CommandTree("bind-heart")

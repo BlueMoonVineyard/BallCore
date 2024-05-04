@@ -228,7 +228,7 @@ final class Main extends JavaPlugin:
             given NoodleEditor.DelinquencyManager = delinquency
             given NoodleEditor.EssenceDrainer = drainer
 
-            Beacons.registerItems()
+            Beacons.register()
             Reinforcements.register()
 
             CardinalCommand().tree.register()

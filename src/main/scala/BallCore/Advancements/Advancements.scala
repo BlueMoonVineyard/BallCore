@@ -3,15 +3,20 @@ package BallCore.Advancements
 import org.bukkit.NamespacedKey
 import org.bukkit.entity.Player
 import org.bukkit.Bukkit
+import org.bukkit.plugin.Plugin
 
 sealed trait BallAdvancement[T <: String with Singleton]:
     type Criteria = T
 
     def key: NamespacedKey
-    def grant(player: Player, which: T): Boolean =
-        val advancement = Bukkit.getAdvancement(key)
-        val progress = player.getAdvancementProgress(advancement)
-        progress.awardCriteria(which)
+    def grant(player: Player, which: T)(using p: Plugin): Unit =
+        player.getScheduler().run(p, task => {
+            val advancement = Bukkit.getAdvancement(key)
+            val progress = player.getAdvancementProgress(advancement)
+            progress.awardCriteria(which)
+            ()
+        }, null)
+        ()
 
 object BindCivHeart extends BallAdvancement["bind"]:
     def key: NamespacedKey =

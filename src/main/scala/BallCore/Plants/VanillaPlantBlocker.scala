@@ -19,6 +19,7 @@ import org.bukkit.event.{EventHandler, EventPriority, Listener}
 import scala.util.Random
 import scala.util.chaining.*
 import BallCore.Advancements.GetSeed
+import org.bukkit.plugin.Plugin
 
 object VanillaPlantBlocker:
     private val bonemealables: Set[Material] = Set(
@@ -57,7 +58,7 @@ object VanillaPlantBlocker:
         Material.WHEAT,
     )
 
-class VanillaPlantBlocker() extends Listener:
+class VanillaPlantBlocker()(using p: Plugin) extends Listener:
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     def onBigPlantGrow(event: StructureGrowEvent): Unit =
         event.setCancelled(true)

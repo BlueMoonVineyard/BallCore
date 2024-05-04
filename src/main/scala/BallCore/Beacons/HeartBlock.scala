@@ -20,6 +20,7 @@ import io.sentry.Sentry
 import BallCore.NoodleEditor.EssenceManager
 import BallCore.NoodleEditor.Essence
 import BallCore.Advancements.PlaceCivHeart
+import org.bukkit.plugin.Plugin
 
 object HeartBlock:
     val itemStack: CustomItemStack = CustomItemStack.make(
@@ -43,6 +44,7 @@ class HeartBlock()(using
     battleManager: BattleManager,
     essence: EssenceManager,
     ir: ItemRegistry,
+    p: Plugin,
 ) extends CustomItem,
       Listeners.BlockPlaced,
       Listeners.BlockRemoved,

@@ -28,7 +28,7 @@ private class AdvancementTracker(
     advancement: BallAdvancement[_],
     criteria: advancement.Criteria,
 ):
-    def check(player: Player, item: ItemStack): Unit =
+    def check(player: Player, item: ItemStack)(using p: Plugin): Unit =
         if matches.exists(_.isSimilar(item)) then
             val _ = advancement.grant(player, criteria)
 
@@ -148,6 +148,7 @@ class MiningListener()(using
     as: Acclimation.Storage,
     sql: SQLManager,
     rest: RestManager,
+    p: Plugin,
 ) extends Listener:
     val randomizer: Random = scala.util.Random()
 

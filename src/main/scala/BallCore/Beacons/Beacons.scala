@@ -12,6 +12,9 @@ import org.bukkit.inventory.ItemStack
 import org.bukkit.{Material, NamespacedKey}
 import BallCore.Sigils.BattleManager
 import BallCore.NoodleEditor.EssenceManager
+import org.bukkit.plugin.Plugin
+import BallCore.Fingerprints.FingerprintManager
+import BallCore.WebHooks.WebHookManager
 
 object Beacons:
     val group: ItemGroup = ItemGroup(
@@ -19,7 +22,7 @@ object Beacons:
         ItemStack(Material.WHITE_CONCRETE),
     )
 
-    def registerItems()(using
+    def register()(using
         registry: ItemRegistry,
         pe: PolygonEditor,
         gm: GroupManager,
@@ -28,5 +31,9 @@ object Beacons:
         sql: SQLManager,
         battleManager: BattleManager,
         essence: EssenceManager,
+        p: Plugin,
+        fingerprints: FingerprintManager,
+        webhooks: WebHookManager,
     ): Unit =
+        p.getServer.getPluginManager.registerEvents(Listener(), p)
         registry.register(new HeartBlock())

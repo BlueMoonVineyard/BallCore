@@ -38,6 +38,7 @@ import cats.effect.IO
 import BallCore.NoodleEditor.NoodleEditor
 import BallCore.NoodleEditor.NoodleKey
 import BallCore.Advancements.BindCivHeart
+import org.bukkit.plugin.Plugin
 
 extension (p: BallCore.Groups.Permissions)
     def displayItem(): Material =
@@ -118,6 +119,7 @@ class GroupManagementProgram(using
     primeTime: PrimeTimeManager,
     kv: KeyVal,
     noodleEditor: NoodleEditor,
+    p: Plugin,
 ) extends UIProgram:
     case class Flags(groupID: GroupID, userID: UserID)
 
@@ -859,6 +861,7 @@ class SubgroupManagementProgram(using
     primeTime: PrimeTimeManager,
     kv: KeyVal,
     noodleEditor: NoodleEditor,
+    p: Plugin,
 ) extends UIProgram:
     case class Flags(groupID: GroupID, subgroupID: SubgroupID, userID: UserID)
 
@@ -1048,6 +1051,7 @@ class RoleManagementProgram(using
     primeTime: PrimeTimeManager,
     kv: KeyVal,
     noodleEditor: NoodleEditor,
+    p: Plugin,
 ) extends UIProgram:
     case class Flags(
         groupID: GroupID,
@@ -1414,6 +1418,7 @@ class InvitesListProgram(using
     primeTime: PrimeTimeManager,
     kv: KeyVal,
     noodleEditor: NoodleEditor,
+    p: Plugin,
 ) extends UIProgram:
     case class Flags(userID: UserID)
 
@@ -1585,6 +1590,7 @@ class GroupListProgram(using
     primeTime: PrimeTimeManager,
     kv: KeyVal,
     noodleEditor: NoodleEditor,
+    p: Plugin,
 ) extends UIProgram:
     case class Flags(userID: UserID)
 

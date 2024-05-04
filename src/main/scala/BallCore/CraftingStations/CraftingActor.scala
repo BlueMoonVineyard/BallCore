@@ -34,7 +34,7 @@ private class AdvancementTracker(
     advancement: BallAdvancement[_],
     criteria: advancement.Criteria,
 ):
-    def check(player: Player, recipe: Recipe): Unit =
+    def check(player: Player, recipe: Recipe)(using p: Plugin): Unit =
         if matches.contains(recipe.id) then
             val _ = advancement.grant(player, criteria)
 
