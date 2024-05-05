@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import BallCore.DataStructures.TestClock
-import BallCore.Datekeeping.{Datekeeping, GameDate}
+import CivCubed.DataStructures.TestClock
+import CivCubed.Datekeeping.{Datekeeping, GameDate}
 
 import java.time.Duration
 

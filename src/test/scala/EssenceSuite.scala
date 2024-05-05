@@ -2,19 +2,19 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import BallCore.Storage.SQLManager
-import BallCore.Beacons.CivBeaconManager
-import BallCore.DataStructures.TestClock
+import CivCubed.Storage.SQLManager
+import CivCubed.Beacons.CivBeaconManager
+import CivCubed.DataStructures.TestClock
 import java.time.OffsetDateTime
-import BallCore.Beacons.BeaconManagerHooks
+import CivCubed.Beacons.BeaconManagerHooks
 import cats.effect.kernel.Deferred
 import cats.effect.IO
-import BallCore.Groups.GroupManager
+import CivCubed.Groups.GroupManager
 import be.seeseemelk.mockbukkit.WorldMock
 import org.bukkit.Location
 import java.util.UUID
-import BallCore.NoodleEditor.EssenceManager
-import BallCore.NoodleEditor.EssenceManagerHooks
+import CivCubed.NoodleEditor.EssenceManager
+import CivCubed.NoodleEditor.EssenceManagerHooks
 
 class DummyEssenceManagerHooks extends EssenceManagerHooks:
     override def updateHeart(l: Location, amount: Int): IO[Unit] =

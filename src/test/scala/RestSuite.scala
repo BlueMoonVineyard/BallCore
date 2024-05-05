@@ -2,12 +2,12 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import BallCore.Rest.RestManagerHooks
+import CivCubed.Rest.RestManagerHooks
 import cats.effect.IO
 import java.{util => ju}
-import BallCore.Storage.SQLManager
-import BallCore.Rest.RestManager
-import BallCore.DataStructures.TestClock
+import CivCubed.Storage.SQLManager
+import CivCubed.Rest.RestManager
+import CivCubed.DataStructures.TestClock
 import java.time.OffsetDateTime
 import java.util.UUID
 import cats.syntax.all._

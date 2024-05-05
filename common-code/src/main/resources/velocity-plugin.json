@@ -1,6 +1,6 @@
 {
-	"id": "ballcorecommoncode",
-	"name": "BallCore Common Code",
+	"id": "civcubedcommoncode",
+	"name": "CivCubed Common Code",
 	"version": "0.0.1",
 	"description": "CivCubed common code plugin",
 	"url": "https://civcubed.net",
@@ -9,8 +9,8 @@
 	],
 	"dependencies": [
 		{
-			"id": "ballcoredependencyplugin"
+			"id": "civcubeddependencyplugin"
 		}
 	],
-	"main": "BallCore.CommonCode.VelocityPlugin"
+	"main": "CivCubed.CommonCode.VelocityPlugin"
 }

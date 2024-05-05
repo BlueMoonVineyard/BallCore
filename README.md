@@ -1,11 +1,11 @@
-# BallCore
+# CivCubed
 
 provides core mechanics to civcubed
 
 ## dependency plugin
 
 the plugin with all of the third party dependencies (for both velocity and folia/paper)
-this is the `dependencyPlugin/assembly` target, it'll be in `.target/<scala version>/BallCoreDependencyPlugin.jar`
+this is the `dependencyPlugin/assembly` target, it'll be in `.target/<scala version>/CivCubedDependencyPlugin.jar`
 needed for all other plugins
 
 ## common code
@@ -26,7 +26,7 @@ this is the `velocityPlugin/package` target
 
 the HTTPS API used by the discord bot lives here
 
-obligate postgresql database required, configuration will be read from `plugins/ballcorevelocityplugin/config.yaml`
+obligate postgresql database required, configuration will be read from `plugins/civcubedvelocityplugin/config.yaml`
 ```yaml
 secrets:
     api-key: "an api key"
@@ -43,7 +43,7 @@ database:
 plugin for the main server (folia, but paper compatibility w/ folia APIs should work fine)
 this is the `actualPlugin/package` target
 
-obligate postgresql database required, configuration will be read from `plugins/BallCore/config.yaml`
+obligate postgresql database required, configuration will be read from `plugins/CivCubed/config.yaml`
 ```yaml
 database:
     host: "localhost"

@@ -2,9 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import BallCore.Groups.{Permissions, RuleMode, everyoneUUID, nullUUID}
-import BallCore.Storage.SQLManager
-import BallCore.{Groups, Storage}
+import CivCubed.Groups.{Permissions, RuleMode, everyoneUUID, nullUUID}
+import CivCubed.Storage.SQLManager
+import CivCubed.{Groups, Storage}
 
 import java.util as ju
 

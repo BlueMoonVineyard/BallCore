@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: CC0-1.0
 
-name: BallCore CI
+name: CivCubed CI
 
 on:
   push:
@@ -60,11 +60,11 @@ jobs:
       run: sbt velocityPlugin/package
     - name: Move jars
       run: |
-        cp ./target/scala-3.3.1/ballcore_3-0.1.0-SNAPSHOT.jar BallCore.jar
-        cp ./dependency-plugin/target/scala-3.3.1/BallCoreDependencyPlugin.jar BallCoreDependencyPlugin.jar
-        cp ./hub-plugin/target/scala-3.3.1/ballcorehub_3-0.1.0-SNAPSHOT.jar BallCoreHub.jar
-        cp ./common-code/target/scala-3.3.1/ballcorecommoncode_3-0.1.0-SNAPSHOT.jar BallCoreCommonCode.jar
-        cp ./velocity-plugin/target/scala-3.3.1/ballcorevelocity_3-0.1.0-SNAPSHOT.jar BallCoreVelocityPlugin.jar
+        cp ./target/scala-3.3.1/civcubed_3-0.1.0-SNAPSHOT.jar CivCubed.jar
+        cp ./dependency-plugin/target/scala-3.3.1/CivCubedDependencyPlugin.jar CivCubedDependencyPlugin.jar
+        cp ./hub-plugin/target/scala-3.3.1/civcubedhub_3-0.1.0-SNAPSHOT.jar CivCubedHub.jar
+        cp ./common-code/target/scala-3.3.1/civcubedcommoncode_3-0.1.0-SNAPSHOT.jar CivCubedCommonCode.jar
+        cp ./velocity-plugin/target/scala-3.3.1/civcubedvelocity_3-0.1.0-SNAPSHOT.jar CivCubedVelocityPlugin.jar
     - name: Update jars
       uses: andelf/nightly-release@main
       if: github.ref == 'refs/heads/develop'
@@ -75,8 +75,8 @@ jobs:
         name: 'Continuous integration $$'
         prerelease: true
         files: |
-          ./BallCoreDependencyPlugin.jar
-          ./BallCore.jar
-          ./BallCoreHub.jar
-          ./BallCoreCommonCode.jar
-          ./BallCoreVelocityPlugin.jar
+          ./CivCubedDependencyPlugin.jar
+          ./CivCubed.jar
+          ./CivCubedHub.jar
+          ./CivCubedCommonCode.jar
+          ./CivCubedVelocityPlugin.jar

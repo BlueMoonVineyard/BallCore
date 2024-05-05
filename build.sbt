@@ -12,9 +12,9 @@ val foliaVersion = "1.20.1-R0.1-SNAPSHOT"
 lazy val dependencyPlugin = project
     .in(file("dependency-plugin"))
     .settings(
-        name := "BallCoreDependencyPlugin",
+        name := "CivCubedDependencyPlugin",
         version := "0.1.0-SNAPSHOT",
-        assembly / assemblyJarName := "BallCoreDependencyPlugin.jar",
+        assembly / assemblyJarName := "CivCubedDependencyPlugin.jar",
         assembly / assemblyMergeStrategy := {
             case PathList("META-INF", xs @ _*) => MergeStrategy.discard
             case PathList(ps @ _*) if ps.endsWith(".conf") =>
@@ -76,7 +76,7 @@ lazy val commonCode = project
     .in(file("common-code"))
     .dependsOn(dependencyPlugin)
     .settings(
-        name := "BallCoreCommonCode",
+        name := "CivCubedCommonCode",
         version := "0.1.0-SNAPSHOT",
         scalaVersion := scala3Version,
         libraryDependencies += "org.scalameta" %% "munit" % "0.7.29" % Test,
@@ -91,7 +91,7 @@ lazy val velocityPlugin = project
     .dependsOn(dependencyPlugin)
     .dependsOn(commonCode)
     .settings(
-        name := "BallCoreVelocity",
+        name := "CivCubedVelocity",
         version := "0.1.0-SNAPSHOT",
         scalaVersion := scala3Version,
         libraryDependencies += "org.scalameta" %% "munit" % "0.7.29" % Test,
@@ -105,7 +105,7 @@ lazy val actualPlugin = project
     .dependsOn(dependencyPlugin)
     .dependsOn(commonCode)
     .settings(
-        name := "BallCore",
+        name := "CivCubed",
         version := "0.1.0-SNAPSHOT",
         scalaVersion := scala3Version,
         resolvers += "minecraft" at "https://libraries.minecraft.net",
@@ -129,7 +129,7 @@ lazy val hubPlugin = project
     .dependsOn(dependencyPlugin)
     .dependsOn(commonCode)
     .settings(
-        name := "BallCoreHub",
+        name := "CivCubedHub",
         version := "0.1.0-SNAPSHOT",
         scalaVersion := scala3Version,
         libraryDependencies += "org.scalameta" %% "munit" % "0.7.29" % Test,

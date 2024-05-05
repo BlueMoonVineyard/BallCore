@@ -2,18 +2,18 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import BallCore.DataStructures.TestClock
-import BallCore.Storage.SQLManager
+import CivCubed.DataStructures.TestClock
+import CivCubed.Storage.SQLManager
 
 import java.time.OffsetDateTime
-import BallCore.Fingerprints.FingerprintManager
+import CivCubed.Fingerprints.FingerprintManager
 import cats.effect.IO
 import cats.effect.std.Random
 import munit.CatsEffectAssertions._
 import cats.effect.kernel.Ref
 import java.util.UUID
 import cats.syntax.all._
-import BallCore.Fingerprints.FingerprintReason
+import CivCubed.Fingerprints.FingerprintReason
 
 class FingerprintSuite extends munit.CatsEffectSuite {
     val sql: FunFixture[SQLManager] =

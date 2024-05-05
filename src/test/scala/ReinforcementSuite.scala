@@ -2,15 +2,15 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import BallCore.DataStructures.{Clock, TestClock}
-import BallCore.Groups.nullUUID
-import BallCore.Reinforcements.{
+import CivCubed.DataStructures.{Clock, TestClock}
+import CivCubed.Groups.nullUUID
+import CivCubed.Reinforcements.{
     ReinforcementError,
     ReinforcementState,
     ReinforcementTypes,
 }
-import BallCore.Storage.SQLManager
-import BallCore.{Groups, Reinforcements, Storage}
+import CivCubed.Storage.SQLManager
+import CivCubed.{Groups, Reinforcements, Storage}
 
 import java.time.OffsetDateTime
 import java.time.temporal.ChronoUnit

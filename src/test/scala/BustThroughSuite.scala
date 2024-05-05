@@ -2,12 +2,12 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import BallCore.DataStructures.TestClock
+import CivCubed.DataStructures.TestClock
 import java.time.OffsetDateTime
-import BallCore.Reinforcements.BustThroughTracker
+import CivCubed.Reinforcements.BustThroughTracker
 import be.seeseemelk.mockbukkit.WorldMock
 import org.bukkit.Location
-import BallCore.Reinforcements.BustResult
+import CivCubed.Reinforcements.BustResult
 import java.time.Duration
 
 class BustThroughSuite extends munit.FunSuite {

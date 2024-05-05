@@ -1,6 +1,6 @@
 {
-	"id": "ballcorevelocityplugin",
-	"name": "BallCore Velocity Plugin",
+	"id": "civcubedvelocityplugin",
+	"name": "CivCubed Velocity Plugin",
 	"version": "0.0.1",
 	"description": "CivCubed velocity plugin",
 	"url": "https://civcubed.net",
@@ -9,11 +9,11 @@
 	],
 	"dependencies": [
 		{
-			"id": "ballcoredependencyplugin"
+			"id": "civcubeddependencyplugin"
 		},
 		{
-			"id": "ballcorecommoncode"
+			"id": "civcubedcommoncode"
 		}
 	],
-	"main": "BallCoreVelocityPlugin.VelocityBootstrap"
+	"main": "CivCubedVelocityPlugin.VelocityBootstrap"
 }

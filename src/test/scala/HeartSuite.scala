@@ -2,20 +2,20 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import BallCore.Beacons.{CivBeaconManager, PolygonAdjustmentError}
-import BallCore.Groups.GroupManager
-import BallCore.Storage.SQLManager
-import BallCore.{Beacons, Storage}
+import CivCubed.Beacons.{CivBeaconManager, PolygonAdjustmentError}
+import CivCubed.Groups.GroupManager
+import CivCubed.Storage.SQLManager
+import CivCubed.{Beacons, Storage}
 import be.seeseemelk.mockbukkit.WorldMock
 import org.bukkit.Location
 import org.locationtech.jts.geom.{Coordinate, GeometryFactory}
 
 import java.util.UUID
 import scala.util.chaining.*
-import BallCore.Beacons.BeaconManagerHooks
+import CivCubed.Beacons.BeaconManagerHooks
 import cats.effect.IO
 import cats.effect.kernel.Deferred
-import BallCore.DataStructures.TestClock
+import CivCubed.DataStructures.TestClock
 import java.time.OffsetDateTime
 
 class HeartSuite extends munit.FunSuite {

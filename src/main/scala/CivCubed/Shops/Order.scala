@@ -1,0 +1,32 @@
+package CivCubed.Shops
+
+import CivCubed.CustomItems.{ItemGroup, ItemRegistry}
+import org.bukkit.inventory.{ItemStack, StonecuttingRecipe}
+import org.bukkit.{Material, NamespacedKey}
+import org.bukkit.plugin.Plugin
+
+object Order:
+    val group: ItemGroup =
+        ItemGroup(
+            NamespacedKey("civcubed", "orders"),
+            ItemStack(Material.PAPER),
+        )
+    val buyOrderCMD = 4
+    val sellOrderCMD = 5
+
+    def register()(using registry: ItemRegistry, p: Plugin): Unit =
+            registry.register(BuyOrder())
+            registry.register(SellOrder())
+            val soRecipe = StonecuttingRecipe(
+                NamespacedKey("civcubed", "sell_order_recipe"),
+                SellOrder.template,
+                Material.PAPER,
+            )
+            registry.addRecipe(soRecipe)
+            registry.register(ShopChest())
+            val scRecipe = StonecuttingRecipe(
+                NamespacedKey("civcubed", "shop_chest_recipe"),
+                ShopChest.template,
+                Material.CHEST,
+            )
+            registry.addRecipe(scRecipe)

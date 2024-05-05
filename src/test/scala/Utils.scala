@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import BallCore.Storage.SQLManager
-import BallCore.UI.{UIProgram, UIServices}
+import CivCubed.Storage.SQLManager
+import CivCubed.UI.{UIProgram, UIServices}
 import cats.effect.IO
 import cats.effect.kernel.Resource
 import cats.effect.unsafe.implicits.global

@@ -2,35 +2,35 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import BallCore.Storage.SQLManager
-import BallCore.Groups.GroupManager
-import BallCore.Beacons.CivBeaconManager
+import CivCubed.Storage.SQLManager
+import CivCubed.Groups.GroupManager
+import CivCubed.Beacons.CivBeaconManager
 import org.bukkit.Location
 import be.seeseemelk.mockbukkit.WorldMock
 import java.util.UUID
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.Coordinate
-import BallCore.Sigils.BattleManager
+import CivCubed.Sigils.BattleManager
 
-import BallCore.Sigils.BattleHooks
-import BallCore.Sigils.BattleID
+import CivCubed.Sigils.BattleHooks
+import CivCubed.Sigils.BattleID
 import cats.effect.IO
 import munit.Assertions
 import scala.collection.mutable
-import BallCore.Beacons.BeaconID
+import CivCubed.Beacons.BeaconID
 import org.locationtech.jts.geom.Polygon
 import org.locationtech.jts.geom.Geometry
 import skunk.Session
-import BallCore.Beacons.BeaconManagerHooks
+import CivCubed.Beacons.BeaconManagerHooks
 import skunk.Transaction
 import cats.effect.kernel.Deferred
-import BallCore.Beacons.IngameBeaconManagerHooks
-import BallCore.PrimeTime.PrimeTimeManager
-import BallCore.DataStructures.TestClock
+import CivCubed.Beacons.IngameBeaconManagerHooks
+import CivCubed.PrimeTime.PrimeTimeManager
+import CivCubed.DataStructures.TestClock
 import java.time.OffsetDateTime
 import java.time.OffsetTime
 import java.time.Duration
-import BallCore.Sigils.BattleError
+import CivCubed.Sigils.BattleError
 import cats.effect.kernel.Fiber
 import cats.effect.kernel.Outcome.Succeeded
 

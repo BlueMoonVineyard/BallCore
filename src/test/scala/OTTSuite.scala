@@ -2,12 +2,12 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import BallCore.Storage.SQLManager
+import CivCubed.Storage.SQLManager
 import org.bukkit.entity.Player
-import BallCore.OneTimeTeleport.OneTimeTeleporterHooks
+import CivCubed.OneTimeTeleport.OneTimeTeleporterHooks
 import cats.effect.IO
-import BallCore.OneTimeTeleport.OneTimeTeleporter
-import BallCore.OneTimeTeleport.OTTError
+import CivCubed.OneTimeTeleport.OneTimeTeleporter
+import CivCubed.OneTimeTeleport.OTTError
 
 class TestOneTimeTeleporterHooks(var it: Boolean)
     extends OneTimeTeleporterHooks:

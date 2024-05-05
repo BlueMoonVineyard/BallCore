@@ -1,0 +1,77 @@
+// SPDX-FileCopyrightText: 2023 Janet Blackquill <uhhadd@gmail.com>
+//
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+package CivCubed.CraftingStations
+
+import CivCubed.CustomItems.{CustomItemStack, ItemGroup}
+import CivCubed.UI.Elements.*
+import CivCubed.UI.Prompts
+import org.bukkit.inventory.ItemStack
+import org.bukkit.plugin.Plugin
+import org.bukkit.{Material, NamespacedKey, Tag}
+import RecipeIngredient.*
+import CivCubed.Storage.SQLManager
+import CivCubed.CustomItems.ItemRegistry
+
+object Woodcutter:
+    private val woods: List[(Tag[Material], Material)] = List(
+        (Tag.OAK_LOGS, Material.OAK_PLANKS),
+        (Tag.SPRUCE_LOGS, Material.SPRUCE_PLANKS),
+        (Tag.BIRCH_LOGS, Material.BIRCH_PLANKS),
+        (Tag.JUNGLE_LOGS, Material.JUNGLE_PLANKS),
+        (Tag.ACACIA_LOGS, Material.ACACIA_PLANKS),
+        (Tag.DARK_OAK_LOGS, Material.DARK_OAK_PLANKS),
+        (Tag.MANGROVE_LOGS, Material.MANGROVE_PLANKS),
+        (Tag.CHERRY_LOGS, Material.CHERRY_PLANKS),
+        (Tag.CRIMSON_STEMS, Material.CRIMSON_PLANKS),
+        (Tag.WARPED_STEMS, Material.WARPED_PLANKS),
+    )
+    val recipes: List[Recipe] = woods.flatMap { it =>
+        val (input, output) = it
+        val key = output.getKey().toString().replace(':', '_')
+
+        List(
+            Recipe(
+                trans"recipes.process-logs.low-efficiency",
+                NamespacedKey("civcubed", s"process_${key}_low"),
+                List((TagList(input), 64)),
+                List((ItemStack(output), 64 * 5)),
+                10,
+                1,
+            ),
+            Recipe(
+                trans"recipes.process-logs.medium-efficiency",
+                NamespacedKey("civcubed", s"process_${key}_medium"),
+                List((TagList(input), 64)),
+                List((ItemStack(output), 64 * 6)),
+                10,
+                2,
+            ),
+            Recipe(
+                trans"recipes.process-logs.high-efficiency",
+                NamespacedKey("civcubed", s"process_${key}_high"),
+                List((TagList(input), 64)),
+                List((ItemStack(output), 64 * 8)),
+                20,
+                4,
+            ),
+        )
+    }
+    val template: CustomItemStack = CustomItemStack.make(
+        NamespacedKey("civcubed", "woodcutter"),
+        Material.STONECUTTER,
+        trans"items.woodcutter",
+        trans"items.woodcutter.lore",
+    )
+
+class Woodcutter()(using
+    CraftingActor,
+    Plugin,
+    Prompts,
+    SQLManager,
+    ItemRegistry,
+) extends CraftingStation(Woodcutter.recipes):
+    def group: ItemGroup = CraftingStations.group
+
+    def template: CustomItemStack = Woodcutter.template

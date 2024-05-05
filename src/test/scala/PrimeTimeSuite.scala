@@ -2,12 +2,12 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import BallCore.DataStructures.TestClock
-import BallCore.Storage.SQLManager
-import BallCore.Groups
+import CivCubed.DataStructures.TestClock
+import CivCubed.Storage.SQLManager
+import CivCubed.Groups
 
 import java.time.OffsetDateTime
-import BallCore.PrimeTime.PrimeTimeManager
+import CivCubed.PrimeTime.PrimeTimeManager
 import java.util.UUID
 import java.time.OffsetTime
 import java.time.Duration

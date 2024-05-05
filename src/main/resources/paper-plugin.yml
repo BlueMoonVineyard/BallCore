@@ -1,21 +1,21 @@
 # SPDX-FileCopyrightText: 2022 Janet Blackquill <uhhadd@gmail.com>
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
-name: BallCore
+name: CivCubed
 version: "0.1"
-main: BallCore.Main
+main: CivCubed.Main
 description: Hub plugin of CivBalls
 authors: [Janet Blackquill]
-website: https://github.com/BlueMoonVineyard/BallCore
+website: https://github.com/BlueMoonVineyard/CivCubed
 api-version: "1.20"
 folia-supported: true
 dependencies:
   server:
-    BallCoreDependencyPlugin:
+    CivCubedDependencyPlugin:
       load: BEFORE
       required: true
       join-classpath: true
-    BallCoreCommonCode:
+    CivCubedCommonCode:
       load: BEFORE
       required: true
       join-classpath: true

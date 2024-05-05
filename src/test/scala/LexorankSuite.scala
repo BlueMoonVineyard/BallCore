@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import BallCore.DataStructures.Lexorank
+import CivCubed.DataStructures.Lexorank
 
 class LexorankSuite extends munit.FunSuite:
     val tests = List(

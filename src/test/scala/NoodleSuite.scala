@@ -2,12 +2,12 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import BallCore.Storage.SQLManager
-import BallCore.Groups.GroupManager
+import CivCubed.Storage.SQLManager
+import CivCubed.Groups.GroupManager
 import java.util.UUID
-import BallCore.NoodleEditor.NoodleManager
-import BallCore.NoodleEditor.NoodleKey
-import BallCore.Groups.nullUUID
+import CivCubed.NoodleEditor.NoodleManager
+import CivCubed.NoodleEditor.NoodleKey
+import CivCubed.Groups.nullUUID
 import be.seeseemelk.mockbukkit.WorldMock
 import scalax.collection.immutable.Graph
 import org.bukkit.Location

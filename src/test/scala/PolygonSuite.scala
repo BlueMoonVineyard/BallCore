@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import BallCore.PolygonEditor.*
+import CivCubed.PolygonEditor.*
 import be.seeseemelk.mockbukkit.entity.PlayerMock
 import be.seeseemelk.mockbukkit.{MockBukkit, MockPlugin, WorldMock}
 import org.bukkit.Location
@@ -15,8 +15,8 @@ class PolygonSuite extends munit.FunSuite:
     given Plugin = plugin
 
     test("editormodel") {
-        import BallCore.PolygonEditor.EditorModelState.*
-        import BallCore.PolygonEditor.EditorMsg.*
+        import CivCubed.PolygonEditor.EditorModelState.*
+        import CivCubed.PolygonEditor.EditorMsg.*
 
         val world = WorldMock()
 
