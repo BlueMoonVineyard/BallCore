@@ -62,6 +62,7 @@ import CivCubed.Gear.SunoGear
 import CivCubed.Gear.HepatizonGear
 import CivCubed.Gear.ManyullynGear
 import CivCubed.Commands.*
+import CivCubed.PVPServer.ArmorStandDispenser
 
 class ExceptionLogger extends Listener:
     @EventHandler
@@ -267,6 +268,7 @@ final class Main extends JavaPlugin:
             RelayCommand().root.register()
             SettingsCommand().node.register()
             VoteCommand().tree.register()
+            ArmorStandDispenser.register()
         catch
             case e: Throwable =>
                 getSLF4JLogger().error(
