@@ -21,19 +21,15 @@ import org.bukkit.inventory.{
 import org.bukkit.{Material, NamespacedKey, Server}
 
 import scala.util.chaining.*
+import org.bukkit.inventory.ItemStack
 
 /// helper class for managing custom model data numbers of the oretier ore types
 enum OreTypes(val num: Int):
-    case iron extends OreTypes(10)
-    case palladium extends OreTypes(20)
+    case adamantite extends OreTypes(10)
+    case arilla extends OreTypes(20)
     case mythril extends OreTypes(30)
     case orichalcum extends OreTypes(40)
-    case adamantite extends OreTypes(50)
-    case marilla extends OreTypes(60)
-
-    case copper extends OreTypes(110)
-
-    case gold extends OreTypes(210)
+    case palladium extends OreTypes(50)
 
 enum OreTier:
     case Raw
@@ -46,7 +42,6 @@ case class OreVariants(
     nugget: CustomItemStack,
     ingot: CustomItemStack,
     block: CustomItemStack,
-    name: String,
     id: String,
 ):
     def ore(tier: OreTier): CustomItemStack =
@@ -56,7 +51,9 @@ case class OreVariants(
             case OreTier.Ingot => ingot
             case OreTier.Block => block
 
-    def register(group: ItemGroup, registry: ItemRegistry, serv: Server): Unit =
+    def register(
+        group: ItemGroup
+    )(using registry: ItemRegistry, serv: Server): Unit =
         OreTier.values.foreach { tier =>
             registry.register(Ore(group, tier, this))
         }
@@ -157,7 +154,6 @@ case class OreVariants(
 object Helpers:
     def factory(
         id: String,
-        name: String,
         num: Int,
         raw: Material,
         nugget: Material,
@@ -170,7 +166,7 @@ object Helpers:
                     .make(
                         NamespacedKey("civcubed", s"raw_$id"),
                         raw,
-                        txt"Raw $name",
+                        trans"items.$id.raw",
                     ),
                 num + 0,
             ),
@@ -178,7 +174,7 @@ object Helpers:
                 CustomItemStack.make(
                     NamespacedKey("civcubed", s"${id}_nugget"),
                     nugget,
-                    txt"$name Nugget",
+                    trans"items.$id.nugget",
                 ),
                 num + 1,
             ),
@@ -186,7 +182,7 @@ object Helpers:
                 CustomItemStack.make(
                     NamespacedKey("civcubed", s"${id}_ingot"),
                     ingot,
-                    txt"$name Ingot",
+                    trans"items.$id.ingot",
                 ),
                 num + 2,
             ),
@@ -194,11 +190,10 @@ object Helpers:
                 CustomItemStack.make(
                     NamespacedKey("civcubed", s"${id}_block"),
                     block,
-                    txt"$name Block",
+                    trans"items.$id.block",
                 ),
                 num + 3,
             ),
-            name,
             id,
         )
 
@@ -211,10 +206,9 @@ object Helpers:
         is.setItemMeta(im)
         is
 
-    def ironLike(id: String, name: String, num: Int): OreVariants =
+    def ironLike(id: String, num: Int): OreVariants =
         factory(
             id,
-            name,
             num,
             Material.RAW_IRON,
             Material.IRON_NUGGET,
@@ -222,36 +216,33 @@ object Helpers:
             Material.IRON_BLOCK,
         )
 
-    def goldLike(id: String, name: String, num: Int): OreVariants =
-        factory(
-            id,
-            name,
-            num,
-            Material.RAW_GOLD,
-            Material.GOLD_NUGGET,
-            Material.GOLD_INGOT,
-            Material.GOLD_BLOCK,
-        )
-
-    def copperLike(id: String, name: String, num: Int): OreVariants =
-        factory(
-            id,
-            name,
-            num,
-            Material.RAW_COPPER,
-            Material.IRON_NUGGET,
-            Material.COPPER_INGOT,
-            Material.COPPER_BLOCK,
-        )
-
     def register(group: ItemGroup, variants: OreVariants)(using
         registry: ItemRegistry,
         server: Server,
     ): Unit =
-        variants.register(group, registry, server)
+        variants.register(group)
 
     def register(group: ItemGroup, ms: CustomItemStack*)(using
         registry: ItemRegistry,
         server: Server,
     ): Unit =
         ms.foreach { x => registry.register(PlainCustomItem(group, x)) }
+
+def register()(using ItemRegistry, Server): Unit =
+    val oreTypes = List(
+        ("adamantite", OreTypes.adamantite),
+        ("arilla", OreTypes.arilla),
+        ("mythril", OreTypes.mythril),
+        ("orichalcum", OreTypes.orichalcum),
+        ("palladium", OreTypes.palladium),
+    )
+    oreTypes.foreach { (name, kind) =>
+        Helpers
+            .ironLike(name, kind.num)
+            .register(
+                ItemGroup(
+                    NamespacedKey("civcubed", "ores"),
+                    ItemStack(Material.DIRT),
+                )
+            )
+    }

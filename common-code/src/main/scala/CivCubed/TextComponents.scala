@@ -22,7 +22,7 @@ class TextComponents:
             var it = strings.next()
             val expressions = keys.iterator
             while strings.hasNext do
-                it += s".${expressions.next()}.${strings.next()}"
+                it += s"${expressions.next()}${strings.next()}"
             Component.translatable(it)
 
     extension (a: Audience)
