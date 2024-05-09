@@ -83,7 +83,7 @@ class HeartBlock()(using
                     case Left(err) =>
                         event.getPlayer
                             .sendServerMessage(
-                                trans"notifications.cannot-edit-claims-error".args(err.explain().toComponent)
+                                trans"notifications.cannot-edit-claims-error".arguments(err.explain().toComponent)
                             )
                     case Right(_) =>
                         if sql.useBlocking(
@@ -119,7 +119,7 @@ class HeartBlock()(using
             sql.useBlocking(sql.withS(essence.addEssence(owner, location)))
         event.getItem.setAmount(event.getItem.getAmount - 1)
         event.getPlayer.sendServerMessage(
-            trans"notifications.heart-essence".args(amount.toComponent)
+            trans"notifications.heart-essence".arguments(amount.toComponent)
         )
 
     def onBlockClicked(event: PlayerInteractEvent): Unit =
@@ -135,7 +135,7 @@ class HeartBlock()(using
             case Some((x, y, z)) =>
                 event.getPlayer
                     .sendServerMessage(
-                        trans"notifications.heart-already-placed".args(
+                        trans"notifications.heart-already-placed".arguments(
                             x.toComponent, y.toComponent, z.toComponent
                         )
                     )
@@ -181,7 +181,7 @@ class HeartBlock()(using
                 PlaceCivHeart.grant(event.getPlayer, "placed_heart")
                 event.getPlayer
                     .sendServerMessage(
-                        trans"notifications.heart-placed.existing-beacon".args((x-1).toComponent)
+                        trans"notifications.heart-placed.existing-beacon".arguments((x-1).toComponent)
                     )
             case Left(_) =>
                 ()

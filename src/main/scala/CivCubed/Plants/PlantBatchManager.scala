@@ -486,19 +486,19 @@ class PlantBatchManager()(using sql: SQLManager, p: Plugin, c: Clock)
                         (rightSeason, rightClimate) match
                             case (false, false) =>
                                 player.sendServerMessage(
-                                    trans"notifications.wrong-climate-and-season".args(plant.inner.what.growingClimate.display, plant.inner.what.growingSeason.display, actualClimate.display, actualSeason.display)
+                                    trans"notifications.wrong-climate-and-season".arguments(plant.inner.what.growingClimate.display, plant.inner.what.growingSeason.display, actualClimate.display, actualSeason.display)
                                 )
                             case (false, true) =>
                                 player.sendServerMessage(
-                                    trans"notifications.wrong-season".args(plant.inner.what.growingSeason.display, actualSeason.display)
+                                    trans"notifications.wrong-season".arguments(plant.inner.what.growingSeason.display, actualSeason.display)
                                 )
                             case (true, false) =>
                                 player.sendServerMessage(
-                                    trans"notifications.wrong-climate".args(plant.inner.what.growingClimate.display, actualClimate.display)
+                                    trans"notifications.wrong-climate".arguments(plant.inner.what.growingClimate.display, actualClimate.display)
                                 )
                             case (true, true) =>
                                 player.sendServerMessage(
-                                    trans"notifications.right-climate".args(plant.inner.ageIngameHours.toComponent)
+                                    trans"notifications.right-climate".arguments(plant.inner.ageIngameHours.toComponent)
                                 )
                     }
                 }

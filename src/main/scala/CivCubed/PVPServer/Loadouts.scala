@@ -94,7 +94,7 @@ class LoadoutsCommand(using sql: SQLManager, lm: LoadoutManager):
                                     )
                                     _ <- IO {
                                         player.sendServerMessage(
-                                            trans"commands.loadouts.saved".args(loadoutName.toComponent)
+                                            trans"commands.loadouts.saved".arguments(loadoutName.toComponent)
                                         )
                                     }
                                 yield ())
@@ -132,11 +132,11 @@ class LoadoutsCommand(using sql: SQLManager, lm: LoadoutManager):
                                                                     LoadoutError.alreadyExists
                                                                 ) =>
                                                                 player.sendServerMessage(
-                                                                    trans"commands.loadouts.published-already-exists".args(publishedName.toComponent)
+                                                                    trans"commands.loadouts.published-already-exists".arguments(publishedName.toComponent)
                                                                 )
                                                             case Right(value) =>
                                                                 player.sendServerMessage(
-                                                                    trans"commands.loadouts.published-successfully".args(loadoutName.toComponent, publishedName.toComponent)
+                                                                    trans"commands.loadouts.published-successfully".arguments(loadoutName.toComponent, publishedName.toComponent)
                                                                 )
                                                     }
                                                 yield ()
@@ -173,7 +173,7 @@ class LoadoutsCommand(using sql: SQLManager, lm: LoadoutManager):
                                                 .getInventory()
                                                 .setContents(ok)
                                             player.sendServerMessage(
-                                                trans"commands.loadouts.private.applied".args(name.toComponent)
+                                                trans"commands.loadouts.private.applied".arguments(name.toComponent)
                                             )
                                 }: PlayerCommandExecutor)
                         )
@@ -201,7 +201,7 @@ class LoadoutsCommand(using sql: SQLManager, lm: LoadoutManager):
                                                 .getInventory()
                                                 .setContents(ok)
                                             player.sendServerMessage(
-                                                trans"commands.loadouts.public.applied".args(name.toComponent)
+                                                trans"commands.loadouts.public.applied".arguments(name.toComponent)
                                             )
                                 }: PlayerCommandExecutor)
                         )

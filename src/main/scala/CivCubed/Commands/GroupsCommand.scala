@@ -86,7 +86,7 @@ private def withGroupArgument(using sql: SQLManager, gm: GroupManager)(
             fn(sender, args, group)
         case Right(None) =>
             sender.sendServerMessage(
-                trans"commands.groups.argument-not-found".args(group.toComponent)
+                trans"commands.groups.argument-not-found".arguments(group.toComponent)
             )
 }
 
@@ -165,7 +165,7 @@ class GroupsCommand(using
                         ) match
                             case Left(err) =>
                                 sender.sendServerMessage(
-                                    trans"commands.groups.invite.couldnt-invite".args(
+                                    trans"commands.groups.invite.couldnt-invite".arguments(
                                         target.getName().toComponent,
                                         err.explain().toComponent,
                                     )
@@ -182,7 +182,7 @@ class GroupsCommand(using
                                         )
                                     then
                                         sender.sendServerMessage(
-                                            trans"commands.groups.invite.already-joined".args(
+                                            trans"commands.groups.invite.already-joined".arguments(
                                                 target.getName().toComponent,
                                                 group.name.toComponent,
                                             )
@@ -198,14 +198,14 @@ class GroupsCommand(using
                                             )
                                         )
                                         sender.sendServerMessage(
-                                            trans"commands.groups.invite.invited".args(
+                                            trans"commands.groups.invite.invited".arguments(
                                                 target.getName.toComponent,
                                                 group.name.toComponent,
                                             )
                                         )
                                 else
                                     sender.sendServerMessage(
-                                        trans"commands.groups.invite.no-permission".args(
+                                        trans"commands.groups.invite.no-permission".arguments(
                                             group.name.toComponent,
                                         )
                                     )

@@ -69,7 +69,7 @@ enum PolygonAdjustmentError:
 
         this match
             case polygonTooLarge(maximum, actual) =>
-                trans"errors.polygon-adjustment.too-large".args(
+                trans"errors.polygon-adjustment.too-large".arguments(
                     maximum.toComponent.color(Colors.teal),
                     df.format(actual).toComponent.color(Colors.teal),
                 )
@@ -81,7 +81,7 @@ enum PolygonAdjustmentError:
                                 .color(Colors.grellow)}"
                     }
                     .mkComponent(txt", ")
-                trans"errors.polygon-adjustment.hearts-not-included".args(
+                trans"errors.polygon-adjustment.hearts-not-included".arguments(
                     locations
                 )
             case overlapsOneOtherPolygon(
@@ -90,11 +90,11 @@ enum PolygonAdjustmentError:
                     groupName,
                     Some(_),
                 ) =>
-                trans"errors.polygon-adjustment.overlaps-one-other-can-war".args(
+                trans"errors.polygon-adjustment.overlaps-one-other-can-war".arguments(
                     groupName.toComponent.color(Colors.grellow)
                 )
             case overlapsOneOtherPolygon(beaconID, groupID, groupName, None) =>
-                trans"errors.polygon-adjustment.overlaps-one-other-can-not-war".args(
+                trans"errors.polygon-adjustment.overlaps-one-other-can-not-war".arguments(
                     groupName.toComponent.color(Colors.grellow)
                 )
             case overlapsMultiplePolygons() =>

@@ -26,7 +26,7 @@ class OneTimeAdaptation(using
                     trans"commands.one-time-adaptation.explanation"
                 )
                 sender.sendServerMessage(
-                    trans"commands.one-time-adaptation.prompt-to-continue".args(
+                    trans"commands.one-time-adaptation.prompt-to-continue".arguments(
                         txt("/one-time-adaptation confirm").color(Colors.teal)
                     )
                 )

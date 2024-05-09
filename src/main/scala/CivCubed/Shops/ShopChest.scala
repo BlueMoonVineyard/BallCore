@@ -82,17 +82,17 @@ class ShopChest(using ir: ItemRegistry, p: Plugin)
                     player.sendServerMessage(txt"")
                     player.sendServerMessage(trans"notifications.shop-chest-title")
                     player.sendServerMessage(
-                        trans"notifications.shop-chest.item-page".args((state.index + 1).toComponent, orders.length.toComponent)
+                        trans"notifications.shop-chest.item-page".arguments((state.index + 1).toComponent, orders.length.toComponent)
                     )
                     player.sendServerMessage(
-                        trans"notifications.shop-chest.item".args(order.selling._1.displayName().hoverEvent(order.selling._1), order.selling._2.toComponent, possibleExchanges.toComponent)
+                        trans"notifications.shop-chest.item".arguments(order.selling._1.displayName().hoverEvent(order.selling._1), order.selling._2.toComponent, possibleExchanges.toComponent)
                     )
                     player.sendServerMessage(
-                        trans"notifications.shop-chest.price".args(order.price._1.displayName(), order.price._2.toComponent)
+                        trans"notifications.shop-chest.price".arguments(order.price._1.displayName(), order.price._2.toComponent)
                     )
                     player.sendServerMessage(txt"")
                     player.sendServerMessage(
-                        trans"notifications.shop-chest.punch-to-buy".args(order.price._1.displayName())
+                        trans"notifications.shop-chest.punch-to-buy".arguments(order.price._1.displayName())
                     )
         else
             val orders = SellOrderDescription
@@ -122,7 +122,7 @@ class ShopChest(using ir: ItemRegistry, p: Plugin)
                                         needed,
                                     ) =>
                                     player.sendServerMessage(
-                                        trans"notifications.shop-chest.buyer-cant-afford".args(needed.toComponent, order.price._1.displayName(), has.toComponent)
+                                        trans"notifications.shop-chest.buyer-cant-afford".arguments(needed.toComponent, order.price._1.displayName(), has.toComponent)
                                     )
                                 case ExchangeError.buyerCantReceive =>
                                     player.sendServerMessage(
@@ -133,7 +133,7 @@ class ShopChest(using ir: ItemRegistry, p: Plugin)
                                         needed,
                                     ) =>
                                     player.sendServerMessage(
-                                        trans"notifications.shop-chest.seller-cant-afford".args(needed.toComponent, order.selling._1.displayName(), has.toComponent)
+                                        trans"notifications.shop-chest.seller-cant-afford".arguments(needed.toComponent, order.selling._1.displayName(), has.toComponent)
                                     )
                                 case ExchangeError.sellerCantReceive =>
                                     player.sendServerMessage(
@@ -147,11 +147,11 @@ class ShopChest(using ir: ItemRegistry, p: Plugin)
                         case Right(_) =>
                             UseShopChest.grant(player, "did_exchange")
                             player.sendServerMessage(
-                                trans"notifications.shop-chest.paid-received".args(order.price._1.displayName(), order.price._2.toComponent, order.selling._1.displayName().hoverEvent(order.selling._1), order.selling._2.toComponent)
+                                trans"notifications.shop-chest.paid-received".arguments(order.price._1.displayName(), order.price._2.toComponent, order.selling._1.displayName().hoverEvent(order.selling._1), order.selling._2.toComponent)
                             )
                 case Some(order) =>
                     player.sendServerMessage(
-                        trans"notifications.shop-chest.invalid-payment".args(order.price._2.toComponent)
+                        trans"notifications.shop-chest.invalid-payment".arguments(order.price._2.toComponent)
                     )
                 case _ =>
                     ()

@@ -188,7 +188,7 @@ class GroupManagementProgram(using
     override def view(model: Model): Callback ?=> Gui =
         val group = model.group
         Root(
-            trans"ui.groups.viewing.title".args(
+            trans"ui.groups.viewing.title".arguments(
                 group.metadata.name.toComponent
             ),
             6,
@@ -281,7 +281,7 @@ class GroupManagementProgram(using
                                     case None =>
                                         Lore(
                                             trans"ui.groups.vulnerability-window.timezone-required"
-                                                .args(
+                                                .arguments(
                                                     trans"sample-commands.timezone"
                                                         .color(Colors.teal)
                                                 )
@@ -310,7 +310,7 @@ class GroupManagementProgram(using
                                             formatter.format(end).toComponent
                                         Lore(
                                             trans"ui.groups.vulnerability-window.span"
-                                                .args(startS, endS)
+                                                .arguments(startS, endS)
                                                 .color(NamedTextColor.WHITE)
                                         )
                                         Lore(
@@ -341,12 +341,12 @@ class GroupManagementProgram(using
                                             formatter.format(end).toComponent
                                         Lore(
                                             trans"ui.groups.vulnerability-window.span"
-                                                .args(startS, endS)
+                                                .arguments(startS, endS)
                                                 .color(NamedTextColor.WHITE)
                                         )
                                         Lore(
                                             trans"ui.groups.vulnerability-window.timezone-required"
-                                                .args(
+                                                .arguments(
                                                     trans"sample-commands.timezone"
                                                         .color(Colors.teal)
                                                 )
@@ -611,13 +611,13 @@ class GroupManagementProgram(using
                     }
             case Message.DeleteGroup =>
                 val p = ConfirmationPrompt(
-                    trans"ui.groups.delete.confirmation.title".args(
+                    trans"ui.groups.delete.confirmation.title".arguments(
                         model.group.metadata.name.toComponent
                     ),
-                    trans"ui.groups.delete.confirmation.yes".args(
+                    trans"ui.groups.delete.confirmation.yes".arguments(
                         model.group.metadata.name.toComponent
                     ),
-                    trans"ui.groups.delete.confirmation.no".args(
+                    trans"ui.groups.delete.confirmation.no".arguments(
                         model.group.metadata.name.toComponent
                     ),
                     Item(
@@ -661,13 +661,13 @@ class GroupManagementProgram(using
                 model
             case Message.LeaveGroup =>
                 val p = ConfirmationPrompt(
-                    trans"ui.groups.leave.confirmation.title".args(
+                    trans"ui.groups.leave.confirmation.title".arguments(
                         model.group.metadata.name.toComponent
                     ),
-                    trans"ui.groups.leave.confirmation.yes".args(
+                    trans"ui.groups.leave.confirmation.yes".arguments(
                         model.group.metadata.name.toComponent
                     ),
-                    trans"ui.groups.leave.confirmation.no".args(
+                    trans"ui.groups.leave.confirmation.no".arguments(
                         model.group.metadata.name.toComponent
                     ),
                     Item(
@@ -959,7 +959,7 @@ class SubgroupManagementProgram(using
 
     override def view(model: Model): Callback ?=> Gui =
         Root(
-            trans"ui.groups.subgroup.title".args(
+            trans"ui.groups.subgroup.title".arguments(
                 model.subgroup.name.toComponent,
                 model.group.metadata.name.toComponent,
             ),
@@ -1269,12 +1269,12 @@ class RoleManagementProgram(using
         val group = model.group
         val title = model.subgroup match
             case None =>
-                trans"ui.groups.role.title".args(
+                trans"ui.groups.role.title".arguments(
                     role.name.toComponent,
                     group.metadata.name.toComponent,
                 )
             case Some(subgroup) =>
-                trans"ui.groups.role.override.title".args(
+                trans"ui.groups.role.override.title".arguments(
                     role.name.toComponent,
                     subgroup.name.toComponent,
                     group.metadata.name.toComponent,
@@ -1370,19 +1370,19 @@ class RoleManagementProgram(using
                                     case None =>
                                         Lore(
                                             trans"ui.groups.roles.permissions.subgroup.neutral"
-                                                .args(subgroup.name.toComponent)
+                                                .arguments(subgroup.name.toComponent)
                                                 .color(NamedTextColor.GRAY)
                                         )
                                     case Some(RuleMode.Allow) =>
                                         Lore(
                                             trans"ui.groups.roles.permissions.subgroup.allow"
-                                                .args(subgroup.name.toComponent)
+                                                .arguments(subgroup.name.toComponent)
                                                 .color(NamedTextColor.GRAY)
                                         )
                                     case Some(RuleMode.Deny) =>
                                         Lore(
                                             trans"ui.groups.roles.permissions.subgroup.deny"
-                                                .args(subgroup.name.toComponent)
+                                                .arguments(subgroup.name.toComponent)
                                                 .color(NamedTextColor.GRAY)
                                         )
 
@@ -1527,7 +1527,7 @@ class InvitesListProgram(using
                         Skull(player)
                         Lore(
                             trans"ui.groups.invites.invited-to-group"
-                                .args(
+                                .arguments(
                                     invite._2.metadata.name.toComponent
                                         .color(NamedTextColor.GREEN)
                                 )
@@ -1563,7 +1563,7 @@ class InvitesListProgram(using
                     Skull(player)
                     Lore(
                         trans"ui.groups.invites.invited-to-group"
-                            .args(
+                            .arguments(
                                 group.metadata.name.toComponent
                                     .color(NamedTextColor.GREEN)
                             )

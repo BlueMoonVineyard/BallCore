@@ -52,7 +52,7 @@ object RailManufactory:
             val key = output.getKey().toString().replace(':', '_')
             List(
                 Recipe(
-                    trans"recipes.rail-factory-make.low-efficiency".args(output.asComponent),
+                    trans"recipes.rail-factory-make.low-efficiency".arguments(output.asComponent),
                     NamespacedKey("civcubed", s"make_${key}_low"),
                     ingredients,
                     List((ItemStack(output), lo)),
@@ -60,7 +60,7 @@ object RailManufactory:
                     1,
                 ),
                 Recipe(
-                    trans"recipes.rail-factory-make.high-efficiency".args(output.asComponent),
+                    trans"recipes.rail-factory-make.high-efficiency".arguments(output.asComponent),
                     NamespacedKey("civcubed", s"make_${key}_high"),
                     ingredients,
                     List((ItemStack(output), hi)),

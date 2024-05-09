@@ -29,7 +29,7 @@ class Listener(using rs: RandomSpawn, sql: SQLManager, p: Plugin)
                 p,
                 task => {
                     if player.getHealth() > 0 then
-                        if player.getBedSpawnLocation() == null then
+                        if player.getRespawnLocation() == null then
                             sql.useFireAndForget(for {
                                 block <- rs.randomSpawnLocation
                                 _ <- IO.fromCompletableFuture(IO {

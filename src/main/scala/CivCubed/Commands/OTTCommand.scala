@@ -43,13 +43,13 @@ class OTTCommand(using sql: SQLManager, ott: OneTimeTeleporter):
                                             case Right(_) =>
                                                 val command =
                                                     trans"sample-commands.ott-accept"
-                                                        .args(
+                                                        .arguments(
                                                             sender.getName.toComponent
                                                         )
                                                         .color(Colors.teal)
                                                 target.sendServerMessage(
                                                     trans"notifications.received-ott-request"
-                                                        .args(
+                                                        .arguments(
                                                             sender
                                                                 .displayName(),
                                                             command,

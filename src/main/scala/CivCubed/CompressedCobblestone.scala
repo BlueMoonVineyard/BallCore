@@ -28,7 +28,7 @@ object CompressedCobblestone:
             NamespacedKey("civcubed", id + "compressed_cobblestone"),
             Material.COBBLESTONE,
             name,
-            trans"items.compressed-cobblestone.lore".args(amount.toComponent)
+            trans"items.compressed-cobblestone.lore".arguments(amount.toComponent)
         )
     )
     val group = ItemGroup(

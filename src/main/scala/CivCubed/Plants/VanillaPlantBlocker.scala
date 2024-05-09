@@ -93,7 +93,7 @@ class VanillaPlantBlocker()(using p: Plugin) extends Listener:
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     def onHarvest(event: BlockBreakEvent): Unit =
 
-        if !(event.getBlock.getType == Material.GRASS || event.getBlock.getType == Material.TALL_GRASS)
+        if !(event.getBlock.getType == Material.SHORT_GRASS || event.getBlock.getType == Material.TALL_GRASS)
         then return
         if event.getPlayer.getInventory.getItemInMainHand == Material.SHEARS
         then return

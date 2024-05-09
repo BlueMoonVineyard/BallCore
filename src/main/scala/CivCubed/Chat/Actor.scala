@@ -116,23 +116,23 @@ class ChatActor(using gm: GroupManager, sql: SQLManager, sidebar: SidebarActor)
         if isMe then
             to.sendMessage(
                 trans"chat.whisper.recipient.me"
-                    .args(from.displayName(), msg.color(NamedTextColor.WHITE))
+                    .arguments(from.displayName(), msg.color(NamedTextColor.WHITE))
                     .color(whisperColor)
             )
             from.sendMessage(
                 trans"chat.whisper.sender.me"
-                    .args(from.displayName(), msg.color(NamedTextColor.WHITE))
+                    .arguments(from.displayName(), msg.color(NamedTextColor.WHITE))
                     .color(whisperColor)
             )
         else
             to.sendMessage(
                 trans"chat.whisper.recipient"
-                    .args(from.displayName(), msg.color(NamedTextColor.WHITE))
+                    .arguments(from.displayName(), msg.color(NamedTextColor.WHITE))
                     .color(whisperColor)
             )
             from.sendMessage(
                 trans"chat.whisper.sender"
-                    .args(from.displayName(), msg.color(NamedTextColor.WHITE))
+                    .arguments(from.displayName(), msg.color(NamedTextColor.WHITE))
                     .color(whisperColor)
             )
         playerReplies(to) = from
@@ -142,7 +142,7 @@ class ChatActor(using gm: GroupManager, sql: SQLManager, sidebar: SidebarActor)
             Bukkit.getServer
                 .sendMessage(
                     trans"chat.global.me"
-                        .args(
+                        .arguments(
                             from.displayName(),
                             msg.color(NamedTextColor.WHITE),
                         )
@@ -152,7 +152,7 @@ class ChatActor(using gm: GroupManager, sql: SQLManager, sidebar: SidebarActor)
             Bukkit.getServer
                 .sendMessage(
                     trans"chat.global"
-                        .args(
+                        .arguments(
                             from.displayName(),
                             msg.color(NamedTextColor.WHITE),
                         )
@@ -176,7 +176,7 @@ class ChatActor(using gm: GroupManager, sql: SQLManager, sidebar: SidebarActor)
                 .audience(nearby)
                 .sendMessage(
                     trans"chat.local.me"
-                        .args(
+                        .arguments(
                             from.displayName(),
                             msg.color(NamedTextColor.WHITE),
                         )
@@ -187,7 +187,7 @@ class ChatActor(using gm: GroupManager, sql: SQLManager, sidebar: SidebarActor)
                 .audience(nearby)
                 .sendMessage(
                     trans"chat.local"
-                        .args(
+                        .arguments(
                             from.displayName(),
                             msg.color(NamedTextColor.WHITE),
                         )
@@ -211,7 +211,7 @@ class ChatActor(using gm: GroupManager, sql: SQLManager, sidebar: SidebarActor)
             audience.foreach { (name, aud) =>
                 aud.sendMessage(
                     trans"chat.group.me"
-                        .args(
+                        .arguments(
                             name.toComponent,
                             from.displayName(),
                             msg.color(NamedTextColor.WHITE),
@@ -223,7 +223,7 @@ class ChatActor(using gm: GroupManager, sql: SQLManager, sidebar: SidebarActor)
             audience.foreach { (name, aud) =>
                 aud.sendMessage(
                     trans"chat.group"
-                        .args(
+                        .arguments(
                             name.toComponent,
                             from.displayName(),
                             msg.color(NamedTextColor.WHITE),
@@ -255,14 +255,14 @@ class ChatActor(using gm: GroupManager, sql: SQLManager, sidebar: SidebarActor)
                         case Right((name, _)) =>
                             IO {
                                 update(
-                                    trans"chat.sidebar.group".args(
+                                    trans"chat.sidebar.group".arguments(
                                         name.toComponent
                                     )
                                 )
                             }
                 } yield ())
             case PlayerState.chattingWith(target) =>
-                update(trans"chat.sidebar.dms".args(target.displayName))
+                update(trans"chat.sidebar.dms".arguments(target.displayName))
 
     def handle(m: ChatMessage): Unit =
         m match
@@ -292,7 +292,7 @@ class ChatActor(using gm: GroupManager, sql: SQLManager, sidebar: SidebarActor)
                 Bukkit.getServer
                     .sendMessage(
                         trans"chat.notification.join"
-                            .args(p.displayName())
+                            .arguments(p.displayName())
                             .color(NamedTextColor.YELLOW)
                     )
                 updateChannel(p, states(p))
@@ -300,14 +300,14 @@ class ChatActor(using gm: GroupManager, sql: SQLManager, sidebar: SidebarActor)
                 Bukkit.getServer
                     .sendMessage(
                         trans"chat.notification.leave"
-                            .args(p.displayName())
+                            .arguments(p.displayName())
                             .color(NamedTextColor.YELLOW)
                     )
             case ChatMessage.chattingInGroup(p, group) =>
                 states += p -> PlayerState.groupChat(group)
                 p.sendMessage(
                     trans"chat.notification.switch.group"
-                        .args(p.displayName())
+                        .arguments(p.displayName())
                         .color(NamedTextColor.GREEN)
                 )
                 updateChannel(p, states(p))
@@ -315,7 +315,7 @@ class ChatActor(using gm: GroupManager, sql: SQLManager, sidebar: SidebarActor)
                 states += p -> PlayerState.globalChat
                 p.sendMessage(
                     trans"chat.notification.switch.global"
-                        .args(p.displayName())
+                        .arguments(p.displayName())
                         .color(NamedTextColor.GREEN)
                 )
                 updateChannel(p, states(p))
@@ -323,7 +323,7 @@ class ChatActor(using gm: GroupManager, sql: SQLManager, sidebar: SidebarActor)
                 states += p -> PlayerState.localChat
                 p.sendMessage(
                     trans"chat.notification.switch.local"
-                        .args(p.displayName())
+                        .arguments(p.displayName())
                         .color(NamedTextColor.GREEN)
                 )
                 updateChannel(p, states(p))
@@ -348,7 +348,7 @@ class ChatActor(using gm: GroupManager, sql: SQLManager, sidebar: SidebarActor)
                 states += from -> PlayerState.chattingWith(target)
                 from.sendMessage(
                     trans"chat.notification.switch.dm"
-                        .args(target.displayName())
+                        .arguments(target.displayName())
                         .color(NamedTextColor.GREEN)
                 )
                 updateChannel(from, states(from))

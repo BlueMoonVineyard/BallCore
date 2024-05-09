@@ -29,7 +29,7 @@ object CarnivoreKitchen {
     val recipes: List[Recipe] = mushrooms.flatMap { it =>
         List(
             Recipe(
-                trans"recipes.make-rabbit-stew".args(Material.RABBIT_STEW.asComponent),
+                trans"recipes.make-rabbit-stew".arguments(Material.RABBIT_STEW.asComponent),
                 NamespacedKey("civcubed", "make_rabbit_stew"),
                 List(
                     (Vanilla(Material.COOKED_RABBIT), 4),
@@ -52,7 +52,7 @@ object CarnivoreKitchen {
 
         List(
             Recipe(
-                trans"recipes.cook-meat-low-efficiency".args(input.asComponent),
+                trans"recipes.cook-meat-low-efficiency".arguments(input.asComponent),
                 NamespacedKey("civcubed", s"cook_${key}_low"),
                 List((Vanilla(input), 32)),
                 List((ItemStack(output), 64)), // 32 * 2
@@ -60,7 +60,7 @@ object CarnivoreKitchen {
                 1,
             ),
             Recipe(
-                trans"recipes.cook-meat-medium-efficiency".args(input.asComponent),
+                trans"recipes.cook-meat-medium-efficiency".arguments(input.asComponent),
                 NamespacedKey("civcubed", s"cook_${key}_medium"),
                 List((Vanilla(input), 32)),
                 List((ItemStack(output), 96)), // 32 * 3
@@ -68,7 +68,7 @@ object CarnivoreKitchen {
                 2,
             ),
             Recipe(
-                trans"recipes.cook-meat-high-efficiency".args(input.asComponent),
+                trans"recipes.cook-meat-high-efficiency".arguments(input.asComponent),
                 NamespacedKey("civcubed", s"cook_${key}_high"),
                 List((Vanilla(input), 32)),
                 List((ItemStack(output), 160)), // 32 * 5

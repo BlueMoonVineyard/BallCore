@@ -125,7 +125,7 @@ class RecipeSelectorProgram(recipes: List[Recipe])(using
         else Component.translatable(s)
 
     override def view(model: Model): Callback ?=> Gui =
-        Root(trans"ui.recipe-selector.title".args((model.page + 1).toComponent, numPages.toComponent), 6) {
+        Root(trans"ui.recipe-selector.title".arguments((model.page + 1).toComponent, numPages.toComponent), 6) {
             OutlinePane(0, 0, 9, 5) {
                 paginated(model.page).foreach { (recipe, idx) =>
                     Button(
@@ -169,19 +169,19 @@ class RecipeSelectorProgram(recipes: List[Recipe])(using
                                 )
                         }
                         Lore(txt"")
-                        val time = trans"ui.recipe-selector.seconds".args(recipe.work.toComponent).color(
+                        val time = trans"ui.recipe-selector.seconds".arguments(recipe.work.toComponent).color(
                             NamedTextColor.GREEN
                         )
                         Lore(
-                            trans"ui.recipe-selector.work-time".args(time).color(NamedTextColor.WHITE)
+                            trans"ui.recipe-selector.work-time".arguments(time).color(NamedTextColor.WHITE)
                         )
                         val players =
-                            trans"ui.recipe-selector.n-players".args(recipe.minimumPlayersRequiredToWork.toComponent)
+                            trans"ui.recipe-selector.n-players".arguments(recipe.minimumPlayersRequiredToWork.toComponent)
                                 .color(
                                     NamedTextColor.GREEN
                                 )
                         Lore(
-                            trans"ui.recipe-selector.requires-players-working".args(players).color(
+                            trans"ui.recipe-selector.requires-players-working".arguments(players).color(
                                 NamedTextColor.WHITE
                             )
                         )

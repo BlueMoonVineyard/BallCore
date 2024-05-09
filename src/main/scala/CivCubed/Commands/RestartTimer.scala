@@ -27,7 +27,7 @@ class RestartTimer():
             else
                 bossBar.progress(time.toFloat / duration.toFloat)
                 val _ = bossBar.name(
-                    trans"commands.restart-timer.timer-indicator".args(time.toComponent)
+                    trans"commands.restart-timer.timer-indicator".arguments(time.toComponent)
                 )
 
     private val node =
@@ -49,7 +49,7 @@ class RestartTimer():
                                         bossBar.removeViewer(Bukkit.getServer())
 
                                 bossBar = BossBar.bossBar(
-                                    trans"commands.restart-timer.timer-indicator".args(time.toComponent),
+                                    trans"commands.restart-timer.timer-indicator".arguments(time.toComponent),
                                     1.0f,
                                     BossBar.Color.GREEN,
                                     BossBar.Overlay.PROGRESS,

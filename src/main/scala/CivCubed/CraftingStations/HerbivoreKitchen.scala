@@ -60,7 +60,7 @@ object HerbivoreKitchen {
 
         List(
             Recipe(
-                trans"recipes.make-herbivore-recipe.low-efficiency".args(first.asComponent),
+                trans"recipes.make-herbivore-recipe.low-efficiency".arguments(first.asComponent),
                 NamespacedKey("civcubed", s"make_$key"),
                 recipe,
                 output.map { (material, count) =>
@@ -70,7 +70,7 @@ object HerbivoreKitchen {
                 1,
             ),
             Recipe(
-                trans"recipes.make-herbivore-recipe.medium-efficiency".args(first.asComponent),
+                trans"recipes.make-herbivore-recipe.medium-efficiency".arguments(first.asComponent),
                 NamespacedKey("civcubed", s"make_$key"),
                 recipe,
                 output.map { (material, count) =>
@@ -80,7 +80,7 @@ object HerbivoreKitchen {
                 2,
             ),
             Recipe(
-                trans"recipes.make-herbivore-recipe.high-efficiency".args(first.asComponent),
+                trans"recipes.make-herbivore-recipe.high-efficiency".arguments(first.asComponent),
                 NamespacedKey("civcubed", s"make_$key"),
                 recipe,
                 output.map { (material, count) =>

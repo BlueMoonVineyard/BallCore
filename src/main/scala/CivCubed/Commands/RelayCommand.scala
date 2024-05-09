@@ -43,7 +43,7 @@ class RelayCommand(using
                                 case Left(err) =>
                                     IO {
                                         sender.sendServerMessage(
-                                            trans"commands.relay.webhook-add-error".args(err.explain)
+                                            trans"commands.relay.webhook-add-error".arguments(err.explain)
                                         )
                                     }
                                 case Right(_) =>
@@ -106,7 +106,7 @@ class RelayCommand(using
                                 case Left(err) =>
                                     IO {
                                         sender.sendServerMessage(
-                                            trans"commands.relay.webhook-remove-error".args(err.explain)
+                                            trans"commands.relay.webhook-remove-error".arguments(err.explain)
                                         )
                                     }
                                 case Right(_) =>

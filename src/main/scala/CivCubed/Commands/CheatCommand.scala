@@ -162,7 +162,7 @@ class CheatCommand(using
                             } yield (elevation, latitude, longitude, temperature)))
                         import Information.*
                         sender.sendServerMessage(
-                            trans"commands.cheat.my-acclimation.elevation".args(
+                            trans"commands.cheat.my-acclimation.elevation".arguments(
                                 elevation(
                                     plr.getLocation().getY.toInt
                                 ).toComponent
@@ -183,7 +183,7 @@ class CheatCommand(using
                                 plr.getLocation().getZ,
                             )
                         sender.sendServerMessage(
-                            trans"commands.cheat.my-acclimation.latitude".args(
+                            trans"commands.cheat.my-acclimation.latitude".arguments(
                                 lat.toComponent
                                     .style(
                                         NamedTextColor.GOLD,
@@ -197,7 +197,7 @@ class CheatCommand(using
                             )
                         )
                         sender.sendServerMessage(
-                            trans"commands.cheat.my-acclimation.longitude".args(
+                            trans"commands.cheat.my-acclimation.longitude".arguments(
                                 long.toComponent
                                     .style(
                                         NamedTextColor.GOLD,
@@ -217,7 +217,7 @@ class CheatCommand(using
                         )
                         sender.sendServerMessage(
                             trans"commands.cheat.my-acclimation.temperature"
-                                .args(
+                                .arguments(
                                     temp.toComponent
                                         .style(
                                             NamedTextColor.GOLD,
@@ -238,7 +238,7 @@ class CheatCommand(using
                         val bonusRateMultiplier = (dlat + dlong) / 2.0
                         sender.sendServerMessage(
                             trans"commands.cheat.my-acclimation.bonus-rate"
-                                .args(
+                                .arguments(
                                     bonusRateMultiplier.toComponent
                                         .style(NamedTextColor.GOLD)
                                 )

@@ -36,7 +36,7 @@ class Storage()(using kvs: KeyVal):
                 case Some((x, y, z, world)) =>
                     Location(Bukkit.getWorld(world), x, y, z)
                 case None =>
-                    Option(Bukkit.getOfflinePlayer(player).getBedSpawnLocation)
+                    Option(Bukkit.getOfflinePlayer(player).getRespawnLocation)
                         .getOrElse(Location(Bukkit.getWorld("world"), 0, 0, 0))
             }
 

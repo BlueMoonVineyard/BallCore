@@ -20,7 +20,7 @@ class MyFingerprintCommand(using
                     )
                     _ <- IO {
                         sender.sendServerMessage(
-                            trans"commands.my-fingerprint.your-fingerprint-id".args(print.toComponent)
+                            trans"commands.my-fingerprint.your-fingerprint-id".arguments(print.toComponent)
                         )
                         sender.sendServerMessage(
                             trans"commands.my-fingerprint.unshare.warning"

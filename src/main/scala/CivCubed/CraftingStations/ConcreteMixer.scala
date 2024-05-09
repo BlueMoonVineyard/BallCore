@@ -101,7 +101,7 @@ object ConcreteMixer:
 
         List(
             Recipe(
-                trans"recipes.mix-concrete-powder".args(concretePowder.asComponent),
+                trans"recipes.mix-concrete-powder".arguments(concretePowder.asComponent),
                 NamespacedKey("civcubed", s"mix_$cpKey"),
                 List(
                     (Vanilla(dye), 4),
@@ -113,7 +113,7 @@ object ConcreteMixer:
                 1,
             ),
             Recipe(
-                trans"recipes.harden-concrete".args(concrete.asComponent),
+                trans"recipes.harden-concrete".arguments(concrete.asComponent),
                 NamespacedKey("civcubed", s"harden_$cKey"),
                 List(
                     (Vanilla(concretePowder), 64)

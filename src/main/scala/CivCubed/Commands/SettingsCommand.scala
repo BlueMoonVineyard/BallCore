@@ -36,7 +36,7 @@ class SettingsCommand(using sql: SQLManager, kv: KeyVal):
                             val now = formatter.format(ZonedDateTime.now(zid))
                             sender.sendServerMessage(
                                 trans"commands.settings.timezone.current-sample"
-                                    .args(
+                                    .arguments(
                                         id.toComponent,
                                         name.toComponent,
                                         now.toComponent,
@@ -72,7 +72,7 @@ class SettingsCommand(using sql: SQLManager, kv: KeyVal):
                         _ <- IO {
                             sender.sendServerMessage(
                                 trans"commands.settings.timezone.new-timezone"
-                                    .args(
+                                    .arguments(
                                         id.toComponent,
                                         name.toComponent,
                                         now.toComponent,

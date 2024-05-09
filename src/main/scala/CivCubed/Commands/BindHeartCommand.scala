@@ -39,16 +39,16 @@ class BindHeartCommand(using
                                 result match
                                     case None =>
                                         sender.sendServerMessage(
-                                            trans"commands.bind-heart.no-civ-beacon".args(group.name.toComponent)
+                                            trans"commands.bind-heart.no-civ-beacon".arguments(group.name.toComponent)
                                         )
                                     case Some(Left(_)) =>
                                         sender.sendServerMessage(
-                                            trans"commands.bind-heart.failed".args(group.name.toComponent)
+                                            trans"commands.bind-heart.failed".arguments(group.name.toComponent)
                                         )
                                     case Some(Right(_)) =>
                                         BindCivHeart.grant(sender, "bind")
                                         sender.sendServerMessage(
-                                            trans"commands.bind-heart.success".args(group.name.toComponent)
+                                            trans"commands.bind-heart.success".arguments(group.name.toComponent)
                                         )
                                         sender.sendServerMessage(
                                             trans"commands.bind-heart.right-click"

@@ -55,7 +55,7 @@ object GlazingKiln:
     val recipes: List[Recipe] = dyes.map { (dye, terracotta) =>
         val key = terracotta.getKey().toString().replace(':', '_')
         Recipe(
-            trans"recipes.dye-terracotta".args(terracotta.asComponent),
+            trans"recipes.dye-terracotta".arguments(terracotta.asComponent),
             NamespacedKey("civcubed", s"dye_$key"),
             List(
                 (Vanilla(dye), 4),
@@ -68,7 +68,7 @@ object GlazingKiln:
     } concat glazes.map { (dye, glazed) =>
         val key = glazed.getKey().toString().replace(':', '_')
         Recipe(
-            trans"recipes.glaze-terracotta".args(glazed.asComponent),
+            trans"recipes.glaze-terracotta".arguments(glazed.asComponent),
             NamespacedKey("civcubed", s"glaze_$key"),
             List(
                 (Vanilla(dye), 4),

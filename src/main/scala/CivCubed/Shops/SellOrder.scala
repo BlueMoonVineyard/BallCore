@@ -216,7 +216,7 @@ case class SellOrderItemDescription(
             selling.toList.flatMap { (is, count) =>
                 List(
                     trans"items.sell-order.selling".color(NamedTextColor.GOLD),
-                    trans"items.sell-order.item-count".args(is.displayName(), count.toComponent),
+                    trans"items.sell-order.item-count".arguments(is.displayName(), count.toComponent),
                 )
             }
 
@@ -224,7 +224,7 @@ case class SellOrderItemDescription(
             price.toList.flatMap { (is, count) =>
                 List(
                     trans"items.sell-order.price".color(NamedTextColor.GOLD),
-                    trans"items.sell-order.item-count".args(is.displayName(), count.toComponent),
+                    trans"items.sell-order.item-count".arguments(is.displayName(), count.toComponent),
                 )
             }
 
@@ -246,10 +246,10 @@ case class SellOrderItemDescription(
 object SellOrder:
     val piss = s""
     val defaultLore: List[Component] = List(
-        trans"items.keybind".args(keybind("key.use")).color(NamedTextColor.BLUE),
+        trans"items.keybind".arguments(keybind("key.use")).color(NamedTextColor.BLUE),
         trans"items.sell-order.key-use-explanation",
         txt"",
-        trans"items.keybind.while-sneaking".args(keybind("key.use")).color(NamedTextColor.BLUE),
+        trans"items.keybind.while-sneaking".arguments(keybind("key.use")).color(NamedTextColor.BLUE),
         trans"items.sell-order.key-use-sneaking-explanation",
     )
     val template: CustomItemStack = CustomItemStack.make(

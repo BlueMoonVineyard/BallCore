@@ -191,6 +191,7 @@ final class Main extends JavaPlugin:
             SpawnBook.register()
             SpawnInventory.Listener.register()
             Ores.register()
+            Anvils.register()
             // Alloys.Tier1.register()
             // Alloys.Tier2.register()
             Tier1Gear.registerItems()

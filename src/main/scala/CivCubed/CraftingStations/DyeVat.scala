@@ -35,7 +35,7 @@ object DyeVat:
     val recipes: List[Recipe] = pairs.map { (dye, wool) =>
         val key = wool.getKey().toString().replace(':', '_')
         Recipe(
-            trans"recipes.dye-wool".args(wool.asComponent),
+            trans"recipes.dye-wool".arguments(wool.asComponent),
             NamespacedKey("civcubed", s"dye_$key"),
             List(
                 (Vanilla(dye), 4),
