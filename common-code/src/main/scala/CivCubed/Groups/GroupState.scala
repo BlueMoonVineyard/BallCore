@@ -65,7 +65,7 @@ enum Permissions(val name: String):
             case InviteUser => "Invite Users"
             case RemoveUser => "Remove Users"
             case UpdateGroupInformation => "Modify Group Information"
-            case ManageSubgroups => "Manage Subgroups"
+            case ManageSubgroups => "Manage Resource Groups"
             case ManageClaims => "Manage Claims"
             case AddReinforcements => "Reinforce Blocks/Entities"
             case RemoveReinforcements => "Unreinforce Blocks/Entities"
@@ -97,7 +97,7 @@ enum Permissions(val name: String):
             case Signs => "Allows users to edit signs (hanging and not)"
             case Entities => "Allows the user to interact with entities"
             case ManageSubgroups =>
-                "Allows users to create, rename, and delete subgroups"
+                "Allows users to create, rename, and delete resource groups"
             case ManageClaims =>
                 "Allows users to manage the claims of this group's beacons"
 

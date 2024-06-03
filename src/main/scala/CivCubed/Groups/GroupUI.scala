@@ -575,7 +575,7 @@ class GroupManagementProgram(using
                 model
             case Message.CreateSubgroup =>
                 services
-                    .prompt("What do you want to call the subgroup?")
+                    .prompt("What do you want to call the resource group?")
                     .map { name =>
                         sql.useBlocking(
                             sql.withS(
@@ -590,11 +590,11 @@ class GroupManagementProgram(using
                         ) match
                             case Left(err) =>
                                 services.notify(
-                                    s"Subgroup creation failed because ${err.explain()}"
+                                    s"Resource group creation failed because ${err.explain()}"
                                 )
                             case Right(_) =>
                                 services.notify(
-                                    s"Subgroup successfully created"
+                                    s"Resource group successfully created"
                                 )
                         val group = sql
                             .useBlocking(
@@ -908,7 +908,7 @@ class SubgroupManagementProgram(using
                 ) match
                     case Left(err) =>
                         services.notify(
-                            s"You cannot delete that subgroup because ${err.explain()}"
+                            s"You cannot delete that resource group because ${err.explain()}"
                         )
                         model
                     case Right(_) =>
