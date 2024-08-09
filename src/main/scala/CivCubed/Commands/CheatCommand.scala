@@ -21,6 +21,9 @@ import CivCubed.SpawnInventory.InventorySetter
 import dev.jorel.commandapi.arguments.IntegerArgument
 import dev.jorel.commandapi.arguments.ArgumentSuggestions
 import CivCubed.NoodleEditor.EssenceDrainer
+import dev.jorel.commandapi.arguments.StringArgument
+import CivCubed.Veins.Clusters
+import CivCubed.Veins.Spawner
 
 class CheatCommand(using
     registry: ItemRegistry,
@@ -147,6 +150,23 @@ class CheatCommand(using
                             trans"commands.cheat.tick-acclimation"
                         )
                     }: PlayerCommandExecutor)
+            )
+            .`then`(
+                LiteralArgument("spawn-vein")
+                    .`then`(
+                        StringArgument("kind")
+                            .replaceSuggestions(
+                                ArgumentSuggestions.strings(Clusters.values.map(_.toString): _*)
+                            )
+                            .`then`(
+                                IntegerArgument("radius")
+                                    .executesPlayer({ (sender, args) =>
+                                        val kind = Clusters.valueOf(args.getUnchecked[String]("kind"))
+                                        val radius = args.getUnchecked[Integer]("radius")
+                                        Spawner.spawnVeinsAround(kind, sender.getLocation, radius)
+                                    }: PlayerCommandExecutor)
+                            )
+                    )
             )
             .`then`(
                 LiteralArgument("my-acclimation")
