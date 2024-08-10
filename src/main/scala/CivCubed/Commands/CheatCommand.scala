@@ -24,6 +24,9 @@ import CivCubed.NoodleEditor.EssenceDrainer
 import dev.jorel.commandapi.arguments.StringArgument
 import CivCubed.Veins.Clusters
 import CivCubed.Veins.Spawner
+import CivCubed.Rest.RoomRole
+import CivCubed.Rest.RoomEvaluator
+import CivCubed.Rest.EvaluationFailure
 
 class CheatCommand(using
     registry: ItemRegistry,
@@ -167,6 +170,43 @@ class CheatCommand(using
                                     }: PlayerCommandExecutor)
                             )
                     )
+            )
+            .`then`(
+                LiteralArgument("check-room")
+                    .`then`(
+                        StringArgument("role")
+                            .replaceSuggestions(
+                                ArgumentSuggestions.strings(RoomRole.values.map(_.toString): _*)
+                            )
+                           .executesPlayer({ (sender, args) =>
+                                val role = RoomRole.valueOf(args.getUnchecked[String]("role"))
+                                RoomEvaluator.evaluateRoomForRole(role, sender.getLocation) match
+                                    case Left(value) =>
+                                        value match
+                                            case EvaluationFailure.notEnclosed =>
+                                                sender.sendServerMessage(txt"not enclosed")
+                                            case EvaluationFailure.noBeds =>
+                                                sender.sendServerMessage(txt"no beds")
+                                    case Right(value) =>
+                                        sender.sendServerMessage(txt"evaluation:")
+                                        sender.sendServerMessage(txt"workstations: ${value.workstations} blocks: ${value.blocks}: floor: ${value.floor}: ceiling: ${value.ceiling}: spacious: ${value.spacious}")
+                                        sender.sendServerMessage(txt"overall: ${value.result}")
+                            }: PlayerCommandExecutor)
+                    )
+                   .executesPlayer({ (sender, args) =>
+                        RoomEvaluator.getMajorityRole(sender.getLocation) match
+                            case Left(value) =>
+                                value match
+                                    case EvaluationFailure.notEnclosed =>
+                                        sender.sendServerMessage(txt"not enclosed")
+                                    case EvaluationFailure.noBeds =>
+                                        sender.sendServerMessage(txt"no beds")
+                            case Right(value) =>
+                                sender.sendServerMessage(txt"evaluation:")
+                                value.foreach { (role, evaluation) =>
+                                    sender.sendServerMessage(txt"role: ${role} | evaluation: ${evaluation}")
+                                }
+                    }: PlayerCommandExecutor)
             )
             .`then`(
                 LiteralArgument("my-acclimation")
