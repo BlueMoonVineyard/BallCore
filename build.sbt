@@ -8,8 +8,8 @@ val scoreBoardLibraryVersion = "2.1.8"
 val AkkaVersion = "2.7.0"
 val AkkaHttpVersion = "10.5.2"
 val foliaVersion = "1.20.4-R0.1-SNAPSHOT"
-val mockBukkitPackage = "MockBukkit-v1.21"
-val mockBukkitVersion = "3.95.1"
+val mockBukkitPackage = "MockBukkit-v1.20"
+val mockBukkitVersion = "3.80.0"
 
 ThisBuild / update / checksums := Nil
 
