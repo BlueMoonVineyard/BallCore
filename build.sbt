@@ -11,6 +11,8 @@ val foliaVersion = "1.20.4-R0.1-SNAPSHOT"
 val mockBukkitPackage = "MockBukkit-v1.21"
 val mockBukkitVersion = "3.95.1"
 
+ThisBuild / update / checksums := Nil
+
 lazy val dependencyPlugin = project
     .in(file("dependency-plugin"))
     .settings(
@@ -120,8 +122,9 @@ lazy val actualPlugin = project
         libraryDependencies += "dev.folia" % "folia-api" % foliaVersion % "provided", // intransitive()
         libraryDependencies += "com.mojang" % "brigadier" % "1.0.18" % "provided",
         libraryDependencies += "org.scala-graph" % "graph-core_2.13" % "2.0.0" % "provided",
-        libraryDependencies += "com.github.NuVotifier.NuVotifier" % "nuvotifier-api" % "2.7.2" % "provided",
-        libraryDependencies += "com.github.NuVotifier.NuVotifier" % "nuvotifier-bukkit" % "2.7.2" % "provided",
+        libraryDependencies += "com.github.NuVotifier.NuVotifier" % "nuvotifier-api" % "2.7.2" % "provided" from "https://jitpack.io/com/github/NuVotifier/NuVotifier/nuvotifier-api/2.7.2/nuvotifier-api-2.7.2.jar",
+        libraryDependencies += "com.github.NuVotifier.NuVotifier" % "nuvotifier-bukkit" % "2.7.2" % "provided" from "https://jitpack.io/com/github/NuVotifier/NuVotifier/nuvotifier-bukkit/2.7.2/nuvotifier-bukkit-2.7.2.jar",
+        libraryDependencies += "com.github.NuVotifier.NuVotifier" % "nuvotifier-common" % "2.7.2" % "provided" from "https://jitpack.io/com/github/NuVotifier/NuVotifier/nuvotifier-common/2.7.2/nuvotifier-common-2.7.2.jar",
 
         Test / fork := true,
         Test / run / javaOptions += "--enable-preview",
