@@ -9,7 +9,7 @@ import cats.effect.cps.*
 import cats.effect.unsafe.IORuntime
 import cats.effect.unsafe.implicits.global
 import cats.syntax.traverse.*
-import natchez.Trace.Implicits.noop
+import org.typelevel.otel4s.trace.Tracer.Implicits.noop
 import org.spongepowered.configurate.CommentedConfigurationNode
 import skunk.*
 import skunk.codec.all.*

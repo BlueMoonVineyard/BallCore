@@ -8,7 +8,7 @@ import cats.effect.IO
 import cats.effect.kernel.Resource
 import cats.effect.unsafe.implicits.global
 import munit.Assertions
-import natchez.Trace.Implicits.noop
+import org.typelevel.otel4s.trace.Tracer.Implicits.noop
 import skunk.implicits.*
 import skunk.util.Origin
 import skunk.{Fragment, Session, *}
@@ -30,6 +30,7 @@ object TestDatabase:
             user = "civcubed",
             database = "civcubed",
             password = Some("shitty password"),
+            strategy = Strategy.SearchPath,
         )
         val cleanName =
             opts.name.replace(" ", "").replace("-", "").replace("'", "")
@@ -48,6 +49,7 @@ object TestDatabase:
             user = "civcubed",
             database = cleanName,
             password = Some("shitty password"),
+            strategy = Strategy.SearchPath,
         )
         testSession
             .use { s =>
@@ -65,6 +67,7 @@ object TestDatabase:
             user = "civcubed",
             database = "civcubed",
             password = Some("shitty password"),
+            strategy = Strategy.SearchPath,
         )
         val nameFragment =
             Fragment(List(Left(s.database)), Void.codec, Origin.unknown)
