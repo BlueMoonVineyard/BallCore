@@ -4,6 +4,8 @@ import CivCubed.Storage.{Migration, SQLManager}
 import cats.effect.IO
 import skunk.Session
 import skunk.codec.all.*
+import skunk.postgis.codecs.all.*
+import skunk.postgis.Point
 import skunk.implicits.*
 import java.util.UUID
 import CivCubed.DataStructures.Clock
@@ -14,6 +16,21 @@ import scala.collection.concurrent.TrieMap
 trait RestManagerHooks:
     def updateSidebar(playerID: UUID, rest: Double): IO[Unit]
 
+val location = point.eimap { point =>
+    point.coordinate.z match
+        case None => Left("missing point")
+        case Some(value) =>
+            Right((point.coordinate.x, point.coordinate.y, value))
+} { (x, y, z) =>
+    Point.xyz(x, y, z)
+}
+
+val locationi = location.imap { (x, y, z) =>
+    (x.toInt, y.toInt, z.toInt)
+} { (x, y, z) =>
+    (x.toDouble, y.toDouble, z.toDouble)
+}
+
 /** Manages rest related tasks and utilities.
   */
 class RestManager()(using sql: SQLManager, c: Clock, hooks: RestManagerHooks):
@@ -21,6 +38,15 @@ class RestManager()(using sql: SQLManager, c: Clock, hooks: RestManagerHooks):
         Migration(
             "Initial Rest Manager",
             List(
+                sql"""
+                    CREATE TABLE SpawnLocations (
+                        PlayerID UUID PRIMARY KEY,
+                        Location GEOMETRY(PointZ) NOT NULL
+                    );
+                    """.command,
+                sql"""
+                    CREATE INDEX SpawnLocationsGeom ON SpawnLocations USING GIST (Location);
+                    """.command,
                 sql"""
                     CREATE TABLE RestValues (
                         PlayerID UUID PRIMARY KEY,
@@ -55,6 +81,27 @@ class RestManager()(using sql: SQLManager, c: Clock, hooks: RestManagerHooks):
         IO {
             val _ = cache.remove(key)
         }
+
+    def setSpawnLocation(playerID: UUID, location: (Int, Int, Int))(using Session[IO]): IO[Unit] =
+        sql.commandIO(
+            sql"""
+            INSERT INTO SpawnLocations (
+                PlayerID, Location
+            ) VALUES (
+                $uuid, $locationi
+            ) ON CONFLICT (PlayerID) DO UPDATE SET Location = EXCLUDED.Location;
+            """,
+            (playerID, location),
+        ).map(_ => ())
+
+    def getSpawnLocationsWithin(min: (Int, Int, Int), max: (Int, Int, Int))(using Session[IO]): IO[List[UUID]] =
+        sql.queryListIO(
+            sql"""
+            SELECT PlayerID FROM SpawnLocations WHERE ST_3DIntersects(Location, ST_3DMakeBox($locationi, $locationi));
+            """,
+            (uuid),
+            (min, max),
+        )
 
     /** Consumes rest, returning if the rest bonus can be applied
       */

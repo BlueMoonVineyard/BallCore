@@ -65,4 +65,21 @@ class RestSuite extends munit.FunSuite {
             "rest should be rejuvinated after being logged off",
         )
     }
+    sql.test("spawn locations work") { implicit sql =>
+        given hooks: RestManagerHooks = TestRestHooks()
+        given clock: TestClock = TestClock(OffsetDateTime.now())
+        given rest: RestManager = RestManager()
+
+        val player = UUID.randomUUID()
+
+        sql.useBlocking(sql.withS(rest.setSpawnLocation(player, (0, 0, 0))))
+
+        val items1 = sql.useBlocking(sql.withS(rest.getSpawnLocationsWithin((-1, -1, -1), (1, 1, 1))))
+        assert(items1.contains(player), "player should be there")
+
+        sql.useBlocking(sql.withS(rest.setSpawnLocation(player, (0, 5, 0))))
+
+        val items2 = sql.useBlocking(sql.withS(rest.getSpawnLocationsWithin((-1, -1, -1), (1, 1, 1))))
+        assert(!items2.contains(player), "player should not be there")
+    }
 }
