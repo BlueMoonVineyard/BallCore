@@ -26,7 +26,7 @@ import CivCubed.Veins.Clusters
 import CivCubed.Veins.Spawner
 import CivCubed.Rest.RoomRole
 import CivCubed.Rest.RoomEvaluator
-import CivCubed.Rest.EvaluationFailure
+import org.bukkit.Tag
 
 class CheatCommand(using
     registry: ItemRegistry,
@@ -180,33 +180,22 @@ class CheatCommand(using
                             )
                            .executesPlayer({ (sender, args) =>
                                 val role = RoomRole.valueOf(args.getUnchecked[String]("role"))
-                                RoomEvaluator.evaluateRoomForRole(role, sender.getLocation) match
-                                    case Left(value) =>
-                                        value match
-                                            case EvaluationFailure.notEnclosed =>
-                                                sender.sendServerMessage(txt"not enclosed")
-                                            case EvaluationFailure.noBeds =>
-                                                sender.sendServerMessage(txt"no beds")
-                                    case Right(value) =>
-                                        sender.sendServerMessage(txt"evaluation:")
-                                        sender.sendServerMessage(txt"workstations: ${value.workstations} blocks: ${value.blocks}: floor: ${value.floor}: ceiling: ${value.ceiling}: spacious: ${value.spacious}")
-                                        sender.sendServerMessage(txt"overall: ${value.result}")
+                                val blocks = RoomEvaluator.gatherBlocksAround(sender.getLocation)
+
+                                blocks match
+                                    case None =>
+                                        sender.sendServerMessage(txt"not enclosed")
+                                    case Some((blocks, bounds)) =>
+                                        val beds = blocks.count(it => Tag.BEDS.isTagged(it._1)) / 2
+                                        if beds == 0 then
+                                            sender.sendServerMessage(txt"no beds")
+                                        else
+                                            val value = RoomEvaluator.evaluateRoomForRoleAndBlocks(role, blocks, bounds, beds)
+                                            sender.sendServerMessage(txt"evaluation:")
+                                            sender.sendServerMessage(txt"workstations: ${value.workstations} blocks: ${value.blocks}: floor: ${value.floor}: ceiling: ${value.ceiling}: spacious: ${value.spacious}")
+                                            sender.sendServerMessage(txt"overall: ${value.result}")
                             }: PlayerCommandExecutor)
                     )
-                   .executesPlayer({ (sender, args) =>
-                        RoomEvaluator.getMajorityRole(sender.getLocation) match
-                            case Left(value) =>
-                                value match
-                                    case EvaluationFailure.notEnclosed =>
-                                        sender.sendServerMessage(txt"not enclosed")
-                                    case EvaluationFailure.noBeds =>
-                                        sender.sendServerMessage(txt"no beds")
-                            case Right(value) =>
-                                sender.sendServerMessage(txt"evaluation:")
-                                value.foreach { (role, evaluation) =>
-                                    sender.sendServerMessage(txt"role: ${role} | evaluation: ${evaluation}")
-                                }
-                    }: PlayerCommandExecutor)
             )
             .`then`(
                 LiteralArgument("my-acclimation")

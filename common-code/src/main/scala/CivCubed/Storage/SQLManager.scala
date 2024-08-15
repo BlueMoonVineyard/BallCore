@@ -73,20 +73,36 @@ object Config:
 
 object SQLManager:
     def apply(config: Config): (SQLManager, IO[Unit]) =
-        val pool = Session.pooled[IO](
-            host = config.host,
-            port = config.port,
-            user = config.user,
-            database = config.database,
-            max = 5,
-            password = Some(config.password),
-        )
-        val launcher: IO[(Resource[IO, Session[IO]], IO[Unit])] = pool.allocated
-        val (resource, shutdownHook) = launcher.unsafeRunSync()
-        (new SQLManager(resource, "civcubed"), shutdownHook)
+        val manager = new SQLManager({ () =>
+            Session.pooled[IO](
+                host = config.host,
+                port = config.port,
+                user = config.user,
+                database = config.database,
+                max = 5,
+                password = Some(config.password),
+                strategy = Strategy.SearchPath,
+            )
+        }, "civcubed")
+        (manager, manager.shutdown)
 
-class SQLManager(resource: Resource[IO, Session[IO]], val database: String):
-    val session: Resource[IO, Session[IO]] = resource
+class SQLManager(resource: () => Resource[IO, Resource[IO, Session[IO]]], val database: String):
+    var session: Resource[IO, Session[IO]] = null
+    var shutdownHook: IO[Unit] = null
+
+    def refresh(): Unit =
+        if shutdownHook != null then
+            shutdownHook.unsafeRunSync()
+        val (a, b) = resource().allocated.unsafeRunSync()
+        session = a
+        shutdownHook = b
+
+    refresh()
+
+    def shutdown: IO[Unit] =
+        for
+            _ <- this.shutdownHook
+        yield ()
 
     val runtime: IORuntime = global
 

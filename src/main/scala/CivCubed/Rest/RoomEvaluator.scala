@@ -16,6 +16,7 @@ enum RoomRole:
     case travel
     case builder
     case soldier
+    case nothing
 
 enum Evaluation extends Ordered[Evaluation]:
     case luxurious
@@ -23,6 +24,12 @@ enum Evaluation extends Ordered[Evaluation]:
     case modest
     case nothing
 
+    def next: Evaluation =
+        this match
+            case Evaluation.luxurious => luxurious
+            case Evaluation.good => luxurious
+            case Evaluation.modest => good
+            case Evaluation.nothing => modest
     override def compare(that: Evaluation): Int =
         that.ordinal - this.ordinal
 
@@ -42,7 +49,19 @@ case class Bounds(
     val minX: Int,
     val minY: Int,
     val minZ: Int,
-)
+):
+    def lower: (Int, Int, Int) =
+        (minX, minY, minZ)
+    def upper: (Int, Int, Int) =
+        (maxX, maxY, maxZ)
+    def contains(it: (Int, Int, Int)): Boolean =
+        val (x, y, z) = it
+        x >= minX
+        && x <= maxX
+        && y >= minY
+        && y <= maxY
+        && z >= minZ
+        && z <= maxZ
 
 case class EvaluationResult(
     workstations: Evaluation,
@@ -56,6 +75,7 @@ case class EvaluationResult(
 enum EvaluationFailure:
     case notEnclosed
     case noBeds
+    case ambiguous
 
 object RoomEvaluator:
     def evaluateRoomWorkstations(role: RoomRole, workstations: Map[Material, Int]): Evaluation =
@@ -128,6 +148,8 @@ object RoomEvaluator:
                     case _ => Evaluation.nothing
             case RoomRole.soldier =>
                 Evaluation.luxurious
+            case RoomRole.nothing =>
+                Evaluation.nothing
     def evaluateSpaciousness(role: RoomRole, airBlocks: Int, beds: Int): Evaluation =
         role match
             case RoomRole.soldier =>
@@ -140,6 +162,8 @@ object RoomEvaluator:
                     Evaluation.modest
                 else
                     Evaluation.nothing
+            case RoomRole.nothing =>
+                Evaluation.nothing
             case _ =>
                 val ratio = (airBlocks / beds)
 
@@ -159,6 +183,8 @@ object RoomEvaluator:
         role match
             case RoomRole.soldier =>
                 Evaluation.luxurious
+            case RoomRole.nothing =>
+                Evaluation.nothing
             case _ =>
                 val modestFloorspace = width * length >= 4*3
                 val goodFloorspace = width * length >= 6*5
@@ -176,6 +202,8 @@ object RoomEvaluator:
         role match
             case RoomRole.soldier =>
                 Evaluation.luxurious
+            case RoomRole.nothing =>
+                Evaluation.nothing
             case _ =>
                 val modestCeiling = height >= 3
                 val goodCeiling = height >= 4
@@ -201,6 +229,8 @@ object RoomEvaluator:
                         Evaluation.luxurious
                     case _ =>
                         Evaluation.nothing
+            case RoomRole.nothing =>
+                Evaluation.nothing
             case _ =>
                 count { rule =>
                     // detailing
@@ -287,48 +317,26 @@ object RoomEvaluator:
         else
             None
 
-    def evaluateRoomForRoleAndBlocks(role: RoomRole, blocks: Map[Material, Int], bounds: Bounds): EvaluationResult =
-        val bedBlocks = blocks.filter((key, _) => Tag.BEDS.isTagged(key)).foldLeft(0) { case (accumulator, (_, count)) =>
-            accumulator + count
-        } / 2
+    def evaluateRoomForRoleAndBlocks(role: RoomRole, blocks: Map[Material, Int], bounds: Bounds, people: Int): EvaluationResult =
         val airBlocks = blocks.filter((key, _) => key.isAir()).foldLeft(0) { case (accumulator, (_, count)) =>
             accumulator + count
         }
         val workstations = evaluateRoomWorkstations(role, blocks)
         val ceiling = evaluateCeiling(role, bounds.maxY - bounds.minY)
         val floor = evaluateFloorspace(role, bounds.maxX - bounds.minX, bounds.maxZ - bounds.minZ)
-        val spaciousness = evaluateSpaciousness(role, airBlocks, bedBlocks)
+        val spaciousness = evaluateSpaciousness(role, airBlocks, people)
         val block = evaluateRoomBlocks(role, blocks)
         EvaluationResult(workstations, block, floor, ceiling, spaciousness)
 
-    def evaluateRoomForRole(role: RoomRole, location: Location): Either[EvaluationFailure, EvaluationResult] =
-        val blocks = gatherBlocksAround(location)
-        blocks match
-            case None =>
-                Left(EvaluationFailure.notEnclosed)
-            case Some((blocks, bounds)) =>
-                val bedBlocks = blocks.filter((key, _) => Tag.BEDS.isTagged(key)).foldLeft(0) { case (accumulator, (_, count)) =>
-                    accumulator + count
-                } / 2
-                if bedBlocks == 0 then
-                    Left(EvaluationFailure.noBeds)
-                else
-                    Right(evaluateRoomForRoleAndBlocks(role, blocks, bounds))
-
-    def getMajorityRole(location: Location): Either[EvaluationFailure, Array[(RoomRole, Evaluation)]] =
-        val blocks = gatherBlocksAround(location)
-        blocks match
-            case None =>
-                Left(EvaluationFailure.notEnclosed)
-            case Some((blocks, bounds)) =>
-                val bedBlocks = blocks.filter((key, _) => Tag.BEDS.isTagged(key)).foldLeft(0) { case (accumulator, (_, count)) =>
-                    accumulator + count
-                } / 2
-                if bedBlocks == 0 then
-                    Left(EvaluationFailure.noBeds)
-                else
-                    val evaluations = RoomRole.values
-                        .map(role => (role, evaluateRoomForRoleAndBlocks(role, blocks, bounds).result))
-                        .sortBy(_._2)
-                    Right(evaluations)
-
+    def getMajorityRole(blocks: Map[Material, Int], bounds: Bounds, people: Int): Either[EvaluationFailure, (RoomRole, Evaluation)] =
+        if people == 0 then
+            Left(EvaluationFailure.noBeds)
+        else
+            val evaluations = RoomRole.values
+                .map(role => (role, evaluateRoomForRoleAndBlocks(role, blocks, bounds, people).result))
+                .sortBy(_._2)
+            val head = evaluations.head
+            if evaluations.count(_._2 == head._2) == 1 then
+                Right(head)
+            else
+                Left(EvaluationFailure.ambiguous)

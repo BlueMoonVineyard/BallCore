@@ -270,6 +270,7 @@ final class Main extends JavaPlugin:
             SettingsCommand().node.register()
             PVPServer.register()
             VoteCommand().tree.register()
+            sql.refresh()
         catch
             case e: Throwable =>
                 getSLF4JLogger().error(

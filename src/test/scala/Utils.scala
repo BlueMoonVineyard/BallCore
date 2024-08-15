@@ -24,7 +24,7 @@ val mockServerSingleton = MockBukkit.mock()
 
 object TestDatabase:
     def setup(opts: munit.TestOptions): SQLManager =
-        val session: Resource[IO, Session[IO]] = Session.single(
+        val session = Session.single[IO](
             host = "localhost",
             port = 5432,
             user = "civcubed",
@@ -43,24 +43,32 @@ object TestDatabase:
             """.command)
             }
             .unsafeRunSync()
-        val testSession: Resource[IO, Session[IO]] = Session.single(
+        Session.single[IO](
             host = "localhost",
             port = 5432,
             user = "civcubed",
             database = cleanName,
             password = Some("shitty password"),
             strategy = Strategy.SearchPath,
-        )
-        testSession
-            .use { s =>
-                s.execute(sql"""
+        ).use { s =>
+            s.execute(sql"""
             CREATE EXTENSION postgis;
             """.command)
-            }
-            .unsafeRunSync()
-        new SQLManager(testSession, cleanName)
+        }.unsafeRunSync()
+        new SQLManager({ () =>
+            Session.pooled[IO](
+                host = "localhost",
+                port = 5432,
+                user = "civcubed",
+                database = cleanName,
+                password = Some("shitty password"),
+                strategy = Strategy.SearchPath,
+                max = 4,
+            )
+        }, cleanName)
 
     def teardown(s: SQLManager): Unit =
+        s.shutdown.unsafeRunSync()
         val session: Resource[IO, Session[IO]] = Session.single(
             host = "localhost",
             port = 5432,
