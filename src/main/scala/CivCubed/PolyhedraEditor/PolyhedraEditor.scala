@@ -53,7 +53,7 @@ def drawLine(
 
         pos.getWorld
             .spawnParticle(
-                Particle.REDSTONE,
+                Particle.DUST,
                 util.Arrays.asList(showingTo),
                 showingTo,
                 pos.getX,

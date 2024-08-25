@@ -114,8 +114,8 @@ object AdamantiteGear:
     private val ore =
         Tier2.adamantite.stack
     private val enchants = List(
-        (Enchantment.DURABILITY, 1),
-        (Enchantment.DIG_SPEED, 1),
+        (Enchantment.UNBREAKING, 1),
+        (Enchantment.EFFICIENCY, 1),
     )
     private def hide(s: ItemStack): Unit =
         val meta = s.getItemMeta

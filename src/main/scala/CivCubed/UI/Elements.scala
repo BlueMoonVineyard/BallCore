@@ -203,7 +203,7 @@ object Elements extends TextComponents:
         )
         if highlighted then
             im.addItemFlags(ItemFlag.HIDE_ENCHANTS)
-            val _ = im.addEnchant(Enchantment.DURABILITY, 1, true)
+            val _ = im.addEnchant(Enchantment.UNBREAKING, 1, true)
 
         poki.it match
             case Some(x) if im.isInstanceOf[SkullMeta] =>

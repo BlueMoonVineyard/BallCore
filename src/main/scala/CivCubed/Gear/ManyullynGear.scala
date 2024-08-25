@@ -19,7 +19,7 @@ object ManyullynGear:
             manyullyn.name,
             manyullyn.id,
             DiamondToolSetCustomModelDatas.manyullyn,
-            (Enchantment.DURABILITY, 3),
+            (Enchantment.UNBREAKING, 3),
         )
         sword(
             Diamond,
@@ -27,5 +27,5 @@ object ManyullynGear:
             manyullyn.name,
             manyullyn.id,
             DiamondToolSetCustomModelDatas.manyullyn,
-            (Enchantment.DAMAGE_ALL, 2),
+            (Enchantment.SHARPNESS, 2),
         )

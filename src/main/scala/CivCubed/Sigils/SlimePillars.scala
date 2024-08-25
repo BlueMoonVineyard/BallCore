@@ -280,7 +280,7 @@ class SlimePillarSlapDetector()(using
 
         if !isPillar then return
 
-        playEffect(location, Particle.VILLAGER_ANGRY, 0.5)
+        playEffect(location, Particle.ANGRY_VILLAGER, 0.5)
         sql.useFireAndForget(
             sql.withS(spm.slapPillar(intr, plr))
         )

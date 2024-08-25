@@ -19,7 +19,7 @@ object SkyBronzeGear:
             skyBronzeMorning.name,
             skyBronzeMorning.id,
             DiamondToolSetCustomModelDatas.skyBronzeMorning,
-            (Enchantment.PROTECTION_ENVIRONMENTAL, 2),
+            (Enchantment.PROTECTION, 2),
         )
         armor(
             Diamond,
@@ -27,9 +27,9 @@ object SkyBronzeGear:
             skyBronzeDay.name,
             skyBronzeDay.id,
             DiamondToolSetCustomModelDatas.skyBronzeDay,
-            (Enchantment.PROTECTION_FIRE, 3),
-            (Enchantment.PROTECTION_FALL, 2),
-            (Enchantment.DURABILITY, 2),
+            (Enchantment.FIRE_PROTECTION, 3),
+            (Enchantment.FEATHER_FALLING, 2),
+            (Enchantment.UNBREAKING, 2),
         )
         armor(
             Diamond,
@@ -37,9 +37,9 @@ object SkyBronzeGear:
             skyBronzeEvening.name,
             skyBronzeEvening.id,
             DiamondToolSetCustomModelDatas.skyBronzeEvening,
-            (Enchantment.PROTECTION_EXPLOSIONS, 3),
-            (Enchantment.PROTECTION_FALL, 2),
-            (Enchantment.DURABILITY, 2),
+            (Enchantment.BLAST_PROTECTION, 3),
+            (Enchantment.FEATHER_FALLING, 2),
+            (Enchantment.UNBREAKING, 2),
         )
         armor(
             Diamond,
@@ -47,7 +47,7 @@ object SkyBronzeGear:
             skyBronzeNight.name,
             skyBronzeNight.id,
             DiamondToolSetCustomModelDatas.skyBronzeNight,
-            (Enchantment.PROTECTION_PROJECTILE, 3),
-            (Enchantment.PROTECTION_FALL, 2),
-            (Enchantment.DURABILITY, 2),
+            (Enchantment.PROJECTILE_PROTECTION, 3),
+            (Enchantment.FEATHER_FALLING, 2),
+            (Enchantment.UNBREAKING, 2),
         )

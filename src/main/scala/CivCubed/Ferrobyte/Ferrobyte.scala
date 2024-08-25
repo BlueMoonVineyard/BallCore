@@ -9,12 +9,12 @@ import org.bukkit.inventory.ShapedRecipe
 import CivCubed.Alloys.Tier2
 import org.bukkit.inventory.RecipeChoice.ExactChoice
 import org.bukkit.inventory.RecipeChoice.MaterialChoice
-import org.bukkit.Tag
 import CivCubed.CustomItems.BlockManager
 import CivCubed.Storage.SQLManager
 import org.bukkit.plugin.Plugin
 import CivCubed.UI.Prompts
 import CivCubed.Storage.KeyVal
+import org.bukkit.Bukkit
 
 object Ferrobyte:
     val group = ItemGroup(
@@ -43,9 +43,9 @@ object Ferrobyte:
         )
         textProjectorRecipe.setIngredient(
             'F',
-            ExactChoice(Tier2.ferrobyte.stack),
+            ExactChoice(Tier2.ferrobyte.stack.clone()),
         )
-        textProjectorRecipe.setIngredient('S', MaterialChoice(Tag.SIGNS))
+        textProjectorRecipe.setIngredient('S', MaterialChoice(Bukkit.getTag("items", NamespacedKey.minecraft("signs"), classOf[Material])))
         ir.addRecipe(textProjectorRecipe)
         ir.register(TextProjector())
 

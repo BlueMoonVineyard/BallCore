@@ -4,10 +4,10 @@
 
 val scala3Version = "3.3.1"
 val circeVersion = "0.14.1"
-val scoreBoardLibraryVersion = "2.1.8"
+val scoreBoardLibraryVersion = "2.1.12"
 val AkkaVersion = "2.7.0"
 val AkkaHttpVersion = "10.5.2"
-val foliaVersion = "1.20.4-R0.1-SNAPSHOT"
+val foliaVersion = "1.20.6-R0.1-SNAPSHOT"
 val mockBukkitPackage = "MockBukkit-v1.20"
 val mockBukkitVersion = "3.80.0"
 
@@ -42,7 +42,7 @@ lazy val dependencyPlugin = project
         libraryDependencies += "org.locationtech.jts.io" % "jts-io-common" % "1.19.0",
         libraryDependencies += "net.megavex" % "scoreboard-library-api" % scoreBoardLibraryVersion,
         libraryDependencies += "net.megavex" % "scoreboard-library-implementation" % scoreBoardLibraryVersion,
-        libraryDependencies += "net.megavex" % "scoreboard-library-modern" % scoreBoardLibraryVersion,
+        libraryDependencies += "net.megavex" % "scoreboard-library-modern" % scoreBoardLibraryVersion classifier "mojmap",
         libraryDependencies += "com.github.retrooper.packetevents" % "spigot" % "2.0.0-SNAPSHOT" % "provided",
         libraryDependencies += "org.spongepowered" % "configurate-core" % "4.1.2",
         libraryDependencies += "org.spongepowered" % "configurate-yaml" % "4.1.2",
@@ -53,7 +53,7 @@ lazy val dependencyPlugin = project
         libraryDependencies += "org.tpolecat" %% "skunk-core" % "1.1.0-M3",
         libraryDependencies += "org.tpolecat" %% "skunk-circe" % "1.1.0-M3",
         libraryDependencies += "org.tpolecat" %% "skunk-postgis" % "1.1.0-M3",
-        libraryDependencies += "dev.jorel" % "commandapi-bukkit-shade" % "9.4.0",
+        libraryDependencies += "dev.jorel" % "commandapi-bukkit-shade-mojang-mapped" % "9.5.3",
         libraryDependencies += "com.github.tommyettinger" % "colorful-pure" % "0.8.5",
         libraryDependencies += "io.chrisdavenport" %% "rediculous" % "0.5.1",
         libraryDependencies += "org.scala-graph" % "graph-core_2.13" % "2.0.0",

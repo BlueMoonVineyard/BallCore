@@ -19,8 +19,8 @@ object SunoGear:
             suno.name,
             suno.id,
             DiamondToolSetCustomModelDatas.suno,
-            (Enchantment.DURABILITY, 1),
-            (Enchantment.LOOT_BONUS_BLOCKS, 2),
+            (Enchantment.UNBREAKING, 1),
+            (Enchantment.FORTUNE, 2),
         )
         sword(
             Diamond,
@@ -28,6 +28,6 @@ object SunoGear:
             suno.name,
             suno.id,
             DiamondToolSetCustomModelDatas.suno,
-            (Enchantment.DURABILITY, 1),
-            (Enchantment.LOOT_BONUS_MOBS, 2),
+            (Enchantment.UNBREAKING, 1),
+            (Enchantment.LOOTING, 2),
         )

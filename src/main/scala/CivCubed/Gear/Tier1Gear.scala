@@ -19,8 +19,8 @@ object Tier1Gear:
             pallalumin.name,
             pallalumin.id,
             IronToolSetCustomModelDatas.pallalumin,
-            (Enchantment.DURABILITY, 3),
-            (Enchantment.DIG_SPEED, 1),
+            (Enchantment.UNBREAKING, 3),
+            (Enchantment.EFFICIENCY, 1),
         )
         sword(
             Iron,
@@ -28,8 +28,8 @@ object Tier1Gear:
             pallalumin.name,
             pallalumin.id,
             IronToolSetCustomModelDatas.pallalumin,
-            (Enchantment.DURABILITY, 3),
-            (Enchantment.DAMAGE_ALL, 2),
+            (Enchantment.UNBREAKING, 3),
+            (Enchantment.SHARPNESS, 2),
         )
         armor(
             Iron,
@@ -37,7 +37,7 @@ object Tier1Gear:
             pallalumin.name,
             pallalumin.id,
             IronToolSetCustomModelDatas.pallalumin,
-            (Enchantment.DURABILITY, 4),
+            (Enchantment.UNBREAKING, 4),
         )
 
         tools(
@@ -46,8 +46,8 @@ object Tier1Gear:
             bronze.name,
             bronze.id,
             IronToolSetCustomModelDatas.bronze,
-            (Enchantment.DURABILITY, 2),
-            (Enchantment.DIG_SPEED, 2),
+            (Enchantment.UNBREAKING, 2),
+            (Enchantment.EFFICIENCY, 2),
         )
         sword(
             Iron,
@@ -55,7 +55,7 @@ object Tier1Gear:
             bronze.name,
             bronze.id,
             IronToolSetCustomModelDatas.bronze,
-            (Enchantment.DURABILITY, 2),
+            (Enchantment.UNBREAKING, 2),
             (Enchantment.SWEEPING_EDGE, 1),
             (Enchantment.KNOCKBACK, 1),
         )
@@ -65,7 +65,7 @@ object Tier1Gear:
             bronze.name,
             bronze.id,
             IronToolSetCustomModelDatas.bronze,
-            (Enchantment.DURABILITY, 1),
+            (Enchantment.UNBREAKING, 1),
             (Enchantment.THORNS, 1),
         )
 
@@ -75,8 +75,8 @@ object Tier1Gear:
             magnox.name,
             magnox.id,
             IronToolSetCustomModelDatas.magnox,
-            (Enchantment.DURABILITY, 1),
-            (Enchantment.DIG_SPEED, 4),
+            (Enchantment.UNBREAKING, 1),
+            (Enchantment.EFFICIENCY, 4),
         )
         sword(
             Iron,
@@ -84,8 +84,8 @@ object Tier1Gear:
             magnox.name,
             magnox.id,
             IronToolSetCustomModelDatas.magnox,
-            (Enchantment.DURABILITY, 2),
-            (Enchantment.LOOT_BONUS_MOBS, 1),
+            (Enchantment.UNBREAKING, 2),
+            (Enchantment.LOOTING, 1),
             (Enchantment.KNOCKBACK, 1),
         )
         armor(
@@ -94,9 +94,9 @@ object Tier1Gear:
             magnox.name,
             magnox.id,
             IronToolSetCustomModelDatas.magnox,
-            (Enchantment.DURABILITY, 1),
-            (Enchantment.OXYGEN, 1),
-            (Enchantment.WATER_WORKER, 1),
+            (Enchantment.UNBREAKING, 1),
+            (Enchantment.RESPIRATION, 1),
+            (Enchantment.AQUA_AFFINITY, 1),
         )
 
         tools(
@@ -105,8 +105,8 @@ object Tier1Gear:
             gildedIron.name,
             gildedIron.id,
             IronToolSetCustomModelDatas.gildedIron,
-            (Enchantment.DURABILITY, 2),
-            (Enchantment.DIG_SPEED, 2),
+            (Enchantment.UNBREAKING, 2),
+            (Enchantment.EFFICIENCY, 2),
         )
         sword(
             Iron,
@@ -114,8 +114,8 @@ object Tier1Gear:
             gildedIron.name,
             gildedIron.id,
             IronToolSetCustomModelDatas.gildedIron,
-            (Enchantment.DURABILITY, 4),
-            (Enchantment.DAMAGE_ALL, 2),
+            (Enchantment.UNBREAKING, 4),
+            (Enchantment.SHARPNESS, 2),
         )
         armor(
             Iron,
@@ -123,6 +123,6 @@ object Tier1Gear:
             gildedIron.name,
             gildedIron.id,
             IronToolSetCustomModelDatas.gildedIron,
-            (Enchantment.DURABILITY, 2),
-            (Enchantment.PROTECTION_ENVIRONMENTAL, 1),
+            (Enchantment.UNBREAKING, 2),
+            (Enchantment.PROTECTION, 1),
         )

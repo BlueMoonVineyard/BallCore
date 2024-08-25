@@ -159,7 +159,7 @@ class CustomItemListener(using
                 .getInventory()
                 .getMatrix()
                 .filterNot(_ == null)
-                .count(x => Tag.ITEMS_TOOLS.isTagged(x.getType())) >= 2
+                .count(x => Tag.ITEMS_BREAKS_DECORATED_POTS.isTagged(x.getType())) >= 2
         if isCraftingToolsTogether then event.getInventory().setResult(null)
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)

@@ -64,7 +64,7 @@ object Listener:
             case ReinforcementTypes.CopperLike =>
                 (Particle.NAUTILUS, 100, 0.1, 0.6)
             case ReinforcementTypes.IronLike =>
-                (Particle.ENCHANTMENT_TABLE, 50, 0.0, 0.5)
+                (Particle.ENCHANT, 50, 0.0, 0.5)
         at.getWorld
             .spawnParticle(
                 pType,
@@ -80,7 +80,7 @@ object Listener:
     def playDamageEffect(at: Location, kind: ReinforcementTypes): Unit =
         val (pType, pCount, pOffset, pSpeed) = kind match
             case ReinforcementTypes.Stone | ReinforcementTypes.Deepslate =>
-                (Particle.SMOKE_NORMAL, 40, 0.0, 0.06)
+                (Particle.SMOKE, 40, 0.0, 0.06)
             case ReinforcementTypes.CopperLike =>
                 (Particle.BUBBLE_POP, 100, 0.1, 0.2)
             case ReinforcementTypes.IronLike =>
@@ -100,7 +100,7 @@ object Listener:
     def playBreakEffect(at: Location, kind: ReinforcementTypes): Unit =
         val (pType, pCount, pOffset, pSpeed) = kind match
             case ReinforcementTypes.Stone | ReinforcementTypes.Deepslate =>
-                (Particle.SMOKE_LARGE, 80, 0.0, 0.04)
+                (Particle.LARGE_SMOKE, 80, 0.0, 0.04)
             case ReinforcementTypes.CopperLike =>
                 (Particle.BUBBLE_POP, 500, 0.1, 0.5)
             case ReinforcementTypes.IronLike =>

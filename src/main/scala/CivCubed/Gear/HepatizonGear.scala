@@ -22,8 +22,8 @@ object HepatizonGear:
             hepatizon.name,
             hepatizon.id,
             DiamondToolSetCustomModelDatas.hepatizon,
-            (Enchantment.DURABILITY, 1),
-            (Enchantment.DIG_SPEED, 3),
+            (Enchantment.UNBREAKING, 1),
+            (Enchantment.EFFICIENCY, 3),
         )
         swordCustom(
             Diamond,
@@ -48,6 +48,6 @@ object HepatizonGear:
                 meta.setAttributeModifiers(map)
                 val _ = is.setItemMeta(meta)
             },
-            (Enchantment.DURABILITY, 1),
+            (Enchantment.UNBREAKING, 1),
             (Enchantment.SWEEPING_EDGE, 1),
         )
